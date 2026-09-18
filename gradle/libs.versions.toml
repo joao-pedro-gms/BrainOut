@@ -26,6 +26,7 @@ mockk = "1.13.13"
 truth = "1.4.4"
 detekt = "1.23.7"
 ktlint = "12.1.2"
+jacoco = "0.8.12"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

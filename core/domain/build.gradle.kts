@@ -5,6 +5,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
+    id("jacoco")
 }
 
 java {
@@ -19,16 +20,33 @@ kotlin {
 }
 
 dependencies {
-    // Intencionalmente vazio neste marco (E1.1). Entidades e use cases
-    // virão em E1.4 e E1.7. Mantemos o módulo compilando para validar o
-    // esqueleto multi-módulo end-to-end.
+    // Use cases expõem funções `suspend` para que a camada superior
+    // (ViewModels/repositórios) decida o dispatcher sem bloquear a UI.
+    implementation(libs.kotlinx.coroutines.core)
+
     testImplementation(libs.junit)
     testImplementation(libs.truth)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
 }
 
 detekt {
     config.setFrom(rootProject.files("config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     autoCorrect = false
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+    sourceDirectories.setFrom(files("src/main/kotlin"))
 }
 
