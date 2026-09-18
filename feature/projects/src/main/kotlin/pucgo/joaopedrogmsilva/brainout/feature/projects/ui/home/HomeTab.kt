@@ -1,0 +1,26 @@
+// João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+// Identifica as três posições da bottom bar da Home.
+// A posição "Configurações" é uma rota externa (settings) e não é uma
+// tab interna do Scaffold — mas precisa estar presente para renderizar o
+// item correspondente na NavigationBar.
+
+package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
+
+import androidx.annotation.StringRes
+import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+
+/**
+ * Posições da bottom bar da [HomeScreen].
+ *
+ * - [Projects] e [Tasks] são abas internas — alteram o conteúdo do Scaffold
+ *   sem trocar a rota.
+ * - [Settings] dispara uma navegação para a rota externa `settings` (ver
+ *   `BrainOutNavHost`). Após a navegação, o estado local de tab perde
+ *   relevância — a próxima vez que o usuário voltar para Home, ele
+ *   reencontra o estado salvo via `rememberSaveable`.
+ */
+enum class HomeTab(@StringRes val labelRes: Int) {
+    Projects(R.string.bottom_tab_projects),
+    Tasks(R.string.bottom_tab_tasks),
+    Settings(R.string.bottom_tab_settings)
+}
