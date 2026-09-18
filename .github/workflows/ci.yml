@@ -106,6 +106,10 @@ jobs:
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew testDebugUnitTest --no-daemon --console=plain
 
+      - name: Generate JaCoCo coverage report
+        if: hashFiles('**/build.gradle*') != ''
+        run: ./gradlew :core:domain:jacocoTestReport --no-daemon --console=plain
+
       - name: Run Android lint
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew lintDebug --no-daemon --console=plain
@@ -119,6 +123,7 @@ jobs:
           path: |
             **/build/reports/tests/
             **/build/reports/lint-results-*.html
+            **/build/reports/jacoco/
           if-no-files-found: ignore
           retention-days: 14
 

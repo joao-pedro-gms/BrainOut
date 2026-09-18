@@ -97,7 +97,9 @@ style:
   active: true
   MagicNumber:
     active: true
-    ignoreNumbers: ['-1', '0', '1', '2', '100', '1000']
+    # '0'..'4' cobre a faixa completa do TaskPriority (E1.4). Os demais
+    # são limites comuns em regras de validação.
+    ignoreNumbers: ['-1', '0', '1', '2', '3', '4', '100', '500', '1000', '120', '200']
     ignoreHashCodeFunction: true
     ignorePropertyDeclaration: true
     ignoreLocalVariableDeclaration: false
