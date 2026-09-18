@@ -6,7 +6,7 @@
 
 ## 1. Decisão de plataforma
 
-A equipe opta por **aplicativo Android nativo**, com **Kotlin** como
+A escolha recai sobre **aplicativo Android nativo**, com **Kotlin** como
 linguagem principal e **Jetpack Compose** para a camada de interface,
 conforme admitido pelo item 4 do documento norteador (abordagem "Nativa
 Android"). Justificativas:
@@ -18,7 +18,7 @@ Android"). Justificativas:
   direto que wrappers multiplataforma.
 - **Curva de aprendizado:** Kotlin é exigência do curso; Compose é
   recomendado pelo item 4 do documento norteador.
-- **Custo:** ferramentas e SDKs gratuitos para a equipe.
+- **Custo:** ferramentas e SDKs gratuitos para uso individual.
 
 ## 2. Camadas e módulos
 

@@ -8,7 +8,7 @@ assignees: ''
 
 ## Como
 
-<!-- Persona/perfil -->
+<!-- Descrição do usuário-alvo da história -->
 
 ## Quero
 

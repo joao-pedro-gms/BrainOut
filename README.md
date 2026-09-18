@@ -1,10 +1,12 @@
 # BrainOut
 
-Gerenciador de projetos e tarefas para uso individual ou em equipe.
+Gerenciador de projetos e tarefas para uso individual.
 Aplicativo Android nativo escrito em **Kotlin** com **Jetpack Compose**,
 persistência local com **Room** e sincronização com serviço de retaguarda.
 
 > Projeto Integrador — Análise e Desenvolvimento de Sistemas — PUC Goiás — 2026/2.
+
+**Autor:** João Pedro G M Silva — PUC Goiás ADS — matrícula 20251012000740.
 
 ## Documentos do projeto
 
@@ -37,7 +39,8 @@ entrega da N1 (28/09 a 02/10).
 Pré-requisitos:
 
 - JDK 17 (recomendado: Temurin via `pacman -S jdk17-temurin` ou via
-  Android Studio).
+  Android Studio). JDK 21 também funciona — exportar `JAVA_HOME` antes
+  do `./gradlew`.
 - Android Studio Hedgehog (2023.1.1) ou superior com SDK 34.
 - Emulador `pixel8` configurado, ou dispositivo físico com depuração USB.
 
@@ -51,18 +54,6 @@ cd BrainOut
 Para detalhes completos, consulte [docs/CI-CD.md](./docs/CI-CD.md) e
 [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
-## Equipe
-
-| Matrícula     | Nome                                | Papel                       |
-|---------------|-------------------------------------|-----------------------------|
-| 20251012000740 | João Pedro G M Silva               | Coordenador / RT            |
-| —             | Integrante 2                        | Android                     |
-| —             | Integrante 3                        | Dados                       |
-| —             | Integrante 4                        | Backend                     |
-| —             | Integrante 5                        | Qualidade                   |
-
-(A preencher quando a equipe for registrada na Semana 2.)
-
 ## Licença
 
-Definir no E3.1 conforme decisão da equipe.
+Definir no E3.1 conforme decisão própria.

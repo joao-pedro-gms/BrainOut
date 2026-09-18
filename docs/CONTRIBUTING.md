@@ -1,6 +1,6 @@
 # Contribuindo — BrainOut
 
-> Diretrizes para contribuições da equipe. Alinhadas ao item 6.2
+> Diretrizes para o desenvolvimento do projeto. Alinhadas ao item 6.2
 > (Versionamento) do documento norteador.
 
 ## Fluxo básico
@@ -27,9 +27,9 @@
    (evita merges de merge, mantém histórico linear).
 5. **Abra o PR** com o template preenchido. Marque qual requisito (R1–R14)
    o PR atende.
-6. **Espere a revisão de outro integrante.** O `CODEOWNERS` exige
-   aprovação antes do merge. Itens de mais de 200 linhas pedem dois
-   revisores.
+6. **Aguarde o CI verde.** O `CODEOWNERS` está configurado para exigir
+   aprovação do próprio autor antes do merge. Itens de mais de 200
+   linhas podem pedir uma segunda revisão.
 7. **Merge só após CI verde.** Sem exceção.
 
 ## Convenção de mensagens
@@ -86,7 +86,7 @@ build por mais de 5 minutos.
 
 - `local.properties`
 - `.keystore`, `.jks`, `.p12`
-- `google-services.json` (a menos que combinado com a equipe)
+- `google-services.json` (a menos que combinado por conta própria)
 - `.env`, `secrets/`
 - saídas de build (`*.apk`, `*.aab`, `build/`)
 
@@ -95,15 +95,16 @@ Já estão cobertos pelo `.gitignore`, mas vale reforçar.
 ## Responsabilidade individual (FPI)
 
 O item 8.4 do documento norteador define o **Fator de Participação
-Individual**. Ele será calculado com base no histórico de PRs, issues
-e commits. Contribua de forma contínua, em issues compatíveis com sua
-atribuição. Sinal de risco: longos intervalos sem contribuição,
-commits concentrados perto das entregas (vedado pelo item 6.2).
+Individual**. Por se tratar de projeto executado individualmente, o FPI
+mantém-se em 1,00 desde que a contribuição técnica seja contínua,
+comprovada pelo histórico de PRs, issues e commits. Sinal de risco:
+longos intervalos sem contribuição, commits concentrados perto das
+entregas (vedado pelo item 6.2).
 
 ## Comunicação
 
 - **Quadro de tarefas:** GitHub Projects (link a adicionar).
-- **Checkpoints:** quinzenais com o docente responsável; relatório via
-  Apêndice B preenchido.
+- **Checkpoints:** conforme cronograma da Seção 7 do documento
+  norteador; relatório via Apêndice B preenchido.
 - **Bloqueios:** abrir issue com label `impediment` assim que
   identificados, não na véspera da entrega.
