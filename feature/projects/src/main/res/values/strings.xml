@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <!-- Home (lista de projetos) -->
+    <string name="home_topbar_greeting">Olá, %1$s</string>
+    <string name="home_role_badge_owner">Owner</string>
+    <string name="home_role_badge_member">Member</string>
+    <string name="home_section_title">Seus projetos</string>
+    <string name="home_empty_title">Nenhum projeto ainda</string>
+    <string name="home_empty_body">Toque no botão “+” para criar o seu primeiro projeto.</string>
+    <string name="home_fab_create">Criar novo projeto</string>
+    <string name="home_fab_disabled_label">Em breve: criar projeto</string>
+
+    <!-- Bottom navigation -->
+    <string name="bottom_tab_projects">Projetos</string>
+    <string name="bottom_tab_tasks">Tarefas</string>
+    <string name="bottom_tab_settings">Configurações</string>
+
+    <!-- Tasks tab (placeholder) -->
+    <string name="tasks_placeholder_title">Tarefas</string>
+    <string name="tasks_placeholder_body">A gestão de tarefas entra nos marcos E2.x.</string>
+
+    <!-- Project detail -->
+    <string name="project_detail_title">Projeto Demo</string>
+    <string name="project_detail_description">Aplicativo Android para gestão de projetos e tarefas, em Kotlin e Jetpack Compose.</string>
+    <string name="project_detail_tasks_title">Tarefas</string>
+    <string name="project_detail_new_task">Nova tarefa</string>
+    <string name="project_detail_back">Voltar</string>
+
+    <!-- Common -->
+    <string name="common_back">Voltar</string>
+    <string name="common_close">Fechar</string>
+</resources>

@@ -5,24 +5,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutNavHost
 
 /**
- * Activity única do BrainOut no marco E1.1.
+ * Activity única do BrainOut.
  *
- * Hospeda o conteúdo Compose. A navegação real entre as 6 telas virá em
- * E1.3; aqui exibimos apenas o placeholder "BrainOut — em construção".
+ * Hospeda o `NavHost` entregue no marco E1.3 que conecta as 6 telas:
+ * Splash → Login → Home → ProjectDetail/Settings → Login (via "Sair").
+ *
+ * O `NavController` é criado via `rememberNavController()` para sobreviver
+ * a recomposições enquanto a Activity existir; cada destino individual
+ * recebe callbacks `lambda` em vez de acessar o controller diretamente,
+ * o que facilita testes isolados de cada tela.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -31,37 +32,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BrainOutTheme {
-                MainScreen()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    BrainOutNavHost(navController = navController)
+                }
             }
         }
-    }
-}
-
-@Composable
-fun MainScreen(modifier: Modifier = Modifier) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "BrainOut — em construção",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun MainScreenPreview() {
-    BrainOutTheme {
-        MainScreen()
     }
 }

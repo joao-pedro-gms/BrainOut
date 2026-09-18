@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <!-- Splash -->
+    <string name="splash_title">BrainOut</string>
+    <string name="splash_tagline">Organize projetos e tarefas com a sua equipe, online e offline.</string>
+    <string name="splash_cta">Começar</string>
+
+    <!-- Login (esqueleto, validação em E1.6) -->
+    <string name="login_title">Entrar</string>
+    <string name="login_subtitle">Acesse sua conta para continuar.</string>
+    <string name="login_email_label">E-mail</string>
+    <string name="login_email_placeholder">seu@email.com</string>
+    <string name="login_password_label">Senha</string>
+    <string name="login_password_placeholder">••••••••</string>
+    <string name="login_cta">Entrar</string>
+    <string name="login_create_account">Criar conta</string>
+
+    <!-- Register (esqueleto, validação em E1.6) -->
+    <string name="register_title">Criar conta</string>
+    <string name="register_subtitle">Preencha os dados para começar.</string>
+    <string name="register_name_label">Nome</string>
+    <string name="register_name_placeholder">Seu nome completo</string>
+    <string name="register_email_label">E-mail</string>
+    <string name="register_email_placeholder">seu@email.com</string>
+    <string name="register_password_label">Senha</string>
+    <string name="register_password_placeholder">Crie uma senha</string>
+    <string name="register_password_confirm_label">Confirmar senha</string>
+    <string name="register_password_confirm_placeholder">Digite a senha novamente</string>
+    <string name="register_cta">Cadastrar</string>
+    <string name="register_have_account">Já tenho conta</string>
+</resources>

@@ -2,4 +2,75 @@
 <!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
 <resources>
     <string name="app_name">BrainOut</string>
+
+    <!-- Splash (E1.3) -->
+    <string name="splash_title">BrainOut</string>
+    <string name="splash_tagline">Organize projetos e tarefas com a sua equipe, online e offline.</string>
+    <string name="splash_cta">Começar</string>
+
+    <!-- Login (esqueleto, validação fica em E1.6) -->
+    <string name="login_title">Entrar</string>
+    <string name="login_subtitle">Acesse sua conta para continuar.</string>
+    <string name="login_email_label">E-mail</string>
+    <string name="login_email_placeholder">seu@email.com</string>
+    <string name="login_password_label">Senha</string>
+    <string name="login_password_placeholder">••••••••</string>
+    <string name="login_cta">Entrar</string>
+    <string name="login_create_account">Criar conta</string>
+
+    <!-- Register (esqueleto, validação fica em E1.6) -->
+    <string name="register_title">Criar conta</string>
+    <string name="register_subtitle">Preencha os dados para começar.</string>
+    <string name="register_name_label">Nome</string>
+    <string name="register_name_placeholder">Seu nome completo</string>
+    <string name="register_email_label">E-mail</string>
+    <string name="register_email_placeholder">seu@email.com</string>
+    <string name="register_password_label">Senha</string>
+    <string name="register_password_placeholder">Crie uma senha</string>
+    <string name="register_password_confirm_label">Confirmar senha</string>
+    <string name="register_password_confirm_placeholder">Digite a senha novamente</string>
+    <string name="register_cta">Cadastrar</string>
+    <string name="register_have_account">Já tenho conta</string>
+
+    <!-- Home (lista de projetos) -->
+    <string name="home_topbar_greeting">Olá, %1$s</string>
+    <string name="home_role_badge_owner">Owner</string>
+    <string name="home_role_badge_member">Member</string>
+    <string name="home_section_title">Seus projetos</string>
+    <string name="home_empty_title">Nenhum projeto ainda</string>
+    <string name="home_empty_body">Toque no botão “+” para criar o seu primeiro projeto.</string>
+    <string name="home_fab_create">Criar novo projeto</string>
+    <string name="home_fab_disabled_label">Em breve: criar projeto</string>
+
+    <!-- Bottom navigation -->
+    <string name="bottom_tab_projects">Projetos</string>
+    <string name="bottom_tab_tasks">Tarefas</string>
+    <string name="bottom_tab_settings">Configurações</string>
+
+    <!-- Tasks tab (placeholder) -->
+    <string name="tasks_placeholder_title">Tarefas</string>
+    <string name="tasks_placeholder_body">A gestão de tarefas entra nos marcos E2.x.</string>
+
+    <!-- Project detail -->
+    <string name="project_detail_title">Projeto Demo</string>
+    <string name="project_detail_description">Aplicativo Android para gestão de projetos e tarefas, em Kotlin e Jetpack Compose.</string>
+    <string name="project_detail_tasks_title">Tarefas</string>
+    <string name="project_detail_new_task">Nova tarefa</string>
+    <string name="project_detail_back">Voltar</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_subtitle">Preferências da sua conta e do aplicativo.</string>
+    <string name="settings_section_account">Conta</string>
+    <string name="settings_section_appearance">Aparência</string>
+    <string name="settings_section_session">Sessão</string>
+    <string name="settings_option_profile">Perfil</string>
+    <string name="settings_option_notifications">Notificações</string>
+    <string name="settings_option_theme">Tema</string>
+    <string name="settings_option_signout">Sair</string>
+
+    <!-- Common -->
+    <string name="common_back">Voltar</string>
+    <string name="common_close">Fechar</string>
+    <string name="common_user_name_default">João Pedro</string>
 </resources>
