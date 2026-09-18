@@ -65,3 +65,8 @@ __pycache__/
 
 # Build outputs from local testing
 backend-stub/*.log
+# Git worktrees (kanban workers)
+.worktrees/
+
+# Kanban scratch workspaces
+/.hermes/kanban/workspaces/

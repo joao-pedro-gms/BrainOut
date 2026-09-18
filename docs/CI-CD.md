@@ -17,7 +17,7 @@ Configuração adicional:
 - `.github/dependabot.yml` — atualizações semanais de GitHub Actions,
   Gradle e (quando existir) `backend-stub/`.
 - `.github/CODEOWNERS` — todo PR precisa de aprovação do
-  `@joao-pedro-gms` (ajuste conforme a equipe formar).
+  `@joao-pedro-gms` (ajuste se necessário para revisão adicional).
 
 ## Workflows
 
@@ -88,7 +88,7 @@ não conseguirá publicar novas atualizações.
 Em **Settings → Branches → Branch protection rules → main**, ative:
 
 - ✅ Require a pull request before merging
-- ✅ Require approvals: **1** (ou 2 quando a equipe tiver mais gente)
+- ✅ Require approvals: **1** (ou 2 se necessário para revisão adicional)
 - ✅ Dismiss stale pull request approvals when new commits are pushed
 - ✅ Require status checks to pass before merging
   - Selecione: `Static analysis (ktlint + detekt)` e `Unit tests`
