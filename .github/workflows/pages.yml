@@ -1,0 +1,88 @@
+name: Deploy wireframes to GitHub Pages
+
+# Faz deploy de `docs/wireframes/` para GitHub Pages sempre que houver
+# push em `main` que altere arquivos nessa pasta, ou manualmente via
+# workflow_dispatch. O build é mínimo: copia os arquivos estáticos
+# para um diretório de artifact e o action `actions/deploy-pages`
+# publica.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/wireframes/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Sem concorrência com outros deploys — Pages suporta apenas 1 in-flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build wireframes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Copy wireframes to artifact directory
+        run: |
+          mkdir -p "$GITHUB_PAGES_OUTPUT_DIRECTORY/docs"
+          cp -r docs/wireframes/. "$GITHUB_PAGES_OUTPUT_DIRECTORY/docs/"
+
+          # .nojekyll garante que GitHub Pages sirva os arquivos como
+          # estáticos puros, sem processar Markdown/Liquid/Jekyll.
+          touch "$GITHUB_PAGES_OUTPUT_DIRECTORY/.nojekyll"
+
+          # O site publicado fica em /<owner>.github.io/<repo>/docs/.
+          # Adiciona um index.html em /<repo>/ que redireciona para
+          # /docs/index.html para evitar 404 quando o usuário acessa
+          # apenas https://joao-pedro-gms.github.io/BrainOut/.
+          cat > "$GITHUB_PAGES_OUTPUT_DIRECTORY/index.html" <<'HTML'
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8" />
+            <title>BrainOut — Wireframes</title>
+            <meta http-equiv="refresh" content="0; url=./docs/index.html" />
+            <link rel="canonical" href="./docs/index.html" />
+          </head>
+          <body>
+            <p>Redirecionando para <a href="./docs/index.html">wireframes</a>…</p>
+          </body>
+          </html>
+          HTML
+
+          echo "Diretório final:"
+          find "$GITHUB_PAGES_OUTPUT_DIRECTORY" -maxdepth 3 -type f | head -20
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.GITHUB_PAGES_OUTPUT_DIRECTORY }}
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
