@@ -1,0 +1,53 @@
+version: 2
+updates:
+  # Pipeline: dependabot acompanha as actions do GitHub usadas nos workflows.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/Sao_Paulo'
+    labels:
+      - 'dependencies'
+      - 'ci'
+    groups:
+      github-actions-minor:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  # Aplicativo Android (Gradle).
+  - package-ecosystem: 'gradle'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/Sao_Paulo'
+    labels:
+      - 'dependencies'
+      - 'android'
+    open-pull-requests-limit: 5
+    groups:
+      gradle-minor:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  # Backend stub FastAPI (quando existir).
+  - package-ecosystem: 'pip'
+    directory: '/backend-stub'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/Sao_Paulo'
+    labels:
+      - 'dependencies'
+      - 'backend'
+    open-pull-requests-limit: 3

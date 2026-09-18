@@ -1,0 +1,15 @@
+# Default reviewers for the project. A PR touching any of these paths must be
+# approved by the matching owner(s) before merge. Branch protection on `main`
+# should require at least one CODEOWNERS approval.
+#
+# Adjust the GitHub handles as the team forms.
+
+*       @joao-pedro-gms
+
+/app/                       @joao-pedro-gms
+/backend-stub/              @joao-pedro-gms
+/.github/workflows/         @joao-pedro-gms
+/docs/                      @joao-pedro-gms
+/gradle/                    @joao-pedro-gms
+/gradlew                    @joao-pedro-gms
+/gradlew.bat                @joao-pedro-gms
