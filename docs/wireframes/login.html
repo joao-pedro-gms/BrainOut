@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainOut — Entrar</title>
+  <meta name="description" content="Tela de login do BrainOut." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone" aria-label="Tela de login do BrainOut">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="phone__screen">
+      <header class="app-header">
+        <h1>Entrar</h1>
+        <p>Acesse sua conta para continuar.</p>
+      </header>
+
+      <section class="app-content">
+        <form class="form" action="#" method="post" novalidate>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="password">Senha</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button class="btn btn--primary" type="submit">Entrar</button>
+        </form>
+
+        <a class="link" href="register.html">Criar conta</a>
+      </section>
+
+      <footer class="app-footer">
+        <div class="app-footer--placeholder">BrainOut · v0.1</div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

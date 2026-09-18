@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainOut — Criar conta</title>
+  <meta name="description" content="Tela de cadastro do BrainOut." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone" aria-label="Tela de cadastro do BrainOut">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="phone__screen">
+      <header class="app-header">
+        <h1>Criar conta</h1>
+        <p>Preencha os dados para começar.</p>
+      </header>
+
+      <section class="app-content">
+        <form class="form" action="#" method="post" novalidate>
+          <div class="field">
+            <label for="name">Nome</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autocomplete="name"
+              placeholder="Seu nome completo"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="password">Senha</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Crie uma senha"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="password-confirm">Confirmar senha</label>
+            <input
+              id="password-confirm"
+              name="password-confirm"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Digite a senha novamente"
+              required
+            />
+          </div>
+
+          <fieldset class="field" style="border: 0; padding: 0; margin: 0;">
+            <legend style="font-size: 13px; font-weight: 600; color: #52606d; margin-bottom: 6px;">
+              Perfil
+            </legend>
+            <div style="display: flex; gap: 8px;">
+              <label class="btn btn--ghost" style="flex: 1;">
+                <input type="radio" name="role" value="owner" style="margin-right: 6px;" checked />
+                Owner
+              </label>
+              <label class="btn btn--ghost" style="flex: 1;">
+                <input type="radio" name="role" value="member" style="margin-right: 6px;" />
+                Member
+              </label>
+            </div>
+          </fieldset>
+
+          <button class="btn btn--primary" type="submit">Cadastrar</button>
+        </form>
+
+        <a class="link" href="login.html">Já tenho conta</a>
+      </section>
+
+      <footer class="app-footer">
+        <div class="app-footer--placeholder">BrainOut · v0.1</div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
