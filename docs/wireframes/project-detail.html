@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainOut — Detalhe do projeto</title>
+  <meta name="description" content="Tela de detalhe de um projeto do BrainOut." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone" aria-label="Tela de detalhe do projeto">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="phone__screen">
+      <header class="app-header">
+        <p class="muted" style="margin: 0 0 4px;">
+          <a href="home.html" style="color: #52606d; text-decoration: none;">← Projetos</a>
+        </p>
+        <h1>Projeto Integrador</h1>
+        <p>
+          Aplicativo Android para gestão de projetos e tarefas, em Kotlin e
+          Jetpack Compose.
+        </p>
+      </header>
+
+      <section class="app-content" style="padding-bottom: 96px;">
+        <h2 class="section-title">Tarefas</h2>
+
+        <ul class="task-list" style="list-style: none; padding: 0; margin: 0;">
+          <li class="task">
+            <span class="task__check" aria-hidden="true"></span>
+            <span class="task__title">Modelar entidade Task</span>
+            <span class="task__priority priority--alta" aria-label="Prioridade alta">Alta</span>
+          </li>
+          <li class="task">
+            <span class="task__check" aria-hidden="true"></span>
+            <span class="task__title">Configurar navegação Compose</span>
+            <span class="task__priority priority--alta" aria-label="Prioridade alta">Alta</span>
+          </li>
+          <li class="task">
+            <span class="task__check" aria-hidden="true"></span>
+            <span class="task__title">Esboçar wireframes das telas</span>
+            <span class="task__priority priority--media" aria-label="Prioridade média">Média</span>
+          </li>
+          <li class="task">
+            <span class="task__check" aria-hidden="true"></span>
+            <span class="task__title">Definir paleta de cores</span>
+            <span class="task__priority priority--baixa" aria-label="Prioridade baixa">Baixa</span>
+          </li>
+        </ul>
+
+        <a class="btn btn--primary" style="margin-top: 20px;" href="#">
+          <span aria-hidden="true">+</span>
+          Nova tarefa
+        </a>
+      </section>
+
+      <footer class="app-footer">
+        <nav class="tab-bar" aria-label="Navegação principal">
+          <a class="tab-bar__item tab-bar__item--active" href="home.html">
+            <span class="tab-bar__icon" aria-hidden="true"></span>
+            Projetos
+          </a>
+          <a class="tab-bar__item" href="#">
+            <span class="tab-bar__icon" aria-hidden="true"></span>
+            Tarefas
+          </a>
+          <a class="tab-bar__item" href="#">
+            <span class="tab-bar__icon" aria-hidden="true"></span>
+            Equipe
+          </a>
+          <a class="tab-bar__item" href="settings.html">
+            <span class="tab-bar__icon" aria-hidden="true"></span>
+            Ajustes
+          </a>
+        </nav>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
