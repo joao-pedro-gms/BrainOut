@@ -1,0 +1,116 @@
+# João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+# Configuração base do detekt — sobrepõe regras padrão sem endurecer demais.
+# Adicione regras ao longo do projeto conforme a equipe amadurece.
+
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+    comments: 1
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+
+output-reports:
+  active: true
+
+comments:
+  active: true
+  CommentOverPrivateProperty:
+    active: false
+  CommentOverPrivateFunction:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+complexity:
+  active: true
+  ComplexCondition:
+    threshold: 6
+  CyclomaticComplexMethod:
+    threshold: 20
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 15
+    thresholdInObjects: 15
+    thresholdInEnums: 15
+
+empty-blocks:
+  active: true
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - 'IllegalStateException'
+      - 'IllegalArgumentException'
+      - 'RuntimeException'
+
+naming:
+  active: true
+  ClassNaming:
+    classPattern: '[A-Z][a-zA-Z0-9]*'
+  FunctionNaming:
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    # Funções anotadas com @Composable seguem convenção PascalCase (Compose).
+    # @Preview e @HiltAndroidApp também geram wrappers que detekt não precisa
+    # auditar (são consumidas em runtime por reflexão).
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Preview'
+      - 'HiltAndroidApp'
+      - 'AndroidEntryPoint'
+  PackageNaming:
+    packagePattern: '[a-z]+(\.[a-z][a-zA-Z0-9]*)*'
+
+performance:
+  active: true
+
+potential-bugs:
+  active: true
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2', '100', '1000']
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: false
+  UnusedPrivateMember:
+    active: true
+    # Previews do Compose são consumidos pelo Android Studio / Preview tooling,
+    # não pelo código de produção — não devem ser relatados como unused.
+    ignoreAnnotated:
+      - 'Preview'
+  UnusedImports:
+    active: true

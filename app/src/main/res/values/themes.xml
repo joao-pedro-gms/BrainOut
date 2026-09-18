@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <!--
+        Tema base do app (Material 3). A Activity aplica o tema do sistema
+        em runtime; os tokens visuais reais ficam em :core:ui/theme.
+    -->
+    <style name="Theme.BrainOut" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
