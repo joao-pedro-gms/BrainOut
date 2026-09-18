@@ -24,6 +24,11 @@ dependencies {
     // (ViewModels/repositórios) decida o dispatcher sem bloquear a UI.
     implementation(libs.kotlinx.coroutines.core)
 
+    // `@Inject constructor` nos use cases (E1.6). Mantemos o módulo
+    // `:core:domain` livre de Android/Hilt — apenas a anotação
+    // `javax.inject.Inject` é necessária.
+    implementation(libs.javax.inject)
+
     testImplementation(libs.junit)
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -2,17 +2,21 @@
 // NavHost raiz do BrainOut — declara todas as telas e o fluxo entre elas
 // (Splash → Login → Home → ProjectDetail / Settings → Login).
 //
-// Marco E1.3 do ROADMAP. Formulários com validação (E1.6) e CRUDs reais
-// (E2.x) virão em tasks subsequentes.
+// Marco E1.3 do ROADMAP. Marcos E1.6, E1.7 e E1.8 do ROADMAP adicionam
+// formulários funcionais, gate do FAB por papel e persistência da
+// sessão em `DataStore`.
 
 package pucgo.joaopedrogmsilva.brainout.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
+import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.LoginScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register.RegisterScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash.SplashScreen
@@ -28,27 +32,32 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
  * recomposição — as telas individuais recebem callbacks `lambda` em vez de
  * acessarem o controller diretamente. Isso facilita a testabilidade de cada
  * tela isoladamente e evita dependência circular.
+ *
+ * O [activeUserProvider] é usado pelo handler de `SettingsActionType.SignOut`
+ * para encerrar a sessão persistida (E1.8) — chama `signOut()` antes de
+ * navegar para `Login` com a pilha limpa.
  */
 @Composable
 fun BrainOutNavHost(
     navController: NavHostController,
-    startDestination: String = BrainOutRoutes.Splash
+    activeUserProvider: ActiveUserProvider,
+    startDestination: String = BrainOutRoutes.Splash,
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
     ) {
         addSplashRoute(navController)
         addLoginRoute(navController)
         addRegisterRoute(navController)
         addHomeRoute(navController)
         addProjectDetailRoute(navController)
-        addSettingsRoute(navController)
+        addSettingsRoute(navController, activeUserProvider)
     }
 }
 
 private fun androidx.navigation.NavGraphBuilder.addSplashRoute(
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     composable(route = BrainOutRoutes.Splash) {
         SplashScreen(
@@ -62,7 +71,7 @@ private fun androidx.navigation.NavGraphBuilder.addSplashRoute(
 }
 
 private fun androidx.navigation.NavGraphBuilder.addLoginRoute(
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     composable(route = BrainOutRoutes.Login) {
         LoginScreen(
@@ -79,7 +88,7 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(
 }
 
 private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     composable(route = BrainOutRoutes.Register) {
         RegisterScreen(
@@ -96,7 +105,7 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(
 }
 
 private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     composable(route = BrainOutRoutes.Home) {
         HomeScreen(
@@ -111,7 +120,7 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
 }
 
 private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     composable(
         route = BrainOutRoutes.ProjectDetailPattern,
@@ -132,18 +141,22 @@ private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(
 }
 
 private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
-    navController: NavHostController
+    navController: NavHostController,
+    activeUserProvider: ActiveUserProvider,
 ) {
     composable(route = BrainOutRoutes.Settings) {
+        val scope = rememberCoroutineScope()
         SettingsScreen(
             onOptionClicked = { action ->
                 when (action) {
                     SettingsActionType.SignOut -> {
-                        // Limpa toda a pilha de navegação para que voltar
-                        // da tela de Login não retorne para Settings/Home.
-                        // `popUpTo(0) { inclusive = true }` é o idiom
-                        // recomendado pela documentação do Navigation
-                        // Compose para esvaziar o backstack completo.
+                        // Limpa a sessão no DataStore (E1.8) antes de
+                        // navegar para Login. Fazemos em uma coroutine
+                        // para não bloquear a UI; a navegação ocorre
+                        // em seguida e a próxima leitura do
+                        // `currentUserId()` no `MainActivity` verá o
+                        // valor limpo após reinício.
+                        scope.launch { activeUserProvider.signOut() }
                         navController.navigate(BrainOutRoutes.Login) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -151,7 +164,7 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
                     SettingsActionType.Profile,
                     SettingsActionType.Notifications,
                     SettingsActionType.Theme -> {
-                        // Sub-telas não fazem parte do E1.3 — placeholder.
+                        // Sub-telas não fazem parte do E1.6 — placeholder.
                     }
                 }
             }

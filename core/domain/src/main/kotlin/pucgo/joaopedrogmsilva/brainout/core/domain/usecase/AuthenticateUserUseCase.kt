@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
+import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
@@ -20,7 +21,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  * inexistente, hash inválido ou senha incorreta) para evitar
  * enumeração de contas.
  */
-class AuthenticateUserUseCase(
+class AuthenticateUserUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val passwordHasher: PasswordHasher,
 ) {

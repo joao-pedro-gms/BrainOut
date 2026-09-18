@@ -2,6 +2,8 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
@@ -13,6 +15,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
+import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
@@ -26,6 +30,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  * - DAOs individuais expostos a partir do database.
  * - Bind das implementações de `UserRepository` e `PasswordHasher`
  *   para as portas declaradas em `:core:domain`.
+ * - Singleton de [SessionStore] para persistir o id do usuário
+ *   autenticado em `DataStore` (E1.8).
  *
  * Consumido por `@HiltAndroidApp` em `:app` (ver
  * `BrainOutApplication`).
@@ -58,4 +64,16 @@ object DataModule {
     @Provides
     @Singleton
     fun providePasswordHasher(impl: PasswordHasherImpl): PasswordHasher = impl
+
+    @Provides
+    @Singleton
+    fun provideAuthDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.authDataStore
+
+    @Provides
+    @Singleton
+    fun provideSessionStore(
+        dataStore: DataStore<Preferences>,
+    ): SessionStore = SessionStore(dataStore = dataStore)
 }

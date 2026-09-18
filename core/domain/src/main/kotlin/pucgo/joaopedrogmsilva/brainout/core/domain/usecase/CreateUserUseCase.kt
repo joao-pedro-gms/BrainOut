@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
+import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
@@ -23,7 +24,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  *
  * Detalhes completos ficam em [invoke].
  */
-class CreateUserUseCase(
+class CreateUserUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val passwordHasher: PasswordHasher,
 ) {
