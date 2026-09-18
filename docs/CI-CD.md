@@ -125,3 +125,4 @@ echo "BASE_URL=http://10.0.2.2:8000" >> ../local.properties
 | `release-apk.yml` falha em `Decode keystore`  | Secret vazio ou base64 corrompido               | Recodificar: `base64 -w 0 release.keystore`                 |
 | Gradle build falha com `OutOfMemoryError`     | Runner sem heap suficiente                      | `GRADLE_OPTS` no `ci.yml` já é 4g; revisar plugins pesados  |
 | Workflow não dispara em PR                    | Branch protection bloqueou o push               | Verificar **Settings → Actions → General → Allow actions** |
+| `Cannot find a Java installation matching languageVersion=17` (local) | JDK 17 não instalado; só JDK 21 disponível | `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk` antes de `./gradlew`. `gradle.properties` já tem `auto-detect=true` e `auto-download=false`, então o JDK 21 local funciona e o bytecode continua Java 17 |
