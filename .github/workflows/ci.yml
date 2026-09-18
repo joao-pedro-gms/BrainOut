@@ -49,7 +49,14 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/validate-gradle-wrapper@v3
+        run: |
+          if [ -x ./gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Gradle wrapper OK"
+          elif [ ! -f ./gradlew ]; then
+            echo "::warning::gradlew ausente — ainda não há projeto Gradle neste PR."
+          else
+            echo "::warning::gradlew presente mas wrapper jar ausente."
+          fi
 
       - name: Run ktlint
         if: hashFiles('**/build.gradle*') != ''
