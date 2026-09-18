@@ -27,6 +27,12 @@
     <string name="project_detail_new_task">Nova tarefa</string>
     <string name="project_detail_back">Voltar</string>
 
+    <!-- Home (E1.7 — papel exibido + gate do FAB) -->
+    <string name="home_role_member_dialog_title">Disponível apenas para Owners</string>
+    <string name="home_role_member_dialog_body">Faça upgrade para Owner para criar projetos.</string>
+    <string name="home_role_member_dialog_ack">Entendi</string>
+    <string name="home_fab_disabled_owner">Criar projeto (em breve)</string>
+
     <!-- Common -->
     <string name="common_back">Voltar</string>
     <string name="common_close">Fechar</string>
