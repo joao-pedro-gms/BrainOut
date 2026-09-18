@@ -1,0 +1,13 @@
+# Local properties do desenvolvedor.
+# Copie para `local.properties` e preencha os valores reais.
+# NUNCA versione o `local.properties` (coberto pelo .gitignore).
+
+# Caminho do Android SDK
+sdk.dir=/opt/android-sdk
+
+# URL base do serviço de retaguarda para builds de debug.
+# No emulador padrão do Android Studio, 10.0.2.2 resolve para o host.
+BASE_URL=http://10.0.2.2:8000
+
+# Ambiente (dev | staging | prod)
+APP_ENV=dev
