@@ -24,6 +24,8 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.Project
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home.HomeScreen
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
+import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
+import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.tasksGraph
 
 /**
  * Componente que registra todos os destinos do `BrainOutNavHost`.
@@ -53,6 +55,9 @@ fun BrainOutNavHost(
         addHomeRoute(navController)
         addProjectDetailRoute(navController)
         addSettingsRoute(navController, activeUserProvider)
+        // Marco E2.6 do ROADMAP — registra a tela "Tarefas" como
+        // destino de navegação global (aba "Tarefas" da bottom bar).
+        tasksGraph()
     }
 }
 
@@ -114,6 +119,9 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
             },
             onOpenSettings = {
                 navController.navigate(BrainOutRoutes.Settings)
+            },
+            onOpenTasks = {
+                navController.navigate(TasksRoutes.TASKS)
             }
         )
     }
