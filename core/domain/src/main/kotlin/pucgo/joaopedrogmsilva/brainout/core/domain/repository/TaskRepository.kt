@@ -13,4 +13,11 @@ interface TaskRepository {
     suspend fun update(task: Task): Task
     suspend fun changeStatus(id: String, target: TaskStatus): Task
     suspend fun delete(id: String)
+
+    /**
+     * Conta tarefas ativas (status != DONE) de um projeto. Usado pelo
+     * `CreateTaskUseCase` para aplicar a regra de negócio RN01 sem
+     * precisar importar `:core:data` no domínio.
+     */
+    suspend fun countActiveByProject(projectId: String): Int
 }
