@@ -26,6 +26,35 @@
     <string name="project_detail_tasks_title">Tarefas</string>
     <string name="project_detail_new_task">Nova tarefa</string>
     <string name="project_detail_back">Voltar</string>
+    <string name="project_detail_delete_project">Excluir projeto</string>
+    <string name="project_detail_empty_title">Sem tarefas cadastradas</string>
+    <string name="project_detail_empty_body">Toque em \u201c+Nova tarefa\u201d para começar.</string>
+
+    <!-- New task dialog -->
+    <string name="project_detail_new_task_dialog_title">Nova tarefa</string>
+    <string name="project_detail_new_task_title_label">Título</string>
+    <string name="project_detail_new_task_title_placeholder">Ex.: Revisar relatório</string>
+    <string name="project_detail_new_task_priority_label">Prioridade</string>
+    <string name="project_detail_new_task_save">Salvar</string>
+    <string name="project_detail_new_task_cancel">Cancelar</string>
+
+    <!-- Task status labels -->
+    <string name="task_status_todo">A fazer</string>
+    <string name="task_status_doing">Em andamento</string>
+    <string name="task_status_done">Concluída</string>
+
+    <!-- Task priority labels -->
+    <string name="task_priority_low">Baixa</string>
+    <string name="task_priority_medium">Média</string>
+    <string name="task_priority_high">Alta</string>
+    <string name="task_priority_urgent">Urgente</string>
+    <string name="task_priority_critical">Crítica</string>
+
+    <!-- Task item menu -->
+    <string name="project_detail_task_menu_move_doing">Mover para Em andamento</string>
+    <string name="project_detail_task_menu_move_done">Mover para Concluída</string>
+    <string name="project_detail_task_menu_move_todo">Mover para A fazer</string>
+    <string name="project_detail_task_menu_delete">Excluir tarefa</string>
 
     <!-- Home (E1.7 — papel exibido + gate do FAB) -->
     <string name="home_role_member_dialog_title">Disponível apenas para Owners</string>
