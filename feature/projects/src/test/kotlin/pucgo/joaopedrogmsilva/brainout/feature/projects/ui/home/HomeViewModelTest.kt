@@ -10,6 +10,7 @@ import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -19,27 +20,49 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateProjectUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
 
 /**
- * Testes do [HomeViewModel] (E1.7).
+ * Testes do [HomeViewModel].
  *
- * Verifica:
- * - Conversão de [User] (domínio) para [HomeUiState].
+ * Verifica (E1.7):
+ * - Conversão de [User] (domínio) para [HomeUserState].
  * - Distinção entre Owner e Member no estado exposto.
  * - `onMemberFabClicked` / `dismissUpgradeDialog` alternam o flag do
  *   diálogo de upgrade corretamente.
  * - Sessão órfã (id presente mas `User` ausente) leva a `SignedOut`.
+ *
+ * Verifica (E2.1):
+ * - `createProject` dispara o use case com `ownerId` derivado de
+ *   [ActiveUserProvider.observeActiveUserId].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
+    private val projectRepository: ProjectRepository = mockk(relaxed = true)
+    private val tagRepository: TagRepository = mockk(relaxed = true)
+    private val activeUserProvider: ActiveUserProvider = mockk()
+    private val createProject: CreateProjectUseCase = mockk()
+    private val updateProject: UpdateProjectUseCase = mockk()
+    private val deleteProject: DeleteProjectUseCase = mockk()
+    private val createTag: CreateTagUseCase = mockk()
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        coEvery { projectRepository.observeAllForOwner(any()) } returns flowOf(emptyList())
+        coEvery { tagRepository.observeForOwner(any()) } returns flowOf(emptyList())
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf(null)
     }
 
     @After
@@ -47,46 +70,54 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun newViewModel(): HomeViewModel = HomeViewModel(
+        projectRepository = projectRepository,
+        tagRepository = tagRepository,
+        activeUserProvider = activeUserProvider,
+        createProject = createProject,
+        updateProject = updateProject,
+        deleteProject = deleteProject,
+        createTag = createTag,
+    )
+
     @Test
     fun `SignedIn owner surfaces owner role`() = runTest {
-        val activeUser = mockk<ActiveUserProvider>()
         val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.OWNER))
-        coEvery { activeUser.observeActiveUser() } returns userFlow
-        val viewModel = HomeViewModel(activeUser)
+        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+        val viewModel = newViewModel()
         advanceUntilIdle()
 
-        viewModel.state.test {
+        viewModel.userState.test {
             // Pode vir Loading inicialmente; consumimos até SignedIn.
             var emitted = awaitItem()
-            while (emitted is HomeUiState.Loading) {
+            while (emitted is HomeUserState.Loading) {
                 emitted = awaitItem()
             }
-            assertThat(emitted).isInstanceOf(HomeUiState.SignedIn::class.java)
-            val signedIn = emitted as HomeUiState.SignedIn
+            assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
+            val signedIn = emitted as HomeUserState.SignedIn
             assertThat(signedIn.displayName).isEqualTo("João Pedro")
             assertThat(signedIn.role).isEqualTo(HomeUserRole.Owner)
             assertThat(signedIn.initials).isEqualTo("JP")
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify { activeUser.observeActiveUser() }
+        coVerify { activeUserProvider.observeActiveUser() }
     }
 
     @Test
     fun `SignedIn member surfaces member role`() = runTest {
-        val activeUser = mockk<ActiveUserProvider>()
         val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
-        coEvery { activeUser.observeActiveUser() } returns userFlow
-        val viewModel = HomeViewModel(activeUser)
+        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+        val viewModel = newViewModel()
         advanceUntilIdle()
 
-        viewModel.state.test {
+        viewModel.userState.test {
             var emitted = awaitItem()
-            while (emitted is HomeUiState.Loading) {
+            while (emitted is HomeUserState.Loading) {
                 emitted = awaitItem()
             }
-            assertThat(emitted).isInstanceOf(HomeUiState.SignedIn::class.java)
-            val signedIn = emitted as HomeUiState.SignedIn
+            assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
+            val signedIn = emitted as HomeUserState.SignedIn
             assertThat(signedIn.role).isEqualTo(HomeUserRole.Member)
             cancelAndIgnoreRemainingEvents()
         }
@@ -94,28 +125,26 @@ class HomeViewModelTest {
 
     @Test
     fun `null user surfaces SignedOut`() = runTest {
-        val activeUser = mockk<ActiveUserProvider>()
         val userFlow = MutableStateFlow<User?>(null)
-        coEvery { activeUser.observeActiveUser() } returns userFlow
-        val viewModel = HomeViewModel(activeUser)
+        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+        val viewModel = newViewModel()
         advanceUntilIdle()
 
-        viewModel.state.test {
+        viewModel.userState.test {
             var emitted = awaitItem()
-            while (emitted is HomeUiState.Loading) {
+            while (emitted is HomeUserState.Loading) {
                 emitted = awaitItem()
             }
-            assertThat(emitted).isEqualTo(HomeUiState.SignedOut)
+            assertThat(emitted).isEqualTo(HomeUserState.SignedOut)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
     fun `onMemberFabClicked opens upgrade dialog`() = runTest {
-        val activeUser = mockk<ActiveUserProvider>()
         val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
-        coEvery { activeUser.observeActiveUser() } returns userFlow
-        val viewModel = HomeViewModel(activeUser)
+        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+        val viewModel = newViewModel()
         advanceUntilIdle()
 
         assertThat(viewModel.upgradeDialogVisible.value).isFalse()
@@ -132,6 +161,22 @@ class HomeViewModelTest {
         assertThat(computeInitials("Maria de Lourdes Silva")).isEqualTo("MS")
         assertThat(computeInitials("")).isEqualTo("?")
         assertThat(computeInitials("   ")).isEqualTo("?")
+    }
+
+    @Test
+    fun `createProject dispara use case com ownerId correto`() = runTest {
+        val newProject = Project.create(name = "Novo", ownerId = "u1")
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        coEvery { createProject.invoke(any(), any(), any(), any()) } returns newProject
+
+        val viewModel = newViewModel()
+        viewModel.createProject("Novo", null, emptyList())
+        advanceUntilIdle()
+
+        coVerify {
+            createProject.invoke(name = "Novo", ownerId = "u1", description = null, tagIds = emptyList())
+        }
     }
 
     private fun sampleUser(role: UserRole): User = User(

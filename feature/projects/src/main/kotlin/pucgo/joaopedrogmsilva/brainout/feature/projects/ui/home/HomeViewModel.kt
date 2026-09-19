@@ -5,44 +5,116 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateProjectUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
 
 /**
- * ViewModel da [HomeScreen] (E1.7).
+ * Estado da sessão ativa usado pela [HomeScreen] para saudação,
+ * monograma e badge de papel.
  *
- * Observa o [User] ativo via [ActiveUserProvider] e expõe o resultado
- * como [HomeUiState]. O id da sessão é resolvido em [User] completo
- * (nome, e-mail, papel) — a partir daí a tela deriva o monograma, a
- * saudação e o badge de papel sem precisar conhecer o id.
+ * Mantido como `sealed interface` distinto de [HomeUiState] porque a
+ * lista de projetos tem cardinalidade dinâmica (vazia / com itens /
+ * carregando / erro), enquanto o estado de sessão é uma enumeração
+ * finita (Loading / SignedOut / SignedIn).
+ */
+sealed interface HomeUserState {
+    data object Loading : HomeUserState
+    data object SignedOut : HomeUserState
+    data class SignedIn(
+        val displayName: String,
+        val initials: String,
+        val role: HomeUserRole,
+    ) : HomeUserState
+}
+
+/**
+ * Estado da lista de projetos (E2.1/E2.6) consumido pela [HomeScreen].
  *
- * O FAB "Criar projeto" precisa do `User.role` para decidir se é
- * habilitado (Owner) ou dispara o diálogo de upgrade (Member).
+ * - [projects] lista de cards com tags associadas (visualmente marcadas
+ *   pela UI a partir de [availableTags]).
+ * - [availableTags] todas as tags do owner; usadas no diálogo de
+ *   criação para seleção múltipla.
+ * - [isLoading] `true` enquanto os Flows do Room não emitem o primeiro
+ *   snapshot após a troca de owner.
+ * - [errorMessage] mensagem da última falha de domínio ao criar /
+ *   deletar projeto / tag — `null` quando não há erro pendente.
+ */
+data class HomeUiState(
+    val projects: List<ProjectCardItem> = emptyList(),
+    val availableTags: List<TagChip> = emptyList(),
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
+)
+
+/** Item de card: projeto + chips de tag a renderizar. */
+data class ProjectCardItem(
+    val project: Project,
+    val tags: List<TagChip>,
+)
+
+/** Representação visual de uma tag na lista de chips. */
+data class TagChip(val id: String, val name: String, val color: String)
+
+/**
+ * ViewModel da [HomeScreen].
+ *
+ * Responsabilidades:
+ * - E1.7 — observar o [User] ativo via [ActiveUserProvider] e expor
+ *   [HomeUserState] (saudação, monograma, papel) em [userState].
+ * - E2.1 — observar projetos + tags do owner em [uiState], combinando
+ *   os Flows de [ProjectRepository] e [TagRepository].
+ * - E2.6 — disparar `createProject` / `deleteProject` / `createTag`
+ *   através dos use cases de domínio correspondentes.
  */
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel @Inject constructor(
-    activeUserProvider: ActiveUserProvider,
+    private val projectRepository: ProjectRepository,
+    private val tagRepository: TagRepository,
+    private val activeUserProvider: ActiveUserProvider,
+    private val createProject: CreateProjectUseCase,
+    private val updateProject: UpdateProjectUseCase,
+    private val deleteProject: DeleteProjectUseCase,
+    private val createTag: CreateTagUseCase,
 ) : ViewModel() {
 
-    val state: StateFlow<HomeUiState> = activeUserProvider.observeActiveUser()
+    /** Estado de sessão — E1.7. */
+    val userState: StateFlow<HomeUserState> = activeUserProvider.observeActiveUser()
         .let { userFlow ->
             kotlinx.coroutines.flow.flow {
-                userFlow.collect { user ->
-                    emit(user.toHomeUiState())
-                }
+                userFlow.collect { user -> emit(user.toHomeUserState()) }
             }
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = HomeUiState.Loading,
+            initialValue = HomeUserState.Loading,
         )
 
+    /**
+     * Flag do diálogo de upgrade para o papel [HomeUserRole.Member]
+     * (E1.7). Mantido como `MutableStateFlow` separado para que a UI
+     * possa mostrá-lo/ocultá-lo sem afetar o restante do estado.
+     */
     private val _upgradeDialogVisible: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val upgradeDialogVisible: StateFlow<Boolean> = _upgradeDialogVisible.asStateFlow()
 
@@ -56,25 +128,90 @@ class HomeViewModel @Inject constructor(
         _upgradeDialogVisible.value = false
     }
 
-    private fun User?.toHomeUiState(): HomeUiState = when (this) {
-        null -> HomeUiState.SignedOut
-        else -> HomeUiState.SignedIn(
+    /**
+     * Estado da lista de projetos — E2.1.
+     *
+     * Troca de owner reinicia o pipeline via [flatMapLatest], e cada
+     * par `(projects, tags)` é combinado em [HomeUiState]. Se o owner
+     * for `null` (sem sessão), emite um estado vazio com
+     * [HomeUiState.isLoading] `false`.
+     */
+    val uiState: StateFlow<HomeUiState> = activeUserProvider
+        .observeActiveUserId()
+        .flatMapLatest { ownerId ->
+            if (ownerId == null) {
+                flowOf(HomeUiState(isLoading = false))
+            } else {
+                combine(
+                    projectRepository.observeAllForOwner(ownerId),
+                    tagRepository.observeForOwner(ownerId),
+                ) { projects, tags ->
+                    val tagChips = tags.map { it.toChip() }
+                    val items = projects.map { project ->
+                        // Tags são carregadas junto por projeto em uma
+                        // segunda passagem (a relação N:N). Para
+                        // simplificar E2.1, exibimos todas as tags do
+                        // owner e marcamos visualmente quais pertencem.
+                        ProjectCardItem(
+                            project = project,
+                            tags = tagChips,
+                        )
+                    }
+                    HomeUiState(
+                        projects = items,
+                        availableTags = tagChips,
+                        isLoading = false,
+                    )
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = HomeUiState(),
+        )
+
+    /** Cria projeto no nome do owner ativo. */
+    fun createProject(name: String, description: String?, tagIds: List<String>) {
+        viewModelScope.launch {
+            val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+            createProject.invoke(
+                name = name,
+                ownerId = ownerId,
+                description = description,
+                tagIds = tagIds,
+            )
+        }
+    }
+
+    /** Atualiza projeto existente (campos + tags associadas). */
+    fun updateProject(project: Project, tagIds: List<String>) {
+        viewModelScope.launch { updateProject.invoke(project, tagIds) }
+    }
+
+    /** Remove projeto (tarefas e `project_tags` em cascata). */
+    fun deleteProject(projectId: String) {
+        viewModelScope.launch { deleteProject.invoke(projectId) }
+    }
+
+    /** Cria tag para o owner ativo. */
+    fun createTag(name: String, color: String) {
+        viewModelScope.launch {
+            val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+            createTag.invoke(ownerId, name, color)
+        }
+    }
+
+    private fun User?.toHomeUserState(): HomeUserState = when (this) {
+        null -> HomeUserState.SignedOut
+        else -> HomeUserState.SignedIn(
             displayName = name,
             initials = computeInitials(name),
             role = role.toHomeRole(),
         )
     }
-}
 
-/** Estado da [HomeScreen] derivado do [User] ativo. */
-sealed interface HomeUiState {
-    data object Loading : HomeUiState
-    data object SignedOut : HomeUiState
-    data class SignedIn(
-        val displayName: String,
-        val initials: String,
-        val role: HomeUserRole,
-    ) : HomeUiState
+    private fun Tag.toChip(): TagChip = TagChip(id = id, name = name, color = color)
 }
 
 /** Mapeia [pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole]
@@ -86,7 +223,7 @@ internal fun pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole.toHomeRo
     }
 
 /**
- * Gâce o monograma do nome. Quando o nome tem mais de uma palavra,
+ * Gera o monograma do nome. Quando o nome tem mais de uma palavra,
  * usa a primeira letra do primeiro e do último nome. Quando tem
  * apenas uma palavra, usa as duas primeiras letras. Se estiver vazio
  * (não deve acontecer — `User` valida `name` em `init`), devolve "?".

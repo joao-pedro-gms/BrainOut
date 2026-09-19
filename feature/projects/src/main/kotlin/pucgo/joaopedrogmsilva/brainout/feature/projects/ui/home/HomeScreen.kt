@@ -1,11 +1,13 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Tela Home do BrainOut — agora com usuário real (E1.7), badge de
-// papel colorido por role, e FAB gated pelo papel (Owner habilita,
-// Member abre diálogo explicativo).
+// papel colorido por role, FAB gated pelo papel (Owner habilita,
+// Member abre diálogo explicativo) e lista real de projetos com
+// chips de tag (E2.1/E2.6).
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,11 +33,13 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,9 +48,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,14 +87,16 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val userState by viewModel.userState.collectAsStateWithLifecycle()
     val upgradeDialogVisible by viewModel.upgradeDialogVisible.collectAsStateWithLifecycle()
+    val listState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var currentTab by rememberSaveable { mutableStateOf(HomeTab.Projects) }
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
-    val homeUser: HomeUser = when (val current = state) {
-        HomeUiState.Loading, HomeUiState.SignedOut -> DefaultHomeUser
-        is HomeUiState.SignedIn -> HomeUser(
+    val homeUser: HomeUser = when (val current = userState) {
+        HomeUserState.Loading, HomeUserState.SignedOut -> DefaultHomeUser
+        is HomeUserState.SignedIn -> HomeUser(
             displayName = current.displayName,
             initials = current.initials,
             role = current.role,
@@ -114,7 +125,7 @@ fun HomeScreen(
         floatingActionButton = {
             HomeFloatingActionButton(
                 isOwner = isOwner,
-                onCreateProjectClicked = { /* criação chega em E2.1 */ },
+                onCreateProjectClicked = { showCreateDialog = true },
                 onMemberFabClicked = viewModel::onMemberFabClicked,
             )
         },
@@ -124,6 +135,8 @@ fun HomeScreen(
             HomeTab.Projects -> HomeProjectsContent(
                 contentPadding = innerPadding,
                 onOpenProject = onOpenProject,
+                projects = listState.projects,
+                isLoading = listState.isLoading,
             )
             HomeTab.Tasks -> HomeTasksPlaceholder(contentPadding = innerPadding)
             HomeTab.Settings -> {
@@ -134,9 +147,23 @@ fun HomeScreen(
                 HomeProjectsContent(
                     contentPadding = innerPadding,
                     onOpenProject = onOpenProject,
+                    projects = listState.projects,
+                    isLoading = listState.isLoading,
                 )
             }
         }
+    }
+
+    if (showCreateDialog) {
+        CreateProjectDialog(
+            availableTags = listState.availableTags,
+            onDismiss = { showCreateDialog = false },
+            onCreateTag = { name, color -> viewModel.createTag(name, color) },
+            onCreateProject = { name, description, tagIds ->
+                viewModel.createProject(name, description, tagIds)
+                showCreateDialog = false
+            },
+        )
     }
 
     if (upgradeDialogVisible) {
@@ -150,6 +177,12 @@ object HomeTestTags {
     const val ROLE_BADGE: String = "home_role_badge"
     const val UPGRADE_DIALOG: String = "home_upgrade_dialog"
     const val UPGRADE_DIALOG_ACK: String = "home_upgrade_dialog_ack"
+    const val CREATE_PROJECT_DIALOG: String = "home_create_project_dialog"
+    const val CREATE_PROJECT_NAME: String = "home_create_project_name"
+    const val CREATE_PROJECT_DESCRIPTION: String = "home_create_project_description"
+    const val CREATE_PROJECT_CONFIRM: String = "home_create_project_confirm"
+    const val CREATE_PROJECT_ADD_TAG: String = "home_create_project_add_tag"
+    const val PROJECT_CARD: String = "home_project_card"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -324,6 +357,8 @@ private fun UpgradeDialog(onDismiss: () -> Unit) {
 private fun HomeProjectsContent(
     contentPadding: PaddingValues,
     onOpenProject: (projectId: String) -> Unit,
+    projects: List<ProjectCardItem>,
+    isLoading: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -338,14 +373,301 @@ private fun HomeProjectsContent(
             color = MaterialTheme.colorScheme.onBackground,
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-        HomeEmptyState(
+        if (projects.isEmpty() && !isLoading) {
+            HomeEmptyState(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(360.dp),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(items = projects, key = { it.project.id }) { card ->
+                    ProjectCard(
+                        item = card,
+                        onClick = { onOpenProject(card.project.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectCard(
+    item: ProjectCardItem,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(HomeTestTags.PROJECT_CARD)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(360.dp),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        if (false) onOpenProject("placeholder")
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = item.project.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            item.project.description?.takeIf { it.isNotBlank() }?.let { description ->
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (item.tags.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item.tags.take(MAX_TAG_CHIPS_PREVIEW).forEach { chip ->
+                        TagChipView(chip = chip, selected = true)
+                    }
+                }
+            }
+        }
     }
+}
+
+private const val MAX_TAG_CHIPS_PREVIEW: Int = 4
+
+@Composable
+private fun TagChipView(chip: TagChip, selected: Boolean) {
+    val container = remember(chip.color) { parseHexColor(chip.color) }
+    AssistChip(
+        onClick = { /* chips de visualização não disparam ação */ },
+        label = {
+            Text(
+                text = chip.name,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = if (selected) container.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+            labelColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = AssistChipDefaults.assistChipBorder(
+            enabled = true,
+            borderColor = container,
+        ),
+    )
+}
+
+/**
+ * Constantes para o parser de cor no formato `#RRGGBB` — mantidas
+ * no nível de arquivo para serem reutilizadas e ficarem fora do
+ * detekt MagicNumber.
+ */
+private const val HEX_COLOR_BASE: Int = 16
+private const val HEX_COLOR_RED_SHIFT: Int = 16
+private const val HEX_COLOR_GREEN_SHIFT: Int = 8
+private const val HEX_COLOR_CHANNEL_MASK: Long = 0xFFL
+
+/**
+ * Faz parse manual de cor no formato `#RRGGBB` para evitar
+ * `Color(android.graphics.Color.parseColor(...))` que lança em
+ * hex inválido — neste ponto a validação já passou pelo domínio.
+ */
+private fun parseHexColor(hex: String): Color {
+    val cleaned = hex.removePrefix("#")
+    val value = cleaned.toLong(HEX_COLOR_BASE)
+    val r = ((value shr HEX_COLOR_RED_SHIFT) and HEX_COLOR_CHANNEL_MASK).toInt()
+    val g = ((value shr HEX_COLOR_GREEN_SHIFT) and HEX_COLOR_CHANNEL_MASK).toInt()
+    val b = (value and HEX_COLOR_CHANNEL_MASK).toInt()
+    return Color(red = r, green = g, blue = b)
+}
+
+@Composable
+private fun CreateProjectDialog(
+    availableTags: List<TagChip>,
+    onDismiss: () -> Unit,
+    onCreateTag: (name: String, color: String) -> Unit,
+    onCreateProject: (name: String, description: String?, tagIds: List<String>) -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    val selectedTagIds = rememberSaveable(saver = androidx.compose.runtime.saveable.listSaver(
+        save = { it.toList() },
+        restore = { it.toMutableStateList() },
+    )) { mutableStateListOf<String>() }
+    var showAddTag by rememberSaveable { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.home_create_project_title)) },
+        text = {
+            CreateProjectDialogBody(
+                name = name,
+                onNameChange = { name = it },
+                description = description,
+                onDescriptionChange = { description = it },
+                availableTags = availableTags,
+                selectedTagIds = selectedTagIds,
+                onShowAddTag = { showAddTag = true },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmedName = name.trim()
+                    if (trimmedName.isEmpty()) return@TextButton
+                    onCreateProject(
+                        trimmedName,
+                        description.trim().takeIf { it.isNotEmpty() },
+                        selectedTagIds.toList(),
+                    )
+                },
+                modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_CONFIRM),
+            ) {
+                Text(text = stringResource(id = R.string.home_create_project_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.common_close))
+            }
+        },
+        modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
+    )
+
+    if (showAddTag) {
+        AddTagDialog(
+            onDismiss = { showAddTag = false },
+            onCreate = { tagName, color ->
+                onCreateTag(tagName, color)
+                showAddTag = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun CreateProjectDialogBody(
+    name: String,
+    onNameChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    availableTags: List<TagChip>,
+    selectedTagIds: androidx.compose.runtime.snapshots.SnapshotStateList<String>,
+    onShowAddTag: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = onNameChange,
+            label = { Text(text = stringResource(id = R.string.home_create_project_name_label)) },
+            singleLine = true,
+            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_NAME),
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = onDescriptionChange,
+            label = { Text(text = stringResource(id = R.string.home_create_project_description_label)) },
+            singleLine = false,
+            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DESCRIPTION),
+        )
+        Text(
+            text = stringResource(id = R.string.home_create_project_tags_label),
+            style = MaterialTheme.typography.labelMedium,
+        )
+        if (availableTags.isEmpty()) {
+            Text(
+                text = stringResource(id = R.string.home_create_project_tags_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            CreateProjectTagsFlow(
+                availableTags = availableTags,
+                selectedTagIds = selectedTagIds,
+            )
+        }
+        TextButton(
+            onClick = onShowAddTag,
+            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_ADD_TAG),
+        ) {
+            Text(text = stringResource(id = R.string.home_create_project_add_tag))
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun CreateProjectTagsFlow(
+    availableTags: List<TagChip>,
+    selectedTagIds: androidx.compose.runtime.snapshots.SnapshotStateList<String>,
+) {
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        availableTags.forEach { chip ->
+            val isSelected = selectedTagIds.contains(chip.id)
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    if (isSelected) selectedTagIds.remove(chip.id)
+                    else selectedTagIds.add(chip.id)
+                },
+                label = { Text(text = chip.name) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddTagDialog(
+    onDismiss: () -> Unit,
+    onCreate: (name: String, color: String) -> Unit,
+) {
+    var tagName by rememberSaveable { mutableStateOf("") }
+    var color by rememberSaveable { mutableStateOf("#6750A4") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.home_create_project_add_tag_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = tagName,
+                    onValueChange = { tagName = it },
+                    label = { Text(text = stringResource(id = R.string.home_create_project_add_tag_name_label)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = color,
+                    onValueChange = { color = it },
+                    label = { Text(text = stringResource(id = R.string.home_create_project_add_tag_color_label)) },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val trimmedName = tagName.trim()
+                if (trimmedName.isEmpty()) return@TextButton
+                onCreate(trimmedName, color.trim())
+            }) {
+                Text(text = stringResource(id = R.string.home_create_project_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.common_close))
+            }
+        },
+    )
 }
 
 @Composable
