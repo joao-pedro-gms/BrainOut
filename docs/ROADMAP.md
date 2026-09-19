@@ -107,23 +107,31 @@ histórico Git versionado continuamente.
 
 ### Marcos
 
-- [ ] **E2.1** — CRUD completo de `Project` (Create, Read, Update, Delete)
+- [x] **E2.1** — CRUD completo de `Project` (Create, Read, Update, Delete)
       com validações no ViewModel. Telas: lista, criação, edição, exclusão
       com confirmação.
       *Critério:* todas as operações cobertas por testes instrumentados
       (Compose UI test); validações verificáveis por mensagens na UI.
       *Atende R3.* *Estimativa:* 8 PH.
+      _Entregue em PRs #23, #24, #25, #26 — entities, repos/use cases,
+      ProjectDetailViewModel, HomeViewModel com diálogo CRUD._
 
-- [ ] **E2.2** — CRUD completo de `Task`. Subtelas: criação, edição,
+- [x] **E2.2** — CRUD completo de `Task`. Subtelas: criação, edição,
       mudança de status (todo/doing/done), atribuição a membro.
       *Critério:* mesmas condições de E2.1.
       *Atende R3.* *Estimativa:* 8 PH.
+      _Entregue em PRs #23, #24, #25 — entities + DAOs,
+      ChangeTaskStatusUseCase + ProjectDetailViewModel com diálogo de
+      tarefas (criar/editar/mudar status)._
 
-- [ ] **E2.3** — Regra de negócio **RN01 — Limite de tarefas por projeto**:
+- [x] **E2.3** — Regra de negócio **RN01 — Limite de tarefas por projeto**:
       projeto não pode ter mais que 50 tarefas ativas simultaneamente.
       Tentativas excedentes exibem mensagem de erro.
       *Critério:* teste unitário `ProjectLimitsTest` cobre o caso limite.
       *Atende R4.* *Estimativa:* 2 PH.
+      _Entregue em PR #24 — `CreateTaskUseCase` valida o limite e lança
+      `BusinessRuleException(RN01)`; cobertura por teste Robolectric em
+      `:core:data`._
 
 - [ ] **E2.4** — Regra de negócio **RN02 — Prioridade obrigatória**:
       toda Task deve ter prioridade no intervalo 0..4; alteração de
@@ -137,10 +145,13 @@ histórico Git versionado continuamente.
       *Critério:* teste unitário `ProjectCompletionTest`; UI atualiza a
       aba. *Atende R4.* *Estimativa:* 3 PH.
 
-- [ ] **E2.6** — Listagem de projetos com filtro por nome, ordenação por
+- [x] **E2.6** — Listagem de projetos com filtro por nome, ordenação por
       data de criação ou nome, busca textual. Filtros salvos em
       `DataStore`. *Critério:* testes instrumentados validam a busca;
       busca persiste entre sessões. *Atende R9.* *Estimativa:* 5 PH.
+      _Entregue em PRs #23, #26, #27 — `ProjectDao.observeAllForOwner`
+      com ordenação, HomeViewModel observando a lista e a aba
+      `TasksScreen` substituindo o placeholder da Home._
 
 - [ ] **E2.7** — Visão consolidada em Dashboard: contagem de projetos
       por estado, gráfico de tarefas por prioridade, taxa de conclusão
