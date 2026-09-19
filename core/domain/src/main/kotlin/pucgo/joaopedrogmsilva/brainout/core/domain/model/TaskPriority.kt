@@ -38,6 +38,9 @@ enum class TaskPriority(val priorityCode: Int) {
                 "Prioridade inválida: $code (esperado entre $LOW_CODE e $CRITICAL_CODE)",
             )
 
+        /** Conversão estrita usada ao reconstruir tarefas da persistência. */
+        fun fromCodeOrThrow(code: Int): TaskPriority = fromCode(code)
+
         /** Intervalo válido conforme especificado pelo domínio. */
         val VALID_RANGE: IntRange = entries.minOf { it.priorityCode }..entries.maxOf { it.priorityCode }
     }
