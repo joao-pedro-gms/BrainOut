@@ -17,11 +17,17 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.ProjectRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
 /**
@@ -74,6 +80,21 @@ object DataModule {
     @Provides
     @Singleton
     fun provideUserRepository(impl: UserRepositoryImpl): UserRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideProjectRepository(
+        projectDao: ProjectDao,
+        tagDao: TagDao,
+    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao)
+
+    @Provides
+    @Singleton
+    fun provideTaskRepository(taskDao: TaskDao): TaskRepository = TaskRepositoryImpl(taskDao)
+
+    @Provides
+    @Singleton
+    fun provideTagRepository(tagDao: TagDao): TagRepository = TagRepositoryImpl(tagDao)
 
     @Provides
     @Singleton
