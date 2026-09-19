@@ -68,7 +68,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
- * Tela Home do BrainOut.
+ * Tela Home do BrainOut — agora com usuário real (E1.7), badge de
+ * papel colorido por role, e FAB gated pelo papel (Owner habilita,
+ * Member abre diálogo explicativo).
+ *
+ * A bottom bar tem 3 destinos, todos como navegação externa (E2.6):
+ * - [HomeTab.Projects] é a aba inicial; alterna o conteúdo do
+ *   Scaffold (estado salvo via [rememberSaveable]).
+ * - [HomeTab.Tasks] e [HomeTab.Settings] disparam callbacks
+ *   ([onOpenTasks], [onOpenSettings]) que vivem no `BrainOutNavHost`
+ *   em :app. O destino "Tarefas" mora em :feature:tasks
+ *   (`TasksRoutes.TASKS`).
  *
  * @param onOpenProject chamado quando o usuário toca em um card de
  *  projeto (não dispara no E1.6 porque a lista está vazia; reservado
@@ -76,6 +86,9 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
  * @param onOpenSettings chamado quando o usuário seleciona a tab
  *  "Configurações" da bottom bar — dispara `navigate(settings)` no
  *  `NavHost` externo.
+ * @param onOpenTasks chamado quando o usuário seleciona a tab
+ *  "Tarefas" da bottom bar — dispara `navigate(tasks)` no `NavHost`
+ *  externo (rota `TasksRoutes.TASKS` em :feature:tasks).
  * @param viewModel injetado pelo Hilt; pode ser substituído por um
  *  fake nos `@Preview`/testes.
  */
@@ -84,6 +97,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 fun HomeScreen(
     onOpenProject: (projectId: String) -> Unit = {},
     onOpenSettings: () -> Unit,
+    onOpenTasks: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -114,10 +128,10 @@ fun HomeScreen(
             HomeBottomBar(
                 currentTab = currentTab,
                 onSelectTab = { selected ->
-                    if (selected == HomeTab.Settings) {
-                        onOpenSettings()
-                    } else {
-                        currentTab = selected
+                    when (selected) {
+                        HomeTab.Settings -> onOpenSettings()
+                        HomeTab.Tasks -> onOpenTasks()
+                        HomeTab.Projects -> currentTab = selected
                     }
                 }
             )
@@ -131,6 +145,11 @@ fun HomeScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
+        // Apenas a aba "Projetos" tem conteúdo interno. As outras duas
+        // (Tarefas, Configurações) disparam navegação externa via
+        // callback — quando ela termina, a `HomeScreen` deixa de
+        // existir na pilha. Esta branch existe apenas para satisfazer
+        // a exaustividade do `when`.
         when (currentTab) {
             HomeTab.Projects -> HomeProjectsContent(
                 contentPadding = innerPadding,
@@ -138,19 +157,8 @@ fun HomeScreen(
                 projects = listState.projects,
                 isLoading = listState.isLoading,
             )
-            HomeTab.Tasks -> HomeTasksPlaceholder(contentPadding = innerPadding)
-            HomeTab.Settings -> {
-                // A aba Settings dispara navegação externa via `onOpenSettings`.
-                // Quando o callback termina, a `HomeScreen` deixa de existir na
-                // pilha. Esta branch existe apenas para satisfazer a
-                // exaustividade do `when`.
-                HomeProjectsContent(
-                    contentPadding = innerPadding,
-                    onOpenProject = onOpenProject,
-                    projects = listState.projects,
-                    isLoading = listState.isLoading,
-                )
-            }
+            HomeTab.Tasks -> Unit
+            HomeTab.Settings -> Unit
         }
     }
 
@@ -699,46 +707,8 @@ private fun HomeEmptyState(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun HomeTasksPlaceholder(contentPadding: PaddingValues) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(id = R.string.tasks_placeholder_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(320.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.tasks_placeholder_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
-    HomeScreen(onOpenSettings = {})
+    HomeScreen(onOpenSettings = {}, onOpenTasks = {})
 }
