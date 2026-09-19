@@ -1,97 +1,249 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Tela de detalhe de um projeto — esqueleto navegável (E1.3).
-// Mostra o nome "Projeto Demo", descrição fixa, placeholder de tarefas e
-// botão "Voltar". O conteúdo real virá em E2.1/E2.2.
+// Tela de detalhe do projeto — lista de tarefas observada do Room,
+// criação via AlertDialog, ações via menu (mover status / excluir),
+// exclusão do projeto e snackbar de erro efêmero (RN01).
+//
+// Telas Compose legítimas concentram muitos composables pequenos
+// em um único arquivo; suprimimos TooManyFunctions para manter a
+// coesão da feature em vez de dispersar widgets correlatos.
+
+@file:Suppress("TooManyFunctions")
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
- * Tela de detalhe do projeto.
+ * Tela de detalhe do projeto (E2.2).
  *
- * @param projectId identificador do projeto vindo da rota `project/{id}`.
- *  Apenas exibido em cabeçalho no E1.3 — em E2.1 alimentará o carregamento
- *  real via ViewModel + Room.
- * @param onBackClicked disparado quando o usuário toca no botão de voltar
- *  (ou na seta do TopAppBar). Deve chamar `popBackStack()` no NavHost.
+ * @param projectId identificador do projeto vindo da rota
+ *  `project/{projectId}`. Alimenta o [ProjectDetailViewModel] via
+ *  `SavedStateHandle`.
+ * @param onBackClicked disparado pelo botão de voltar (top app bar).
+ *  Deve chamar `popBackStack()` no NavHost.
+ * @param onProjectDeleted disparado após a exclusão do projeto.
+ *  Por padrão, delega para `onBackClicked`.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectDetailScreen(
     projectId: String,
     onBackClicked: () -> Unit,
-    modifier: Modifier = Modifier
+    onProjectDeleted: () -> Unit = onBackClicked,
+    modifier: Modifier = Modifier,
+    viewModel: ProjectDetailViewModel = hiltViewModel(),
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Snackbar de erro com auto-dismiss em 5s (RN01, título inválido).
+    LaunchedEffect(errorMessage) {
+        val message = errorMessage
+        if (!message.isNullOrBlank()) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
+            delay(ERROR_AUTO_DISMISS_MS)
+            viewModel.clearError()
+        }
+    }
+
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteProjectDialog by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.project_detail_title),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClicked) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(id = R.string.common_back)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+            ProjectDetailTopBar(
+                onBackClicked = onBackClicked,
+                onDeleteClicked = { showDeleteProjectDialog = true },
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showCreateDialog = true },
+                icon = {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                },
+                text = {
+                    Text(text = stringResource(id = R.string.project_detail_new_task))
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_FAB),
+            )
+        },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         ProjectDetailBody(
             projectId = projectId,
+            tasks = state.tasks,
+            isLoading = state.isLoading,
             contentPadding = innerPadding,
-            onBackClicked = onBackClicked
+            onChangeStatus = viewModel::changeStatus,
+            onDeleteTask = viewModel::deleteTask,
+            onRenameTask = viewModel::renameTask,
+        )
+    }
+
+    if (showCreateDialog) {
+        NewTaskDialog(
+            onDismiss = { showCreateDialog = false },
+            onConfirm = { title, priority ->
+                viewModel.addTask(title, priority)
+                showCreateDialog = false
+            },
+        )
+    }
+
+    if (showDeleteProjectDialog) {
+        DeleteProjectDialog(
+            onDismiss = { showDeleteProjectDialog = false },
+            onConfirm = {
+                showDeleteProjectDialog = false
+                viewModel.deleteProject(onDone = onProjectDeleted)
+            },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProjectDetailTopBar(
+    onBackClicked: () -> Unit,
+    onDeleteClicked: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = stringResource(id = R.string.project_detail_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClicked) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = stringResource(id = R.string.common_back),
+                )
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = onDeleteClicked,
+                modifier = Modifier.testTag(ProjectDetailTestTags.DELETE_PROJECT_BUTTON),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = stringResource(id = R.string.project_detail_delete_project),
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+        ),
+    )
+}
+
+/** Identificadores usados por testes Compose. */
+object ProjectDetailTestTags {
+    const val NEW_TASK_FAB: String = "project_detail_new_task_fab"
+    const val DELETE_PROJECT_BUTTON: String = "project_detail_delete_project_button"
+    const val NEW_TASK_DIALOG: String = "project_detail_new_task_dialog"
+    const val NEW_TASK_TITLE_FIELD: String = "project_detail_new_task_title"
+    const val NEW_TASK_SAVE: String = "project_detail_new_task_save"
+    const val NEW_TASK_CANCEL: String = "project_detail_new_task_cancel"
+    const val TASK_ITEM_MENU: String = "project_detail_task_item_menu"
+    const val TASK_ITEM_MENU_DELETE: String = "project_detail_task_item_menu_delete"
+    const val TASK_ITEM_MENU_MOVE_DOING: String = "project_detail_task_item_menu_move_doing"
+    const val TASK_ITEM_MENU_MOVE_DONE: String = "project_detail_task_item_menu_move_done"
+    const val TASK_ITEM_MENU_MOVE_TODO: String = "project_detail_task_item_menu_move_todo"
+}
+
+private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
+
 @Composable
 private fun ProjectDetailBody(
     projectId: String,
+    tasks: List<Task>,
+    isLoading: Boolean,
     contentPadding: PaddingValues,
-    onBackClicked: () -> Unit
+    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
+    onDeleteTask: (Task) -> Unit,
+    @Suppress("unused") onRenameTask: (Task, String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -99,17 +251,17 @@ private fun ProjectDetailBody(
             .padding(contentPadding)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = "ID: $projectId",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = stringResource(id = R.string.project_detail_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
@@ -117,64 +269,366 @@ private fun ProjectDetailBody(
         Text(
             text = stringResource(id = R.string.project_detail_tasks_title),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(240.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "—",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Sem tarefas cadastradas",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+        if (tasks.isEmpty() && !isLoading) {
+            EmptyTasksCard()
+        } else {
+            tasks.forEach { task ->
+                TaskRow(
+                    task = task,
+                    onChangeStatus = onChangeStatus,
+                    onDeleteTask = onDeleteTask,
                 )
             }
         }
 
-        Button(
-            onClick = { /* CRUD de tarefas chega em E2.2 */ },
-            enabled = false,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-        ) {
-            Text(
-                text = stringResource(id = R.string.project_detail_new_task),
-                style = MaterialTheme.typography.labelLarge
-            )
-        }
-
-        Button(
-            onClick = onBackClicked,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-        ) {
-            Text(
-                text = stringResource(id = R.string.project_detail_back),
-                style = MaterialTheme.typography.labelLarge
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(80.dp)) // espaço para o FAB
     }
+}
+
+@Composable
+private fun TaskRow(
+    task: Task,
+    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
+    onDeleteTask: (Task) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp)),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TaskRowHeader(
+                title = task.title,
+                onMenuClicked = { menuExpanded = true },
+            )
+            TaskRowChips(status = task.status, priority = task.priority)
+        }
+
+        TaskRowMenu(
+            expanded = menuExpanded,
+            onDismiss = { menuExpanded = false },
+            task = task,
+            onChangeStatus = onChangeStatus,
+            onDeleteTask = onDeleteTask,
+        )
+    }
+}
+
+@Composable
+private fun TaskRowHeader(
+    title: String,
+    onMenuClicked: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onMenuClicked) {
+            Icon(
+                imageVector = Icons.Outlined.MoreVert,
+                contentDescription = null,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TaskRowChips(
+    status: TaskStatus,
+    priority: TaskPriority,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatusChip(status = status)
+        PriorityChip(priority = priority)
+    }
+}
+
+@Composable
+private fun TaskRowMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    task: Task,
+    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
+    onDeleteTask: (Task) -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU),
+    ) {
+        // Opções de mudança de status — só as transições válidas
+        // pela matriz do domínio aparecem para evitar cliques
+        // que resultariam em InvalidStateTransitionException.
+        task.status.allowedTransitions().forEach { (target, labelRes) ->
+            DropdownMenuItem(
+                text = { Text(text = stringResource(id = labelRes)) },
+                onClick = {
+                    onDismiss()
+                    onChangeStatus(task.id, target)
+                },
+                modifier = Modifier.testTag(target.menuTag()),
+            )
+        }
+        HorizontalDivider()
+        DropdownMenuItem(
+            text = {
+                Text(
+                    text = stringResource(id = R.string.project_detail_task_menu_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            },
+            onClick = {
+                onDismiss()
+                onDeleteTask(task)
+            },
+            modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_DELETE),
+        )
+    }
+}
+
+@Composable
+private fun StatusChip(status: TaskStatus) {
+    val (label, container, content) = when (status) {
+        TaskStatus.TODO -> Triple(
+            stringResource(id = R.string.task_status_todo),
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TaskStatus.DOING -> Triple(
+            stringResource(id = R.string.task_status_doing),
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+        TaskStatus.DONE -> Triple(
+            stringResource(id = R.string.task_status_done),
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.onPrimary,
+        )
+    }
+    AssistChip(
+        onClick = { /* status chip é apenas informativo */ },
+        label = { Text(text = label, style = MaterialTheme.typography.labelSmall) },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = container,
+            labelColor = content,
+        ),
+    )
+}
+
+@Composable
+private fun PriorityChip(priority: TaskPriority) {
+    val labelRes = when (priority) {
+        TaskPriority.LOW -> R.string.task_priority_low
+        TaskPriority.MEDIUM -> R.string.task_priority_medium
+        TaskPriority.HIGH -> R.string.task_priority_high
+        TaskPriority.URGENT -> R.string.task_priority_urgent
+        TaskPriority.CRITICAL -> R.string.task_priority_critical
+    }
+    AssistChip(
+        onClick = { /* priority chip é apenas informativo */ },
+        label = {
+            Text(text = stringResource(id = labelRes), style = MaterialTheme.typography.labelSmall)
+        },
+    )
+}
+
+@Composable
+private fun EmptyTasksCard() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 180.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(id = R.string.project_detail_empty_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(id = R.string.project_detail_empty_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewTaskDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (title: String, priority: TaskPriority) -> Unit,
+) {
+    var title by rememberSaveable { mutableStateOf("") }
+    var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
+    var priorityMenuExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(id = R.string.project_detail_new_task_dialog_title))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(text = stringResource(id = R.string.project_detail_new_task_title_label)) },
+                    placeholder = {
+                        Text(text = stringResource(id = R.string.project_detail_new_task_title_placeholder))
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
+                )
+                Box {
+                    OutlinedTextField(
+                        value = stringResource(id = priority.labelRes()),
+                        onValueChange = { /* read-only */ },
+                        readOnly = true,
+                        label = { Text(text = stringResource(id = R.string.project_detail_new_task_priority_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    // Overlay transparente para abrir o menu ao tocar.
+                    Surface(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(4.dp))
+                            .testTag("project_detail_new_task_priority_field"),
+                        color = androidx.compose.ui.graphics.Color.Transparent,
+                        content = {},
+                        onClick = { priorityMenuExpanded = true },
+                    )
+                    DropdownMenu(
+                        expanded = priorityMenuExpanded,
+                        onDismissRequest = { priorityMenuExpanded = false },
+                    ) {
+                        TaskPriority.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(id = option.labelRes())) },
+                                onClick = {
+                                    priority = option
+                                    priorityMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(title, priority) },
+                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
+            ) {
+                Text(text = stringResource(id = R.string.project_detail_new_task_save))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_CANCEL),
+            ) {
+                Text(text = stringResource(id = R.string.project_detail_new_task_cancel))
+            }
+        },
+        modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
+    )
+}
+
+@Composable
+private fun DeleteProjectDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.project_detail_delete_project)) },
+        text = {
+            Text(text = stringResource(id = R.string.project_detail_description))
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = stringResource(id = R.string.project_detail_delete_project),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.common_close))
+            }
+        },
+    )
+}
+
+/** Helper para mapear [TaskPriority] ao recurso de string correspondente. */
+@Composable
+private fun TaskPriority.labelRes(): Int = when (this) {
+    TaskPriority.LOW -> R.string.task_priority_low
+    TaskPriority.MEDIUM -> R.string.task_priority_medium
+    TaskPriority.HIGH -> R.string.task_priority_high
+    TaskPriority.URGENT -> R.string.task_priority_urgent
+    TaskPriority.CRITICAL -> R.string.task_priority_critical
+}
+
+/**
+ * Transições válidas a partir do estado atual, com o rótulo do menu
+ * correspondente. Mantém a paridade com [TaskStatus.canTransitionTo]
+ * do domínio e evita oferecer opções que resultariam em
+ * `InvalidStateTransitionException` ao chamar `changeStatus`.
+ */
+private fun TaskStatus.allowedTransitions(): List<Pair<TaskStatus, Int>> = when (this) {
+    TaskStatus.TODO -> listOf(
+        TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
+    )
+    TaskStatus.DOING -> listOf(
+        TaskStatus.TODO to R.string.project_detail_task_menu_move_todo,
+        TaskStatus.DONE to R.string.project_detail_task_menu_move_done,
+    )
+    TaskStatus.DONE -> listOf(
+        TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
+    )
+}
+
+/** Resolve o test tag do item de menu correspondente ao status alvo. */
+private fun TaskStatus.menuTag(): String = when (this) {
+    TaskStatus.TODO -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_TODO
+    TaskStatus.DOING -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DOING
+    TaskStatus.DONE -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DONE
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -182,6 +636,6 @@ private fun ProjectDetailBody(
 private fun ProjectDetailScreenPreview() {
     ProjectDetailScreen(
         projectId = "demo-project",
-        onBackClicked = {}
+        onBackClicked = {},
     )
 }
