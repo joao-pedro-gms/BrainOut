@@ -12,6 +12,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
@@ -49,13 +53,23 @@ object DataModule {
         BrainOutDatabase::class.java,
         BrainOutDatabase.DATABASE_NAME,
     )
-        // Schema inicial — sem migrations ainda; uma nova versão do
-        // banco exigirá Migration explícita para preservar dados
-        // locais.
+        // Migration v1 → v2: adiciona `projects`, `tasks`, `tags` e
+        // `project_tags` sem destruir `users`. Mantém os cadastros
+        // existentes do E1.5.
+        .addMigrations(MIGRATION_1_2)
         .build()
 
     @Provides
     fun provideUserDao(database: BrainOutDatabase): UserDao = database.userDao()
+
+    @Provides
+    fun provideProjectDao(database: BrainOutDatabase): ProjectDao = database.projectDao()
+
+    @Provides
+    fun provideTaskDao(database: BrainOutDatabase): TaskDao = database.taskDao()
+
+    @Provides
+    fun provideTagDao(database: BrainOutDatabase): TagDao = database.tagDao()
 
     @Provides
     @Singleton

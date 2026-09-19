@@ -5,7 +5,14 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import pucgo.joaopedrogmsilva.brainout.core.data.local.converter.InstantConverter
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 
 /**
@@ -24,8 +31,14 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
  * @see UserDao
  */
 @Database(
-    entities = [UserEntity::class],
-    version = 1,
+    entities = [
+        UserEntity::class,
+        ProjectEntity::class,
+        TaskEntity::class,
+        TagEntity::class,
+        ProjectTagCrossRef::class,
+    ],
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)
@@ -34,7 +47,20 @@ abstract class BrainOutDatabase : RoomDatabase() {
     /** DAO de usuários ([UserEntity]). */
     abstract fun userDao(): UserDao
 
+    /** DAO de projetos ([ProjectEntity]). */
+    abstract fun projectDao(): ProjectDao
+
+    /** DAO de tarefas ([TaskEntity]). */
+    abstract fun taskDao(): TaskDao
+
+    /** DAO de tags ([TagEntity]). */
+    abstract fun tagDao(): TagDao
+
     companion object {
+        /** Nome do arquivo SQLite do banco (usado pelo [androidx.room.Room.databaseBuilder]). */
         const val DATABASE_NAME: String = "brainout.db"
+
+        /** Alias curto para [DATABASE_NAME] — preferido em código novo. */
+        const val NAME: String = DATABASE_NAME
     }
 }
