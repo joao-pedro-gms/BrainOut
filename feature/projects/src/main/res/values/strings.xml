@@ -62,6 +62,18 @@
     <string name="home_role_member_dialog_ack">Entendi</string>
     <string name="home_fab_disabled_owner">Criar projeto (em breve)</string>
 
+    <!-- Home (E2.1/E2.6 — diálogo de criar projeto + tag) -->
+    <string name="home_create_project_title">Novo projeto</string>
+    <string name="home_create_project_name_label">Nome</string>
+    <string name="home_create_project_description_label">Descrição (opcional)</string>
+    <string name="home_create_project_tags_label">Tags</string>
+    <string name="home_create_project_tags_empty">Nenhuma tag cadastrada ainda.</string>
+    <string name="home_create_project_add_tag">+ Adicionar tag</string>
+    <string name="home_create_project_add_tag_title">Nova tag</string>
+    <string name="home_create_project_add_tag_name_label">Nome da tag</string>
+    <string name="home_create_project_add_tag_color_label">Cor (#RRGGBB)</string>
+    <string name="home_create_project_confirm">Criar</string>
+
     <!-- Common -->
     <string name="common_back">Voltar</string>
     <string name="common_close">Fechar</string>

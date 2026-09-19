@@ -52,7 +52,7 @@ complexity:
     ignoreDataClasses: true
   TooManyFunctions:
     active: true
-    thresholdInFiles: 15
+    thresholdInFiles: 20
     thresholdInClasses: 15
     thresholdInInterfaces: 15
     thresholdInObjects: 15

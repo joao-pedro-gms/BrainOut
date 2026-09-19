@@ -7,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
@@ -55,6 +56,20 @@ class ActiveUserProvider @Inject constructor(
                 }
             }
         }
+
+    /**
+     * [Flow] que emite o id ([User.id]) do usuário ativo, ou `null`
+     * se não houver sessão.
+     *
+     * Útil para consumidores que precisam apenas do id (ex.: filtros
+     * `observeXxxForOwner(ownerId)` nos repositórios), sem ter que
+     * materializar o [User] completo a cada emissão.
+     *
+     * Reage automaticamente a mudanças no id persistido em
+     * [SessionStore] (mesma cadeia `flatMapLatest` de
+     * [observeActiveUser]).
+     */
+    fun observeActiveUserId(): Flow<String?> = observeActiveUser().map { it?.id }
 
     /**
      * Versão suspensa que devolve o usuário ativo atual (ou `null`).
