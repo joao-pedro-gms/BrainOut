@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -93,6 +94,12 @@ class DeadlineWorker @AssistedInject constructor(
             .addAction(0, applicationContext.getString(R.string.deadline_action_complete), completeIntent)
             .build()
 
+        // `NotificationManagerCompat.notify` exige que a permissão
+        // `POST_NOTIFICATIONS` tenha sido concedida em API 33+. O
+        // guarda `hasNotificationPermission` acima cobre isso em runtime;
+        // aqui usamos `@RequiresPermission` para silenciar o lint com
+        // garantia documentada (a verificação é feita na linha 68).
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(applicationContext)
             .notify(task.id.hashCode(), notification)
         return null

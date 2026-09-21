@@ -80,8 +80,14 @@ class WorkManagerDeadlineScheduler @Inject constructor(
          *
          * Usa recursos string resolvidos diretamente por id — evitar
          * `getIdentifier` por nome, que é frágil em Robolectric.
+         *
+         * Canal de notificação é API 26+ (`Build.VERSION_CODES.O`). Em
+         * dispositivos 24/25 a chamada é silenciosamente ignorada —
+         * notificações funcionam sem canal (sem tom/opções de
+         * importância customizadas).
          */
         fun ensureChannel(context: Context) {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 context.getString(R.string.deadline_channel_name),
