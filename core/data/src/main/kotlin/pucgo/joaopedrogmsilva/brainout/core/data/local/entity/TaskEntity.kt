@@ -26,6 +26,11 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
  * enum. `status` persiste o [TaskStatus.name] textual (TODO/DOING/DONE)
  * para sobreviver a upgrades da enum.
  *
+ * `completed_at` (RN03 — E2.5) foi adicionado em v3 como `INTEGER`
+ * nullable em epoch millis. Tarefas preexistentes ficam com `null`
+ * (não inventamos data retroativa). É populado quando a tarefa
+ * entra em [TaskStatus.DONE] e zerado quando é reaberta.
+ *
  * @property id UUID da tarefa (chave primária).
  * @property projectId [Task.projectId] — id do projeto dono da tarefa.
  * @property title Título (1..200 caracteres, validado em [Task.init]).
@@ -34,6 +39,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
  * @property assigneeId [Task.assigneeId] opcional — id do responsável.
  * @property dueDate Prazo opcional em epoch millis.
  * @property createdAt Instante de criação em epoch millis.
+ * @property completedAt Instante em que a tarefa passou a [TaskStatus.DONE].
+ *  Null enquanto não concluída, ou em registros legados.
  */
 @Entity(
     tableName = "tasks",
@@ -68,6 +75,8 @@ data class TaskEntity(
     val dueDate: Instant?,
     @ColumnInfo(name = "created_at")
     val createdAt: Instant,
+    @ColumnInfo(name = "completed_at", defaultValue = "NULL")
+    val completedAt: Instant? = null,
 ) {
 
     /**
@@ -86,6 +95,7 @@ data class TaskEntity(
         assigneeId = assigneeId,
         dueDate = dueDate,
         createdAt = createdAt,
+        completedAt = completedAt,
     )
 
     companion object {
@@ -100,6 +110,7 @@ data class TaskEntity(
             assigneeId = task.assigneeId,
             dueDate = task.dueDate,
             createdAt = task.createdAt,
+            completedAt = task.completedAt,
         )
     }
 }

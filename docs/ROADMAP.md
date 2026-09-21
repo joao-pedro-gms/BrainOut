@@ -133,17 +133,32 @@ histórico Git versionado continuamente.
       `BusinessRuleException(RN01)`; cobertura por teste Robolectric em
       `:core:data`._
 
-- [ ] **E2.4** — Regra de negócio **RN02 — Prioridade obrigatória**:
+- [x] **E2.4** — Regra de negócio **RN02 — Prioridade obrigatória**:
       toda Task deve ter prioridade no intervalo 0..4; alteração de
       prioridade de uma Task concluída é bloqueada.
       *Critério:* teste `TaskPriorityRulesTest` verde; UI reflete a
       proibição. *Atende R4.* *Estimativa:* 3 PH.
+      _Entregue em PR (E2.4/E2.5) — `Task.changePriority` lança
+      `TaskPriorityChangeForbiddenException` quando o status é
+      `DONE`; `UpdateTaskUseCase` recarrega o estado persistido
+      para impedir bypass via `copy`/objeto velho (defesa em
+      profundidade). UI esconde o item "Alterar prioridade" em
+      tarefas concluídas e mostra um chip informativo
+      `PriorityChip`._
 
-- [ ] **E2.5** — Regra de negócio **RN03 — Conclusão cascata**: ao
+- [x] **E2.5** — Regra de negócio **RN03 — Conclusão cascata**: ao
       concluir a última Task de um Project, o Project assume estado
       "concluído" automaticamente e é exibido em uma aba dedicada.
       *Critério:* teste unitário `ProjectCompletionTest`; UI atualiza a
       aba. *Atende R4.* *Estimativa:* 3 PH.
+      _Entregue em PR (E2.4/E2.5) — migração Room v2→v3
+      (`ALTER TABLE tasks ADD COLUMN completed_at INTEGER`,
+      tarefas antigas ficam `NULL`); conclusão e reabertura
+      passam por `TaskRepository.completeAndCascade` /
+      `reopenAndCascade` que coordenam `tasks.status`/
+      `tasks.completed_at` e `projects.is_completed` em uma única
+      transação `@Transaction`. UI ganha toggle "Ativos /
+      Concluídos" em `HomeScreen` (`HomeProjectFilter`)._
 
 - [x] **E2.6** — Listagem de projetos com filtro por nome, ordenação por
       data de criação ou nome, busca textual. Filtros salvos em

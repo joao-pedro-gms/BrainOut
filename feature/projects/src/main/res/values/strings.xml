@@ -81,4 +81,19 @@
     <string name="project_detail_error_invalid_transition">Transição de status inválida</string>
     <string name="project_detail_error_empty_title">Título da tarefa não pode ser vazio</string>
     <string name="project_detail_id_label">ID: %1$s</string>
+
+    <!-- RN02 (E2.4) — prioridade obrigatória, imutável em concluídas -->
+    <string name="project_detail_error_priority_locked_on_done">Prioridade não pode ser alterada em tarefa concluída (RN02).</string>
+    <string name="project_detail_task_priority_dialog_title">Alterar prioridade</string>
+    <string name="project_detail_task_priority_locked_info">Tarefa concluída: prioridade é fixa.</string>
+    <string name="project_detail_task_menu_change_priority">Alterar prioridade</string>
+    <string name="project_detail_task_menu_priority_locked_label">Prioridade (somente leitura)</string>
+
+    <!-- RN03 (E2.5) — aba de concluídos -->
+    <string name="home_filter_active">Ativos</string>
+    <string name="home_filter_completed">Concluídos</string>
+    <string name="home_section_completed_title">Projetos concluídos</string>
+    <string name="home_completed_empty_title">Nenhum projeto concluído</string>
+    <string name="home_completed_empty_body">Projetos com todas as tarefas concluídas aparecem aqui.</string>
+    <string name="home_filter_aria_label">Filtrar projetos</string>
 </resources>

@@ -99,3 +99,34 @@ val MIGRATION_1_2: Migration = object : Migration(1, 2) {
         )
     }
 }
+
+/**
+ * Migração Room v2 → v3 (RN03 — E2.5).
+ *
+ * Adiciona a coluna `completed_at` à tabela `tasks` para registrar
+ * o instante em que cada tarefa passou a [TaskStatus.DONE] (RN03 —
+ * conclusão cascata). A migração é **não destrutiva**:
+ *
+ * - `ALTER TABLE` com `ADD COLUMN completed_at INTEGER`. Não há
+ *   `DROP`, `DELETE` ou recriação de tabela — dados existentes
+ *   permanecem íntegros.
+ * - Sem `DEFAULT` explícito: tarefas preexistentes (v2) ficam com
+ *   `completed_at IS NULL`. A regra do domínio
+ *   ([Task.init]) aceita `completedAt = null` mesmo para tarefas
+ *   já em DONE, cobrindo o caso de registros legados sem inventar
+ *   data retroativa. Apenas a próxima conclusão da tarefa
+ *   preencherá o valor.
+ * - Sem novo índice: a coluna não é critério de busca nesta
+ *   release (a conclusão cascata usa `project_id` +
+ *   `status != 'DONE'`, índices já presentes).
+ *
+ * Se o esquema divergir entre exportado (Room) e migração manual,
+ * o `identityHash` calculado pelo Room durante o `assembleDebug`
+ * baterá com o do `schemas/.../3.json` por causa da forma textual
+ * idêntica (backticks, INTEGER nulo, mesma posição da coluna).
+ */
+val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER")
+    }
+}

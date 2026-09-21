@@ -105,6 +105,7 @@ fun HomeScreen(
     val userState by viewModel.userState.collectAsStateWithLifecycle()
     val upgradeDialogVisible by viewModel.upgradeDialogVisible.collectAsStateWithLifecycle()
     val listState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentFilter by viewModel.projectFilter.collectAsStateWithLifecycle()
 
     var currentTab by rememberSaveable { mutableStateOf(HomeTab.Projects) }
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
@@ -157,6 +158,8 @@ fun HomeScreen(
                 onOpenProject = onOpenProject,
                 projects = listState.projects,
                 isLoading = listState.isLoading,
+                currentFilter = currentFilter,
+                onSelectFilter = viewModel::setProjectFilter,
             )
             HomeTab.Tasks -> Unit
             HomeTab.Settings -> Unit
@@ -192,6 +195,9 @@ object HomeTestTags {
     const val CREATE_PROJECT_CONFIRM: String = "home_create_project_confirm"
     const val CREATE_PROJECT_ADD_TAG: String = "home_create_project_add_tag"
     const val PROJECT_CARD: String = "home_project_card"
+    const val FILTER_GROUP: String = "home_filter_group"
+    const val FILTER_ACTIVE: String = "home_filter_active"
+    const val FILTER_COMPLETED: String = "home_filter_completed"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -372,6 +378,8 @@ private fun HomeProjectsContent(
     onOpenProject: (projectId: String) -> Unit,
     projects: List<ProjectCardItem>,
     isLoading: Boolean,
+    currentFilter: HomeProjectFilter,
+    onSelectFilter: (HomeProjectFilter) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -381,17 +389,36 @@ private fun HomeProjectsContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(id = R.string.home_section_title),
+            text = when (currentFilter) {
+                HomeProjectFilter.Active -> stringResource(id = R.string.home_section_title)
+                HomeProjectFilter.Completed ->
+                    stringResource(id = R.string.home_section_completed_title)
+            },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
+        // Toggle de filtros Ativos / Concluídos (RN03 — E2.5).
+        // Fica sempre visível para que o usuário possa alternar mesmo
+        // quando uma das listas estiver vazia.
+        HomeProjectFilterRow(
+            current = currentFilter,
+            onSelect = onSelectFilter,
+        )
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         if (projects.isEmpty() && !isLoading) {
-            HomeEmptyState(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(360.dp),
-            )
+            if (currentFilter == HomeProjectFilter.Completed) {
+                HomeCompletedEmptyState(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp),
+                )
+            } else {
+                HomeEmptyState(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp),
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -404,6 +431,78 @@ private fun HomeProjectsContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeProjectFilterRow(
+    current: HomeProjectFilter,
+    onSelect: (HomeProjectFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(HomeTestTags.FILTER_GROUP),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HomeProjectFilter.entries.forEach { option ->
+            FilterChip(
+                selected = option == current,
+                onClick = { onSelect(option) },
+                label = {
+                    Text(
+                        text = stringResource(id = option.labelRes),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
+                modifier = Modifier
+                    .testTag(
+                        when (option) {
+                            HomeProjectFilter.Active -> HomeTestTags.FILTER_ACTIVE
+                            HomeProjectFilter.Completed -> HomeTestTags.FILTER_COMPLETED
+                        },
+                    )
+                    // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                    .heightIn(min = 48.dp),
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        // Rótulo de acessibilidade oculto para o agrupamento (TalkBack).
+        Text(
+            text = stringResource(id = R.string.home_filter_aria_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun HomeCompletedEmptyState(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(id = R.string.home_completed_empty_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(id = R.string.home_completed_empty_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

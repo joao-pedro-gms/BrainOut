@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
@@ -125,13 +126,56 @@ class ProjectDetailViewModel @Inject constructor(
         }
     }
 
-    /** Move a [task] para [target], respeitando a matriz de transições. */
+    /**
+     * Move a [task] para [target], respeitando a matriz de transições.
+     * RN03 (E2.5) — a transição para DONE dispara a cascata de
+     * conclusão no repositório (projeto é marcado como concluído
+     * se a tarefa for a última ativa); reabertura também passa pela
+     * cascata inversa.
+     */
     fun changeStatus(taskId: String, target: TaskStatus) {
         viewModelScope.launch {
             try {
                 changeStatus.invoke(taskId, target)
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
+            }
+        }
+    }
+
+    /**
+     * Altera a prioridade de uma tarefa (RN02 — E2.4).
+     *
+     * A UI já bloqueia tarefas concluídas, mas o ViewModel
+     * também aplica a defesa em profundidade: se a tarefa
+     * persistida estiver em [TaskStatus.DONE], a operação é
+     * ignorada e o erro é exposto via [errorMessage] para que a
+     * UI possa exibir a mensagem específica de RN02 (chip
+     * bloqueado).
+     *
+     * Em tarefas ativas, usa [Task.changePriority] (que valida o
+     * intervalo 0..4) e depois delega ao [UpdateTaskUseCase] —
+     * este use case recarrega o estado persistido e rejeita
+     * tentativas com a persistência em DONE (bypass via `copy`).
+     */
+    fun changeTaskPriority(task: Task, newPriority: TaskPriority) {
+        val updated = try {
+            task.changePriority(newPriority)
+        } catch (e: TaskPriorityChangeForbiddenException) {
+            _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+            return
+        } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+            _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                updateTask.invoke(updated)
+            } catch (e: TaskPriorityChangeForbiddenException) {
+                // Persistência indica DONE (bypass via copy).
+                _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+            } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
             }
         }
     }
@@ -183,6 +227,8 @@ class ProjectDetailViewModel @Inject constructor(
         const val ERROR_EMPTY_TITLE: String = "Título da tarefa não pode ser vazio"
         const val ERROR_INVALID_TITLE: String = "Título inválido"
         const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
+        const val ERROR_PRIORITY_LOCKED: String =
+            "RN02: alteração de prioridade bloqueada em tarefa concluída"
 
         private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
         private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
@@ -194,5 +240,12 @@ class ProjectDetailViewModel @Inject constructor(
         /** Indica se [message] é a mensagem de RN01 (limite de tarefas). */
         fun isTaskLimitMessage(message: String): Boolean =
             message.startsWith(ERROR_TASK_LIMIT_PREFIX) && message.endsWith(ERROR_TASK_LIMIT_SUFFIX)
+
+        /** Indica se [message] é a mensagem canônica de RN02 (prioridade bloqueada). */
+        fun isPriorityLockedMessage(message: String): Boolean =
+            message.startsWith(ERROR_PRIORITY_LOCKED_PREFIX) && ERROR_PRIORITY_LOCKED_TAG in message
+
+        private const val ERROR_PRIORITY_LOCKED_PREFIX: String = "RN02: alteração de prioridade bloqueada"
+        private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
     }
 }

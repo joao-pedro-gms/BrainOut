@@ -74,6 +74,29 @@ class EntityMappingTest {
     }
 
     @Test
+    fun `task entity round trip preserves completedAt for DONE tasks (RN03)`() {
+        val completion = Instant.parse("2026-09-21T11:30:00Z")
+        val task = Task(
+            id = "t-done",
+            projectId = "p-1",
+            title = "Concluída",
+            priority = TaskPriority.HIGH,
+            status = TaskStatus.DONE,
+            assigneeId = "u-1",
+            dueDate = null,
+            createdAt = Instant.parse("2026-09-20T10:00:00Z"),
+            completedAt = completion,
+        )
+
+        val entity = TaskEntity.fromDomain(task)
+        assertThat(entity.completedAt).isEqualTo(completion)
+
+        val back = entity.toDomain()
+        assertThat(back).isEqualTo(task)
+        assertThat(back.completedAt).isEqualTo(completion)
+    }
+
+    @Test
     fun `tag entity round trip preserves color and owner`() {
         val tag = Tag(
             id = "tag-1",
