@@ -262,7 +262,7 @@ notificações ativas.
       *Critério:* varredura com Accessibility Scanner sem alertas
       críticos. *Atende R11.* *Estimativa:* 3 PH.
 
-- [ ] **E4.5** — Tema claro e escuro, com tokens centralizados em
+- [x] **E4.5** — Tema claro e escuro, com tokens centralizados em
       `:core:ui/theme`. *Critério:* alternância segue a configuração do
       sistema. *Atende item desejável 5.1.* *Estimativa:* 2 PH.
 

@@ -39,6 +39,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // E4.5 — o teste Robolectric de seleção de ColorScheme precisa dos
+    // recursos Android mesclados no classpath de teste para instanciar
+    // ColorScheme/Color (Compose depende de Resources).
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -48,6 +57,13 @@ dependencies {
     api(libs.androidx.compose.ui.tooling.preview)
     api(libs.androidx.compose.material3)
     debugApi(libs.androidx.compose.ui.tooling)
+
+    // E4.5 — teste unitário/Robolectric que valida o critério "alternância
+    // segue a configuração do sistema" via resolveBrainOutStaticColorScheme.
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }
 
 detekt {

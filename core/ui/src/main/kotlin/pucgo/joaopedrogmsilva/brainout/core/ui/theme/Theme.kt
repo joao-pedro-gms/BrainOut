@@ -3,15 +3,14 @@ package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-private val LightColors = lightColorScheme(
+internal val BrainOutLightColors: ColorScheme = androidx.compose.material3.lightColorScheme(
     primary = BrainOutPrimary,
     onPrimary = BrainOutOnPrimary,
     primaryContainer = BrainOutPrimaryContainer,
@@ -37,14 +36,54 @@ private val LightColors = lightColorScheme(
     outline = BrainOutOutline
 )
 
-private val DarkColors = darkColorScheme(
-    primary = BrainOutPrimaryContainer,
-    onPrimary = BrainOutOnPrimaryContainer,
-    secondary = BrainOutSecondaryContainer,
-    onSecondary = BrainOutOnSecondaryContainer,
-    tertiary = BrainOutTertiaryContainer,
-    onTertiary = BrainOutOnTertiaryContainer
+/**
+ * Paleta escura completa (E4.5).
+ *
+ * Espelha todos os tokens do `lightColorScheme` (16 chaves) consumindo
+ * os tokens `BrainOut*Dark` definidos em `Color.kt`. Antes desta
+ * entrega o `darkColorScheme` era parcial (apenas 6 chaves), o que
+ * deixava `surface`, `background`, `error`, `outline` e variantes com
+ * os defaults do MaterialTheme e gerava contraste inconsistente em
+ * telas de feature em modo noturno.
+ */
+internal val BrainOutDarkColors: ColorScheme = androidx.compose.material3.darkColorScheme(
+    primary = BrainOutPrimaryDark,
+    onPrimary = BrainOutOnPrimaryDark,
+    primaryContainer = BrainOutPrimaryContainerDark,
+    onPrimaryContainer = BrainOutOnPrimaryContainerDark,
+    secondary = BrainOutSecondaryDark,
+    onSecondary = BrainOutOnSecondaryDark,
+    secondaryContainer = BrainOutSecondaryContainerDark,
+    onSecondaryContainer = BrainOutOnSecondaryContainerDark,
+    tertiary = BrainOutTertiaryDark,
+    onTertiary = BrainOutOnTertiaryDark,
+    tertiaryContainer = BrainOutTertiaryContainerDark,
+    onTertiaryContainer = BrainOutOnTertiaryContainerDark,
+    error = BrainOutErrorDark,
+    onError = BrainOutOnErrorDark,
+    errorContainer = BrainOutErrorContainerDark,
+    onErrorContainer = BrainOutOnErrorContainerDark,
+    background = BrainOutBackgroundDark,
+    onBackground = BrainOutOnBackgroundDark,
+    surface = BrainOutSurfaceDark,
+    onSurface = BrainOutOnSurfaceDark,
+    surfaceVariant = BrainOutSurfaceVariantDark,
+    onSurfaceVariant = BrainOutOnSurfaceVariantDark,
+    outline = BrainOutOutlineDark
 )
+
+/**
+ * Resolve o `ColorScheme` BrainOut estático (sem dynamic color).
+ *
+ * Função pura e determinística — recebe `darkTheme: Boolean` e retorna
+ * a paleta correspondente. Existe desacoplada de `BrainOutTheme`
+ * justamente para ser testável em Robolectric sem montar um Composition
+ * tree: o teste unitário (E4.5) afirma que o esquema claro/escuro é
+ * o `BrainOutLightColors`/`BrainOutDarkColors` segundo a flag,
+ * validando o critério "alternância segue a configuração do sistema".
+ */
+fun resolveBrainOutStaticColorScheme(darkTheme: Boolean): ColorScheme =
+    if (darkTheme) BrainOutDarkColors else BrainOutLightColors
 
 /**
  * Tema Compose raiz do BrainOut.
@@ -55,6 +94,13 @@ private val DarkColors = darkColorScheme(
  *
  * Para ligar dynamic color em builds internos, basta passar
  * `dynamicColor = true`.
+ *
+ * Alternância de tema (E4.5): segue a configuração do sistema via
+ * `isSystemInDarkTheme()`; só aceita override explícito quando o
+ * caller passa `darkTheme = ...` (ex.: previews, testes Compose).
+ * Nenhum toggle manual é obrigatório — se uma versão futura
+ * adicionar override em Configurações, deve persistir a escolha em
+ * DataStore com default "seguir sistema".
  */
 @Composable
 fun BrainOutTheme(
@@ -62,18 +108,17 @@ fun BrainOutTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
+    val colorScheme = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val context = LocalContext.current
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else {
+        resolveBrainOutStaticColorScheme(darkTheme)
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = BrainOutTypography,
+        shapes = BrainOutShapes,
         content = content
     )
 }
