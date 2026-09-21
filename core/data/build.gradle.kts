@@ -47,6 +47,10 @@ android {
     // permanece placeholder até a hospedagem definitiva (decisão E3.1).
     // O override por desenvolvedor vai em `local.properties`
     // (brainout.baseUrl.dev — ver `local.properties.example`).
+    //
+    // E3.5: adiciona `HOLIDAYS_BASE_URL` para o serviço externo público
+    // de feriados nacionais (BrasilAPI). Por ser público e sem chave,
+    // não há override por local.properties — apenas o default do flavor.
     flavorDimensions += "environment"
     productFlavors {
         create("dev") {
@@ -56,6 +60,11 @@ android {
                 "BASE_URL",
                 "\"${localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")}\"",
             )
+            buildConfigField(
+                "String",
+                "HOLIDAYS_BASE_URL",
+                "\"https://brasilapi.com.br/\"",
+            )
         }
         create("prod") {
             dimension = "environment"
@@ -63,6 +72,11 @@ android {
                 "String",
                 "BASE_URL",
                 "\"https://TBD/\"",
+            )
+            buildConfigField(
+                "String",
+                "HOLIDAYS_BASE_URL",
+                "\"https://brasilapi.com.br/\"",
             )
         }
     }

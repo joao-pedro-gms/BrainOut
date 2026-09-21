@@ -31,6 +31,16 @@
     <string name="project_detail_new_task_title_label">Title</string>
     <string name="project_detail_new_task_title_placeholder">E.g.: Review monthly report</string>
     <string name="project_detail_new_task_priority_label">Priority</string>
+    <string name="project_detail_new_task_due_date_label">Due date (optional)</string>
+    <string name="project_detail_new_task_due_date_clear">No due date</string>
+    <string name="project_detail_new_task_due_date_picker_title">Pick a due date</string>
+    <string name="project_detail_new_task_due_date_format">MM/dd/yyyy</string>
+    <!-- E3.5: inline hint when a national holiday falls in the deadline window. -->
+    <string name="project_detail_new_task_holiday_hint">⚠ Next holiday: %1$s (%2$s) before the deadline</string>
+    <!-- E3.5: shown when the holidays lookup fails (no network, 5xx, etc.). -->
+    <string name="deadline_holidays_unavailable">Holiday lookup unavailable — check your connection.</string>
+    <!-- E3.5: highlights that the deadline lands on a weekend or a holiday. -->
+    <string name="deadline_not_business_day">Heads up: this deadline falls on a non-business day.</string>
     <string name="project_detail_new_task_save">Save</string>
     <string name="project_detail_new_task_cancel">Cancel</string>
 

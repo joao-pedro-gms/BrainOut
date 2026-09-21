@@ -76,6 +76,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import java.time.Instant
 
 /**
  * Tela de detalhe do projeto (E2.2).
@@ -179,10 +180,11 @@ fun ProjectDetailScreen(
     if (showCreateDialog) {
         NewTaskDialog(
             onDismiss = { showCreateDialog = false },
-            onConfirm = { title, priority ->
-                viewModel.addTask(title, priority)
+            onConfirm = { title, priority, dueDate ->
+                viewModel.addTask(title, priority, dueDate)
                 showCreateDialog = false
             },
+            evaluateDeadline = { deadline -> viewModel.evaluateDeadline(deadline) },
         )
     }
 
@@ -258,6 +260,9 @@ object ProjectDetailTestTags {
     const val NEW_TASK_TITLE_FIELD: String = "project_detail_new_task_title"
     const val NEW_TASK_SAVE: String = "project_detail_new_task_save"
     const val NEW_TASK_CANCEL: String = "project_detail_new_task_cancel"
+    const val NEW_TASK_DUE_DATE_FIELD: String = "project_detail_new_task_due_date_field"
+    const val NEW_TASK_DUE_DATE_FIELD_OVERLAY: String = "project_detail_new_task_due_date_overlay"
+    const val NEW_TASK_HOLIDAY_HINT: String = "project_detail_new_task_holiday_hint"
     const val TASK_ITEM_MENU: String = "project_detail_task_item_menu"
     const val TASK_ITEM_MENU_DELETE: String = "project_detail_task_item_menu_delete"
     const val TASK_ITEM_MENU_MOVE_DOING: String = "project_detail_task_item_menu_move_doing"
@@ -568,13 +573,17 @@ private fun EmptyTasksCard() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod") // três campos (título/prioridade/prazo) + diálogo; extrair quebraria a coesão.
 private fun NewTaskDialog(
     onDismiss: () -> Unit,
-    onConfirm: (title: String, priority: TaskPriority) -> Unit,
+    onConfirm: (title: String, priority: TaskPriority, dueDate: Instant?) -> Unit,
+    evaluateDeadline: suspend (Instant?) -> pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
     var priorityMenuExpanded by remember { mutableStateOf(false) }
+    var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    val dueDate: Instant? = @Suppress("NewApi") dueDateMillis?.let(Instant::ofEpochMilli)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -628,11 +637,16 @@ private fun NewTaskDialog(
                         }
                     }
                 }
+                DeadlineField(
+                    dueDate = dueDate,
+                    onDateChange = { dueDateMillis = @Suppress("NewApi") it?.toEpochMilli() },
+                    evaluateDeadline = evaluateDeadline,
+                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title, priority) },
+                onClick = { onConfirm(title, priority, dueDate) },
                 modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
             ) {
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
@@ -648,6 +662,7 @@ private fun NewTaskDialog(
         },
         modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
     )
+
 }
 
 @Composable
