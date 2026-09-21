@@ -106,9 +106,16 @@ jobs:
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew testDebugUnitTest --no-daemon --console=plain
 
-      - name: Generate JaCoCo coverage report
+      # E4.7: cobertura mínima de 60% em :core:domain e :core:data.
+      # koverVerify falha o job se o bound não for atendido.
+      - name: Verify coverage (Kover >= 60%)
         if: hashFiles('**/build.gradle*') != ''
-        run: ./gradlew :core:domain:jacocoTestReport --no-daemon --console=plain
+        run: ./gradlew :core:domain:koverVerify :core:data:koverVerify --no-daemon --console=plain
+
+      # E4.7: relatório HTML de cobertura publicado como artifact do CI.
+      - name: Generate Kover coverage report
+        if: hashFiles('**/build.gradle*') != ''
+        run: ./gradlew :core:domain:koverHtmlReport :core:data:koverHtmlReport --no-daemon --console=plain
 
       - name: Run Android lint
         if: hashFiles('**/build.gradle*') != ''
@@ -125,6 +132,17 @@ jobs:
             **/build/reports/lint-results-*.html
             **/build/reports/jacoco/
           if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload coverage artifact
+        if: hashFiles('**/build.gradle*') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: |
+            core/domain/build/reports/kover/html/
+            core/data/build/reports/kover/html/
+          if-no-files-found: error
           retention-days: 14
 
   backend-integration:

@@ -9,6 +9,9 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.detekt) apply false
+    // Kover: cobertura de código + verificação de bound mínimo (E4.7).
+    // Aplicado em :core:domain e :core:data (alvo do critério de 60%).
+    alias(libs.plugins.kover) apply false
     // ktlint aplica no root e cobre automaticamente todos os subprojetos.
     alias(libs.plugins.ktlint)
     // Plugin JaCoCo compartilhado entre subprojetos para reportar
@@ -41,4 +44,73 @@ gradle.projectsEvaluated {
         }
         logger.lifecycle("Wire-up aplicado: test*UnitTest -> :core:domain:test")
     }
+}
+
+// ---- Kover (E4.7) -----------------------------------------------------------
+// Configuração compartilhada dos módulos de cobertura: :core:domain (Kotlin
+// JVM puro) e :core:data (Android library). Aplica o plugin, define o bound
+// mínimo de 60% de cobertura de linhas e registra os filtros de classes
+// geradas (Room/Hilt/KSP) que não fazem parte da lógica testável.
+//
+// O bound é checado por `koverVerify` em cada módulo; o relatório HTML
+// conjunto das duas camadas é gerado pela task `koverMergedHtmlReport`
+// registrada abaixo (publicada como artifact do CI).
+subprojects {
+    if (path in setOf(":core:domain", ":core:data")) {
+        apply(plugin = "org.jetbrains.kotlinx.kover")
+
+        // Classes geradas (Room/Hilt/KSP) e infra de wiring ficam fora do
+        // denominador da cobertura: não são lógica testável.
+        // - *_Impl / *_Impl$*: implementações geradas pelo Room
+        // - *_Factory / Hilt_* / dagger.hilt.*: artefatos do Hilt/Dagger
+        // - *.di.*: módulos de wiring DI
+        // - *.BuildConfig / *.PackageMarker: classes utilitárias sem lógica
+        // - *.remote.*: DTOs de rede (mapeamento puro, coberto via repositories)
+        val koverExclusions =
+            listOf(
+                "*_Impl",
+                "*_Impl\$*",
+                "*_Factory",
+                "*_Factory\$*",
+                "*_*Factory",
+                "*_*Factory\$*",
+                "*.Hilt_*",
+                "*_HiltModules",
+                "*_HiltModules\$*",
+                "dagger.hilt.*",
+                "hilt_aggregated_deps.*",
+                "*.di.*",
+                "*.BuildConfig",
+                "*.PackageMarker",
+                "*.remote.*",
+            )
+
+        the<kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension>().apply {
+            reports {
+                filters {
+                    excludes {
+                        classes(koverExclusions)
+                    }
+                }
+                verify {
+                    rule {
+                        bound {
+                            // Critério E4.7: cobertura mínima de 60%.
+                            minValue = 60
+                        }
+                    }
+                }
+            }
+        }
+
+        logger.lifecycle("Kover aplicado em $path (bound 60% + filtros de classes geradas)")
+    }
+}
+
+// Relatório HTML conjunto das duas camadas (:core:domain + :core:data),
+// publicado como artifact do CI (critério E4.7).
+tasks.register("koverMergedHtmlReport") {
+    group = "verification"
+    description = "Gera o relatório HTML de cobertura combinado de :core:domain e :core:data."
+    dependsOn(":core:domain:koverHtmlReport", ":core:data:koverHtmlReport")
 }
