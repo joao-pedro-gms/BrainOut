@@ -47,22 +47,26 @@ sealed interface HomeUserState {
 }
 
 /**
- * Estado da lista de projetos (E2.1/E2.6) consumido pela [HomeScreen].
+ * Estado da lista de projetos (E2.1/E2.6/E2.5) consumido pela [HomeScreen].
  *
- * - [projects] lista de cards com tags associadas (visualmente marcadas
- *   pela UI a partir de [availableTags]).
+ * - [projects] lista de cards visíveis após aplicar
+ *   [projectFilter] — RN03 (E2.5) subdivide a lista em "Ativos"
+ *   (padrão) e "Concluídos" via [HomeProjectFilter].
  * - [availableTags] todas as tags do owner; usadas no diálogo de
  *   criação para seleção múltipla.
  * - [isLoading] `true` enquanto os Flows do Room não emitem o primeiro
  *   snapshot após a troca de owner.
  * - [errorMessage] mensagem da última falha de domínio ao criar /
  *   deletar projeto / tag — `null` quando não há erro pendente.
+ * - [projectFilter] filtro ativo selecionado pelo usuário. A UI
+ *   pode chamar [HomeViewModel.setProjectFilter] para alternar.
  */
 data class HomeUiState(
     val projects: List<ProjectCardItem> = emptyList(),
     val availableTags: List<TagChip> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
+    val projectFilter: HomeProjectFilter = HomeProjectFilter.Active,
 )
 
 /** Item de card: projeto + chips de tag a renderizar. */
@@ -129,12 +133,28 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * Estado da lista de projetos — E2.1.
+     * Filtro ativo da lista de projetos (E2.5 — RN03). Mantido
+     * em [MutableStateFlow] para que a UI possa alternar sem
+     * precisar pedir ao ViewModel para recarregar.
+     */
+    private val _projectFilter: MutableStateFlow<HomeProjectFilter> =
+        MutableStateFlow(HomeProjectFilter.Active)
+    val projectFilter: StateFlow<HomeProjectFilter> = _projectFilter.asStateFlow()
+
+    /** Define o filtro ativo. Chamado pela UI nos toggles chips. */
+    fun setProjectFilter(filter: HomeProjectFilter) {
+        _projectFilter.value = filter
+    }
+
+    /**
+     * Estado da lista de projetos — E2.1 + E2.5.
      *
      * Troca de owner reinicia o pipeline via [flatMapLatest], e cada
-     * par `(projects, tags)` é combinado em [HomeUiState]. Se o owner
-     * for `null` (sem sessão), emite um estado vazio com
-     * [HomeUiState.isLoading] `false`.
+     * par `(projects, tags, filter)` é combinado em [HomeUiState].
+     * O filtro é aplicado aqui no ViewModel para que a UI receba
+     * apenas os cards visíveis (sem depender de lógica de filtragem
+     * no composable). Se o owner for `null` (sem sessão), emite um
+     * estado vazio com [HomeUiState.isLoading] `false`.
      */
     val uiState: StateFlow<HomeUiState> = activeUserProvider
         .observeActiveUserId()
@@ -145,13 +165,16 @@ class HomeViewModel @Inject constructor(
                 combine(
                     projectRepository.observeAllForOwner(ownerId),
                     tagRepository.observeForOwner(ownerId),
-                ) { projects, tags ->
+                    _projectFilter,
+                ) { projects, tags, filter ->
                     val tagChips = tags.map { it.toChip() }
-                    val items = projects.map { project ->
-                        // Tags são carregadas junto por projeto em uma
-                        // segunda passagem (a relação N:N). Para
-                        // simplificar E2.1, exibimos todas as tags do
-                        // owner e marcamos visualmente quais pertencem.
+                    val filtered = projects.filter { project ->
+                        when (filter) {
+                            HomeProjectFilter.Active -> !project.isCompleted
+                            HomeProjectFilter.Completed -> project.isCompleted
+                        }
+                    }
+                    val items = filtered.map { project ->
                         ProjectCardItem(
                             project = project,
                             tags = tagChips,
@@ -161,6 +184,7 @@ class HomeViewModel @Inject constructor(
                         projects = items,
                         availableTags = tagChips,
                         isLoading = false,
+                        projectFilter = filter,
                     )
                 }
             }

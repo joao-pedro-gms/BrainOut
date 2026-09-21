@@ -81,4 +81,19 @@
     <string name="project_detail_error_invalid_transition">Invalid status transition</string>
     <string name="project_detail_error_empty_title">Task title cannot be empty</string>
     <string name="project_detail_id_label">ID: %1$s</string>
+
+    <!-- RN02 (E2.4) — priority required, immutable when done -->
+    <string name="project_detail_error_priority_locked_on_done">Priority cannot be changed on a completed task (RN02).</string>
+    <string name="project_detail_task_priority_dialog_title">Change priority</string>
+    <string name="project_detail_task_priority_locked_info">Completed task: priority is fixed.</string>
+    <string name="project_detail_task_menu_change_priority">Change priority</string>
+    <string name="project_detail_task_menu_priority_locked_label">Priority (read-only)</string>
+
+    <!-- RN03 (E2.5) — completed projects tab -->
+    <string name="home_filter_active">Active</string>
+    <string name="home_filter_completed">Completed</string>
+    <string name="home_section_completed_title">Completed projects</string>
+    <string name="home_completed_empty_title">No completed projects</string>
+    <string name="home_completed_empty_body">Projects with all tasks done appear here.</string>
+    <string name="home_filter_aria_label">Filter projects</string>
 </resources>

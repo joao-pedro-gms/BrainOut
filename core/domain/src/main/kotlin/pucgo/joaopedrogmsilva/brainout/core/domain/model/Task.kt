@@ -3,6 +3,7 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.model
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import java.time.Instant
 import java.util.UUID
 
@@ -16,6 +17,13 @@ import java.util.UUID
  * - [title] entre 1 e 200 caracteres após trim.
  * - [priority] sempre em [TaskPriority.VALID_RANGE].
  * - [status] segue a matriz de [TaskStatus.canTransitionTo].
+ * - RN02 (E2.4): alterar prioridade em uma tarefa já concluída é
+ *   proibido — [changePriority] lança [BusinessRuleException]
+ *   quando [status] é [TaskStatus.DONE].
+ * - RN03 (E2.5): [completedAt] é populado quando [status] é
+ *   [TaskStatus.DONE] e zerado (null) quando a tarefa volta a ser
+ *   ativa. Tarefas antigas (criadas antes desta versão) permanecem
+ *   com `completedAt = null`.
  *
  * @property id Identificador único da tarefa.
  * @property projectId Identificador do [Project] ao qual pertence.
@@ -25,6 +33,9 @@ import java.util.UUID
  * @property assigneeId [User.id] do responsável, ou null.
  * @property dueDate Data limite opcional.
  * @property createdAt Instante de criação em UTC.
+ * @property completedAt Instante em que a tarefa passou a [TaskStatus.DONE]
+ *  (RN03). Null enquanto a tarefa não foi concluída ou se a tarefa
+ *  existia antes da introdução da coluna.
  */
 data class Task(
     val id: String,
@@ -35,12 +46,23 @@ data class Task(
     val assigneeId: String?,
     val dueDate: Instant?,
     val createdAt: Instant,
+    val completedAt: Instant? = null,
 ) {
     init {
         require(id.isNotBlank()) { "id não pode ser vazio" }
         require(projectId.isNotBlank()) { "projectId não pode ser vazio" }
         requireValidTitle(title)
         requireValidPriority(priority)
+        // RN03: completedAt só faz sentido para tarefas concluídas.
+        // Em migração, tarefas antigas podem vir DONE sem completedAt
+        // (legacy null), e tarefas ativas nunca podem ter
+        // completedAt definido — quem controla o registro é
+        // [transitionTo], não a entrada direta.
+        if (completedAt != null && status != TaskStatus.DONE) {
+            throw InvalidModelException(
+                "completedAt só pode ser definido em tarefas com status DONE",
+            )
+        }
     }
 
     companion object {
@@ -53,6 +75,7 @@ data class Task(
             status: TaskStatus = TaskStatus.TODO,
             assigneeId: String? = null,
             dueDate: Instant? = null,
+            completedAt: Instant? = null,
             now: Instant = Instant.now(),
         ): Task = Task(
             id = UUID.randomUUID().toString(),
@@ -63,6 +86,7 @@ data class Task(
             assigneeId = assigneeId,
             dueDate = dueDate,
             createdAt = now,
+            completedAt = completedAt,
         )
 
         fun requireValidTitle(raw: String) {
@@ -90,6 +114,10 @@ data class Task(
      * Retorna nova instância com o estado alterado, respeitando a matriz
      * de transições de [TaskStatus]. Transição para o mesmo estado é
      * no-op e devolve a própria instância.
+     *
+     * RN03: a transição para DONE registra [now] em [completedAt]; a
+     * reabertura (DONE → DOING ou DOING → TODO) limpa o campo. Outras
+     * transições não tocam em [completedAt].
      */
     fun transitionTo(target: TaskStatus): Task {
         if (target == status) return this
@@ -98,15 +126,33 @@ data class Task(
                 "Transição de status inválida: ${status.name} -> ${target.name}",
             )
         }
-        return copy(status = target)
+        val newCompletedAt = when {
+            // entrada em DONE (vindo de TODO/DOING) → carimba completedAt
+            target == TaskStatus.DONE && completedAt == null -> Instant.now()
+            // saída de DONE → limpa completedAt
+            status == TaskStatus.DONE && target != TaskStatus.DONE -> null
+            // outras transições preservam o valor (idempotente em ciclos)
+            else -> completedAt
+        }
+        return copy(status = target, completedAt = newCompletedAt)
     }
 
     /**
      * Retorna nova instância com a prioridade alterada, validando o
      * intervalo válido.
+     *
+     * **RN02 (E2.4):** alterar a prioridade de uma tarefa já
+     * concluída é proibido. O domínio lança
+     * [BusinessRuleException] quando [status] é [TaskStatus.DONE],
+     * garantindo que o chip de prioridade de uma tarefa concluída
+     * permaneça imutável na UI e na persistência. Tarefas ativas
+     * (TODO/DOING) podem ter a prioridade alterada normalmente.
      */
     fun changePriority(newPriority: TaskPriority): Task {
         requireValidPriority(newPriority)
+        if (status == TaskStatus.DONE) {
+            throw TaskPriorityChangeForbiddenException(id)
+        }
         if (newPriority == priority) return this
         return copy(priority = newPriority)
     }

@@ -86,6 +86,26 @@ interface TaskDao {
     @Query("UPDATE tasks SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: String, status: String)
 
+    /**
+     * Atualiza `status` E `completed_at` numa única escrita. Usado
+     * por [pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl.completeAndCascade]
+     * dentro de uma `@Transaction` junto com a marca de projeto
+     * concluído, garantindo que `tasks.completed_at` e
+     * `projects.is_completed` sejam ambos persistidos como uma
+     * única operação atômica (RN03 — E2.5).
+     *
+     * `completedAt` em milissegundos epoch; `null` para reabrir a
+     * tarefa (limpa o carimbo).
+     */
+    @Query(
+        "UPDATE tasks SET status = :status, completed_at = :completedAt WHERE id = :id",
+    )
+    suspend fun updateStatusAndCompletedAt(
+        id: String,
+        status: String,
+        completedAt: java.time.Instant?,
+    )
+
     /** Remove a tarefa com o `id` informado. */
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteById(id: String)

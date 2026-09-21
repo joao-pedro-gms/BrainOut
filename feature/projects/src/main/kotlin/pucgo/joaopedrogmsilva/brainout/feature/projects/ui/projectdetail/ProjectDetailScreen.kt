@@ -7,7 +7,7 @@
 // em um único arquivo; suprimimos TooManyFunctions para manter a
 // coesão da feature em vez de dispersar widgets correlatos.
 
-@file:Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions", "LongParameterList", "LongMethod")
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
@@ -37,6 +37,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -121,6 +122,10 @@ fun ProjectDetailScreen(
 
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteProjectDialog by rememberSaveable { mutableStateOf(false) }
+    // Tarefa atualmente selecionada para ter a prioridade editada;
+    // quando não-nula, o diálogo [ChangeTaskPriorityDialog] é
+    // aberto. RN02 — só tarefas ativas chegam aqui (UI filtra).
+    var priorityDialogTask by remember { mutableStateOf<Task?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -159,6 +164,15 @@ fun ProjectDetailScreen(
             onChangeStatus = viewModel::changeStatus,
             onDeleteTask = viewModel::deleteTask,
             onRenameTask = viewModel::renameTask,
+            onChangePriority = { task, _ ->
+                // RN02 — defesa em profundidade: a UI também bloqueia
+                // tarefas DONE via DropdownMenuItem(enabled = false);
+                // este `if` evita uma corrida em que alguém construa
+                // um diálogo por outro caminho antes do menu fechar.
+                if (task.status != TaskStatus.DONE) {
+                    priorityDialogTask = task
+                }
+            },
         )
     }
 
@@ -178,6 +192,18 @@ fun ProjectDetailScreen(
             onConfirm = {
                 showDeleteProjectDialog = false
                 viewModel.deleteProject(onDone = onProjectDeleted)
+            },
+        )
+    }
+
+    val priorityTarget = priorityDialogTask
+    if (priorityTarget != null) {
+        ChangeTaskPriorityDialog(
+            currentPriority = priorityTarget.priority,
+            onDismiss = { priorityDialogTask = null },
+            onConfirm = { newPriority ->
+                viewModel.changeTaskPriority(priorityTarget, newPriority)
+                priorityDialogTask = null
             },
         )
     }
@@ -237,6 +263,9 @@ object ProjectDetailTestTags {
     const val TASK_ITEM_MENU_MOVE_DOING: String = "project_detail_task_item_menu_move_doing"
     const val TASK_ITEM_MENU_MOVE_DONE: String = "project_detail_task_item_menu_move_done"
     const val TASK_ITEM_MENU_MOVE_TODO: String = "project_detail_task_item_menu_move_todo"
+    const val TASK_ITEM_MENU_CHANGE_PRIORITY: String = "project_detail_task_item_menu_change_priority"
+    const val TASK_PRIORITY_DIALOG: String = "project_detail_task_priority_dialog"
+    const val TASK_PRIORITY_CHIP_OPTION_PREFIX: String = "project_detail_task_priority_option_"
 }
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -250,6 +279,7 @@ private fun ProjectDetailBody(
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
     @Suppress("unused") onRenameTask: (Task, String) -> Unit,
+    onChangePriority: (Task, TaskPriority) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -286,6 +316,7 @@ private fun ProjectDetailBody(
                     task = task,
                     onChangeStatus = onChangeStatus,
                     onDeleteTask = onDeleteTask,
+                    onChangePriority = onChangePriority,
                 )
             }
         }
@@ -299,6 +330,7 @@ private fun TaskRow(
     task: Task,
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
+    onChangePriority: (Task, TaskPriority) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -327,6 +359,7 @@ private fun TaskRow(
             task = task,
             onChangeStatus = onChangeStatus,
             onDeleteTask = onDeleteTask,
+            onChangePriority = onChangePriority,
         )
     }
 }
@@ -380,6 +413,7 @@ private fun TaskRowMenu(
     task: Task,
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
+    onChangePriority: (Task, TaskPriority) -> Unit,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -399,6 +433,41 @@ private fun TaskRowMenu(
                 modifier = Modifier.testTag(target.menuTag()),
             )
         }
+        HorizontalDivider()
+        // RN02 (E2.4) — alterar prioridade:
+        // - tarefa ativa (TODO/DOING): item "Alterar prioridade"
+        //   ativo que abre o diálogo de prioridade.
+        // - tarefa concluída (DONE): item desabilitado com
+        //   rótulo "(somente leitura)" e não abre diálogo.
+        // A defesa em profundidade fica no domínio
+        // (`Task.changePriority` lança
+        // `TaskPriorityChangeForbiddenException`), mas a UI já não
+        // oferece a ação — bom para RN02 também.
+        DropdownMenuItem(
+            text = {
+                val isLocked = task.status == TaskStatus.DONE
+                Text(
+                    text = stringResource(
+                        id = if (isLocked) {
+                            R.string.project_detail_task_menu_priority_locked_label
+                        } else {
+                            R.string.project_detail_task_menu_change_priority
+                        },
+                    ),
+                    color = if (isLocked) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            },
+            enabled = task.status != TaskStatus.DONE,
+            onClick = {
+                onDismiss()
+                onChangePriority(task, task.priority)
+            },
+            modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_CHANGE_PRIORITY),
+        )
         HorizontalDivider()
         DropdownMenuItem(
             text = {
@@ -608,6 +677,68 @@ private fun DeleteProjectDialog(
     )
 }
 
+/**
+ * Diálogo de alteração de prioridade (RN02 — E2.4). Só abre para
+ * tarefas ativas (TODO/DOING); a UI não oferece a ação para
+ * tarefas concluídas — mas o domínio também bloquearia o update
+ * por defesa em profundidade.
+ *
+ * Mostra a prioridade atual pré-selecionada como radio do
+ * `ChipGroup`. `FilterChip` é usado para um visual com check, e
+ * a `onConfirm(newPriority)` é chamada ao tocar em "Salvar".
+ */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun ChangeTaskPriorityDialog(
+    currentPriority: TaskPriority,
+    onDismiss: () -> Unit,
+    onConfirm: (TaskPriority) -> Unit,
+) {
+    var selected by rememberSaveable(currentPriority) { mutableStateOf(currentPriority) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(id = R.string.project_detail_task_priority_dialog_title))
+        },
+        text = {
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TaskPriority.entries.forEach { option ->
+                    FilterChip(
+                        selected = option == selected,
+                        onClick = { selected = option },
+                        label = {
+                            Text(text = stringResource(id = option.labelRes()))
+                        },
+                        modifier = Modifier
+                            .testTag(
+                                ProjectDetailTestTags.TASK_PRIORITY_CHIP_OPTION_PREFIX +
+                                    option.priorityCode.toString(),
+                            )
+                            // E4.4: 48dp mínimo WCAG 2.5.5.
+                            .heightIn(min = 48.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(selected) },
+            ) {
+                Text(text = stringResource(id = R.string.project_detail_new_task_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.common_close))
+            }
+        },
+        modifier = Modifier.testTag(ProjectDetailTestTags.TASK_PRIORITY_DIALOG),
+    )
+}
+
 /** Helper para mapear [TaskPriority] ao recurso de string correspondente. */
 @Composable
 private fun TaskPriority.labelRes(): Int = when (this) {
@@ -660,6 +791,9 @@ internal fun resolveProjectDetailMessage(message: String): String {
             stringResource(id = R.string.project_detail_error_invalid_title)
         message == ProjectDetailViewModel.ERROR_INVALID_TRANSITION ->
             stringResource(id = R.string.project_detail_error_invalid_transition)
+        message == ProjectDetailViewModel.ERROR_PRIORITY_LOCKED ||
+            ProjectDetailViewModel.isPriorityLockedMessage(message) ->
+            stringResource(id = R.string.project_detail_error_priority_locked_on_done)
         // RN01: mensagem cru do domínio inclui o id do projeto; casamos
         // por prefixo/sufixo e usamos o limite global no recurso localizado.
         ProjectDetailViewModel.isTaskLimitMessage(message) ->

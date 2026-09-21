@@ -18,9 +18,18 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
 /**
  * Testes do caso de uso [ChangeTaskStatusUseCase], incluindo a
- * reconciliação do lembrete de prazo introduzida no marco E3.6:
- * - Concluir (→ DONE) cancela o lembrete.
- * - Reabrir (→ DOING/TODO) reagenda o lembrete quando há prazo futuro.
+ * reconciliação do lembrete de prazo introduzida no marco E3.6 e a
+ * **cascata** de RN03 (E2.5) na transição para DONE e nas
+ * reaberturas a partir de DONE.
+ *
+ * - Concluir (→ DONE) passa por
+ *   [TaskRepository.completeAndCascade] para também marcar o
+ *   projeto como concluído quando for a última ativa.
+ * - Reabrir (DONE → DOING) passa por
+ *   [TaskRepository.reopenAndCascade] para desmarcar a conclusão
+ *   do projeto caso ele estivesse marcado.
+ * - Transições intermediárias (TODO ↔ DOING) usam
+ *   [TaskRepository.changeStatus] sem cascata.
  * - Transição inválida continua lançando [InvalidStateTransitionException].
  */
 class ChangeTaskStatusUseCaseTest {
@@ -40,22 +49,43 @@ class ChangeTaskStatusUseCaseTest {
     )
 
     @Test
-    fun `transicao valida persiste e retorna task atualizada`() = runTest {
-        val task = activeTask(status = TaskStatus.TODO)
-        val done = task.transitionTo(TaskStatus.DOING)
-        coEvery { repository.changeStatus(task.id, TaskStatus.DOING) } returns done
+    fun `transicao intermediaria DOING para TODO usa changeStatus`() = runTest {
+        val task = activeTask(status = TaskStatus.DOING)
+        val target = task.transitionTo(TaskStatus.TODO)
+        // Caso o repositório reporte status atual = DOING, o caso
+        // de uso decide usar changeStatus direto.
+        coEvery { repository.findById(task.id) } returns task
+        coEvery { repository.changeStatus(task.id, TaskStatus.TODO) } returns target
 
-        val result = useCase(task.id, TaskStatus.DOING)
+        val result = useCase(task.id, TaskStatus.TODO)
 
-        assertThat(result).isEqualTo(done)
-        coVerify { repository.changeStatus(task.id, TaskStatus.DOING) }
+        assertThat(result).isEqualTo(target)
+        coVerify(exactly = 1) { repository.changeStatus(task.id, TaskStatus.TODO) }
+        coVerify(exactly = 0) { repository.completeAndCascade(any()) }
+        coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
     }
 
     @Test
-    fun `concluir tarefa cancela lembrete de prazo`() = runTest {
-        val task = activeTask()
+    fun `transicao para DONE usa completeAndCascade para cascata RN03`() = runTest {
+        val task = activeTask(status = TaskStatus.DOING)
         val done = task.transitionTo(TaskStatus.DONE)
-        coEvery { repository.changeStatus(task.id, TaskStatus.DONE) } returns done
+        coEvery { repository.completeAndCascade(task.id) } returns done
+
+        val result = useCase(task.id, TaskStatus.DONE)
+
+        assertThat(result).isEqualTo(done)
+        coVerify(exactly = 1) { repository.completeAndCascade(task.id) }
+        // Não pode ter ido pelo changeStatus antigo
+        coVerify(exactly = 0) { repository.changeStatus(any(), any()) }
+        // Lembrete cancelado por entrar em DONE
+        verify(exactly = 1) { deadlineScheduler.cancel(task.id) }
+    }
+
+    @Test
+    fun `concluir tarefa cancela lembrete de prazo via completeAndCascade`() = runTest {
+        val task = activeTask(status = TaskStatus.DOING)
+        val done = task.transitionTo(TaskStatus.DONE)
+        coEvery { repository.completeAndCascade(task.id) } returns done
 
         useCase(task.id, TaskStatus.DONE)
 
@@ -64,32 +94,41 @@ class ChangeTaskStatusUseCaseTest {
     }
 
     @Test
-    fun `reabrir tarefa com prazo futuro reagenda lembrete`() = runTest {
-        val done = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
-        val reopened = done.transitionTo(TaskStatus.DOING)
-        coEvery { repository.changeStatus(done.id, TaskStatus.DOING) } returns reopened
+    fun `reabrir DONE com prazo futuro reagenda lembrete via reopenAndCascade`() = runTest {
+        val taskDone = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
+        val reopened = taskDone.transitionTo(TaskStatus.DOING)
+        // findById chamado pelo caso de uso para detectar que a tarefa
+        // está em DONE — então usa reopenAndCascade.
+        coEvery { repository.findById(taskDone.id) } returns taskDone
+        coEvery { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) } returns reopened
 
-        useCase(done.id, TaskStatus.DOING)
+        useCase(taskDone.id, TaskStatus.DOING)
 
         verify(exactly = 1) {
             deadlineScheduler.schedule(
-                taskId = done.id,
-                triggerAt = match { it == reopened.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD) },
+                taskId = taskDone.id,
+                triggerAt = match {
+                    it == reopened.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
+                },
             )
         }
     }
 
     @Test
-    fun `transicao invalida lanca InvalidStateTransitionException`() = runTest {
+    fun `transicao invalida do repositorio propaga InvalidStateTransitionException`() = runTest {
+        // transitionTo no domínio proíbe DOING -> TODO em
+        // algumas cadeias — mas a fonte da verdade aqui é o
+        // repositório. Aqui mockamos uma exceção para cobrir o
+        // caminho de propagação.
         val task = activeTask(status = TaskStatus.DOING)
-        coEvery {
-            repository.changeStatus(task.id, TaskStatus.TODO)
-        } throws InvalidStateTransitionException("Transição de status inválida: DOING -> TODO")
+        coEvery { repository.findById(task.id) } returns task
+        coEvery { repository.changeStatus(task.id, TaskStatus.TODO) } throws InvalidStateTransitionException(
+            "Transição de status inválida: DOING -> TODO",
+        )
 
         val ex = assertThrows(InvalidStateTransitionException::class.java) {
             kotlinx.coroutines.runBlocking { useCase(task.id, TaskStatus.TODO) }
         }
-
         assertThat(ex.message).contains("DOING")
         verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
         verify(exactly = 0) { deadlineScheduler.cancel(any()) }
