@@ -31,6 +31,12 @@
     <string name="project_detail_new_task_title_label">Título</string>
     <string name="project_detail_new_task_title_placeholder">Ex.: Revisar relatório</string>
     <string name="project_detail_new_task_priority_label">Prioridade</string>
+    <string name="project_detail_new_task_due_date_label">Prazo (opcional)</string>
+    <string name="project_detail_new_task_due_date_clear">Sem prazo</string>
+    <string name="project_detail_new_task_due_date_picker_title">Escolher prazo</string>
+    <string name="project_detail_new_task_due_date_format">dd/MM/yyyy</string>
+    <!-- E3.5: dica inline quando há feriado próximo do prazo escolhido. -->
+    <string name="project_detail_new_task_holiday_hint">⚠ Próximo feriado: %1$s (%2$s) antes do prazo</string>
     <string name="project_detail_new_task_save">Salvar</string>
     <string name="project_detail_new_task_cancel">Cancelar</string>
 

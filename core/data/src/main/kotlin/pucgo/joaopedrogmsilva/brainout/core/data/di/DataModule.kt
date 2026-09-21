@@ -23,10 +23,13 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.ProjectRepositoryImp
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.HolidayRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.remote.HolidayRemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -131,4 +134,21 @@ object DataModule {
     @Singleton
     fun provideRemoteDataSource(): RemoteDataSource =
         RemoteDataSource(baseUrl = BuildConfig.BASE_URL)
+
+    /**
+     * Fonte de dados remota do serviço público de feriados nacionais
+     * (E3.5). A URL vem do `BuildConfig.HOLIDAYS_BASE_URL` injetado
+     * por flavor (BrasilAPI — sem autenticação).
+     */
+    @Provides
+    @Singleton
+    fun provideHolidayRemoteDataSource(): HolidayRemoteDataSource =
+        HolidayRemoteDataSource(baseUrl = BuildConfig.HOLIDAYS_BASE_URL)
+
+    /** Bind de [HolidayRepository] para a implementação HTTP (E3.5). */
+    @Provides
+    @Singleton
+    fun provideHolidayRepository(
+        remote: HolidayRemoteDataSource,
+    ): HolidayRepository = HolidayRepositoryImpl(remote = remote)
 }
