@@ -178,11 +178,14 @@ dashboard consolidado.
 
 ### Marcos
 
-- [ ] **E3.1** — Decidir plataforma definitiva do serviço de retaguarda
+- [x] **E3.1** — Decidir plataforma definitiva do serviço de retaguarda
       (Firebase, Supabase ou backend próprio) e documentar a justificativa
       em `docs/ARQUITETURA.md`. Comunicar a decisão no Checkpoint 2.
       *Critério:* decisão registrada em ata, validada pelo docente.
       *Atende N1 item 2 e N2 item 2.* *Estimativa:* 2 PH.
+      _Decisão: backend próprio (FastAPI), evoluindo o stub em
+      `backend-stub/`. Justificativa em `docs/ARQUITETURA.md`, Seção 9;
+      ata em `docs/ATAS/checkpoint2.md`._
 
 - [ ] **E3.2** — Implementar cliente HTTP (Ktor ou Retrofit) configurado
       por build flavor (`debug` aponta para o stub FastAPI em
