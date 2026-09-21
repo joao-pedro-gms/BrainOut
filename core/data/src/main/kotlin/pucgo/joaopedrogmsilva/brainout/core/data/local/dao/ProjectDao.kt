@@ -36,6 +36,58 @@ interface ProjectDao {
     @Query("SELECT * FROM projects WHERE owner_id = :ownerId ORDER BY created_at DESC")
     fun observeAllForOwner(ownerId: String): Flow<List<ProjectEntity>>
 
+    /**
+     * Observa os projetos do [ownerId] aplicando busca textual por nome
+     * (case-insensitive via `LIKE`), filtro opcional por tag e
+     * ordenação configurável (E2.6 do ROADMAP).
+     *
+     * - [query]: quando vazia, desativa o filtro de texto. Quando
+     *   preenchida, faz `name LIKE '%query%'` (LIKE já é
+     *   case-insensitive no SQLite para ASCII; nomes acentuados
+     *   seguem a collation padrão `BINARY`, então a busca é
+     *   intencionalmente case-sensitive em acentos — coerente com o
+     *   escopo do milestone).
+     * - [tagId]: quando `null`, ignora o filtro de tag; caso
+     *   contrário, retorna apenas projetos que tenham a tag
+     *   associada (via `project_tags`).
+     * - [sort]: chave livre com semântica:
+     *   - `"name_asc"` — nome A→Z;
+     *   - `"name_desc"` — nome Z→A;
+     *   - `"created_desc"` (default) — mais recentes primeiro;
+     *   - `"created_asc"` — mais antigas primeiro;
+     *   - string vazia — equivalente a `"created_desc"` (mantém
+     *     compat com o comportamento histórico de
+     *     [observeAllForOwner]).
+     *
+     * O `DISTINCT` evita duplicação quando um projeto tem múltiplas
+     * tags casadas (projetos com ≥2 tags teriam N linhas por causa
+     * do `LEFT JOIN project_tags`). A ordenação compõe 4 chaves
+     * mutuamente exclusivas via `CASE WHEN ... END`, padrão
+     * recomendado pelo Room/SQLite para "sort dinâmico por chave
+     * passada por parâmetro" sem precisar gerar SQL em runtime.
+     */
+    @Query(
+        """
+        SELECT DISTINCT p.* FROM projects p
+        LEFT JOIN project_tags pt ON pt.project_id = p.id
+        LEFT JOIN tags t ON t.id = pt.tag_id
+        WHERE p.owner_id = :ownerId
+          AND (:query = '' OR p.name LIKE '%' || :query || '%')
+          AND (:tagId IS NULL OR t.id = :tagId)
+        ORDER BY
+          CASE WHEN :sort = 'name_asc' THEN p.name END ASC,
+          CASE WHEN :sort = 'name_desc' THEN p.name END DESC,
+          CASE WHEN :sort = 'created_asc' THEN p.created_at END ASC,
+          CASE WHEN :sort = 'created_desc' OR :sort = '' THEN p.created_at END DESC
+        """,
+    )
+    fun searchProjects(
+        ownerId: String,
+        query: String,
+        tagId: String?,
+        sort: String,
+    ): Flow<List<ProjectEntity>>
+
     /** Busca pontual por `id`. Retorna `null` se não existir. */
     @Query("SELECT * FROM projects WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): ProjectEntity?

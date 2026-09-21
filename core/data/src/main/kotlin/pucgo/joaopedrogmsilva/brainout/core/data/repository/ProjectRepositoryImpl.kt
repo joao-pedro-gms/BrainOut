@@ -12,6 +12,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 
 /**
  * Implementação Room de [ProjectRepository].
@@ -38,6 +39,18 @@ class ProjectRepositoryImpl @Inject constructor(
 
     override fun observeAllForOwner(ownerId: String): Flow<List<Project>> =
         projectDao.observeAllForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeSearch(
+        ownerId: String,
+        query: String,
+        tagId: String?,
+        sortOrder: SortOrder,
+    ): Flow<List<Project>> = projectDao.searchProjects(
+        ownerId = ownerId,
+        query = query,
+        tagId = tagId,
+        sort = sortOrder.toStorageKey(),
+    ).map { rows -> rows.map { it.toDomain() } }
 
     override suspend fun findById(id: String): Project? =
         projectDao.findById(id)?.toDomain()

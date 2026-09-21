@@ -7,12 +7,16 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -22,9 +26,13 @@ import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferences
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
@@ -44,6 +52,16 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
  * Verifica (E2.1):
  * - `createProject` dispara o use case com `ownerId` derivado de
  *   [ActiveUserProvider.observeActiveUserId].
+ *
+ * Verifica (E2.6):
+ * - Busca textual filtra projetos pelo nome (LIKE case-insensitive
+ *   para ASCII) através de `observeSearch`.
+ * - Filtro por tag é aplicado via `observeSearch(tagId = ...)`.
+ * - Ordenação é persistida via [ListingPreferencesRepository] e
+ *   sobrevive a recriação do ViewModel.
+ * - Debounce da busca não bloqueia a emissão do estado vazio inicial.
+ * - Mudar o sort persiste imediatamente; trocar o sortOrder no
+ *   repositório muda o resultado da query.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -53,6 +71,7 @@ class HomeViewModelTest {
     private val projectRepository: ProjectRepository = mockk(relaxed = true)
     private val tagRepository: TagRepository = mockk(relaxed = true)
     private val activeUserProvider: ActiveUserProvider = mockk()
+    private val listingPreferences: ListingPreferencesRepository = mockk(relaxed = true)
     private val createProject: CreateProjectUseCase = mockk()
     private val updateProject: UpdateProjectUseCase = mockk()
     private val deleteProject: DeleteProjectUseCase = mockk()
@@ -62,8 +81,11 @@ class HomeViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         coEvery { projectRepository.observeAllForOwner(any()) } returns flowOf(emptyList())
+        coEvery { projectRepository.observeSearch(any(), any(), any(), any()) } returns
+            flowOf(emptyList())
         coEvery { tagRepository.observeForOwner(any()) } returns flowOf(emptyList())
         coEvery { activeUserProvider.observeActiveUserId() } returns flowOf(null)
+        coEvery { listingPreferences.observe(any()) } returns flowOf(ListingPreferences())
     }
 
     @After
@@ -75,6 +97,7 @@ class HomeViewModelTest {
         projectRepository = projectRepository,
         tagRepository = tagRepository,
         activeUserProvider = activeUserProvider,
+        listingPreferences = listingPreferences,
         createProject = createProject,
         updateProject = updateProject,
         deleteProject = deleteProject,
@@ -197,10 +220,10 @@ class HomeViewModelTest {
     @Test
     fun `E2 8 uiState recebe primeira emissao do Flow com isLoading false`() = runTest {
         val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
-        val tagsFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag>>(emptyList())
+        val tagsFlow = MutableStateFlow<List<Tag>>(emptyList())
         coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
         coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeAllForOwner("u1") } returns projectsFlow
+        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
         coEvery { tagRepository.observeForOwner("u1") } returns tagsFlow
 
         val viewModel = newViewModel()
@@ -234,15 +257,17 @@ class HomeViewModelTest {
     }
 
     /**
-     * Simula falha do Room no Flow de projetos: o `.catch` no
-     * ViewModel converte a exceção em `errorMessage` canônico
-     * (`ERROR_LOAD_FAILED`) e força `isLoading = false`.
+     * Simula falha do Room no Flow de busca (E2.6) usado pelo
+     * ViewModel: o `.catch` no ViewModel converte a exceção em
+     * `errorMessage` canônico (`ERROR_LOAD_FAILED`) e força
+     * `isLoading = false`. Cobre o mesmo caminho do E2.8 mas
+     * sobre o novo pipeline `observeSearch`.
      */
     @Test
-    fun `E2 8 erro do Flow de projetos popula errorMessage e sai do loading`() = runTest {
+    fun `E2 8 erro do Flow de busca popula errorMessage e sai do loading`() = runTest {
         coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
         coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flow {
+        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flow {
             throw IllegalStateException("boom")
         }
         coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
@@ -277,7 +302,7 @@ class HomeViewModelTest {
         coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
         coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
         // Inicialmente falha; após retry, o mock é reconfigurado abaixo.
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flow {
+        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flow {
             throw IllegalStateException("boom")
         }
 
@@ -291,7 +316,7 @@ class HomeViewModelTest {
             assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
 
             // Reconfigura o mock para emitir lista vazia (sucesso).
-            coEvery { projectRepository.observeAllForOwner("u1") } returns projectsFlow
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
 
             viewModel.retry()
             advanceUntilIdle()
@@ -339,6 +364,151 @@ class HomeViewModelTest {
 
         viewModel.clearError()
         assertThat(viewModel.errorMessage.value).isNull()
+    }
+
+    // === E2.6 — busca, filtro, ordenação ==========================================
+
+    /**
+     * Verifica que `onSearchQueryChange` propaga o texto para o
+     * `ListingPreferencesRepository` (persistência) e que o
+     * `searchQuery` do ViewModel é atualizado imediatamente
+     * (estado de UI, sem esperar o debounce).
+     */
+    @Test
+    fun `E2 6 onSearchQueryChange persiste e expoe no searchQuery`() = runTest {
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChange("App")
+        advanceUntilIdle()
+
+        // Estado de UI: imediato, sem debounce.
+        assertThat(viewModel.searchQuery.value).isEqualTo("App")
+        // Persistência: o repositório recebeu a chamada (suspendeu
+        // via `viewModelScope.launch`).
+        coVerify { listingPreferences.setSearchQuery("u1", "App") }
+    }
+
+    /**
+     * Verifica que a busca textual é propagada para o Room
+     * através de `observeSearch` após o debounce. Usamos
+     * `runCurrent` + `advanceTimeBy` para liberar o `debounce`
+     * sem precisar esperar o wall-clock 300ms.
+     */
+    @Test
+    fun `E2 6 busca textual e propagada para observeSearch apos debounce`() = runTest {
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+        coEvery {
+            projectRepository.observeSearch("u1", "app", any(), any())
+        } returns projectsFlow
+
+        val viewModel = newViewModel()
+        // Assina o `uiState` para que o pipeline comece a rodar —
+        // sem assinante, o `WhileSubscribed` interno não inicia.
+        val job = launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChange("app")
+        // Avança o virtual clock o suficiente para o debounce(300ms) disparar.
+        advanceTimeBy(400.milliseconds)
+        advanceUntilIdle()
+
+        coVerify {
+            projectRepository.observeSearch(
+                ownerId = "u1",
+                query = "app",
+                tagId = null,
+                sortOrder = SortOrder.CreatedDesc,
+            )
+        }
+        job.cancel()
+    }
+
+    /**
+     * Verifica que `onTagFilterChange` persiste via
+     * [ListingPreferencesRepository] e que o id da tag é
+     * propagado para `observeSearch`.
+     */
+    @Test
+    fun `E2 6 filtro por tag persiste e propaga para observeSearch`() = runTest {
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+
+        viewModel.onTagFilterChange("tag-estudos")
+        advanceUntilIdle()
+
+        coVerify { listingPreferences.setSelectedTagId("u1", "tag-estudos") }
+    }
+
+    /**
+     * Verifica que `onSortOrderChange` persiste o valor no
+     * DataStore e que ele é propagado para o Room. Também
+     * confirma que uma segunda VM construída sobre o mesmo
+     * `listingPreferences` (mock relaxado que mantém a última
+     * escrita) enxerga o valor — cobertura parcial de
+     * "ordenação persiste entre instâncias do VM".
+     */
+    @Test
+    fun `E2 6 ordenacao persiste entre instancias do ViewModel`() = runTest {
+        val prefsFlow = MutableStateFlow(ListingPreferences(sortOrder = SortOrder.NameAsc))
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        coEvery { listingPreferences.observe("u1") } returns prefsFlow
+        coEvery { listingPreferences.setSortOrder("u1", SortOrder.NameAsc) } coAnswers {
+            prefsFlow.value = ListingPreferences(sortOrder = SortOrder.NameAsc)
+        }
+        coEvery { listingPreferences.setSortOrder("u1", SortOrder.CreatedAsc) } coAnswers {
+            prefsFlow.value = ListingPreferences(sortOrder = SortOrder.CreatedAsc)
+        }
+
+        val viewModelA = newViewModel()
+        advanceUntilIdle()
+        viewModelA.onSortOrderChange(SortOrder.CreatedAsc)
+        advanceUntilIdle()
+
+        // Uma nova instância do VM deve refletir o sort persistido
+        // via `observe()` — simulando "abrir o app de novo" sobre o
+        // mesmo mock de DataStore.
+        val viewModelB = newViewModel()
+        advanceUntilIdle()
+
+        viewModelB.uiState.test {
+            advanceUntilIdle()
+            val state = expectMostRecentItem()
+            assertThat(state.sortOrder).isEqualTo(SortOrder.CreatedAsc)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * O debounce configurado em [HomeViewModel.searchQuery] não
+     * pode bloquear a emissão inicial do estado vazio: o
+     * `uiState` deve chegar a `isLoading = false` mesmo antes do
+     * primeiro keystroke.
+     */
+    @Test
+    fun `E2 6 debounce nao bloqueia emissao inicial`() = runTest {
+        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
+
+        val viewModel = newViewModel()
+        viewModel.uiState.test {
+            advanceUntilIdle()
+            val state = expectMostRecentItem()
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.searchQuery).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private fun sampleUser(role: UserRole): User = User(

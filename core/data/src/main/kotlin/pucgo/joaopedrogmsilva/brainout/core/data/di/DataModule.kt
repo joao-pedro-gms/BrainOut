@@ -20,17 +20,19 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
+import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.remote.HolidayRemoteDataSource
+import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.HolidayRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.ProjectRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
-import pucgo.joaopedrogmsilva.brainout.core.data.repository.HolidayRepositoryImpl
-import pucgo.joaopedrogmsilva.brainout.core.data.remote.HolidayRemoteDataSource
-import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -109,6 +111,20 @@ object DataModule {
     @Provides
     @Singleton
     fun provideTagRepository(tagDao: TagDao): TagRepository = TagRepositoryImpl(tagDao)
+
+    /**
+     * Bind de [ListingPreferencesRepository] para a implementação
+     * DataStore (E2.6 do ROADMAP). Reaproveita o mesmo
+     * [DataStore]<[Preferences]> da sessão (injetado por
+     * [provideAuthDataStore]) para evitar um arquivo de preferências
+     * adicional — `SessionStore.clear()` já é granular e preserva
+     * intencionalmente estas chaves.
+     */
+    @Provides
+    @Singleton
+    fun provideListingPreferencesRepository(
+        dataStore: DataStore<Preferences>,
+    ): ListingPreferencesRepository = ListingPreferencesRepositoryImpl(dataStore = dataStore)
 
     @Provides
     @Singleton
