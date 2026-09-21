@@ -191,6 +191,7 @@ ktlintCheck detekt :app:lintDevDebug` antes de subir PR.
 | detekt                     | 1.23.7          | Sem mudança.                                                |
 | Kover                      | 0.9.9           | Sem mudança.                                                |
 | Compose BOM                | 2024.10.01      | Sem mudança.                                                |
+| Robolectric                | 4.15.1          | Bump de 4.13 (4.14+ traz suporte a Android V/SDK 35; 4.15.1 mantém SDK 35 sem ainda suportar Baklava/SDK 36). |
 | compileSdk / targetSdk     | 35              | Mantidos em 35 (próximo bump exige E5.x).                   |
 
 ### Built-in Kotlin (AGP 9)
