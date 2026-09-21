@@ -1,4 +1,5 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+@file:Suppress("TooManyFunctions") // E3.5 adiciona providers de feriados.
 package pucgo.joaopedrogmsilva.brainout.core.data.di
 
 import android.content.Context

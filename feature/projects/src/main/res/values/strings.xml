@@ -37,6 +37,10 @@
     <string name="project_detail_new_task_due_date_format">dd/MM/yyyy</string>
     <!-- E3.5: dica inline quando há feriado próximo do prazo escolhido. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Próximo feriado: %1$s (%2$s) antes do prazo</string>
+    <!-- E3.5: aviso quando a consulta ao serviço de feriados falhou (sem rede, 5xx etc.). -->
+    <string name="deadline_holidays_unavailable">Aviso de feriado indisponível — verifique sua conexão.</string>
+    <!-- E3.5: destaque de que o prazo cai em fim de semana ou feriado. -->
+    <string name="deadline_not_business_day">Atenção: este prazo cai em dia não útil.</string>
     <string name="project_detail_new_task_save">Salvar</string>
     <string name="project_detail_new_task_cancel">Cancelar</string>
 

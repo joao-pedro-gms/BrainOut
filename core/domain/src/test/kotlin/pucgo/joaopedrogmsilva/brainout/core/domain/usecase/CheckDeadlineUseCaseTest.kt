@@ -117,18 +117,13 @@ class CheckDeadlineUseCaseTest {
     }
 
     @Test
-    fun `erro no repositorio degrada para holidays vazio`() = runTest {
+    fun `erro no repositorio propaga sem afirmar dia util`() = runTest {
         val repository = mockk<HolidayRepository>()
-        coEvery { repository.getHolidays(2026) } throws RuntimeException("boom")
-        val useCase = CheckDeadlineUseCase(repository)
-
+        val error = java.io.IOException("offline")
+        coEvery { repository.getHolidays(2026) } throws error
         val deadline = LocalDate.parse("2026-06-15").atStartOfDay(utc).toInstant()
-        val info = useCase(deadline, utc)
-
-        // Sem dados, isBusinessDay ainda reflete o calendário (segunda → true);
-        // nextHoliday fica null porque não sabemos se há feriado.
-        assertThat(info.isBusinessDay).isTrue()
-        assertThat(info.nextHoliday).isNull()
+        assertThat(runCatching { CheckDeadlineUseCase(repository)(deadline, utc) }.exceptionOrNull())
+            .isSameInstanceAs(error)
     }
 
     @Test

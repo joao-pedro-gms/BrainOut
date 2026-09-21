@@ -34,7 +34,7 @@ class HolidayRepositoryTest {
     fun setUp() {
         server = MockWebServer()
         server.start()
-        remote = HolidayRemoteDataSource(baseUrl = server.url("/").toString(), logError = { })
+        remote = HolidayRemoteDataSource(baseUrl = server.url("/").toString())
     }
 
     @After

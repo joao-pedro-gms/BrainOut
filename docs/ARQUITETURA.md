@@ -250,4 +250,54 @@ atendido sem `SCHEDULE_EXACT_ALARM`.*
   explicativo e não é repetida (flag em DataStore).
 - Sem `SCHEDULE_EXACT_ALARM` no manifest — intencional (AD-6).
 
+## 11. Integração externa — feriados nacionais (E3.5)
+
+### 11.1 Serviço escolhido
+
+API pública **BrasilAPI** (`https://brasilapi.com.br/api/feriados/v1/{year}`),
+sem autenticação nem limite duro de uso. Cada ano é uma chamada
+independente e o domínio só precisa de `{date, name, type}`. O tipo
+filtra feriados nacionais (descarta estaduais/municipais) na janela de
+aviso.
+
+### 11.2 Componentes
+
+| Componente | Módulo | Papel |
+| --- | --- | --- |
+| `HolidayApi` | `:core:data/remote/` | `Retrofit` com `@GET("api/feriados/v1/{year}")` |
+| `HolidayDto` | `:core:data/remote/` | DTO `date/name/type` (snake_case via kotlinx-serialization) |
+| `HolidayRemoteDataSource` | `:core:data/remote/` | Cache em memória (`Map<Int, List<Holiday>>`) por ano + mutex para chamadas concorrentes; 404 → lista vazia; demais erros propagam |
+| `HolidayRepositoryImpl` | `:core:data/repository/` | Bind para a porta `HolidayRepository` |
+| `HolidayRepository` | `:core:domain/repository/` | Porta de domínio: `suspend fun getHolidays(year)` |
+| `Holiday` | `:core:domain/model/` | Modelo de domínio imutável |
+| `CheckDeadlineUseCase` | `:core:domain/usecase/` | Janela `[prazo − 7d, prazo]`, inclusive; cruza dezembro/janeiro buscando os dois anos; retorna `DeadlineInfo(isBusinessDay, nextHoliday)` |
+| `DeadlineField` | `:feature:projects` | Componente Compose extraído do `NewTaskDialog`: botão de prazo, picker Material 3, dica inline de feriado e aviso de "dia não útil" |
+| `DataModule.provideHolidayRemoteDataSource` | `:core:data/di/` | `baseUrl = BuildConfig.HOLIDAYS_BASE_URL` (injetado por flavor) |
+
+### 11.3 Fluxo de dados
+
+1. Usuário escolhe prazo no `DatePicker` (Material 3).
+2. `DeadlineField` dispara `LaunchedEffect(dueDate)` chamando
+   `CheckDeadlineUseCase(deadline)` via ViewModel.
+3. O caso de uso pede `HolidayRepository.getHolidays(year1[, year2])`.
+4. A implementação delega para `HolidayRemoteDataSource.listHolidays`,
+   que consulta o cache em memória (mutex); em cache miss, monta o
+   `Retrofit` (uma vez por instância) e chama `HolidayApi`.
+5. BrasilAPI devolve JSON → `HolidayDto` → `Holiday`.
+6. O caso de uso filtra `type == "national"`, calcula `isBusinessDay`
+   e o feriado mais próximo dentro da janela de 7 dias anteriores.
+7. `DeadlineField` mostra, no Compose, a dica inline
+   "⚠ Próximo feriado: …" ou o aviso "este prazo cai em dia não útil".
+8. Falha de rede/5xx é capturada pelo `LaunchedEffect` (sem
+   `CancellationException`) e renderiza o texto neutro
+   "Aviso de feriado indisponível" — o usuário consegue salvar
+   normalmente.
+
+### 11.4 Configuração por flavor
+
+`build.gradle.kts` de `:core:data` declara
+`buildConfigField("String", "HOLIDAYS_BASE_URL", …)` para `dev` e
+`prod` (default `https://brasilapi.com.br/`). A `DataModule` lê do
+`BuildConfig` — não há URL hard-coded no app.
+
 João Pedro G M Silva - PUC Goiás ADS - 20251012000740

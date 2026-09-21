@@ -64,6 +64,7 @@ data class ProjectDetailUiState(
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LongParameterList") // E3.5 injeta CheckDeadlineUseCase (9 deps).
 class ProjectDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     @Suppress("unused") private val taskRepository: TaskRepository,
