@@ -27,7 +27,7 @@ mockk = "1.13.13"
 truth = "1.4.4"
 composeUiTest = "1.7.5"
 detekt = "1.23.7"
-ktlint = "12.1.2"
+ktlint = "14.2.0"
 jacoco = "0.8.12"
 
 [libraries]
