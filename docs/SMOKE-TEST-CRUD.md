@@ -102,3 +102,76 @@
 - [ ] Passos 8.1–8.9 executados em dispositivo físico sem crash.
 - [ ] Notificação disparada dentro da janela de tolerância do WorkManager (≈ minutos do horário programado).
 - [ ] Ação "Concluir" altera o status para `DONE` mesmo com o app em segundo plano fechado.
+
+---
+
+## 9. Estados de erro, loaders e validação inline (E2.8)
+
+> Roteiro adicional para o **E2.8** (loader + erro/retry nos três
+> ViewModels e validação inline na criação de projeto). Deve ser
+> executado em emulador Android (API 33+) com a APK debug gerada
+> por `./gradlew :app:assembleDebug`. Os prints ficam anexados
+> ao relatório da entrega N2 para evidenciar R10.
+
+### 9.1. Loader + lista vazia (Home)
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.1.1 | Limpar dados (`adb shell pm clear pucgo.joaopedrogmsilva.brainout.debug`) e fazer login com um Owner. | App abre na Home com a lista vazia. |
+| 9.1.2 | Criar 1 projeto "Demo". | Card do projeto aparece na Home. Loader NÃO é visível após o card carregar (Room emite rápido em emulador). |
+
+### 9.2. Validação inline na criação de projeto (Home)
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.2.1 | Na Home, tocar em **+ Projeto**. | Diálogo "Novo projeto" abre com `Nome` vazio. |
+| 9.2.2 | Tocar em **Criar** sem preencher o nome. | Diálogo **permanece aberto**; `TextField` do nome fica com `isError` (borda vermelha) e mostra `supportingText` "Informe um nome para o projeto." (pt) ou "Please enter a project name." (en). |
+| 9.2.3 | Digitar "App" e tocar em **Criar**. | Diálogo fecha; card "App" aparece na lista. |
+| 9.2.4 | Repetir o passo 9.2.2 para confirmar que a validação continua disparando. | Mesma mensagem de erro. |
+
+### 9.3. Banner de erro de carga + retry (simulado)
+
+> O Room em emulador raramente falha, então o cenário real (ex.
+> `SQLiteException`) precisa ser provocado. Em ambiente de
+> desenvolvimento, o jeito mais simples é **forçar o banco a
+> abrir em modo corrompido** (e.g. setando uma senha errada via
+> `Room.databaseBuilder` em build `debug`); este roteiro assume
+> esse passo ou um mock equivalente. Para a N2, capturas de
+> teste unitário (`HomeViewModelTest.E2 8 erro do Flow de projetos…`)
+> servem como evidência substituta caso o cenário real seja difícil
+> de reproduzir manualmente.
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.3.1 | Provocar falha do Room no `observeAllForOwner` (ver nota acima). | Home mostra `CircularProgressIndicator` brevemente e em seguida banner "Não foi possível carregar seus projetos" (pt) com botões **Tentar novamente** e **Dispensar**. |
+| 9.3.2 | Tocar em **Tentar novamente** após restaurar o Room. | Banner desaparece; lista de projetos reaparece. |
+| 9.3.3 | Tocar em **Dispensar**. | Banner some; empty state aparece (lista vazia, sem spinner). |
+
+### 9.4. Loader + erro de tarefas (ProjectDetail)
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.4.1 | Abrir um projeto com 5 tarefas. | ProjectDetail mostra as 5 tarefas. |
+| 9.4.2 | Provocar falha do Room em `observeForProject` (mesma técnica de 9.3.1). | Banner de erro aparece em vez das tarefas; spinner some imediatamente (`isLoading = false`). |
+| 9.4.3 | Tocar em **Tentar novamente** após restaurar. | Lista de tarefas reaparece. |
+
+### 9.5. Loader + erro de tarefas globais (Tasks)
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.5.1 | Na aba **Tarefas** da Home (bottom bar), com Owner ativo. | Lista global de tarefas aparece. |
+| 9.5.2 | Provocar falha do Room em `observeAllForOwner` para tarefas. | Banner "Não foi possível carregar suas tarefas" (pt) com botões **Tentar novamente** e **Dispensar**. |
+| 9.5.3 | Tocar em **Tentar novamente** após restaurar. | Lista reaparece. |
+
+### 9.6. Localização pt/en
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 9.6.1 | Trocar idioma do dispositivo para inglês (`Settings → System → Languages`). Reabrir o app. | Todos os textos novos do E2.8 aparecem em inglês: "Loading projects", "Couldn't load your projects", "Try again", "Dismiss", "Please enter a project name." |
+| 9.6.2 | Trocar idioma para português. | Textos voltam para o português. |
+
+**Critérios de pronto (E2.8):**
+
+- [ ] Passos 9.2.x e 9.6.x executados sem crash e com a localização correta.
+- [ ] Cenários 9.3, 9.4, 9.5 cobertos por pelo menos uma captura OU por referência explícita ao teste unitário correspondente (`HomeViewModelTest.E2 8 erro do Flow...`, `ProjectDetailViewModelTest.E2 8 erro do Flow de tarefas...`, `TasksViewModelTest.E2 8 erro do Flow de tasks...`).
+- [ ] `MissingTranslation` continua fatal — qualquer chave nova sem par pt/en quebra o build.

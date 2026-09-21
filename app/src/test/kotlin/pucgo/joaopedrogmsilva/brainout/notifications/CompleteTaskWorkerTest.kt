@@ -68,6 +68,13 @@ class CompleteTaskWorkerTest {
     fun `worker conclui task ativa com prazo`() = runBlocking {
         // DOING → DONE é uma transição válida na matriz TaskStatus
         // (TODO → DONE é proibida pela regra de domínio E1.4).
+        //
+        // E2.5 (PR #58): quando o target é DONE, o
+        // `ChangeTaskStatusUseCase` roteia por
+        // `TaskRepository.completeAndCascade` (não mais
+        // `changeStatus(taskId, DONE)`) para coordenar a
+        // transição com a marca de conclusão do projeto na
+        // mesma transação Room.
         val task = Task.create(
             projectId = "p1",
             title = "Entrega do relatório",
@@ -75,12 +82,12 @@ class CompleteTaskWorkerTest {
             dueDate = Instant.now().plus(java.time.Duration.ofHours(2)),
         )
         val done = task.transitionTo(TaskStatus.DONE)
-        coEvery { taskRepository.changeStatus("t1", TaskStatus.DONE) } returns done
+        coEvery { taskRepository.completeAndCascade("t1") } returns done
 
         val result = buildWorker().doWork()
 
         assertThat(result).isEqualTo(ListenableWorker.Result.success())
-        coVerify(exactly = 1) { taskRepository.changeStatus("t1", TaskStatus.DONE) }
+        coVerify(exactly = 1) { taskRepository.completeAndCascade("t1") }
         // ChangeTaskStatusUseCase cancela o lembrete ao concluir (o id
         // cancelado é o id da Task criada dentro do use case).
         io.mockk.verify(exactly = 1) { deadlineScheduler.cancel(task.id) }
@@ -102,12 +109,18 @@ class CompleteTaskWorkerTest {
         val result = worker.doWork()
 
         assertThat(result).isEqualTo(ListenableWorker.Result.failure())
+        coVerify(exactly = 0) { taskRepository.completeAndCascade(any()) }
         coVerify(exactly = 0) { taskRepository.changeStatus(any(), any()) }
     }
 
     @Test
     fun `worker com tarefa inexistente termina com sucesso (idempotencia)`() = runBlocking {
-        coEvery { taskRepository.changeStatus("t-desaparecida", TaskStatus.DONE) } throws
+        // E2.5 (PR #58): o caminho DONE passa por
+        // `completeAndCascade(taskId)`; quando o id não existe,
+        // o repositório lança `IllegalArgumentException` e o
+        // worker converte em `Result.retry()` para o
+        // WorkManager reprocessar com backoff.
+        coEvery { taskRepository.completeAndCascade("t-desaparecida") } throws
             IllegalArgumentException("Tarefa não encontrada: t-desaparecida")
 
         val useCase = ChangeTaskStatusUseCase(taskRepository, deadlineScheduler)

@@ -31,10 +31,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,8 +51,10 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
  * Tela "Tarefas" do BrainOut — listagem global das tarefas do owner
  * ativo, com join do nome do projeto para exibição inline.
  *
- * Renderização:
- * - `isLoading = true` → [CircularProgressIndicator] centralizado.
+ * Renderização (E2.8 — estados de erro):
+ * - `isLoading = true` e sem erro → [CircularProgressIndicator] centralizado.
+ * - `errorMessage != null` → banner com "Tentar novamente" (prioridade sobre
+ *   empty state para evitar lista vazia enganosa).
  * - lista vazia → cartão com mensagem explicando o que fazer.
  * - lista populada → [LazyColumn] de cards, cada card exibe título,
  *   projeto, prioridade e status via chips.
@@ -67,6 +71,8 @@ fun TasksScreen(
 
     TasksContent(
         state = state,
+        onRetry = viewModel::retry,
+        onDismissError = viewModel::clearError,
         modifier = modifier,
     )
 }
@@ -76,11 +82,17 @@ object TasksTestTags {
     const val LOADING: String = "tasks_loading"
     const val EMPTY: String = "tasks_empty"
     const val LIST: String = "tasks_list"
+    // E2.8 — tags do banner de erro (paridade com Home).
+    const val ERROR_BANNER: String = "tasks_error_banner"
+    const val ERROR_RETRY: String = "tasks_error_retry"
+    const val ERROR_DISMISS: String = "tasks_error_dismiss"
 }
 
 @Composable
 private fun TasksContent(
     state: TasksUiState,
+    onRetry: () -> Unit = {},
+    onDismissError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -96,13 +108,73 @@ private fun TasksContent(
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
+        // E2.8 — prioridade ao banner de erro, depois loader, depois
+        // empty state. Esta ordem evita que um Room falho mostre
+        // simultaneamente spinner e empty state.
         when {
+            state.errorMessage != null -> TasksErrorBanner(
+                message = state.errorMessage,
+                onRetry = onRetry,
+                onDismiss = onDismissError,
+            )
             state.isLoading -> TasksLoading()
             state.rows.isEmpty() -> TasksEmptyState(modifier = Modifier.fillMaxWidth())
             else -> TasksList(
                 rows = state.rows,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+}
+
+/**
+ * Banner de erro com retry (E2.8). Mesma estrutura visual do
+ * `HomeErrorBanner` em `:feature:projects`.
+ */
+@Composable
+private fun TasksErrorBanner(
+    @Suppress("UNUSED_PARAMETER") message: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 140.dp)
+            .testTag(TasksTestTags.ERROR_BANNER),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(id = R.string.tasks_error_load_failed),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier
+                        .testTag(TasksTestTags.ERROR_RETRY)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.tasks_error_retry))
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .testTag(TasksTestTags.ERROR_DISMISS)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.tasks_error_dismiss))
+                }
+            }
         }
     }
 }

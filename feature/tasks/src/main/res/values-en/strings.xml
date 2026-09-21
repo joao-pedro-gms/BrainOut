@@ -17,4 +17,10 @@
     <string name="task_priority_high">High</string>
     <string name="task_priority_urgent">Urgent</string>
     <string name="task_priority_critical">Critical</string>
+
+    <!-- E2.8 — loading and error states (Tasks) -->
+    <string name="tasks_loading_aria_label">Loading tasks</string>
+    <string name="tasks_error_load_failed">Couldn\'t load your tasks</string>
+    <string name="tasks_error_retry">Try again</string>
+    <string name="tasks_error_dismiss">Dismiss</string>
 </resources>

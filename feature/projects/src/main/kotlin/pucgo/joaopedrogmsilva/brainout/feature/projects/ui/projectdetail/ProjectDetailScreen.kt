@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -109,7 +111,15 @@ fun ProjectDetailScreen(
     // A resolução para o recurso localizado acontece fora do efeito, no
     // contexto de composição (stringResource exige composição); o efeito
     // apenas consome o texto já resolvido quando `errorMessage` muda.
-    val resolvedMessage = errorMessage?.let { resolveProjectDetailMessage(it) }
+    //
+    // E2.8 — falhas de carga (Room) são expostas via banner de erro
+    // (não snackbar) para evitar duplicação visual. As demais
+    // mensagens transitórias (RN01, validação) continuam passando
+    // pelo snackbar.
+    val isLoadError = errorMessage?.let { ProjectDetailViewModel.isLoadErrorMessage(it) } == true
+    val resolvedMessage = errorMessage
+        ?.takeUnless { isLoadError }
+        ?.let { resolveProjectDetailMessage(it) }
     LaunchedEffect(resolvedMessage) {
         val message = resolvedMessage
         if (!message.isNullOrBlank()) {
@@ -161,6 +171,9 @@ fun ProjectDetailScreen(
             projectId = projectId,
             tasks = state.tasks,
             isLoading = state.isLoading,
+            errorMessage = state.errorMessage,
+            onRetry = viewModel::retry,
+            onDismissError = viewModel::clearError,
             contentPadding = innerPadding,
             onChangeStatus = viewModel::changeStatus,
             onDeleteTask = viewModel::deleteTask,
@@ -271,6 +284,11 @@ object ProjectDetailTestTags {
     const val TASK_ITEM_MENU_CHANGE_PRIORITY: String = "project_detail_task_item_menu_change_priority"
     const val TASK_PRIORITY_DIALOG: String = "project_detail_task_priority_dialog"
     const val TASK_PRIORITY_CHIP_OPTION_PREFIX: String = "project_detail_task_priority_option_"
+    // E2.8 — tags de teste para loader e banner de erro.
+    const val LOADING: String = "project_detail_loading"
+    const val ERROR_BANNER: String = "project_detail_error_banner"
+    const val ERROR_RETRY: String = "project_detail_error_retry"
+    const val ERROR_DISMISS: String = "project_detail_error_dismiss"
 }
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -280,6 +298,9 @@ private fun ProjectDetailBody(
     projectId: String,
     tasks: List<Task>,
     isLoading: Boolean,
+    errorMessage: String?,
+    onRetry: () -> Unit,
+    onDismissError: () -> Unit,
     contentPadding: PaddingValues,
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
@@ -313,7 +334,19 @@ private fun ProjectDetailBody(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        if (tasks.isEmpty() && !isLoading) {
+        // E2.8 — prioridade ao banner de erro: se o Room falhou,
+        // exibimos o banner com retry e escondemos a lista (que
+        // estaria vazia/enganosa). Em seguida, o loader; por último,
+        // o empty state.
+        if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
+            ProjectDetailErrorBanner(
+                message = errorMessage,
+                onRetry = onRetry,
+                onDismiss = onDismissError,
+            )
+        } else if (tasks.isEmpty() && isLoading) {
+            ProjectDetailLoadingState()
+        } else if (tasks.isEmpty()) {
             EmptyTasksCard()
         } else {
             tasks.forEach { task ->
@@ -327,6 +360,82 @@ private fun ProjectDetailBody(
         }
 
         Spacer(modifier = Modifier.height(80.dp)) // espaço para o FAB
+    }
+}
+
+/**
+ * Loader centralizado da ProjectDetail (E2.8). Mantém paridade
+ * visual com `HomeLoadingState` em `:feature:projects/ui/home`.
+ */
+@Composable
+private fun ProjectDetailLoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 240.dp)
+            .testTag(ProjectDetailTestTags.LOADING),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(id = R.string.project_detail_loading_aria_label),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Banner de erro com retry/dispensar (E2.8). Espelha
+ * `HomeErrorBanner` em estrutura visual.
+ */
+@Composable
+private fun ProjectDetailErrorBanner(
+    @Suppress("UNUSED_PARAMETER") message: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 140.dp)
+            .testTag(ProjectDetailTestTags.ERROR_BANNER),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(id = R.string.project_detail_error_load_failed),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier
+                        .testTag(ProjectDetailTestTags.ERROR_RETRY)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.project_detail_error_retry))
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .testTag(ProjectDetailTestTags.ERROR_DISMISS)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.project_detail_error_dismiss))
+                }
+            }
+        }
     }
 }
 
