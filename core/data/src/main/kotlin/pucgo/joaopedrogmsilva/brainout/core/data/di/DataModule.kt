@@ -11,6 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import pucgo.joaopedrogmsilva.brainout.core.data.BuildConfig
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
@@ -21,6 +22,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.ProjectRepositoryImp
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
@@ -111,4 +113,14 @@ object DataModule {
     fun provideSessionStore(
         dataStore: DataStore<Preferences>,
     ): SessionStore = SessionStore(dataStore = dataStore)
+
+    /**
+     * Fonte de dados remota (E3.2). A URL base vem do `BuildConfig`
+     * deste módulo, injetada por flavor (debug: backend-stub no host do
+     * emulador; release: placeholder documentado).
+     */
+    @Provides
+    @Singleton
+    fun provideRemoteDataSource(): RemoteDataSource =
+        RemoteDataSource(baseUrl = BuildConfig.BASE_URL)
 }

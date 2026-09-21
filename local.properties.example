@@ -9,5 +9,10 @@ sdk.dir=/opt/android-sdk
 # No emulador padrão do Android Studio, 10.0.2.2 resolve para o host.
 BASE_URL=http://10.0.2.2:8000
 
+# Override opcional da URL base por flavor (E3.2). Se presente, é usado
+# no lugar do default do flavor `dev`; o flavor `prod` mantém o
+# placeholder até a hospedagem definitiva (decisão E3.1).
+# brainout.baseUrl.dev=http://10.0.2.2:8000/
+
 # Ambiente (dev | staging | prod)
 APP_ENV=dev

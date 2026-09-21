@@ -12,15 +12,15 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-// Carrega BASE_URL e APP_ENV do `local.properties` para expor via BuildConfig.
-// `local.properties` é ignorado pelo controle de versão (ver .gitignore).
+// Carrega APP_ENV e a URL base por flavor do `local.properties` para expor
+// via BuildConfig. `local.properties` é ignorado pelo controle de versão
+// (ver .gitignore).
 val localProperties = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) {
         f.inputStream().use { load(it) }
     }
 }
-val baseUrl: String = localProperties.getProperty("BASE_URL", "http://10.0.2.2:8000/")
 val appEnv: String = localProperties.getProperty("APP_ENV", "dev")
 
 android {
@@ -37,8 +37,32 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
-        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
         buildConfigField("String", "APP_ENV", "\"$appEnv\"")
+    }
+
+    // Flavors de ambiente (E3.2): alinhados com :core:data. A URL base do
+    // serviço de retaguarda é injetada por flavor em BuildConfig — debug
+    // aponta para o backend-stub FastAPI no host do emulador (10.0.2.2),
+    // release permanece placeholder até a hospedagem definitiva (E3.1).
+    // Override por desenvolvedor: brainout.baseUrl.dev em local.properties.
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")}\"",
+            )
+        }
+        create("prod") {
+            dimension = "environment"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://TBD/\"",
+            )
+        }
     }
 
     buildTypes {
