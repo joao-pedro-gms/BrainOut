@@ -69,6 +69,11 @@ exceptions:
       - 'IllegalStateException'
       - 'IllegalArgumentException'
       - 'RuntimeException'
+  # SwallowedException relaxado: no E3.6 o CompleteTaskWorker engole
+  # a exceção de escrita de propósito — o WorkManager registra o retry
+  # com backoff e reprocessa o trabalho (ver CompleteTaskWorker).
+  SwallowedException:
+    active: false
 
 naming:
   active: true
@@ -95,6 +100,12 @@ potential-bugs:
 
 style:
   active: true
+  # E3.6 — o DeadlineWorker (publicação do lembrete) tem cortes-circuito
+  # legítimos; o limite padrão de 2 returns era insuficiente.
+  ReturnCount:
+    active: true
+    max: 4
+    excludedFunctions: ['equals']
   MagicNumber:
     active: true
     # '0'..'4' cobre a faixa completa do TaskPriority (E1.4). Os demais
