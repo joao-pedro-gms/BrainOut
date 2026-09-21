@@ -75,12 +75,18 @@
     <string name="common_back">Back</string>
     <string name="common_close">Close</string>
 
-    <!-- Erros do ProjectDetailViewModel (E4.6 — a UI resolve por chave) -->
+    <!-- Errors from ProjectDetailViewModel (E4.6 — UI resolves by key) -->
     <string name="project_detail_error_task_limit">Error: task limit of %1$d active tasks reached</string>
     <string name="project_detail_error_invalid_title">Invalid title</string>
     <string name="project_detail_error_invalid_transition">Invalid status transition</string>
     <string name="project_detail_error_empty_title">Task title cannot be empty</string>
     <string name="project_detail_id_label">ID: %1$s</string>
+
+    <!-- E2.8 — loading and error states (ProjectDetail) -->
+    <string name="project_detail_loading_aria_label">Loading tasks</string>
+    <string name="project_detail_error_load_failed">Couldn\'t load the project tasks</string>
+    <string name="project_detail_error_retry">Try again</string>
+    <string name="project_detail_error_dismiss">Dismiss</string>
 
     <!-- RN02 (E2.4) — priority required, immutable when done -->
     <string name="project_detail_error_priority_locked_on_done">Priority cannot be changed on a completed task (RN02).</string>
@@ -96,4 +102,12 @@
     <string name="home_completed_empty_title">No completed projects</string>
     <string name="home_completed_empty_body">Projects with all tasks done appear here.</string>
     <string name="home_filter_aria_label">Filter projects</string>
+
+    <!-- E2.8 — loading and error states (Home) -->
+    <string name="home_loading_aria_label">Loading projects</string>
+    <string name="home_error_load_failed">Couldn\'t load your projects</string>
+    <string name="home_error_action_failed">Couldn\'t complete the operation</string>
+    <string name="home_error_retry">Try again</string>
+    <string name="home_error_dismiss">Dismiss</string>
+    <string name="home_create_project_name_required">Please enter a project name.</string>
 </resources>

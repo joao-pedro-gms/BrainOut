@@ -12,6 +12,8 @@ import io.mockk.mockk
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -228,5 +230,117 @@ class ProjectDetailViewModelTest {
             assertThat(emitted.isLoading).isFalse()
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // === E2.8 — estados de erro e retry ==========================================
+
+    /**
+     * Simula primeira emissão lenta do Flow de tarefas. Enquanto o
+     * Flow não emite, `uiState.isLoading = true` e a lista está
+     * vazia. Após a primeira emissão, `isLoading` vai para `false`
+     * com a lista carregada.
+     */
+    @Test
+    fun `E2 8 uiState permanece em loading ate observeForProject emitir`() = runTest {
+        val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
+        coEvery { taskRepository.observeForProject(projectId) } returns tasksFlow
+
+        val vm = viewModel()
+
+        vm.uiState.test {
+            var state = awaitItem()
+            assertThat(state.isLoading).isTrue()
+            assertThat(state.tasks).isEmpty()
+
+            // Emite a primeira lista — loader some.
+            val now = Instant.parse("2026-09-19T00:00:00Z")
+            tasksFlow.value = listOf(
+                Task.create(projectId = projectId, title = "T", now = now),
+            )
+            advanceUntilIdle()
+            state = expectMostRecentItem()
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.tasks).hasSize(1)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * Simula falha do Room no `observeForProject`: o `.catch`
+     * converte em `ERROR_LOAD_FAILED` + `isLoading = false`.
+     */
+    @Test
+    fun `E2 8 erro do Flow de tarefas popula errorMessage de carga`() = runTest {
+        coEvery { taskRepository.observeForProject(projectId) } returns flow {
+            throw IllegalStateException("disk full")
+        }
+
+        val vm = viewModel()
+
+        vm.uiState.test {
+            advanceUntilIdle()
+            val state = expectMostRecentItem()
+            assertThat(state.errorMessage).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+            assertThat(state.isLoading).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+    }
+
+    /**
+     * `retry()` re-assina o Flow após falha. Reconfiguramos o mock
+     * para emitir lista vazia (sucesso) e verificamos que
+     * `errorMessage` é limpo.
+     *
+     * E2.8 — usamos `uiState.test` para forçar a inscrição no
+     * `stateIn` antes de ler `errorMessage.value`. Sem um
+     * assinante, o upstream nem chega a iniciar (e o `catch`
+     * nunca dispara).
+     */
+    @Test
+    fun `E2 8 retry re-assina Flow apos erro e limpa errorMessage`() = runTest {
+        val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
+        coEvery { taskRepository.observeForProject(projectId) } returns flow {
+            throw IllegalStateException("boom")
+        }
+
+        val vm = viewModel()
+
+        vm.uiState.test {
+            advanceUntilIdle()
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+
+            // Reconfigura o mock para emitir lista vazia.
+            coEvery { taskRepository.observeForProject(projectId) } returns tasksFlow
+
+            vm.retry()
+            advanceUntilIdle()
+
+            assertThat(vm.errorMessage.value).isNull()
+            val state = expectMostRecentItem()
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.errorMessage).isNull()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * Falha genérica em `addTask` (não mapeada por exceção de
+     * domínio) deve ser convertida em `errorMessage` via o catch
+     * `Throwable` adicionado em E2.8 — sem crash.
+     */
+    @Test
+    fun `E2 8 falha generica em addTask popula errorMessage de carga`() = runTest {
+        coEvery {
+            createTask.invoke(any(), any(), any(), any(), any())
+        } throws IllegalStateException("write failed")
+
+        val vm = viewModel()
+        vm.addTask("qualquer")
+        advanceUntilIdle()
+
+        assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
     }
 }

@@ -82,6 +82,12 @@
     <string name="project_detail_error_empty_title">Título da tarefa não pode ser vazio</string>
     <string name="project_detail_id_label">ID: %1$s</string>
 
+    <!-- E2.8 — estados de erro e carregamento (ProjectDetail) -->
+    <string name="project_detail_loading_aria_label">Carregando tarefas</string>
+    <string name="project_detail_error_load_failed">Não foi possível carregar as tarefas do projeto</string>
+    <string name="project_detail_error_retry">Tentar novamente</string>
+    <string name="project_detail_error_dismiss">Dispensar</string>
+
     <!-- RN02 (E2.4) — prioridade obrigatória, imutável em concluídas -->
     <string name="project_detail_error_priority_locked_on_done">Prioridade não pode ser alterada em tarefa concluída (RN02).</string>
     <string name="project_detail_task_priority_dialog_title">Alterar prioridade</string>
@@ -96,4 +102,12 @@
     <string name="home_completed_empty_title">Nenhum projeto concluído</string>
     <string name="home_completed_empty_body">Projetos com todas as tarefas concluídas aparecem aqui.</string>
     <string name="home_filter_aria_label">Filtrar projetos</string>
+
+    <!-- E2.8 — estados de erro e carregamento (Home) -->
+    <string name="home_loading_aria_label">Carregando projetos</string>
+    <string name="home_error_load_failed">Não foi possível carregar seus projetos</string>
+    <string name="home_error_action_failed">Não foi possível concluir a operação</string>
+    <string name="home_error_retry">Tentar novamente</string>
+    <string name="home_error_dismiss">Dispensar</string>
+    <string name="home_create_project_name_required">Informe um nome para o projeto.</string>
 </resources>

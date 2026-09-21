@@ -17,4 +17,10 @@
     <string name="task_priority_high">Alta</string>
     <string name="task_priority_urgent">Urgente</string>
     <string name="task_priority_critical">Crítica</string>
+
+    <!-- E2.8 — estados de erro e carregamento (Tasks) -->
+    <string name="tasks_loading_aria_label">Carregando tarefas</string>
+    <string name="tasks_error_load_failed">Não foi possível carregar suas tarefas</string>
+    <string name="tasks_error_retry">Tentar novamente</string>
+    <string name="tasks_error_dismiss">Dispensar</string>
 </resources>
