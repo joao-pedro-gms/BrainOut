@@ -53,11 +53,11 @@ jobs:
             echo "::error::Secret BRAINOUT_KEYSTORE_BASE64 ausente - cadastre os 4 secrets antes de cortar uma tag de release (ver docs/CI-CD.md)."
             exit 1
           fi
-          echo "$BRAINOUT_KEYSTORE_BASE64" | base64 -d > keystore.jks
+          echo "$BRAINOUT_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/brainout-release.jks"
 
       - name: bundleRelease assinado
         env:
-          BRAINOUT_KEYSTORE_PATH: keystore.jks
+          BRAINOUT_KEYSTORE_PATH: ${{ runner.temp }}/brainout-release.jks
           BRAINOUT_KEYSTORE_PASSWORD: ${{ secrets.BRAINOUT_KEYSTORE_PASSWORD }}
           BRAINOUT_KEY_ALIAS: ${{ secrets.BRAINOUT_KEY_ALIAS }}
           BRAINOUT_KEY_PASSWORD: ${{ secrets.BRAINOUT_KEY_PASSWORD }}
