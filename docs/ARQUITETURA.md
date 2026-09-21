@@ -29,7 +29,8 @@ BrainOut/
 ├── app/                  → entry point, Application, MainActivity
 ├── core/
 │   ├── domain/           → entidades, regras de domínio, use cases
-│   ├── data/             → Room, DataStore, repositórios, fontes remotas
+│   ├── data/             → Room, DataStore, repositórios, remote/ (E3.2)
+│   │   └── remote/       → DTOs remotos, BrainOutApi (Retrofit), RemoteDataSource
 │   └── ui/               → tema, tokens, componentes reutilizáveis
 ├── feature/
 │   ├── auth/             → telas de login/cadastro
@@ -47,6 +48,39 @@ app → feature → core/{ui,data} → core/domain
 
 `:core:domain` não depende de nenhum outro módulo, garantindo portabilidade
 e testabilidade (regra R12 do documento norteador).
+
+### 2.1 Camada remote (E3.2)
+
+O subpacote `core/data/remote/` isola todo o acesso HTTP ao serviço de
+retaguarda (decisão E3.1: backend próprio FastAPI):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ feature/* (ViewModels)                                      │
+└──────────────┬──────────────────────────────────────────────┘
+               │ portas de repositório (:core:domain)
+┌──────────────▼──────────────────────────────────────────────┐
+│ :core:data                                                  │
+│  ├── local/       Room (DAOs, entidades, migrations)        │
+│  ├── repository/  implementações das portas                 │
+│  └── remote/      BrainOutApi (Retrofit) ← RemoteDataSource │
+│         ↑ URL base injetada via BuildConfig.BASE_URL        │
+│           (flavor dev: http://10.0.2.2:8000/ — emulador;    │
+│            flavor prod: placeholder, ver decisão E3.1)      │
+└──────────────┬──────────────────────────────────────────────┘
+               │ HTTP/JSON (snake_case, contrato /v1/*)
+┌──────────────▼──────────────────────────────────────────────┐
+│ Backend FastAPI (backend-stub/ no CI; serviço próprio depois)│
+└─────────────────────────────────────────────────────────────┘
+```
+
+- **DTOs remotos** (`RemoteDtos.kt`): espelham o contrato do backend com
+  `@SerialName` snake_case; conversão para o domínio fica nos repositórios.
+- **`BrainOutApi`**: interface Retrofit (`/v1/ping`, `/v1/projects`,
+  `/v1/tasks`) — nenhum host hard-coded; a URL vem do `BuildConfig`.
+- **`RemoteDataSource`**: envolve a API, loga erros e re-sinaliza a
+  exceção para o chamador (fila offline do E3.4 decide a estratégia).
+- **Testes**: `MockWebServer` exercita parse e erros HTTP sem rede real.
 
 ## 3. Stack técnica
 
@@ -72,9 +106,13 @@ e testabilidade (regra R12 do documento norteador).
   somente em debug. *Atende R5.*
 - **Preferências:** `DataStore Preferences` (substituindo o legado
   `SharedPreferences`).
-- **Remota:** cliente HTTP em `:core:data/network/`. Endpoints consumidos
-  via interface `RemoteDataSource` para isolar a implementação concreta.
-  *Atende R6.*
+- **Remota:** cliente HTTP em `:core:data/remote/` (E3.2). Endpoints
+  declarados na interface `BrainOutApi` (Retrofit) e expostos pela
+  `RemoteDataSource` para isolar a implementação concreta. A URL base é
+  injetada por flavor via `BuildConfig.BASE_URL` (dev: `10.0.2.2:8000`,
+  prod: placeholder até a hospedagem definitiva — E3.1), com override
+  opcional por desenvolvedor em `local.properties`
+  (`brainout.baseUrl.dev`). *Atende R6.*
 
 ## 5. Sincronização e conectividade
 

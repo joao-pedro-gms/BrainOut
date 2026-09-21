@@ -15,6 +15,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
+    // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
+    // módulos não têm flavors próprios; fixam a dimensão `environment`
+    // no `dev` para o match de variantes do Gradle.
+    missingDimensionStrategy("environment", "dev")
+
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
