@@ -1,3 +1,9 @@
+# João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+# Runtime (imagem do CI).
 fastapi==0.115.0
 uvicorn==0.30.6
 pydantic==2.9.2
+
+# Testes (pytest + TestClient do FastAPI requer httpx).
+pytest==8.3.3
+httpx==0.27.2
