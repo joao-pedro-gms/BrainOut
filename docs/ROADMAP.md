@@ -349,6 +349,7 @@ usabilidade concluída.
 | Keystore perdido antes da N2                             | Baixa         | Alto    | Keystore obrigatoriamente guardado em cofre pessoal (1Password/Proton)     |
 | Não-conformidade de acessibilidade identificada tardia  | Média         | Médio   | E4.4 começa com auditoria no fim do Ciclo 2, não no Ciclo 4                |
 | Dependabot quebrando builds por atualização major        | Baixa         | Médio   | Groups configurados para minor/patch apenas; majors viram Auto-PR manual   |
+| 2º dispositivo físico emprestado indisponível na data de E5.3 | Baixa    | Médio   | Mapeamento e checklist pré-aprovados em `docs/DISPOSITIVOS.md` (compatibilidade com `minSdk` 24 / `targetSdk` 35 verificada antes do teste) |
 
 ## Acompanhamento
 
