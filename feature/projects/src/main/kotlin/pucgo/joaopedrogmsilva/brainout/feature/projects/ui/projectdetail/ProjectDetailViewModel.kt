@@ -116,7 +116,7 @@ class ProjectDetailViewModel @Inject constructor(
     ) {
         val trimmed = title.trim()
         if (trimmed.isEmpty()) {
-            _errorMessage.update { "Título da tarefa não pode ser vazio" }
+            _errorMessage.update { ERROR_EMPTY_TITLE }
             return
         }
         viewModelScope.launch {
@@ -129,7 +129,7 @@ class ProjectDetailViewModel @Inject constructor(
                 )
             } catch (e: ProjectTaskLimitReachedException) {
                 @Suppress("SwallowedException")
-                val message = e.message ?: ERROR_TASK_LIMIT
+                val message = e.message ?: taskLimitMessage()
                 _errorMessage.update { message }
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
@@ -195,9 +195,25 @@ class ProjectDetailViewModel @Inject constructor(
         /** Nome do argumento da rota do Navigation Compose. */
         const val PROJECT_ID_ARG: String = "projectId"
 
-        private const val ERROR_TASK_LIMIT: String =
-            "Erro: limite de $MAX_ACTIVE_TASKS_PER_PROJECT tarefas atingido"
-        private const val ERROR_INVALID_TITLE: String = "Título inválido"
-        private const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
+        // Mensagens embutidas no ViewModel em vez de strings.xml —
+        // mesma decisão do AuthViewModel (ver comentário no companion
+        // object de lá): frases de validação técnica que não dependem
+        // de localização para os testes de VM; a camada de UI traduz
+        // para o recurso localizado via `resolveProjectDetailMessage`
+        // (E4.6) quando a mensagem casa com uma chave conhecida.
+        const val ERROR_EMPTY_TITLE: String = "Título da tarefa não pode ser vazio"
+        const val ERROR_INVALID_TITLE: String = "Título inválido"
+        const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
+
+        private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
+        private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
+
+        /** Mensagem canônica de RN01 para o limite informado (usada pela UI). */
+        fun taskLimitMessage(limit: Int = MAX_ACTIVE_TASKS_PER_PROJECT): String =
+            "$ERROR_TASK_LIMIT_PREFIX$limit$ERROR_TASK_LIMIT_SUFFIX"
+
+        /** Indica se [message] é a mensagem de RN01 (limite de tarefas). */
+        fun isTaskLimitMessage(message: String): Boolean =
+            message.startsWith(ERROR_TASK_LIMIT_PREFIX) && message.endsWith(ERROR_TASK_LIMIT_SUFFIX)
     }
 }

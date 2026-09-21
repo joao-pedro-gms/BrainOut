@@ -148,6 +148,7 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 | AD-3 | Backend: FastAPI próprio (evolução do `backend-stub/`)                | 21/09/2026 |
 | AD-4 | Estratégia de sincronização: last-writer-wins + fila offline         | a definir  |
 | AD-5 | Criptografia de tokens com `androidx.security:security-crypto`       | a definir  |
+
 ## 9. Serviço de retaguarda — decisão (E3.1)
 
 A definição da plataforma definitiva do serviço de retaguarda (R6)
@@ -197,5 +198,56 @@ REST é exercido localmente pelo stub no CI. Não há, portanto, perda de
 capacidade de teste em relação às alternativas gerenciadas — apenas a
 responsabilidade de operação, assumida conscientemente pelo autor como
 parte do escopo de aprendizado do projeto integrador.
+
+| AD-6 | Lembretes de prazo via WorkManager (`OneTimeWorkRequest` + `setInitialDelay`), sem `SCHEDULE_EXACT_ALARM` (E3.6) | 21/09/2026 |
+
+## 10. Notificações locais — lembretes de prazo (E3.6)
+
+O recurso nativo do Ciclo 3 (R8) é o lembrete local de prazo: quando
+uma [Task] possui `dueDate` futura, o app agenda uma notificação para
+disparar **1 hora antes** do prazo, com as ações "Concluir" e
+"Dispensar".
+
+### 10.1 Escolha do mecanismo de agendamento (AD-6)
+
+Duas alternativas foram avaliadas:
+
+| Alternativa | Prós | Contras |
+|-------------|------|---------|
+| `AlarmManager.setExactAndAllowWhileIdle` | Precisão de segundos | Exige `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` (restrita no Android 13+, revogável, exige intenção do usuário nas Configurações); `setExactAndAllowWhileIdle` não dispara em Doze sem permissão especial |
+| **WorkManager** (`OneTimeWorkRequest` + `setInitialDelay`) | Sem permissão adicional; sobrevive a reboot/process death; integrado com a estratégia de sincronização do E3.3; testável via `work-testing` | Janela de tolerância (disparo tipicamente dentro de poucos minutos do horário programado) |
+
+A escolha foi **WorkManager**, pela consistência com o E3.3 (fila de
+sincronização no mesmo executor), pela ausência de permissões extras no
+Android 13+ e pela janela de tolerância aceitável para lembretes
+acadêmicos de prazo ("prazo em 1 hora" com deriva de minutos). A
+exatidão de segundo é desnecessária para o domínio. *Critério do marco
+atendido sem `SCHEDULE_EXACT_ALARM`.*
+
+### 10.2 Componentes
+
+| Componente | Papel |
+|------------|-------|
+| `DeadlineNotificationScheduler` (`:core:domain`) | Porta do domínio (interface): `schedule(taskId, triggerAt)` / `cancel(taskId)`; constante `REMINDER_LEAD = 1h` |
+| `WorkManagerDeadlineScheduler` (`:app`) | Implementação WorkManager; trabalho único `deadline-<taskId>` com política `REPLACE`; cria o canal em `ensureChannel()` |
+| `DeadlineWorker` (`:app`, `@HiltWorker`) | Recarrega a Task do Room no disparo (não notifica tarefa concluída/deletada — evita lembrete fantasma), resolve o nome do projeto e publica a notificação no canal `brainout_deadlines` (importância HIGH) com ações "Concluir"/"Dispensar" |
+| `DeadlineReceiver` (`:app`, `BroadcastReceiver`, não exportado) | Botão "Concluir" enfileira o `CompleteTaskWorker` (a mudança de status acontece **via WorkManager**, conforme critério do ROADMAP); cancela o trabalho pendente e a notificação; usa `goAsync()` + coroutine |
+| `CompleteTaskWorker` (`:app`, `@HiltWorker`) | Executa `ChangeTaskStatusUseCase(taskId, DONE)`; falha vira `retry` (backoff do WorkManager); tarefa inexistente é idempotente |
+| `NotificationPermissionStore` (`:app`) | Flag "permissão já pedida" persistida em `SessionStore` (DataStore) para não insistir após negativa |
+
+### 10.3 Fluxo de dados
+
+- **Criação/edição** (`CreateTaskUseCase` / `UpdateTaskUseCase`) e
+  **mudança de status** (`ChangeTaskStatusUseCase`) reconciliam o
+  lembrete: tarefa ativa com prazo futuro → agenda para
+  `dueDate − 1h`; tarefa `DONE`, sem prazo ou com prazo no passado →
+  cancela. Exclusão (`DeleteTaskUseCase`) também cancela.
+- O reconciliar vive no domínio (`:core:domain`) — o Android fica
+  isolado na implementação da porta, preservando a regra R12.
+- **Permissão** (`POST_NOTIFICATIONS`, Android 13+): pedida em
+  `MainActivity` na primeira composição via
+  `rememberLauncherForActivityResult`; negativa exibe toast
+  explicativo e não é repetida (flag em DataStore).
+- Sem `SCHEDULE_EXACT_ALARM` no manifest — intencional (AD-6).
 
 João Pedro G M Silva - PUC Goiás ADS - 20251012000740

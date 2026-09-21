@@ -266,7 +266,7 @@ notificações ativas.
       `:core:ui/theme`. *Critério:* alternância segue a configuração do
       sistema. *Atende item desejável 5.1.* *Estimativa:* 2 PH.
 
-- [ ] **E4.6** — Internacionalização: `values/strings.xml` em português,
+- [x] **E4.6** — Internacionalização: `values/strings.xml` em português,
       `values-en/strings.xml` em inglês (item desejável 5.1).
       *Critério:* zero hardcoded strings no código Kotlin.
       *Estimativa:* 2 PH.

@@ -56,7 +56,7 @@ fun SplashScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "B",
+                    text = stringResource(id = R.string.splash_monogram),
                     style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

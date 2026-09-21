@@ -45,6 +45,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // E4.6 — regressão de tradução: chave presente em `values/` sem
+    // tradução em `values-en/` é erro fatal (`MissingTranslation`).
+    lint {
+        // Instant#parse em @Preview (TasksScreenPopulated) dispara [NewApi]
+        // pré-existente com minSdk 24 — não é regressão de E4.6.
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {

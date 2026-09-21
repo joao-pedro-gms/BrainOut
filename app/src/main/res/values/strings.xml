@@ -69,4 +69,14 @@
     <string name="common_back">Voltar</string>
     <string name="common_close">Fechar</string>
     <string name="common_user_name_default">João Pedro</string>
+
+    <!-- Lembretes de prazo / notificações locais (E3.6) -->
+    <string name="deadline_channel_name">Lembretes de prazo</string>
+    <string name="deadline_channel_description">Notificações enviadas 1 hora antes do prazo de cada tarefa.</string>
+    <string name="deadline_notification_title">Prazo: %1$s</string>
+    <string name="deadline_notification_body">Projeto %1$s — prazo em 1 hora</string>
+    <string name="deadline_action_complete">Concluir</string>
+    <string name="deadline_unknown_project">(sem projeto)</string>
+    <string name="deadline_permission_denied_toast">Sem permissão de notificações — os lembretes de prazo não serão exibidos.</string>
+    <string name="deadline_permission_rationale_title">Permissão de notificações</string>
 </resources>

@@ -76,6 +76,7 @@ import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 import java.time.LocalDate
@@ -109,8 +110,13 @@ fun ProjectDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Snackbar de erro com auto-dismiss em 5s (RN01, título inválido).
-    LaunchedEffect(errorMessage) {
-        val message = errorMessage
+    // A mensagem vem do ViewModel em texto cru (constantes do domínio/VM).
+    // A resolução para o recurso localizado acontece fora do efeito, no
+    // contexto de composição (stringResource exige composição); o efeito
+    // apenas consome o texto já resolvido quando `errorMessage` muda.
+    val resolvedMessage = errorMessage?.let { resolveProjectDetailMessage(it) }
+    LaunchedEffect(resolvedMessage) {
+        val message = resolvedMessage
         if (!message.isNullOrBlank()) {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(message)
@@ -265,7 +271,7 @@ private fun ProjectDetailBody(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = "ID: $projectId",
+            text = stringResource(id = R.string.project_detail_id_label, projectId),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -739,6 +745,30 @@ private fun TaskStatus.menuTag(): String = when (this) {
     TaskStatus.TODO -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_TODO
     TaskStatus.DOING -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DOING
     TaskStatus.DONE -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DONE
+}
+
+/**
+ * Resolve a mensagem vinda do [ProjectDetailViewModel] para a versão
+ * localizada em `strings.xml` quando ela casar com uma chave conhecida;
+ * caso contrário devolve a própria mensagem (mesma estratégia de
+ * `resolveAuthMessage` em `:feature:auth`, marco E4.6).
+ */
+@Composable
+internal fun resolveProjectDetailMessage(message: String): String {
+    val limit = MAX_ACTIVE_TASKS_PER_PROJECT
+    return when {
+        message == ProjectDetailViewModel.ERROR_EMPTY_TITLE ->
+            stringResource(id = R.string.project_detail_error_empty_title)
+        message == ProjectDetailViewModel.ERROR_INVALID_TITLE ->
+            stringResource(id = R.string.project_detail_error_invalid_title)
+        message == ProjectDetailViewModel.ERROR_INVALID_TRANSITION ->
+            stringResource(id = R.string.project_detail_error_invalid_transition)
+        // RN01: mensagem cru do domínio inclui o id do projeto; casamos
+        // por prefixo/sufixo e usamos o limite global no recurso localizado.
+        ProjectDetailViewModel.isTaskLimitMessage(message) ->
+            stringResource(id = R.string.project_detail_error_task_limit, limit)
+        else -> message
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)

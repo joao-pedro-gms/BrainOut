@@ -123,9 +123,37 @@ android {
         buildConfig = true
     }
 
+    // E3.6 — testes Robolectric do canal de notificações precisam dos
+    // recursos Android (strings.xml) mesclados no classpath de teste.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    // E4.6 — regressão de tradução: chave presente em `values/` sem
+    // tradução em `values-en/` é erro fatal (`MissingTranslation`), então
+    // `./gradlew :app:lintDebug` falha quando uma string nova não é
+    // traduzida. O escopo é o res/ dos nossos módulos — o lint já ignora
+    // `MissingTranslation` de bibliotecas externas por padrão.
+    lint {
+        abortOnError = true
+        error += "MissingTranslation"
+        checkReleaseBuilds = false
+    }
+
+    // Robolectric (E4.6): o smoke test de i18n resolve R.string, o que
+    // exige que os recursos mergeados do app estejam disponíveis nos
+    // testes unitários JVM.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
         }
     }
 }
@@ -166,9 +194,19 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)
+    // E3.6 — testes do CompleteTaskWorker (Robolectric + ListenableWorker)
+    // e do WorkManagerDeadlineScheduler (WorkManager de teste).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.work.testing)
+    testImplementation(libs.mockk)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Robolectric (E4.6 — smoke test de i18n: R.string não vazio em pt e en).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }
 
 detekt {

@@ -7,6 +7,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReached
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
 /**
@@ -18,6 +19,11 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  * [TaskRepository.countActiveByProject], permitindo que o domínio
  * permaneça independente do `:core:data`.
  *
+ * Quando a tarefa nasce com [dueDate] e status ativo, o lembrete de
+ * prazo (marco E3.6) é agendado para
+ * `dueDate - [DeadlineNotificationScheduler.REMINDER_LEAD]` — 1 hora
+ * antes do prazo. Prazo no passado não dispara lembrete retroativo.
+ *
  * Lança:
  * - [ProjectTaskLimitReachedException] quando o limite já foi atingido.
  * - [pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException]
@@ -25,6 +31,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  */
 class CreateTaskUseCase @Inject constructor(
     private val repository: TaskRepository,
+    private val deadlineScheduler: DeadlineNotificationScheduler,
 ) {
     /**
      * @param projectId Projeto ao qual a tarefa pertence.
@@ -55,6 +62,15 @@ class CreateTaskUseCase @Inject constructor(
             dueDate = dueDate,
             assigneeId = assigneeId,
         )
-        return repository.create(task)
+        val created = repository.create(task)
+        scheduleReminder(created)
+        return created
+    }
+
+    private fun scheduleReminder(task: Task) {
+        val triggerAt = task.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
+        if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
+            deadlineScheduler.schedule(task.id, triggerAt)
+        }
     }
 }

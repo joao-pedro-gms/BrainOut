@@ -3,6 +3,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+      POST_NOTIFICATIONS (E3.6): exigida no Android 13+ (API 33) para
+      publicar os lembretes de prazo. O pedido runtime acontece em
+      MainActivity, na primeira entrada na Home; negativa é registrada
+      em SessionStore para não insistir.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".BrainOutApplication"
         android:allowBackup="true"
@@ -23,6 +31,31 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Receiver da notificação de prazo (E3.6). Não exportado: só o
+          app dispara os intents de ação (Concluir / Dispensar).
+        -->
+        <receiver
+            android:name=".notifications.DeadlineReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!--
+          Hilt + WorkManager: desabilita o inicializador default para
+          que a configuração venha de BrainOutApplication (E3.3/E3.6,
+          workers com injeção via construtor).
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
     </application>
 
