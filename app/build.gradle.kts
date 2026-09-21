@@ -5,7 +5,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -113,9 +113,20 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // `coreLibraryDesugaring` (desugar_jdk_libs 2.1.5) é necessário
+        // porque `:app` usa `java.time.Instant#toEpochMilli` (API 26)
+        // em `WorkManagerDeadlineScheduler` e a minSdk do projeto é 24.
+        // Sem o desugaring, lint NewApi falha e o bytecode não roda em
+        // dispositivos 24/25.
+        isCoreLibraryDesugaringEnabled = true
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    // AGP 9 built-in Kotlin: `kotlinOptions` foi removido; configuramos
+    // o JVM target dentro do bloco `kotlin {}` (extensão do plugin Compose
+    // Compiler injeta a DSL `kotlin { compilerOptions {} }`).
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
@@ -190,6 +201,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    // Core library desugaring — ver `compileOptions` acima.
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)

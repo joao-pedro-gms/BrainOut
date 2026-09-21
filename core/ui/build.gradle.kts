@@ -4,7 +4,7 @@
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.detekt)
 }
@@ -32,8 +32,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    // AGP 9 built-in Kotlin: ver nota em :app/build.gradle.kts.
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {

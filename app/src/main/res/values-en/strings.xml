@@ -69,4 +69,14 @@
     <string name="common_back">Back</string>
     <string name="common_close">Close</string>
     <string name="common_user_name_default">João Pedro</string>
+
+    <!-- Deadline reminders / local notifications (E3.6) -->
+    <string name="deadline_channel_name">Deadline reminders</string>
+    <string name="deadline_channel_description">Notifications sent 1 hour before each task\'s deadline.</string>
+    <string name="deadline_notification_title">Due: %1$s</string>
+    <string name="deadline_notification_body">Project %1$s — due in 1 hour</string>
+    <string name="deadline_action_complete">Complete</string>
+    <string name="deadline_unknown_project">(no project)</string>
+    <string name="deadline_permission_denied_toast">Notifications permission denied — deadline reminders won\'t be shown.</string>
+    <string name="deadline_permission_rationale_title">Notifications permission</string>
 </resources>
