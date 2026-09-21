@@ -217,7 +217,7 @@ dashboard consolidado.
       ação altera o status da Task via WorkManager. *Atende R8.*
       *Estimativa:* 5 PH.
 
-- [ ] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
+- [x] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
       e os segredos necessários (R12, R14). *Critério:* secrets
       documentados; `release-apk.yml` produz `.aab` assinado.
       *Estimativa:* 2 PH.

@@ -12,6 +12,20 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+// Assinatura de release (E3.7): lê o keystore de variáveis de ambiente
+// (BRAINOUT_KEYSTORE_PATH, BRAINOUT_KEYSTORE_PASSWORD, BRAINOUT_KEY_ALIAS,
+// BRAINOUT_KEY_PASSWORD). Sem as variáveis, o build de release fica
+// não-assinado e o CI comum (ktlint/detekt/testes) não quebra.
+// O keystore físico NUNCA entra no repositório (ver .gitignore).
+val brainoutStoreFile: String? = System.getenv("BRAINOUT_KEYSTORE_PATH")
+val brainoutStorePassword: String? = System.getenv("BRAINOUT_KEYSTORE_PASSWORD")
+val brainoutKeyAlias: String? = System.getenv("BRAINOUT_KEY_ALIAS")
+val brainoutKeyPassword: String? = System.getenv("BRAINOUT_KEY_PASSWORD")
+val hasReleaseSigning: Boolean = !brainoutStoreFile.isNullOrBlank() &&
+    !brainoutStorePassword.isNullOrBlank() &&
+    !brainoutKeyAlias.isNullOrBlank() &&
+    !brainoutKeyPassword.isNullOrBlank()
+
 // Carrega BASE_URL e APP_ENV do `local.properties` para expor via BuildConfig.
 // `local.properties` é ignorado pelo controle de versão (ver .gitignore).
 val localProperties = Properties().apply {
@@ -41,6 +55,17 @@ android {
         buildConfigField("String", "APP_ENV", "\"$appEnv\"")
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(brainoutStoreFile!!)
+                storePassword = brainoutStorePassword
+                keyAlias = brainoutKeyAlias
+                keyPassword = brainoutKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -54,6 +79,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // Sem keystore: sai não-assinado (não quebra builds de CI).
         }
     }
 
