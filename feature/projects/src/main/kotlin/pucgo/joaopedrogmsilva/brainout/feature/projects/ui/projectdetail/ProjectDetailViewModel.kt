@@ -10,12 +10,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,6 +45,12 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateTaskUseCase
  * de erro efêmeras disparadas pelas ações do usuário (RN01, título
  * inválido, etc.). O `errorMessage` é tratado pela camada de UI com
  * `LaunchedEffect` que dispara `clearError()` após alguns segundos.
+ *
+ * E2.8 — `isLoading` permanece `true` até o primeiro emit do Flow de
+ * tarefas ou até o `catch` final converter uma falha em
+ * `errorMessage` + `isLoading = false`. Antes deste marco a UI nunca
+ * via um spinner porque o `_errorMessage.value` do map nunca
+ * propagava corretamente.
  */
 data class ProjectDetailUiState(
     val projectId: String,
@@ -59,6 +68,10 @@ data class ProjectDetailUiState(
  *   `:core:domain` ([CreateTaskUseCase], [UpdateTaskUseCase],
  *   [ChangeTaskStatusUseCase], [DeleteProjectUseCase]).
  * - Traduzir violações de regra de negócio (RN01) em mensagens de UI.
+ * - E2.8 — capturar falhas dos Flows do Room e dos use cases de CRUD,
+ *   expondo [ProjectDetailUiState.errorMessage] e oferecendo
+ *   [retry] / [clearError] para a UI mostrar banner com botão
+ *   "Tentar novamente".
  *
  * O `projectId` vem do [SavedStateHandle] injetado pelo Navigation
  * Compose ao resolver a rota `project/{projectId}`.
@@ -85,21 +98,87 @@ class ProjectDetailViewModel @Inject constructor(
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    val uiState: StateFlow<ProjectDetailUiState> = taskRepository
-        .observeForProject(projectId)
-        .map { tasks ->
-            ProjectDetailUiState(
-                projectId = projectId,
-                tasks = tasks,
-                isLoading = false,
-                errorMessage = _errorMessage.value,
-            )
+    /**
+     * Token de retry (E2.8). Cada chamada a [retry] incrementa este
+     * valor; o pipeline [uiState] depende dele via `flatMapLatest`,
+     * então a mudança descarta a coleta atual e re-assina o Flow do
+     * [TaskRepository].
+     */
+    private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
+    val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+
+    /**
+     * Estado de UI da tela — E2.1/E2.2 + E2.8.
+     *
+     * Cada emissão do Flow do [TaskRepository] é mapeada para um
+     * [ProjectDetailUiState] com `isLoading = false`. O `.catch`
+     * final (E2.8) captura falhas do Room e as converte em
+     * `errorMessage` + `isLoading = false`, para que a UI possa
+     * mostrar o banner de erro com "Tentar novamente" em vez de
+     * ficar presa em "Loading" para sempre.
+     *
+     * [CancellationException] é re-lançada para preservar o
+     * cancelamento estruturado de corrotinas (não engolir sinal de
+     * cancelamento do ViewModel).
+     */
+    val uiState: StateFlow<ProjectDetailUiState> = _retryToken
+        .flatMapLatest { _ ->
+            taskRepository
+                .observeForProject(projectId)
+                .catch { throwable ->
+                    if (throwable is CancellationException) throw throwable
+                    val message = throwable.toProjectDetailErrorMessage()
+                    _errorMessage.value = message
+                    // Lista de sentinela — o `onEach` abaixo a
+                    // distingue da lista vazia real do Room para
+                    // evitar "engolir" o erro pendente.
+                    emit(sentinelOnError)
+                }
+                // Limpa erro pendente APENAS em emissões vindas do
+                // upstream (sucesso do Flow), não na sentinela
+                // emitida pelo `catch` acima. Sem esse filtro, o
+                // `catch` emitiria a lista vazia e o `onEach`
+                // seguinte resetaria o erro para `null`
+                // imediatamente, "engolindo" a falha. (E2.8)
+                .onEach { tasks ->
+                    if (tasks !== sentinelOnError) {
+                        _errorMessage.value = null
+                    }
+                }
+        }
+        .let { tasksFlow ->
+            kotlinx.coroutines.flow.flow {
+                tasksFlow.collect { tasks ->
+                    emit(
+                        ProjectDetailUiState(
+                            projectId = projectId,
+                            tasks = tasks,
+                            isLoading = false,
+                            errorMessage = _errorMessage.value,
+                        ),
+                    )
+                }
+            }
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = ProjectDetailUiState(projectId = projectId),
         )
+
+    /**
+     * Sentinela interna para distinguir a lista vazia emitida pelo
+     * `catch` (que sinaliza erro) de uma lista vazia real do Room.
+     * Evita que o `onEach` "engola" o erro pendente logo após o
+     * `catch` emitir a lista.
+     *
+     * Criada uma única vez por ViewModel — cada `catch` produz um
+     * `emit(sentinelOnError)`, então o downstream recebe a mesma
+     * referência. Como a lista do Room é uma `MutableList` real
+     * (vinda do Cursor do `RoomDatabase`), nunca terá referência
+     * idêntica a esta `ListOf(0)`.
+     */
+    private val sentinelOnError: List<Task> = listOf()
 
     /**
      * Cria uma nova tarefa no projeto corrente. Aplica a RN01
@@ -110,6 +189,9 @@ class ProjectDetailViewModel @Inject constructor(
      *
      * @param dueDate prazo opcional (E3.5: integra com a checagem
      *   de feriados nacionais).
+     * E2.8 — também captura falhas genéricas do Room (e.g.
+     * `SQLiteException`) que não são mapeadas por exceções de
+     * domínio, evitando crash silencioso.
      */
     fun addTask(
         title: String,
@@ -135,6 +217,10 @@ class ProjectDetailViewModel @Inject constructor(
                 _errorMessage.update { message }
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
     }
@@ -156,6 +242,10 @@ class ProjectDetailViewModel @Inject constructor(
                 changeStatus.invoke(taskId, target)
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
     }
@@ -171,9 +261,9 @@ class ProjectDetailViewModel @Inject constructor(
      * bloqueado).
      *
      * Em tarefas ativas, usa [Task.changePriority] (que valida o
-     * intervalo 0..4) e depois delega ao [UpdateTaskUseCase] —
-     * este use case recarrega o estado persistido e rejeita
-     * tentativas com a persistência em DONE (bypass via `copy`).
+     * intervalo 0..4) e depois delega ao [UpdateTaskUseCase] — este
+     * use case recarrega o estado persistido e rejeita tentativas
+     * com a persistência em DONE (bypass via `copy`).
      */
     fun changeTaskPriority(task: Task, newPriority: TaskPriority) {
         val updated = try {
@@ -193,6 +283,10 @@ class ProjectDetailViewModel @Inject constructor(
                 _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
     }
@@ -206,13 +300,25 @@ class ProjectDetailViewModel @Inject constructor(
                 updateTask.invoke(task.rename(trimmed))
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
     }
 
     /** Remove a [task] do projeto (ação do menu "Excluir" do item). */
     fun deleteTask(task: Task) {
-        viewModelScope.launch { deleteTask.invoke(task.id) }
+        viewModelScope.launch {
+            try {
+                deleteTask.invoke(task.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
+            }
+        }
     }
 
     /**
@@ -221,14 +327,30 @@ class ProjectDetailViewModel @Inject constructor(
      */
     fun deleteProject(onDone: () -> Unit) {
         viewModelScope.launch {
-            deleteProject.invoke(projectId)
-            onDone()
+            try {
+                deleteProject.invoke(projectId)
+                onDone()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _errorMessage.update { e.toProjectDetailErrorMessage() }
+            }
         }
     }
 
     /** Limpa a mensagem de erro atual — usado pela UI após o chip expirar. */
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    /**
+     * Re-assina o pipeline de observação de tarefas após uma falha
+     * (E2.8). Incrementa [retryToken], o que dispara o
+     * `flatMapLatest` em [uiState] e descarta a coleta atual.
+     */
+    fun retry() {
+        _errorMessage.value = null
+        _retryToken.value = _retryToken.value + 1
     }
 
     companion object {
@@ -247,6 +369,13 @@ class ProjectDetailViewModel @Inject constructor(
         const val ERROR_PRIORITY_LOCKED: String =
             "RN02: alteração de prioridade bloqueada em tarefa concluída"
 
+        /**
+         * Mensagem canônica para falhas genéricas do Room/use case
+         * (E2.8). A UI resolve esta chave para o recurso localizado
+         * via `R.string.project_detail_error_load_failed`.
+         */
+        const val ERROR_LOAD_FAILED: String = "Não foi possível carregar as tarefas do projeto"
+
         private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
         private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
 
@@ -262,7 +391,18 @@ class ProjectDetailViewModel @Inject constructor(
         fun isPriorityLockedMessage(message: String): Boolean =
             message.startsWith(ERROR_PRIORITY_LOCKED_PREFIX) && ERROR_PRIORITY_LOCKED_TAG in message
 
+        /** Indica se [message] é a mensagem canônica de falha de carga (E2.8). */
+        fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+
         private const val ERROR_PRIORITY_LOCKED_PREFIX: String = "RN02: alteração de prioridade bloqueada"
         private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
     }
 }
+
+/**
+ * Converte uma [Throwable] vinda do Room em uma mensagem canônica
+ * para a UI (E2.8). Mantém a regra de não expor stack traces: a UI
+ * só recebe a chave de recurso; o detalhe técnico fica em logcat.
+ */
+internal fun Throwable.toProjectDetailErrorMessage(): String =
+    ProjectDetailViewModel.ERROR_LOAD_FAILED

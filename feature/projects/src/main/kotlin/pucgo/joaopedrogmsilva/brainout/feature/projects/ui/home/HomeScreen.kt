@@ -3,6 +3,13 @@
 // papel colorido por role, FAB gated pelo papel (Owner habilita,
 // Member abre diálogo explicativo) e lista real de projetos com
 // chips de tag (E2.1/E2.6).
+//
+// Telas Compose legítimas concentram muitos composables pequenos
+// em um único arquivo; suprimimos TooManyFunctions/LongParameterList
+// para manter a coesão da feature em vez de dispersar widgets
+// correlatos (mesma decisão do ProjectDetailScreen).
+
+@file:Suppress("TooManyFunctions", "LongParameterList", "LongMethod")
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -32,6 +39,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -160,6 +168,9 @@ fun HomeScreen(
                 isLoading = listState.isLoading,
                 currentFilter = currentFilter,
                 onSelectFilter = viewModel::setProjectFilter,
+                errorMessage = listState.errorMessage,
+                onRetry = viewModel::retry,
+                onDismissError = viewModel::clearError,
             )
             HomeTab.Tasks -> Unit
             HomeTab.Settings -> Unit
@@ -198,6 +209,10 @@ object HomeTestTags {
     const val FILTER_GROUP: String = "home_filter_group"
     const val FILTER_ACTIVE: String = "home_filter_active"
     const val FILTER_COMPLETED: String = "home_filter_completed"
+    const val LOADING: String = "home_loading"
+    const val ERROR_BANNER: String = "home_error_banner"
+    const val ERROR_RETRY: String = "home_error_retry"
+    const val ERROR_DISMISS: String = "home_error_dismiss"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -380,6 +395,9 @@ private fun HomeProjectsContent(
     isLoading: Boolean,
     currentFilter: HomeProjectFilter,
     onSelectFilter: (HomeProjectFilter) -> Unit,
+    errorMessage: String?,
+    onRetry: () -> Unit,
+    onDismissError: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -405,7 +423,26 @@ private fun HomeProjectsContent(
             onSelect = onSelectFilter,
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-        if (projects.isEmpty() && !isLoading) {
+        // E2.8 — banner de erro com retry. Tem prioridade sobre o
+        // estado vazio: se o Room falhou, oferecemos "Tentar
+        // novamente" em vez do empty state (que mostraria uma
+        // coleção vazia de forma enganosa).
+        if (errorMessage != null) {
+            HomeErrorBanner(
+                message = errorMessage,
+                onRetry = onRetry,
+                onDismiss = onDismissError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp),
+            )
+        } else if (projects.isEmpty() && isLoading) {
+            // E2.8 — loader enquanto o Flow do Room não emite a
+            // primeira lista. Empty state só aparece após a primeira
+            // coleta efetiva, evitando a sobreposição das duas
+            // visualizações.
+            HomeLoadingState(modifier = Modifier.fillMaxWidth())
+        } else if (projects.isEmpty()) {
             if (currentFilter == HomeProjectFilter.Completed) {
                 HomeCompletedEmptyState(
                     modifier = Modifier
@@ -433,6 +470,104 @@ private fun HomeProjectsContent(
             }
         }
     }
+}
+
+/**
+ * Loader da Home (E2.8). Centralizado e com `testTag` para os
+ * testes Compose. Mantemos a área de toque ≥ 48dp no `Box` para
+ * consistência com a diretriz E4.4.
+ */
+@Composable
+private fun HomeLoadingState(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .heightIn(min = 240.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.testTag(HomeTestTags.LOADING),
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(48.dp))
+            Text(
+                text = stringResource(id = R.string.home_loading_aria_label),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Banner de erro com ações de retry/dispensar (E2.8). Renderizado
+ * sempre que `errorMessage != null`. A mensagem vinda do ViewModel
+ * é uma chave canônica (`ERROR_LOAD_FAILED` ou
+ * `ERROR_ACTION_FAILED`); a UI resolve para o recurso localizado
+ * via [resolveHomeErrorMessage].
+ */
+@Composable
+private fun HomeErrorBanner(
+    message: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.testTag(HomeTestTags.ERROR_BANNER),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = resolveHomeErrorMessage(message),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier
+                        .testTag(HomeTestTags.ERROR_RETRY)
+                        // E4.4: 48dp mínimo WCAG 2.5.5.
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.home_error_retry))
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .testTag(HomeTestTags.ERROR_DISMISS)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(id = R.string.home_error_dismiss))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Resolve a chave canônica de erro do [HomeViewModel] para a string
+ * localizada. Mesma estratégia de `resolveProjectDetailMessage` em
+ * E2.1 — chaves técnicas do ViewModel viram recurso pt/en sem
+ * expor stack traces para o usuário.
+ */
+@Composable
+internal fun resolveHomeErrorMessage(message: String): String = when {
+    HomeViewModel.isLoadErrorMessage(message) ->
+        stringResource(id = R.string.home_error_load_failed)
+    message == HomeViewModel.ERROR_ACTION_FAILED ->
+        stringResource(id = R.string.home_error_action_failed)
+    else -> message
 }
 
 @Composable
@@ -611,6 +746,7 @@ private fun CreateProjectDialog(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
+    var nameError by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedTagIds = rememberSaveable(saver = androidx.compose.runtime.saveable.listSaver(
         save = { it.toList() },
         restore = { it.toMutableStateList() },
@@ -623,7 +759,14 @@ private fun CreateProjectDialog(
         text = {
             CreateProjectDialogBody(
                 name = name,
-                onNameChange = { name = it },
+                onNameChange = {
+                    name = it
+                    // E2.8 — limpa o erro assim que o usuário
+                    // começa a digitar, evitando mensagem fixa no
+                    // campo enquanto a interação continua.
+                    if (nameError != null) nameError = null
+                },
+                nameError = nameError,
                 description = description,
                 onDescriptionChange = { description = it },
                 availableTags = availableTags,
@@ -635,7 +778,14 @@ private fun CreateProjectDialog(
             TextButton(
                 onClick = {
                     val trimmedName = name.trim()
-                    if (trimmedName.isEmpty()) return@TextButton
+                    if (trimmedName.isEmpty()) {
+                        // E2.8 — validação inline: não fecha o
+                        // diálogo, marca `nameError` para o
+                        // `TextField` exibir `isError` +
+                        // `supportingText`.
+                        nameError = CREATE_PROJECT_NAME_REQUIRED_KEY
+                        return@TextButton
+                    }
                     onCreateProject(
                         trimmedName,
                         description.trim().takeIf { it.isNotEmpty() },
@@ -666,10 +816,28 @@ private fun CreateProjectDialog(
     }
 }
 
+/**
+ * Chave canônica de validação inline (E2.8). Mesma estratégia do
+ * `ERROR_LOAD_FAILED` — a UI resolve para o recurso localizado via
+ * [resolveCreateProjectNameError]. Permanece como constante para
+ * que os testes Compose possam comparar com a chave sem depender de
+ * texto em pt/en.
+ */
+private const val CREATE_PROJECT_NAME_REQUIRED_KEY: String = "CREATE_PROJECT_NAME_REQUIRED"
+
+@Composable
+internal fun resolveCreateProjectNameError(key: String?): String? = when (key) {
+    CREATE_PROJECT_NAME_REQUIRED_KEY ->
+        stringResource(id = R.string.home_create_project_name_required)
+    null -> null
+    else -> key
+}
+
 @Composable
 private fun CreateProjectDialogBody(
     name: String,
     onNameChange: (String) -> Unit,
+    nameError: String?,
     description: String,
     onDescriptionChange: (String) -> Unit,
     availableTags: List<TagChip>,
@@ -677,11 +845,25 @@ private fun CreateProjectDialogBody(
     onShowAddTag: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // E2.8 — `isError` + `supportingText` quando `nameError`
+        // estiver preenchido. A mensagem é resolvida via
+        // [resolveCreateProjectNameError] para manter a string
+        // localizada em pt/en (regra E4.6).
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
             label = { Text(text = stringResource(id = R.string.home_create_project_name_label)) },
             singleLine = true,
+            isError = nameError != null,
+            supportingText = {
+                val resolved = resolveCreateProjectNameError(nameError)
+                if (resolved != null) {
+                    Text(
+                        text = resolved,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
             modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_NAME),
         )
         OutlinedTextField(

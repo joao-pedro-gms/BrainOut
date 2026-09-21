@@ -174,10 +174,27 @@ histórico Git versionado continuamente.
       *Critério:* gráficos atualizam quando o banco muda; testes de UI
       verificam valores iniciais. *Atende R9.* *Estimativa:* 5 PH.
 
-- [ ] **E2.8** — Tratamento explícito de erros: loaders durante
+- [x] **E2.8** — Tratamento explícito de erros: loaders durante
       carregamento, empty states nas listas, mensagens amigáveis em
       falhas de validação. *Critério:* capturas anexadas ao relatório
       de defeitos cobrem os três cenários. *Atende R10.* *Estimativa:* 3 PH.
+      _Entregue no PR `feat/estados-erro-e28` — três ViewModels
+      (`HomeViewModel`, `ProjectDetailViewModel`,
+      `TasksViewModel`) capturam falhas dos Flows do Room via
+      `.catch` (com `CancellationException` re-lançada para preservar
+      o cancelamento estruturado de corrotinas) e expõem
+      `errorMessage` no estado de UI. Token de retry via
+      `MutableStateFlow<Int>` + `flatMapLatest` descarta a coleta
+      atual e re-assina o upstream em um único comando. Empty
+      state, loader e banner de erro têm prioridade explícita na
+      renderização para evitar sobreposição. Validação inline na
+      criação de projeto: `OutlinedTextField` com `isError` +
+      `supportingText` quando o nome está vazio. Mensagens
+      localizadas em pt/en via chaves canônicas em
+      `strings.xml` + `values-en/strings.xml`. 11 testes novos
+      (5 no Home, 4 no ProjectDetail, 2 no Tasks) cobrindo
+      primeira emissão, falha do Flow, retry e erro em CRUD. Smoke
+      manual de João em `docs/SMOKE-TEST-CRUD.md` §9._
 
 ### Saída do Ciclo 2
 
