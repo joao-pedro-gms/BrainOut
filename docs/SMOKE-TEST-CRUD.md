@@ -76,3 +76,29 @@
 - [ ] Mensagens amigáveis em falhas de validação (sem stack traces expostos).
 - [ ] Estado preservado entre rotações (girar o dispositivo durante qualquer tela).
 - [ ] Persistência verificada: matar o app e reabrir — projetos, tarefas e tags mantidos.
+
+---
+
+## 8. Notificações de prazo em dispositivo físico (E3.6 — Checkpoint 2)
+
+> Roteiro adicional para o **Checkpoint 2** (dispositivo físico, Android 13+).
+> A notificação em horário programado não é verificável em teste de unidade;
+> este bloco cobre o critério do E3.6 no aparelho real.
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 8.1   | Primeira entrada na Home após instalação limpa. | Diálogo nativo pede permissão de notificações (`POST_NOTIFICATIONS`). |
+| 8.2   | Conceder a permissão. | Sem diálogo repetido nas próximas entradas (flag em DataStore). |
+| 8.3   | (Cenário alternativo) Reinstalar, negar a permissão. | Toast explicativo sobre lembretes; app segue funcionando; diálogo não se repete. |
+| 8.4   | Criar projeto "App Android" e tarefa "Entrega" com prazo `agora + 2h`. | Tarefa criada; lembrete agendado para `prazo − 1h` (trabalho `deadline-<taskId>` visível em `adb shell dumpsys jobscheduler \| grep -i brainout`). |
+| 8.5   | Aguardar o horário do lembrete (ou adiantar o relógio nas Configurações). | Notificação no canal "Lembretes de prazo": título "Prazo: Entrega", texto "Projeto App Android — prazo em 1 hora". |
+| 8.6   | Tocar em **Concluir** na notificação. | Notificação some; ao abrir o app a tarefa aparece como `DONE` (mudança aplicada via WorkManager). |
+| 8.7   | Criar nova tarefa com prazo `+2h`, aguardar a notificação e tocar em **Dispensar** (ou descartar). | Notificação some; tarefa permanece no status anterior. |
+| 8.8   | Concluir a tarefa pela UI antes do lembrete disparar. | Nenhuma notificação dispara no horário (trabalho cancelado). |
+| 8.9   | Excluir tarefa com lembrete pendente. | Nenhuma notificação dispara; sem lembrete fantasma. |
+
+**Critérios de pronto adicionais (E3.6):**
+
+- [ ] Passos 8.1–8.9 executados em dispositivo físico sem crash.
+- [ ] Notificação disparada dentro da janela de tolerância do WorkManager (≈ minutos do horário programado).
+- [ ] Ação "Concluir" altera o status para `DONE` mesmo com o app em segundo plano fechado.

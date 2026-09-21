@@ -4,6 +4,7 @@ package pucgo.joaopedrogmsilva.brainout.core.data.session
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -55,6 +56,23 @@ class SessionStore(
     suspend fun clear() {
         dataStore.edit { prefs ->
             prefs.remove(USER_ID_KEY)
+            prefs.remove(NOTIFICATION_PERMISSION_ASKED_KEY)
+        }
+    }
+
+    /**
+     * `true` se a permissão `POST_NOTIFICATIONS` já foi pedida alguma
+     * vez (marco E3.6). Independente da sessão: sobrevive a logout.
+     * Removida apenas em [clear] (reset total do DataStore).
+     */
+    suspend fun wasNotificationPermissionAsked(): Boolean {
+        return dataStore.data.first()[NOTIFICATION_PERMISSION_ASKED_KEY] == true
+    }
+
+    /** Registra que a permissão de notificações foi pedida (E3.6). */
+    suspend fun markNotificationPermissionAsked() {
+        dataStore.edit { prefs ->
+            prefs[NOTIFICATION_PERMISSION_ASKED_KEY] = true
         }
     }
 
@@ -64,6 +82,10 @@ class SessionStore(
 
         /** Chave interna do id do usuário. */
         val USER_ID_KEY: Preferences.Key<String> = stringPreferencesKey("user_id")
+
+        /** Chave da flag "permissão POST_NOTIFICATIONS já pedida" (E3.6). */
+        val NOTIFICATION_PERMISSION_ASKED_KEY: Preferences.Key<Boolean> =
+            booleanPreferencesKey("notification_permission_asked")
     }
 }
 

@@ -99,6 +99,14 @@ android {
         buildConfig = true
     }
 
+    // E3.6 — testes Robolectric do canal de notificações precisam dos
+    // recursos Android (strings.xml) mesclados no classpath de teste.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -142,6 +150,12 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)
+    // E3.6 — testes do CompleteTaskWorker (Robolectric + ListenableWorker)
+    // e do WorkManagerDeadlineScheduler (WorkManager de teste).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.work.testing)
+    testImplementation(libs.mockk)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
