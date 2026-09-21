@@ -5,12 +5,15 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-internal val BrainOutLightColors: ColorScheme = androidx.compose.material3.lightColorScheme(
+internal val BrainOutLightColors = lightColorScheme(
+
     primary = BrainOutPrimary,
     onPrimary = BrainOutOnPrimary,
     primaryContainer = BrainOutPrimaryContainer,
@@ -37,39 +40,39 @@ internal val BrainOutLightColors: ColorScheme = androidx.compose.material3.light
 )
 
 /**
- * Paleta escura completa (E4.5).
+ * `BrainOutDarkColors` espelha os 25 pares de `BrainOutLightColors` (marco E4.4 —
+ * acessibilidade AA). A versão original da E1.3 cobria apenas 6
+ * tokens, deixando surface/error/outline do tema escuro iguais aos
+ * do claro — o que quebraria o contraste no modo escuro.
  *
- * Espelha todos os tokens do `lightColorScheme` (16 chaves) consumindo
- * os tokens `BrainOut*Dark` definidos em `Color.kt`. Antes desta
- * entrega o `darkColorScheme` era parcial (apenas 6 chaves), o que
- * deixava `surface`, `background`, `error`, `outline` e variantes com
- * os defaults do MaterialTheme e gerava contraste inconsistente em
- * telas de feature em modo noturno.
+ * Cada par `on*`/fundo é validado pelo `ContrastRatioTest` em
+ * `core/ui/src/test/kotlin/...` (>= 4.5:1 texto / >= 3.0:1 gráfico).
  */
-internal val BrainOutDarkColors: ColorScheme = androidx.compose.material3.darkColorScheme(
-    primary = BrainOutPrimaryDark,
-    onPrimary = BrainOutOnPrimaryDark,
-    primaryContainer = BrainOutPrimaryContainerDark,
-    onPrimaryContainer = BrainOutOnPrimaryContainerDark,
-    secondary = BrainOutSecondaryDark,
-    onSecondary = BrainOutOnSecondaryDark,
-    secondaryContainer = BrainOutSecondaryContainerDark,
-    onSecondaryContainer = BrainOutOnSecondaryContainerDark,
-    tertiary = BrainOutTertiaryDark,
-    onTertiary = BrainOutOnTertiaryDark,
-    tertiaryContainer = BrainOutTertiaryContainerDark,
-    onTertiaryContainer = BrainOutOnTertiaryContainerDark,
-    error = BrainOutErrorDark,
-    onError = BrainOutOnErrorDark,
-    errorContainer = BrainOutErrorContainerDark,
-    onErrorContainer = BrainOutOnErrorContainerDark,
-    background = BrainOutBackgroundDark,
-    onBackground = BrainOutOnBackgroundDark,
-    surface = BrainOutSurfaceDark,
-    onSurface = BrainOutOnSurfaceDark,
-    surfaceVariant = BrainOutSurfaceVariantDark,
-    onSurfaceVariant = BrainOutOnSurfaceVariantDark,
-    outline = BrainOutOutlineDark
+internal val BrainOutDarkColors = darkColorScheme(
+    primary = BrainOutDarkPrimary,
+    onPrimary = BrainOutDarkOnPrimary,
+    primaryContainer = BrainOutDarkPrimaryContainer,
+    onPrimaryContainer = BrainOutDarkOnPrimaryContainer,
+    secondary = BrainOutDarkSecondary,
+    onSecondary = BrainOutDarkOnSecondary,
+    secondaryContainer = BrainOutDarkSecondaryContainer,
+    onSecondaryContainer = BrainOutDarkOnSecondaryContainer,
+    tertiary = BrainOutDarkTertiary,
+    onTertiary = BrainOutDarkOnTertiary,
+    tertiaryContainer = BrainOutDarkTertiaryContainer,
+    onTertiaryContainer = BrainOutDarkOnTertiaryContainer,
+    error = BrainOutDarkError,
+    onError = BrainOutDarkOnError,
+    errorContainer = BrainOutDarkErrorContainer,
+    onErrorContainer = BrainOutDarkOnErrorContainer,
+    background = BrainOutDarkBackground,
+    onBackground = BrainOutDarkOnBackground,
+    surface = BrainOutDarkSurface,
+    onSurface = BrainOutDarkOnSurface,
+    surfaceVariant = BrainOutDarkSurfaceVariant,
+    onSurfaceVariant = BrainOutDarkOnSurfaceVariant,
+    outline = BrainOutDarkOutline
+
 )
 
 /**

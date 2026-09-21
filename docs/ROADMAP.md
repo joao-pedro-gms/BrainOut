@@ -278,11 +278,20 @@ notificações ativas.
       regra de congelamento E4.8. 4 corrigidos (DEF-01, 03, 04, 05);
       1 contornado (DEF-02); 2 abertos com justificativa (DEF-06, 07).
 
-- [ ] **E4.4** — Acessibilidade: contraste AA, áreas de toque ≥ 48dp,
+- [x] **E4.4** — Acessibilidade: contraste AA, áreas de toque ≥ 48dp,
       `contentDescription` em todos os elementos visuais não textuais,
       suporte a TalkBack nos fluxos principais.
       *Critério:* varredura com Accessibility Scanner sem alertas
       críticos. *Atende R11.* *Estimativa:* 3 PH.
+      *Status:* ✅ contraste WCAG AA coberto por
+      `ContrastRatioTest` (24 testes, 22 texto + 2 gráfico, em ambos
+      os temas); áreas de toque ≥ 48dp aplicadas via
+      `Modifier.heightIn(min = 48.dp)` em todos os `AssistChip`/
+      `FilterChip` interativos de `:feature:projects` e
+      `:feature:tasks`; `contentDescription` adicionado em
+      `IconButton(MoreVert)` da `ProjectDetailScreen`; demais
+      ícones decorativos anotados com `null` explícito; detalhes
+      em [`docs/ACESSIBILIDADE.md`](ACESSIBILIDADE.md).
 
 - [x] **E4.5** — Tema claro e escuro, com tokens centralizados em
       `:core:ui/theme`. *Critério:* alternância segue a configuração do

@@ -349,7 +349,10 @@ private fun TaskRowHeader(
         IconButton(onClick = onMenuClicked) {
             Icon(
                 imageVector = Icons.Outlined.MoreVert,
-                contentDescription = null,
+                // E4.4: descreve a ação do botão para TalkBack; o rótulo
+                // textual do menu é anunciado quando o dropdown abre,
+                // mas o botão em si precisa de descrição própria.
+                contentDescription = stringResource(id = R.string.project_detail_task_menu_more),
             )
         }
     }
@@ -439,6 +442,8 @@ private fun StatusChip(status: TaskStatus) {
             containerColor = container,
             labelColor = content,
         ),
+        // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
+        modifier = Modifier.heightIn(min = 48.dp),
     )
 }
 
@@ -456,6 +461,8 @@ private fun PriorityChip(priority: TaskPriority) {
         label = {
             Text(text = stringResource(id = labelRes), style = MaterialTheme.typography.labelSmall)
         },
+        // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
+        modifier = Modifier.heightIn(min = 48.dp),
     )
 }
 

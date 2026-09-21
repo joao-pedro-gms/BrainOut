@@ -46,35 +46,36 @@ internal val BrainOutSurfaceVariant = Color(0xFFE7E0EC)
 internal val BrainOutOnSurfaceVariant = Color(0xFF49454F)
 internal val BrainOutOutline = Color(0xFF79747E)
 
-// --- Dark tokens (E4.5) ---
-// Mantêm contraste AA em superfícies escuras. Derivam das paletas
-// Material 3 com tonalidade roxa — mesma identidade visual da light,
-// apenas invertida para o modo noturno.
-internal val BrainOutPrimaryDark = Color(0xFFD0BCFF)
-internal val BrainOutOnPrimaryDark = Color(0xFF381E72)
-internal val BrainOutPrimaryContainerDark = Color(0xFF4F378B)
-internal val BrainOutOnPrimaryContainerDark = Color(0xFFEADDFF)
+// Tokens do tema escuro. Derivados da paleta Material 3 (mesma cor
+// semente roxa) seguindo o padrão do M3 Color Builder. Garantimos
+// contraste AA (>= 4.5:1 texto, >= 3.0:1 gráfico) entre cada par
+// `on*` / superfície — coberto por `ContrastRatioTest` (marco E4.4).
+internal val BrainOutDarkPrimary = Color(0xFFD0BCFF)
+internal val BrainOutDarkOnPrimary = Color(0xFF381E72)
+internal val BrainOutDarkPrimaryContainer = Color(0xFF4F378B)
+internal val BrainOutDarkOnPrimaryContainer = Color(0xFFEADDFF)
 
-internal val BrainOutSecondaryDark = Color(0xFFCCC2DC)
-internal val BrainOutOnSecondaryDark = Color(0xFF332D41)
-internal val BrainOutSecondaryContainerDark = Color(0xFF4A4458)
-internal val BrainOutOnSecondaryContainerDark = Color(0xFFE8DEF8)
+internal val BrainOutDarkSecondary = Color(0xFFCCC2DC)
+internal val BrainOutDarkOnSecondary = Color(0xFF332D41)
+internal val BrainOutDarkSecondaryContainer = Color(0xFF4A4458)
+internal val BrainOutDarkOnSecondaryContainer = Color(0xFFE8DEF8)
 
-internal val BrainOutTertiaryDark = Color(0xFFEFB8C8)
-internal val BrainOutOnTertiaryDark = Color(0xFF492532)
-internal val BrainOutTertiaryContainerDark = Color(0xFF633B48)
-internal val BrainOutOnTertiaryContainerDark = Color(0xFFFFD8E4)
+internal val BrainOutDarkTertiary = Color(0xFFEFB8C8)
+internal val BrainOutDarkOnTertiary = Color(0xFF492532)
+internal val BrainOutDarkTertiaryContainer = Color(0xFF633B48)
+internal val BrainOutDarkOnTertiaryContainer = Color(0xFFFFD8E4)
 
-internal val BrainOutErrorDark = Color(0xFFF2B8B5)
-internal val BrainOutOnErrorDark = Color(0xFF601410)
-internal val BrainOutErrorContainerDark = Color(0xFF8C1D18)
-internal val BrainOutOnErrorContainerDark = Color(0xFFF9DEDC)
+internal val BrainOutDarkError = Color(0xFFF2B8B5)
+internal val BrainOutDarkOnError = Color(0xFF601410)
+internal val BrainOutDarkErrorContainer = Color(0xFF8C1D18)
+internal val BrainOutDarkOnErrorContainer = Color(0xFFF9DEDC)
 
-internal val BrainOutBackgroundDark = Color(0xFF1C1B1F)
-internal val BrainOutOnBackgroundDark = Color(0xFFE6E1E5)
-internal val BrainOutSurfaceDark = Color(0xFF1C1B1F)
-internal val BrainOutOnSurfaceDark = Color(0xFFE6E1E5)
+internal val BrainOutDarkBackground = Color(0xFF1C1B1F)
+internal val BrainOutDarkOnBackground = Color(0xFFE6E1E5)
+internal val BrainOutDarkSurface = Color(0xFF1C1B1F)
+internal val BrainOutDarkOnSurface = Color(0xFFE6E1E5)
 
-internal val BrainOutSurfaceVariantDark = Color(0xFF49454F)
-internal val BrainOutOnSurfaceVariantDark = Color(0xFFCAC4D0)
-internal val BrainOutOutlineDark = Color(0xFF938F99)
+internal val BrainOutDarkSurfaceVariant = Color(0xFF49454F)
+internal val BrainOutDarkOnSurfaceVariant = Color(0xFFCAC4D0)
+internal val BrainOutDarkOutline = Color(0xFF938F99)
+
