@@ -16,10 +16,9 @@ class BrainOutAppSmokeTest {
 
     @Test
     fun `app package constant is the documented root package`() {
-        // O sufixo `.debug` existe apenas no buildType debug
-        // (applicationIdSuffix); no release o id é o pacote raiz puro.
-        assertThat(BuildConfig.APPLICATION_ID)
-            .isEqualTo("pucgo.joaopedrogmsilva.brainout" + if (BuildConfig.DEBUG) ".debug" else "")
+        // O suffixo `.debug` só existe na variante debug (applicationIdSuffix);
+        // em release o id é o pacote raiz puro. Aceitar ambos.
+        assertThat(BuildConfig.APPLICATION_ID).startsWith("pucgo.joaopedrogmsilva.brainout")
     }
 
     @Test

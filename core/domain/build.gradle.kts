@@ -5,6 +5,8 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
+    // Kover (E4.7): cobertura de código para o domínio puro Kotlin.
+    alias(libs.plugins.kover)
     id("jacoco")
 }
 

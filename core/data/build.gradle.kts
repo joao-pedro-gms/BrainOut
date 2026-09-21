@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.detekt)
+    // Kover (E4.7): cobertura de código para a camada de dados.
+    alias(libs.plugins.kover)
 }
 
 import java.util.Properties

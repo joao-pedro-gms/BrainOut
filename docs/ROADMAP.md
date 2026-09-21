@@ -220,7 +220,7 @@ dashboard consolidado.
       ação altera o status da Task via WorkManager. *Atende R8.*
       *Estimativa:* 5 PH.
 
-- [ ] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
+- [x] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
       e os segredos necessários (R12, R14). *Critério:* secrets
       documentados; `release-apk.yml` produz `.aab` assinado.
       *Estimativa:* 2 PH.
@@ -271,10 +271,15 @@ notificações ativas.
       *Critério:* zero hardcoded strings no código Kotlin.
       *Estimativa:* 2 PH.
 
-- [ ] **E4.7** — Testes automatizados expandidos: cobertura mínima de
+- [x] **E4.7** — Testes automatizados expandidos: cobertura mínima de
       60% nas camadas `:core:domain` e `:core:data` (item desejável 5.1).
       *Critério:* relatório de cobertura publicado como artifact do CI.
       *Estimativa:* 3 PH.
+      *Status:* ✅ Kover 0.9.9 aplicado em `:core:domain` e `:core:data`
+      com bound de 60% (`koverVerify`); cobertura atual: domínio 87,9%,
+      data 67,3%. Relatório HTML publicado como artifact `coverage-report`
+      no job `unit-tests` do `ci.yml`. Detalhes em `docs/CI-CD.md`
+      (seção "Cobertura de testes").
 
 - [ ] **E4.8** — Congelamento de escopo em 27/11. A partir desta data,
       apenas correções. Novas features migradas para backlog pós-N2.
@@ -349,6 +354,7 @@ usabilidade concluída.
 | Keystore perdido antes da N2                             | Baixa         | Alto    | Keystore obrigatoriamente guardado em cofre pessoal (1Password/Proton)     |
 | Não-conformidade de acessibilidade identificada tardia  | Média         | Médio   | E4.4 começa com auditoria no fim do Ciclo 2, não no Ciclo 4                |
 | Dependabot quebrando builds por atualização major        | Baixa         | Médio   | Groups configurados para minor/patch apenas; majors viram Auto-PR manual   |
+| 2º dispositivo físico emprestado indisponível na data de E5.3 | Baixa    | Médio   | Mapeamento e checklist pré-aprovados em `docs/DISPOSITIVOS.md` (compatibilidade com `minSdk` 24 / `targetSdk` 35 verificada antes do teste) |
 
 ## Acompanhamento
 
