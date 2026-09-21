@@ -240,11 +240,17 @@ notificações ativas.
 
 ### Marcos
 
-- [ ] **E4.1** — Roteiro de testes funcionais cobrindo os fluxos
+- [x] **E4.1** — Roteiro de testes funcionais cobrindo os fluxos
       principais (cadastro, login, criar projeto, criar tarefa,
       sincronizar offline→online, receber notificação).
       *Critério:* pelo menos 12 casos com resultado esperado/observado.
       *Atende N2 item 3.* *Estimativa:* 5 PH.
+      *Status:* ✅ 14 casos publicados em `docs/ROTEIRO-TESTES.md`
+      (TF-01..TF-14), cobrindo cadastro, login, projeto, tarefa com
+      RN01, sincronização offline↔online (E3.3/E3.4), notificações de
+      prazo (E3.6), tags e troca de perfil. Coluna "Resultado
+      observado" permanece em branco até a sessão manual; casos TF-09
+      e TF-10 dependem da conclusão de E3.3/E3.4.
 
 - [ ] **E4.2** — Sessões de teste de usabilidade com 5 usuários externos,
       perfil compatível com o público-alvo. *Critério:*
