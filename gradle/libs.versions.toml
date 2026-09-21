@@ -1,9 +1,22 @@
 # João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 [versions]
-agp = "8.7.3"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.27"
-hilt = "2.52"
+# AGP 9.4.1 — bump do 8.7.3. AGP 9 tem dependência runtime em KGP 2.2.10
+# (KGP/KSP abaixo desse limite são auto-upgraded); declarar versões
+# explícitas evita surpresas no CI (ver `build.gradle.kts` raiz).
+agp = "9.4.1"
+# KGP 2.3.20 — explícito acima do piso 2.2.10 do AGP 9; mantém compatibilidade
+# com Kotlin Compose Compiler (mesma versão do KGP), plugins Jetbrains e
+# Kover. Sobe de 2.0.21 para integrar com o toolchain novo. 2.3.20 é o
+# último 2.3.x estável publicado; KSP 2.3.12 é loosely-coupled desde
+# KSP 2.3.0 (google/ksp#2660), então a versão não precisa bater.
+kotlin = "2.3.20"
+# KSP 2.3.12 — alinha com KGP; >= 2.3.5 elimina o ciclo kapt/ksp com built-in
+# Kotlin do AGP 9 (google/ksp#2743). Sobe de 2.0.21-1.0.27.
+ksp = "2.3.12"
+# Hilt 2.60.1 — mínimo 2.59 declarado pelo time do Hilt para AGP 9. Sobe de 2.52.
+hilt = "2.60.1"
+# Room 2.8.4 — versão estável que aceita KSP 2.3.12 (KSP1/KSP2 ok). Sobe de 2.6.1.
+room = "2.8.4"
 coreKtx = "1.13.1"
 appcompat = "1.7.0"
 lifecycle = "2.8.7"
@@ -11,13 +24,17 @@ activityCompose = "1.9.3"
 composeBom = "2024.10.01"
 navigationCompose = "2.8.4"
 hiltNavigationCompose = "1.2.0"
-room = "2.6.1"
 datastore = "1.1.1"
 securityCrypto = "1.1.0"
 coroutines = "1.9.0"
 javaxInject = "1"
 workmanager = "2.9.1"
 hiltWork = "1.2.0"
+# desugar_jdk_libs 2.1.5 — ativa `coreLibraryDesugaring` no :app para
+# permitir o uso de `java.time.Instant#toEpochMilli` (API 26) em
+# dispositivos com minSdk 24. Necessário desde o bump de toolchain
+# AGP 9 (lint NewApi ficou estrito).
+desugarJdkLibs = "2.1.5"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 kotlinxSerialization = "1.7.3"
@@ -30,7 +47,10 @@ mockk = "1.13.13"
 truth = "1.4.4"
 composeUiTest = "1.7.5"
 detekt = "1.23.7"
-ktlint = "12.1.2"
+# ktlint 14.2.0 — bump do 12.1.2; o plugin passa a usar uma engine ktlint
+# 1.x muito mais estrita. As violações remanescentes após `ktlintFormat`
+# são corrigidas no escopo deste card (commit separado). Ver docs/CI-CD.md.
+ktlint = "14.2.0"
 jacoco = "0.8.12"
 # Kover 0.9.x: cobertura de código + verificação de bound mínimo (E4.7).
 kover = "0.9.9"
@@ -72,6 +92,7 @@ okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver",
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workmanager" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitExt" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
@@ -88,7 +109,11 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# `kotlin-android` foi removido: AGP 9 ativa built-in Kotlin automaticamente
+# para todos os módulos Android (ver developer.android.com/build/migrate-to-built-in-kotlin).
+# Mantemos `kotlin-jvm` (módulo :core:domain é puro JVM, não-Android) e os
+# plugins de feature (compose/serialization) que continuam sendo plugins
+# Kotlin próprios e precisam ser aplicados manualmente.
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

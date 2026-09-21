@@ -3,7 +3,7 @@
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -85,8 +85,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    // AGP 9 built-in Kotlin: `kotlinOptions` foi removido; usamos o bloco
+    // `kotlin { compilerOptions {} }` introduzido pelo plugin Compose
+    // Compiler (também presente em :core:data mesmo sem Compose, via
+    // dependência transitiva do build classpath).
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     // E4.6 — regressão de tradução: chave em `values/` sem tradução em

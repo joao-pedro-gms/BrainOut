@@ -172,6 +172,64 @@ jarsigner -verify -verbose -certs app-release.aab
 apksigner verify --print-certs app-release.aab
 ```
 
+## Toolchain
+
+Versões centralizadas em `gradle/libs.versions.toml`. A política é bump
+explícito no catálogo e cobertura por `./gradlew :app:assembleDevDebug test
+ktlintCheck detekt :app:lintDevDebug` antes de subir PR.
+
+| Componente                 | Versão          | Notas                                                       |
+|----------------------------|-----------------|-------------------------------------------------------------|
+| Gradle (wrapper)           | 9.7.1           | Exigido pelo AGP 9.4 (`>= 9.6.0`). Não bumpar no toolchain. |
+| AGP                        | 9.4.1           | Bump de 8.7.3; habilita built-in Kotlin (ver abaixo).       |
+| Kotlin Gradle Plugin (KGP) | 2.3.20          | Exigido >= 2.2.10 pelo AGP 9; KGP 2.3.20 é o último 2.3.x estável. |
+| KSP                        | 2.3.12          | Acima do piso 2.3.5 (corrige ciclo kapt/ksp do AGP 9).      |
+| Hilt                       | 2.60.1          | Mínimo 2.59 declarado pelo time do Hilt para AGP 9.         |
+| Room                       | 2.8.4           | Suporta KSP 2.3.x.                                          |
+| desugar_jdk_libs           | 2.1.5           | Habilita `coreLibraryDesugaring` no `:app` para `java.time.Instant` em minSdk 24. |
+| ktlint (plugin)            | 14.2.0          | Bump de 12.1.2; engine ktlint 1.x é estritamente mais rígida (chained-call, indentation). |
+| detekt                     | 1.23.7          | Sem mudança.                                                |
+| Kover                      | 0.9.9           | Sem mudança.                                                |
+| Compose BOM                | 2024.10.01      | Sem mudança.                                                |
+| compileSdk / targetSdk     | 35              | Mantidos em 35 (próximo bump exige E5.x).                   |
+
+### Built-in Kotlin (AGP 9)
+
+AGP 9 ativa `built-in Kotlin` automaticamente para todos os módulos
+Android. Com isso:
+
+- O plugin `org.jetbrains.kotlin.android` foi **removido** dos
+  `build.gradle.kts` raiz e dos módulos (`:app`, `:core:data`,
+  `:core:ui`, `feature/*`). Apenas `org.jetbrains.kotlin.jvm` permanece
+  aplicado em `:core:domain` (módulo puro JVM).
+- O bloco `kotlinOptions { jvmTarget = "17" }` (DSL legada) foi
+  migrado para `kotlin { compilerOptions { jvmTarget.set(...) } }` em
+  todos os módulos Android.
+- `kotlin-compose` e `kotlin-serialization` continuam aplicados
+  manualmente (são plugins de feature do Kotlin, não de plataforma).
+- Opt-out temporário via `android.builtInKotlin=false` no
+  `gradle.properties` permanece disponível para debugging; será
+  removido no AGP 10.
+
+### Deprecations resolvidas neste bump
+
+- **`android.nonFinalResIds=false`** removido do `gradle.properties` —
+  deprecated no AGP 9, default agora é `true`.
+- **Migrate to built-in Kotlin** (developer.android.com/build/migrate-to-built-in-kotlin)
+  — ver tabela acima.
+- **`android.kotlinOptions` DSL** removida em todos os módulos Android.
+
+### Deprecations pré-existentes (fora do escopo deste bump)
+
+- `compileSdk = 35` (lint sugere 37). Aguardando decisão em E5.x.
+- 8 erros `MissingTranslation` para `deadline_*` foram corrigidos como
+  parte deste bump (PR #49 do E4.6 só traduziu as 52 chaves
+  pré-existentes; as 8 do E3.6 entraram depois e ficaram sem par `en`).
+- 6 erros pré-existentes em E3.6 (`MissingPermission`, `NewApi` em
+  `NotificationChannel`/`Instant.toEpochMilli`) corrigidos: guarda
+  `Build.VERSION.SDK_INT >= O` em `ensureChannel`, `@SuppressLint`
+  no `notify`, e `coreLibraryDesugaring` no `:app`.
+
 ## Branch protection recomendada
 
 Em **Settings → Branches → Branch protection rules → main**, ative:

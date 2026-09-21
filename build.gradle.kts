@@ -3,7 +3,8 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.kotlin.android) apply false
+    // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente
+    // para os módulos Android. `kotlin-jvm` permanece para :core:domain.
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ksp) apply false
@@ -37,7 +38,8 @@ gradle.projectsEvaluated {
         logger.warn("Não foi possível localizar :core:domain:test para wire-up")
     } else {
         rootProject.subprojects.forEach { sub ->
-            sub.tasks.matching { it.name.startsWith("test") && it.name.endsWith("UnitTest") }
+            sub.tasks
+                .matching { it.name.startsWith("test") && it.name.endsWith("UnitTest") }
                 .configureEach {
                     dependsOn(domainTest)
                 }
