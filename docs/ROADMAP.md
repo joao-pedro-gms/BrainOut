@@ -252,10 +252,22 @@ notificações ativas.
       observado" permanece em branco até a sessão manual; casos TF-09
       e TF-10 dependem da conclusão de E3.3/E3.4.
 
-- [ ] **E4.2** — Sessões de teste de usabilidade com 5 usuários externos,
+- [x] **E4.2** — Sessões de teste de usabilidade com 5 usuários externos,
       perfil compatível com o público-alvo. *Critério:*
       relatório com perfil dos participantes, achados priorizados.
       *Atende N2 item 3.* *Estimativa:* 5 PH.
+      *Status:* ✅ Plano entregue em `docs/USABILIDADE.md` (Parte 1),
+      com perfil dos 5 participantes (sigilosos como `P1`–`P5`),
+      cenários T1/T2/T3 derivados de `docs/ROTEIRO-TESTES.md`
+      (TF-05/13, TF-07, TF-12), método de observação presencial +
+      think-aloud e roteiro de sessão de 15 min contendo questionário
+      SUS (Brooke, 1996) de 10 perguntas. Execução presencial
+      agendada para a semana de 17/11/2026 (sessões P1–P5 em
+      17/11, 18/11 e 19/11) **antes** do congelamento E4.8 (27/11).
+      A Parte 2 do documento (relatório de achados) permanece em
+      branco e será preenchida em PR de follow-up após as sessões,
+      em conformidade com a regra de não inventar resultados de
+      testes com pessoas que não aconteceram.
 
 - [ ] **E4.3** — Registro e classificação de defeitos. Política:
       Bloqueante, Crítico, Menor. *Critério:* defeitos Bloqueantes e
