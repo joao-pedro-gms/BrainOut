@@ -269,10 +269,14 @@ notificações ativas.
       em conformidade com a regra de não inventar resultados de
       testes com pessoas que não aconteceram.
 
-- [ ] **E4.3** — Registro e classificação de defeitos. Política:
+- [x] **E4.3** — Registro e classificação de defeitos. Política:
       Bloqueante, Crítico, Menor. *Critério:* defeitos Bloqueantes e
       Críticos corrigidos antes da N2; defeitos Menores com
       justificativa de não correção. *Atende 6.3.* *Estimativa:* 3 PH.
+      *Status:* ✅ `docs/DEFEITOS.md` com 7 defeitos catalogados
+      (DEF-01..07), política de severidade, fluxo de triagem e
+      regra de congelamento E4.8. 4 corrigidos (DEF-01, 03, 04, 05);
+      1 contornado (DEF-02); 2 abertos com justificativa (DEF-06, 07).
 
 - [ ] **E4.4** — Acessibilidade: contraste AA, áreas de toque ≥ 48dp,
       `contentDescription` em todos os elementos visuais não textuais,
