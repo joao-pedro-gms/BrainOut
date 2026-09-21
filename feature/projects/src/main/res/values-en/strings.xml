@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <!-- Home (lista de projetos) -->
+    <string name="home_topbar_greeting">Hi, %1$s</string>
+    <string name="home_role_badge_owner">Owner</string>
+    <string name="home_role_badge_member">Member</string>
+    <string name="home_section_title">Your projects</string>
+    <string name="home_empty_title">No projects yet</string>
+    <string name="home_empty_body">Tap the “+” button to create your first project.</string>
+    <string name="home_fab_create">Create new project</string>
+    <string name="home_fab_disabled_label">Coming soon: create project</string>
+
+    <!-- Bottom navigation -->
+    <string name="bottom_tab_projects">Projects</string>
+    <string name="bottom_tab_tasks">Tasks</string>
+    <string name="bottom_tab_settings">Settings</string>
+
+    <!-- Project detail -->
+    <string name="project_detail_title">Demo Project</string>
+    <string name="project_detail_description">Android app for project and task management, in Kotlin and Jetpack Compose.</string>
+    <string name="project_detail_tasks_title">Tasks</string>
+    <string name="project_detail_new_task">New task</string>
+    <string name="project_detail_back">Back</string>
+    <string name="project_detail_delete_project">Delete project</string>
+    <string name="project_detail_empty_title">No tasks registered</string>
+    <string name="project_detail_empty_body">Tap “+New task” to get started.</string>
+
+    <!-- New task dialog -->
+    <string name="project_detail_new_task_dialog_title">New task</string>
+    <string name="project_detail_new_task_title_label">Title</string>
+    <string name="project_detail_new_task_title_placeholder">E.g.: Review monthly report</string>
+    <string name="project_detail_new_task_priority_label">Priority</string>
+    <string name="project_detail_new_task_save">Save</string>
+    <string name="project_detail_new_task_cancel">Cancel</string>
+
+    <!-- Task status labels -->
+    <string name="task_status_todo">To do</string>
+    <string name="task_status_doing">In progress</string>
+    <string name="task_status_done">Done</string>
+
+    <!-- Task priority labels -->
+    <string name="task_priority_low">Low</string>
+    <string name="task_priority_medium">Medium</string>
+    <string name="task_priority_high">High</string>
+    <string name="task_priority_urgent">Urgent</string>
+    <string name="task_priority_critical">Critical</string>
+
+    <!-- Task item menu -->
+    <string name="project_detail_task_menu_move_doing">Move to In progress</string>
+    <string name="project_detail_task_menu_move_done">Move to Done</string>
+    <string name="project_detail_task_menu_move_todo">Move to To do</string>
+    <string name="project_detail_task_menu_delete">Delete task</string>
+
+    <!-- Home (E1.7 — papel exibido + gate do FAB) -->
+    <string name="home_role_member_dialog_title">Available for Owners only</string>
+    <string name="home_role_member_dialog_body">Upgrade to Owner to create projects.</string>
+    <string name="home_role_member_dialog_ack">Got it</string>
+    <string name="home_fab_disabled_owner">Create project (coming soon)</string>
+
+    <!-- Home (E2.1/E2.6 — diálogo de criar projeto + tag) -->
+    <string name="home_create_project_title">New project</string>
+    <string name="home_create_project_name_label">Name</string>
+    <string name="home_create_project_description_label">Description (optional)</string>
+    <string name="home_create_project_tags_label">Tags</string>
+    <string name="home_create_project_tags_empty">No tags registered yet.</string>
+    <string name="home_create_project_add_tag">+ Add tag</string>
+    <string name="home_create_project_add_tag_title">New tag</string>
+    <string name="home_create_project_add_tag_name_label">Tag name</string>
+    <string name="home_create_project_add_tag_color_label">Color (#RRGGBB)</string>
+    <string name="home_create_project_confirm">Create</string>
+
+    <!-- Common -->
+    <string name="common_back">Back</string>
+    <string name="common_close">Close</string>
+
+    <!-- Erros do ProjectDetailViewModel (E4.6 — a UI resolve por chave) -->
+    <string name="project_detail_error_task_limit">Error: task limit of %1$d active tasks reached</string>
+    <string name="project_detail_error_invalid_title">Invalid title</string>
+    <string name="project_detail_error_invalid_transition">Invalid status transition</string>
+    <string name="project_detail_error_empty_title">Task title cannot be empty</string>
+    <string name="project_detail_id_label">ID: %1$s</string>
+</resources>

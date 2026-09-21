@@ -136,6 +136,26 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // E4.6 — regressão de tradução: chave presente em `values/` sem
+    // tradução em `values-en/` é erro fatal (`MissingTranslation`), então
+    // `./gradlew :app:lintDebug` falha quando uma string nova não é
+    // traduzida. O escopo é o res/ dos nossos módulos — o lint já ignora
+    // `MissingTranslation` de bibliotecas externas por padrão.
+    lint {
+        abortOnError = true
+        error += "MissingTranslation"
+        checkReleaseBuilds = false
+    }
+
+    // Robolectric (E4.6): o smoke test de i18n resolve R.string, o que
+    // exige que os recursos mergeados do app estejam disponíveis nos
+    // testes unitários JVM.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -183,6 +203,10 @@ dependencies {
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Robolectric (E4.6 — smoke test de i18n: R.string não vazio em pt e en).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }
 
 detekt {

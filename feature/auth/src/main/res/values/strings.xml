@@ -3,6 +3,7 @@
 <resources>
     <!-- Splash -->
     <string name="splash_title">BrainOut</string>
+    <string name="splash_monogram">B</string>
     <string name="splash_tagline">Organize projetos e tarefas com a sua equipe, online e offline.</string>
     <string name="splash_cta">Começar</string>
 
