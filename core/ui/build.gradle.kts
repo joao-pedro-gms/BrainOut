@@ -58,12 +58,13 @@ dependencies {
     api(libs.androidx.compose.material3)
     debugApi(libs.androidx.compose.ui.tooling)
 
-    // E4.5 — teste unitário/Robolectric que valida o critério "alternância
-    // segue a configuração do sistema" via resolveBrainOutStaticColorScheme.
+    // Testes unitários do tema (E4.4 — contraste WCAG AA via algoritmo
+    // sRGB sobre os tokens em `Color.kt`).
     testImplementation(libs.junit)
     testImplementation(libs.truth)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+
 }
 
 detekt {

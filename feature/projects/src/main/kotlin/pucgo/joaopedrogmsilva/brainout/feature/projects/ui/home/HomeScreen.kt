@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -246,6 +247,10 @@ private fun HomeTopBar(user: HomeUser) {
                             containerColor = roleContainer,
                             labelColor = roleLabel,
                         ),
+                        // E4.4: garante área de toque mínima de 48dp
+                        // (WCAG 2.5.5 Target Size). M3 AssistChip é ~32dp
+                        // de altura por padrão.
+                        modifier = Modifier.heightIn(min = 48.dp),
                     )
                 }
             }
@@ -469,6 +474,8 @@ private fun TagChipView(chip: TagChip, selected: Boolean) {
             enabled = true,
             borderColor = container,
         ),
+        // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+        modifier = Modifier.heightIn(min = 48.dp),
     )
 }
 
@@ -629,6 +636,9 @@ private fun CreateProjectTagsFlow(
                     else selectedTagIds.add(chip.id)
                 },
                 label = { Text(text = chip.name) },
+                // E4.4: FilterChip padrão M3 tem ~32dp de altura.
+                // Aplicamos 48dp para satisfazer WCAG 2.5.5.
+                modifier = Modifier.heightIn(min = 48.dp),
             )
         }
     }
