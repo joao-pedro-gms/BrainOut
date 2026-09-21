@@ -107,6 +107,57 @@ e testabilidade (regra R12 do documento norteador).
 |------|----------------------------------------------------------------------|------------|
 | AD-1 | Multi-módulo Gradle conforme Seção 2                                 | a definir  |
 | AD-2 | Stack conforme Seção 3                                               | a definir  |
-| AD-3 | Backend: substituir `backend-stub/` pela plataforma definitiva no E3.1 | a definir  |
+| AD-3 | Backend: FastAPI próprio (evolução do `backend-stub/`)                | 21/09/2026 |
 | AD-4 | Estratégia de sincronização: last-writer-wins + fila offline         | a definir  |
 | AD-5 | Criptografia de tokens com `androidx.security:security-crypto`       | a definir  |
+## 9. Serviço de retaguarda — decisão (E3.1)
+
+A definição da plataforma definitiva do serviço de retaguarda (R6)
+constitui o marco E3.1 do Ciclo 3. Três alternativas foram avaliadas:
+**Firebase** (BaaS da Google, modelo NoSQL em tempo real), **Supabase**
+(BaaS open source sobre PostgreSQL) e **backend próprio** (API REST
+dedicada, já representada neste repositório pelo stub FastAPI em
+`backend-stub/`, usado pelo pipeline de integração contínua). A tabela a
+seguir resume a comparação segundo os critérios relevantes ao projeto.
+
+### 9.1 Análise comparativa
+
+| Critério                        | Firebase                                                                 | Supabase                                                                 | Backend próprio (FastAPI)                                                       |
+|---------------------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| Custo                           | Camada gratuita limitada; cobrança por leituras/escritas pode escalar     | Camada gratuita generosa; cobrança por projeto ativo após o limite         | Zero — hospedado em VM própria na rede Tailscale                                  |
+| Controle de dados               | Baixo: dados residem em infraestrutura de terceiros, fora do domínio acadêmico | Médio: opção self-hosted existe, porém a configuração gerenciada é o caminho comum | Alto: esquema, retenção e cópias de segurança sob controle integral do autor     |
+| Esforço de integração           | Baixo: SDKs nativos, porém acoplam a camada de dados ao fornecedor        | Médio: cliente PostgreSQL/REST; modelagem distinta do contrato REST já definido | Baixo: contrato REST (`/v1/projects`, `/v1/tasks`) já implementado e exercitado no CI |
+| Curva de aprendizado            | Média: modelo de documentos e regras de segurança proprietárias           | Média: exige familiaridade com PostgreSQL e Row Level Security             | Baixa: Python + FastAPI com tipagem Pydantic, alinhados à formação do autor       |
+| Deploy e operação               | Gerenciado pelo fornecedor; sem controle de versão implantado             | Gerenciado (nuvem) ou manual (self-hosted via Docker)                      | Container Docker simples, já empacotado no CI; implantação em VM caseira via Tailscale |
+
+### 9.2 Decisão recomendada
+
+A alternativa recomendada é o **backend próprio com FastAPI**. A
+justificativa central é o controle de dados: a aplicação trata dados de
+autenticação e perfis com permissões distintas (R2), e manter esses
+dados em infraestrutura sob o próprio domínio elimina a dependência de
+fornecedores externos e o compartilhamento de informações de usuário com
+terceiros. O modelo de dados relacional já consolidado em Room
+(users/projects/tasks/tags) mapeia diretamente para um backend
+relacional, sem a tradução para documentos exigida pelo Firebase.
+
+O critério econômico corrobora a decisão: Firebase e Supabase implicam
+custos recorrentes à medida que o volume de sincronização cresce,
+enquanto um container FastAPI implantado em VM própria, acessível pela
+VPN Tailscale, opera a custo zero e mantém o tráfego fora da internet
+pública. Ademais, parte significativa do esforço de integração já foi
+realizada: o stub FastAPI em `backend-stub/` roda no CI com o contrato
+REST de projetos e tarefas, de modo que a evolução do stub para o
+serviço definitivo consiste em substituir a persistência em memória por
+PostgreSQL, preservando o contrato de endpoints consumido pelo cliente
+Android (E3.2).
+
+Por fim, a decisão preserva a testabilidade e a portabilidade exigidas
+pela arquitetura multi-módulo: o cliente HTTP permanece isolado em
+`:core:data/network/` atrás de `RemoteDataSource`, e o mesmo contrato
+REST é exercido localmente pelo stub no CI. Não há, portanto, perda de
+capacidade de teste em relação às alternativas gerenciadas — apenas a
+responsabilidade de operação, assumida conscientemente pelo autor como
+parte do escopo de aprendizado do projeto integrador.
+
+João Pedro G M Silva - PUC Goiás ADS - 20251012000740
