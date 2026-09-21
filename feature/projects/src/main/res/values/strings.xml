@@ -120,4 +120,17 @@
     <string name="home_error_retry">Tentar novamente</string>
     <string name="home_error_dismiss">Dispensar</string>
     <string name="home_create_project_name_required">Informe um nome para o projeto.</string>
+
+    <!-- E2.6 — busca textual, filtro por tag, ordenação -->
+    <string name="home_search_placeholder">Buscar projeto por nome…</string>
+    <string name="home_search_clear">Limpar busca</string>
+    <string name="home_tag_filter_all">Todas</string>
+    <string name="home_sort_aria_label">Ordenar projetos</string>
+    <string name="home_sort_name_asc">Nome A→Z</string>
+    <string name="home_sort_name_desc">Nome Z→A</string>
+    <string name="home_sort_created_desc">Mais recentes</string>
+    <string name="home_sort_created_asc">Mais antigas</string>
+    <string name="home_no_matches_title">Nenhum projeto encontrado</string>
+    <string name="home_no_matches_title_with_query">Nenhum projeto encontrado para \"%1$s\"</string>
+    <string name="home_no_matches_body">Ajuste a busca ou o filtro de tag para ver mais resultados.</string>
 </resources>

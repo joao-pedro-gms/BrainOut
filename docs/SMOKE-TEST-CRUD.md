@@ -1,6 +1,6 @@
 # Smoke test manual — CRUD de Projetos, Tarefas e Tags (Ciclo 2)
 
-> Procedimento de aceitação manual do Ciclo 2 (E2.1, E2.2, E2.3, E2.6)
+> Procedimento de aceitação manual do Ciclo 2 (E2.1, E2.2, E2.3, E2.6, E2.8)
 > do BrainOut. Deve ser executado em **emulador Android** (API 33+)
 > com a APK debug gerada por `./gradlew :app:assembleDebug`. Os
 > resultados devem ser fotografados/anexados ao relatório da entrega N1.
@@ -169,6 +169,64 @@
 |-------|------|--------------------|
 | 9.6.1 | Trocar idioma do dispositivo para inglês (`Settings → System → Languages`). Reabrir o app. | Todos os textos novos do E2.8 aparecem em inglês: "Loading projects", "Couldn't load your projects", "Try again", "Dismiss", "Please enter a project name." |
 | 9.6.2 | Trocar idioma para português. | Textos voltam para o português. |
+
+## 10. Busca, filtro por tag e ordenação (E2.6)
+
+Pré-condições: app instalado, banco limpo, pelo menos 2 Owners
+cadastrados com 5 projetos e 3 tags. Cada projeto nomeado de forma
+distinta: `App Android`, `Site portfólio`, `Estudo Kotlin`,
+`Reunião semanal`, `Backup rotina`. Tags: `Estudo` (cobre App
+Android e Estudo Kotlin), `Urgente` (cobre Reunião semanal), `Outros`
+(cobre Site portfólio e Backup rotina).
+
+### 10.1. Busca textual
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 10.1.1 | Abrir a aba Projetos com 5 cards visíveis. | Barra de busca aparece no topo da aba com placeholder "Buscar projeto por nome…" (pt) / "Search projects by name…" (en). |
+| 10.1.2 | Digitar `Kotlin` no campo de busca. | Após ~300ms (debounce), apenas o card "Estudo Kotlin" permanece; os outros 4 somem. |
+| 10.1.3 | Confirmar que o `LIKE` é case-insensitive para ASCII: limpar e digitar `kotlin` (minúsculo). | Mesmo resultado — "Estudo Kotlin" continua aparecendo. |
+| 10.1.4 | Digitar `xyz` (sem matches). | Empty state com mensagem "Nenhum projeto encontrado para 'xyz'" e corpo "Ajuste a busca ou o filtro de tag para ver mais resultados." |
+| 10.1.5 | Tocar no **X** do campo de busca. | Lista completa dos 5 cards reaparece imediatamente (sem esperar o debounce). |
+
+### 10.2. Filtro por tag
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 10.2.1 | Tocar no chip **Estudo** na `LazyRow` de tags. | Lista reduz a 2 cards: "App Android" e "Estudo Kotlin". O chip fica marcado. |
+| 10.2.2 | Tocar de novo no chip **Estudo** para desselecionar. | Lista volta aos 5 cards. |
+| 10.2.3 | Tocar em **Todas**. | Mesmo resultado — todos os 5 cards. |
+| 10.2.4 | Selecionar **Urgente** + digitar `Reunião` na busca. | Apenas "Reunião semanal" aparece (filtro E busca combinados). |
+
+### 10.3. Ordenação
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 10.3.1 | Tocar no ícone de sort (engrenagem) no canto direito da linha de filtros. | Dropdown com 4 opções: Nome A→Z, Nome Z→A, Mais recentes, Mais antigas. "Mais recentes" tem leading check. |
+| 10.3.2 | Selecionar **Nome A→Z**. | Lista reordena alfabeticamente: App Android, Backup rotina, Estudo Kotlin, Reunião semanal, Site portfólio. Leading check passa para "Nome A→Z". |
+| 10.3.3 | Selecionar **Nome Z→A**. | Lista inverte. |
+| 10.3.4 | Selecionar **Mais antigas**. | Lista reordena por `created_at` ASC. |
+
+### 10.4. Persistência entre sessões
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 10.4.1 | Com busca `Kotlin` + filtro `Estudo` + sort `Nome A→Z` ativos, forçar `kill` do app (`adb shell am force-stop pucgo.joaopedrogmsilva.brainout.debug`). | — |
+| 10.4.2 | Reabrir o app e fazer login como mesmo Owner. | Os 3 filtros aparecem restaurados: campo com `Kotlin`, chip Estudo marcado, sort Nome A→Z ativo. Lista filtrada combina os 3. |
+| 10.4.3 | Trocar para o segundo Owner (logout/login). | Filtros voltam ao default (busca vazia, "Todas", Mais recentes) — preferências são namespaced por `userId`. |
+
+### 10.5. Localização pt/en
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 10.5.1 | Trocar idioma do dispositivo para inglês. Reabrir o app. | "Search projects by name…", "Clear search", "All", "Sort projects", "Name A→Z", "Name Z→A", "Newest first", "Oldest first", "No projects match \"Kotlin\"", "Adjust the search query or tag filter to see more results." |
+| 10.5.2 | Voltar para português. | Textos revertem. |
+
+**Critérios de pronto (E2.6):**
+
+- [ ] Passos 10.1 a 10.4 executados sem crash e com os 3 filtros combinados.
+- [ ] Caso 10.4.3 cobre que preferências não vazam entre contas.
+- [ ] `MissingTranslation` continua fatal — chaves E2.6 sem par pt/en quebram o build.
 
 **Critérios de pronto (E2.8):**
 

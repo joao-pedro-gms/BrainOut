@@ -28,23 +28,29 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -74,6 +80,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -171,6 +178,13 @@ fun HomeScreen(
                 errorMessage = listState.errorMessage,
                 onRetry = viewModel::retry,
                 onDismissError = viewModel::clearError,
+                availableTags = listState.availableTags,
+                searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
+                onSearchQueryChange = viewModel::onSearchQueryChange,
+                selectedTagId = listState.selectedTagId,
+                onTagFilterChange = viewModel::onTagFilterChange,
+                sortOrder = listState.sortOrder,
+                onSortOrderChange = viewModel::onSortOrderChange,
             )
             HomeTab.Tasks -> Unit
             HomeTab.Settings -> Unit
@@ -213,7 +227,31 @@ object HomeTestTags {
     const val ERROR_BANNER: String = "home_error_banner"
     const val ERROR_RETRY: String = "home_error_retry"
     const val ERROR_DISMISS: String = "home_error_dismiss"
+
+    // E2.6 — busca + filtro por tag + ordenação.
+    const val SEARCH_FIELD: String = "home_search_field"
+    const val SEARCH_CLEAR: String = "home_search_clear"
+    const val TAG_FILTER_ROW: String = "home_tag_filter_row"
+    const val TAG_FILTER_ALL: String = "home_tag_filter_all"
+    const val SORT_MENU_BUTTON: String = "home_sort_menu_button"
+    const val SORT_MENU: String = "home_sort_menu"
+    const val NO_MATCHES: String = "home_no_matches"
+
+    /** Test tag para um chip de filtro por tag específico. */
+    fun tagFilterChip(tagId: String): String = "home_tag_filter_chip_$tagId"
+
+    /** Test tag para um item do menu de ordenação. */
+    fun sortMenuItem(order: SortOrder): String = "home_sort_item_${order.name.lowercase()}"
 }
+
+/**
+ * Chave estável do chip "Todas" no [HomeTagFilterRow]. Mantida como
+ * constante no escopo do arquivo (em vez de string literal inline)
+ * para que o `LazyRow` possa referenciar a mesma `key` na hora do
+ * recompose e não destrua/recrie o chip quando o `availableTags`
+ * muda.
+ */
+private const val TAG_FILTER_ALL_KEY: String = "__all__"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -398,6 +436,13 @@ private fun HomeProjectsContent(
     errorMessage: String?,
     onRetry: () -> Unit,
     onDismissError: () -> Unit,
+    availableTags: List<TagChip>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedTagId: String?,
+    onTagFilterChange: (String?) -> Unit,
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -406,6 +451,22 @@ private fun HomeProjectsContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // E2.6 — barra de busca textual. `OutlinedTextField` com ícone
+        // de limpar (X) à direita quando o texto não está vazio. O
+        // placeholder vem de `values/strings.xml` para manter a regra
+        // E4.6 (pt/en).
+        HomeSearchBar(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+        )
+        // E2.6 — chips horizontais com todas as tags do usuário +
+        // "Todas" para o filtro por tag. Renderizado como `LazyRow`
+        // para escalar quando o usuário tem muitas tags.
+        HomeTagFilterRow(
+            availableTags = availableTags,
+            selectedTagId = selectedTagId,
+            onSelect = onTagFilterChange,
+        )
         Text(
             text = when (currentFilter) {
                 HomeProjectFilter.Active -> stringResource(id = R.string.home_section_title)
@@ -421,6 +482,8 @@ private fun HomeProjectsContent(
         HomeProjectFilterRow(
             current = currentFilter,
             onSelect = onSelectFilter,
+            sortOrder = sortOrder,
+            onSortOrderChange = onSortOrderChange,
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         // E2.8 — banner de erro com retry. Tem prioridade sobre o
@@ -443,7 +506,18 @@ private fun HomeProjectsContent(
             // visualizações.
             HomeLoadingState(modifier = Modifier.fillMaxWidth())
         } else if (projects.isEmpty()) {
-            if (currentFilter == HomeProjectFilter.Completed) {
+            // E2.6 — diferenciar "lista vazia sem filtro" de
+            // "filtro/busca não retornou nada". No segundo caso, a
+            // mensagem cita a query (ou a tag) que está restringindo
+            // a visualização.
+            if (searchQuery.isNotBlank() || selectedTagId != null) {
+                HomeNoMatchesState(
+                    query = searchQuery,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp),
+                )
+            } else if (currentFilter == HomeProjectFilter.Completed) {
                 HomeCompletedEmptyState(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -570,10 +644,13 @@ internal fun resolveHomeErrorMessage(message: String): String = when {
     else -> message
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeProjectFilterRow(
     current: HomeProjectFilter,
     onSelect: (HomeProjectFilter) -> Unit,
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -610,6 +687,210 @@ private fun HomeProjectFilterRow(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // E2.6 — menu de ordenação (Nome A→Z / Z→A / Mais recentes /
+        // Mais antigas). Dispara um `DropdownMenu` ancorado no
+        // `IconButton` de sort. O valor ativo fica marcado com
+        // leading checkmark via `leadingIcon`.
+        HomeSortMenu(
+            current = sortOrder,
+            onSelect = onSortOrderChange,
+        )
+    }
+}
+
+/**
+ * Menu dropdown de ordenação (E2.6). Acionado pelo ícone de sort
+ * (`Icons.Outlined.Sort`) à direita da linha de filtros estruturais.
+ * O item ativo recebe um leading check via `leadingIcon`; sem isso,
+ * o usuário teria que adivinhar qual opção está selecionada.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeSortMenu(
+    current: SortOrder,
+    onSelect: (SortOrder) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier
+                .testTag(HomeTestTags.SORT_MENU_BUTTON)
+                // E4.4: 48dp mínimo WCAG 2.5.5.
+                .heightIn(min = 48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                contentDescription = stringResource(id = R.string.home_sort_aria_label),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.testTag(HomeTestTags.SORT_MENU),
+        ) {
+            SortOrder.entries.forEach { order ->
+                val isSelected = order == current
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(id = sortOrderLabelRes(order))) },
+                    onClick = {
+                        onSelect(order)
+                        expanded = false
+                    },
+                    leadingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = null,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    modifier = Modifier
+                        .testTag(HomeTestTags.sortMenuItem(order))
+                        .heightIn(min = 48.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Empty state quando há busca/filtro ativo mas a query não
+ * retornou nada (E2.6). Diferencia do
+ * [HomeCompletedEmptyState] / [HomeEmptyState] ao citar o termo
+ * buscado para que o usuário saiba que o filtro é a razão da
+ * lista vazia (não a ausência de projetos).
+ */
+@Composable
+private fun HomeNoMatchesState(
+    query: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.testTag(HomeTestTags.NO_MATCHES),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = if (query.isNotBlank()) {
+                    stringResource(id = R.string.home_no_matches_title_with_query, query)
+                } else {
+                    stringResource(id = R.string.home_no_matches_title)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(id = R.string.home_no_matches_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Barra de busca textual (E2.6). `OutlinedTextField` com placeholder
+ * localizado; ícone de limpar (X) surge apenas quando o campo tem
+ * texto para reduzir ruído visual. O debounce de I/O é aplicado no
+ * ViewModel — esta composable dispara o callback em cada keystroke
+ * para feedback visual imediato do campo.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text(text = stringResource(id = R.string.home_search_placeholder)) },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                contentDescription = null,
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                    modifier = Modifier
+                        .testTag(HomeTestTags.SEARCH_CLEAR)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = stringResource(id = R.string.home_search_clear),
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(HomeTestTags.SEARCH_FIELD),
+    )
+}
+
+/**
+ * Linha de chips para filtro por tag (E2.6). Primeiro chip é
+ * "Todas" (`null` no filtro) e em seguida cada tag do owner.
+ * `LazyRow` para escalar quando o usuário tem dezenas de tags.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTagFilterRow(
+    availableTags: List<TagChip>,
+    selectedTagId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    if (availableTags.isEmpty()) return
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(HomeTestTags.TAG_FILTER_ROW),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 4.dp),
+    ) {
+        item(key = TAG_FILTER_ALL_KEY) {
+            FilterChip(
+                selected = selectedTagId == null,
+                onClick = { onSelect(null) },
+                label = {
+                    Text(text = stringResource(id = R.string.home_tag_filter_all))
+                },
+                modifier = Modifier
+                    .testTag(HomeTestTags.TAG_FILTER_ALL)
+                    // E4.4: 48dp mínimo WCAG 2.5.5.
+                    .heightIn(min = 48.dp),
+            )
+        }
+        items(items = availableTags, key = { it.id }) { chip ->
+            FilterChip(
+                selected = chip.id == selectedTagId,
+                onClick = {
+                    onSelect(if (chip.id == selectedTagId) null else chip.id)
+                },
+                label = { Text(text = chip.name) },
+                modifier = Modifier
+                    .testTag(HomeTestTags.tagFilterChip(chip.id))
+                    // E4.4: 48dp mínimo WCAG 2.5.5.
+                    .heightIn(min = 48.dp),
+            )
+        }
     }
 }
 
@@ -1002,4 +1283,21 @@ private fun HomeEmptyState(modifier: Modifier = Modifier) {
 @Composable
 private fun HomeScreenPreview() {
     HomeScreen(onOpenSettings = {}, onOpenTasks = {})
+}
+
+/**
+ * Resolve o rótulo localizado de uma [SortOrder] para a UI
+ * (E2.6 do ROADMAP).
+ *
+ * Mantida fora do enum em `:core:domain` porque o enum não tem
+ * acesso ao `R.string` da feature. A correspondência é exaustiva
+ * (`when` sem `else`) — adições/remoções em [SortOrder] serão
+ * sinalizadas em tempo de compilação aqui.
+ */
+@androidx.annotation.StringRes
+private fun sortOrderLabelRes(order: SortOrder): Int = when (order) {
+    SortOrder.NameAsc -> R.string.home_sort_name_asc
+    SortOrder.NameDesc -> R.string.home_sort_name_desc
+    SortOrder.CreatedDesc -> R.string.home_sort_created_desc
+    SortOrder.CreatedAsc -> R.string.home_sort_created_asc
 }

@@ -164,9 +164,58 @@ histórico Git versionado continuamente.
       data de criação ou nome, busca textual. Filtros salvos em
       `DataStore`. *Critério:* testes instrumentados validam a busca;
       busca persiste entre sessões. *Atende R9.* *Estimativa:* 5 PH.
-      _Entregue em PRs #23, #26, #27 — `ProjectDao.observeAllForOwner`
-      com ordenação, HomeViewModel observando a lista e a aba
-      `TasksScreen` substituindo o placeholder da Home._
+      _Entregue em PR (feat/e26-busca-filtros-ordenacao) — auditoria
+      confirmou que o marco estava marcado `[x]` desde E2.1 sem
+      código (apenas `ORDER BY created_at DESC`). Esta entrega
+      fecha o escopo real de E2.6:
+      • `ProjectDao.searchProjects(ownerId, query, tagId, sort)` —
+        `SELECT DISTINCT p.* FROM projects p LEFT JOIN
+        project_tags pt ON pt.project_id = p.id LEFT JOIN tags t
+        ON t.id = pt.tag_id` com `WHERE p.owner_id = :ownerId AND
+        (:query = '' OR p.name LIKE '%' || :query || '%') AND
+        (:tagId IS NULL OR t.id = :tagId)` e ordenação por
+        `CASE WHEN :sort = ... THEN p.name/p.created_at END ASC|DESC`.
+        Sem migration: a query é compatível com o schema atual
+        (tabelas `projects`, `project_tags`, `tags`).
+      • `ProjectRepository.observeSearch(...)` —
+        mesma assinatura de `observeAllForOwner` mas parametrizada.
+        A versão anterior fica preservada para usos legados
+        (`ProjectDetailViewModel`).
+      • `ListingPreferencesRepository` em `:core:domain` +
+        `ListingPreferencesRepositoryImpl` em `:core:data` —
+        DataStore Preferences (mesmo arquivo `auth_prefs` da sessão,
+        namespace `listing_${userId}_*`) guarda
+        `search_query`/`selected_tag_id`/`sort_order`. Bind Hilt
+        adicionado em `DataModule`. `SortOrder` enum valida
+        `fromStorageKey` com fallback em `CreatedDesc` para
+        upgrades/downgrades.
+      • `HomeViewModel` (E2.6) — `combine(listingPrefs,
+        debouncedSearchInput, tags, projectFilter)`; debounce de
+        300ms via `kotlinx.coroutines.flow.debounce` (0ms quando
+        query fica vazia, para o "limpar" reagir instantaneamente);
+        métodos `onSearchQueryChange`/`onTagFilterChange`/
+        `onSortOrderChange` persistem via repo e propagam para o
+        pipeline reativo. Busca textual + filtro de tag +
+        ordenação são aplicados no Room via `observeSearch`, não
+        em memória.
+      • `HomeScreen` — `OutlinedTextField` de busca com ícone de
+        limpar (X), `LazyRow` de chips de tag (incluindo "Todas"),
+        `DropdownMenu` de ordenação (Nome A→Z / Z→A / Mais
+        recentes / Mais antigas) com leading check no item ativo,
+        e novo empty state `HomeNoMatchesState` que cita a query
+        quando o filtro não retorna nada (diferencia "sem projetos"
+        de "sem matches"). Área de toque ≥ 48dp (E4.4).
+      • Strings em `values/strings.xml` + `values-en/strings.xml`
+        (12 novas chaves E2.6).
+      • Testes: `ListingPreferencesRepositoryTest.kt` (10 casos
+        Robolectric) cobrindo default, persistência, namespacing
+        por user, clear com empty/null, valor inválido de sort; e
+        `HomeViewModelTest.kt` reescrito para mockar
+        `observeSearch` e `ListingPreferencesRepository` — agora
+        cobre busca + filtro + sort + debounce + persistência entre
+        instâncias do VM (8 casos novos E2.6; total 14 testes do
+        VM). Smoke test manual atualizado em
+        `docs/SMOKE-TEST-CRUD.md` §10._
 
 - [ ] **E2.7** — Visão consolidada em Dashboard: contagem de projetos
       por estado, gráfico de tarefas por prioridade, taxa de conclusão
