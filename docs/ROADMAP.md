@@ -271,10 +271,15 @@ notificações ativas.
       *Critério:* zero hardcoded strings no código Kotlin.
       *Estimativa:* 2 PH.
 
-- [ ] **E4.7** — Testes automatizados expandidos: cobertura mínima de
+- [x] **E4.7** — Testes automatizados expandidos: cobertura mínima de
       60% nas camadas `:core:domain` e `:core:data` (item desejável 5.1).
       *Critério:* relatório de cobertura publicado como artifact do CI.
       *Estimativa:* 3 PH.
+      *Status:* ✅ Kover 0.9.9 aplicado em `:core:domain` e `:core:data`
+      com bound de 60% (`koverVerify`); cobertura atual: domínio 87,9%,
+      data 67,3%. Relatório HTML publicado como artifact `coverage-report`
+      no job `unit-tests` do `ci.yml`. Detalhes em `docs/CI-CD.md`
+      (seção "Cobertura de testes").
 
 - [ ] **E4.8** — Congelamento de escopo em 27/11. A partir desta data,
       apenas correções. Novas features migradas para backlog pós-N2.

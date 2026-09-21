@@ -53,6 +53,63 @@ Cache de Gradle configurado em todos os jobs (`actions/cache@v4`).
 - Matriz de linguagens `java` + `kotlin` (`fail-fast: false`).
 - Roda semanalmente fora do fluxo de PRs para pegar regressões tardias.
 
+## Cobertura de testes (E4.7)
+
+A cobertura de código é medida pelo **Kover** (plugin
+`org.jetbrains.kotlinx.kover`, versão em `gradle/libs.versions.toml`)
+nos módulos **`:core:domain`** e **`:core:data`**, com um bound mínimo
+de **60% de cobertura de linhas** em cada camada.
+
+### Rodar localmente
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+
+# Verificar o bound de 60% (falha se qualquer camada ficar abaixo)
+./gradlew :core:domain:koverVerify :core:data:koverVerify
+
+# Gerar os relatórios HTML
+./gradlew :core:domain:koverHtmlReport :core:data:koverHtmlReport
+
+# Imprimir a cobertura no console
+./gradlew :core:domain:koverLog :core:data:koverLog
+```
+
+Os relatórios são gerados em:
+
+- `core/domain/build/reports/kover/html/index.html`
+- `core/data/build/reports/kover/html/index.html`
+
+### Como interpretar o relatório
+
+O `index.html` da raiz de cada módulo resume a cobertura por pacote
+(`model`, `usecase`, `repository` no domínio; `local`, `remote`,
+`repository`, `security`, `session` em data). Perfure até a classe para
+ver linha a linha o que foi exercitado: verde = executado, amarelo =
+parcial (ramo), vermelho = não executado. Use as porcentagens de
+**branch** para priorizar testes de regras condicionais (ex.: transições
+de status de tarefa, matriz de permissões).
+
+### Artifact no CI
+
+O job `unit-tests` do `ci.yml` roda `koverVerify` (falha o job se a
+cobertura < 60%) e publica o relatório HTML como artifact
+**`coverage-report`** (retenção de 14 dias). Baixe em **Actions → run →
+Artifacts → coverage-report**; o conteúdo tem um diretório por módulo.
+
+### Filtros documentados
+
+Classes geradas e infra de wiring ficam fora do denominador da
+cobertura (configurado no bloco Kover do `build.gradle.kts` raiz):
+
+- `*_Impl`, `*_Impl$*` — implementações geradas pelo Room;
+- `*_Factory`, `*_HiltModules`, `*.Hilt_*`, `dagger.hilt.*`,
+  `hilt_aggregated_deps.*` — artefatos do Hilt/Dagger;
+- `*.di.*` — módulos de DI (wiring, não lógica);
+- `*.BuildConfig`, `*.PackageMarker` — classes utilitárias sem lógica;
+- `*.remote.*` — DTOs de rede (mapeamento puro, exercitado via
+  repositories).
+
 ## Secrets necessários (E3.7)
 
 Configure em **Settings → Secrets and variables → Actions → New repository
@@ -139,6 +196,9 @@ Em **Settings → Branches → Branch protection rules → main**, ative:
 
 # Rodar lint Android
 ./gradlew lintDebug
+
+# Verificar cobertura mínima de 60% (E4.7)
+./gradlew :core:domain:koverVerify :core:data:koverVerify
 
 # Subir o backend stub e apontar o app para ele
 cd backend-stub
