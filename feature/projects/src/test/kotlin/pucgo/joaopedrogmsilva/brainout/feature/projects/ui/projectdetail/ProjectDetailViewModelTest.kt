@@ -27,6 +27,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CheckDeadlineUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTaskUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteTaskUseCase
@@ -56,6 +57,7 @@ class ProjectDetailViewModelTest {
     private lateinit var changeStatus: ChangeTaskStatusUseCase
     private lateinit var deleteProject: DeleteProjectUseCase
     private lateinit var deleteTask: DeleteTaskUseCase
+    private lateinit var checkDeadline: CheckDeadlineUseCase
 
     private fun viewModel(): ProjectDetailViewModel {
         val savedStateHandle = SavedStateHandle(mapOf(ProjectDetailViewModel.PROJECT_ID_ARG to projectId))
@@ -67,6 +69,7 @@ class ProjectDetailViewModelTest {
             changeStatus = changeStatus,
             deleteProject = deleteProject,
             deleteTask = deleteTask,
+            checkDeadline = checkDeadline,
         )
     }
 
@@ -81,6 +84,7 @@ class ProjectDetailViewModelTest {
         changeStatus = mockk()
         deleteProject = mockk(relaxed = true)
         deleteTask = mockk(relaxed = true)
+        checkDeadline = mockk(relaxed = true)
     }
 
     @After

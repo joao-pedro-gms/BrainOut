@@ -19,13 +19,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CheckDeadlineUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTaskUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteTaskUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
@@ -69,6 +72,7 @@ class ProjectDetailViewModel @Inject constructor(
     private val changeStatus: ChangeTaskStatusUseCase,
     private val deleteProject: DeleteProjectUseCase,
     private val deleteTask: DeleteTaskUseCase,
+    private val checkDeadline: CheckDeadlineUseCase,
 ) : ViewModel() {
 
     private val projectId: String =
@@ -101,8 +105,15 @@ class ProjectDetailViewModel @Inject constructor(
      * através do [CreateTaskUseCase] — se a regra for violada,
      * uma mensagem amigável é exposta via [errorMessage] para que
      * a UI mostre o chip de erro e chame [clearError] após 5s.
+     *
+     * @param dueDate prazo opcional (E3.5: integra com a checagem
+     *   de feriados nacionais).
      */
-    fun addTask(title: String, priority: TaskPriority = TaskPriority.MEDIUM) {
+    fun addTask(
+        title: String,
+        priority: TaskPriority = TaskPriority.MEDIUM,
+        dueDate: Instant? = null,
+    ) {
         val trimmed = title.trim()
         if (trimmed.isEmpty()) {
             _errorMessage.update { "Título da tarefa não pode ser vazio" }
@@ -114,6 +125,7 @@ class ProjectDetailViewModel @Inject constructor(
                     projectId = projectId,
                     title = trimmed,
                     priority = priority,
+                    dueDate = dueDate,
                 )
             } catch (e: ProjectTaskLimitReachedException) {
                 @Suppress("SwallowedException")
@@ -124,6 +136,15 @@ class ProjectDetailViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * Avalia um prazo usando o [CheckDeadlineUseCase] (E3.5). É uma
+     * fachada para que a UI não precise importar o caso de uso
+     * diretamente; delega 1-para-1 e devolve [DeadlineInfo] com a
+     * janela de feriado dos próximos 7 dias antes do prazo.
+     */
+    suspend fun evaluateDeadline(deadline: Instant?): DeadlineInfo =
+        checkDeadline(deadline)
 
     /** Move a [task] para [target], respeitando a matriz de transições. */
     fun changeStatus(taskId: String, target: TaskStatus) {

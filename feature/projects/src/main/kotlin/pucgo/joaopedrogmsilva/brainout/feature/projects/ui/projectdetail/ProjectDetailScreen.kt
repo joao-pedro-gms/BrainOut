@@ -33,6 +33,8 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,6 +77,10 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 /**
  * Tela de detalhe do projeto (E2.2).
@@ -159,10 +166,11 @@ fun ProjectDetailScreen(
     if (showCreateDialog) {
         NewTaskDialog(
             onDismiss = { showCreateDialog = false },
-            onConfirm = { title, priority ->
-                viewModel.addTask(title, priority)
+            onConfirm = { title, priority, dueDate ->
+                viewModel.addTask(title, priority, dueDate)
                 showCreateDialog = false
             },
+            evaluateDeadline = { deadline -> viewModel.evaluateDeadline(deadline) },
         )
     }
 
@@ -226,6 +234,9 @@ object ProjectDetailTestTags {
     const val NEW_TASK_TITLE_FIELD: String = "project_detail_new_task_title"
     const val NEW_TASK_SAVE: String = "project_detail_new_task_save"
     const val NEW_TASK_CANCEL: String = "project_detail_new_task_cancel"
+    const val NEW_TASK_DUE_DATE_FIELD: String = "project_detail_new_task_due_date_field"
+    const val NEW_TASK_DUE_DATE_FIELD_OVERLAY: String = "project_detail_new_task_due_date_overlay"
+    const val NEW_TASK_HOLIDAY_HINT: String = "project_detail_new_task_holiday_hint"
     const val TASK_ITEM_MENU: String = "project_detail_task_item_menu"
     const val TASK_ITEM_MENU_DELETE: String = "project_detail_task_item_menu_delete"
     const val TASK_ITEM_MENU_MOVE_DOING: String = "project_detail_task_item_menu_move_doing"
@@ -488,11 +499,54 @@ private fun EmptyTasksCard() {
 @Composable
 private fun NewTaskDialog(
     onDismiss: () -> Unit,
-    onConfirm: (title: String, priority: TaskPriority) -> Unit,
+    onConfirm: (title: String, priority: TaskPriority, dueDate: Instant?) -> Unit,
+    evaluateDeadline: suspend (Instant?) -> pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
     var priorityMenuExpanded by remember { mutableStateOf(false) }
+    // E3.5: prazo opcional em UTC (midnight na zona do usuário).
+    var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val dueDate: Instant? = remember(dueDateMillis) {
+        dueDateMillis?.let {
+            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toInstant()
+        }
+    }
+    // Captura a string do padrão dd/MM/yyyy no escopo @Composable.
+    val dueDatePattern = stringResource(id = R.string.project_detail_new_task_due_date_format)
+    val dueDateFormatter = remember(dueDatePattern) {
+        DateTimeFormatter.ofPattern(dueDatePattern)
+    }
+    val dueDateLabel: String = remember(dueDateMillis, dueDateFormatter) {
+        if (dueDateMillis == null) {
+            "" // será substituído pelo placeholder
+        } else {
+            val localDate = Instant.ofEpochMilli(dueDateMillis!!)
+                .atZone(ZoneOffset.UTC)
+                .toLocalDate()
+            dueDateFormatter.format(localDate)
+        }
+    }
+
+    // E3.5: dica inline — busca o próximo feriado via use case quando
+    // o prazo muda. Falha silenciosa (use case degrada para lista vazia).
+    var holidayHint by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(dueDate) {
+        holidayHint = if (dueDate == null) {
+            null
+        } else {
+            val info = evaluateDeadline(dueDate)
+            val next = info.nextHoliday
+            if (next != null) {
+                val dateText = dueDateFormatter.format(next.date)
+                "⚠ Próximo feriado: ${next.name} ($dateText) antes do prazo"
+            } else {
+                null
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -546,11 +600,45 @@ private fun NewTaskDialog(
                         }
                     }
                 }
+                // E3.5: campo de prazo opcional + dica inline.
+                OutlinedTextField(
+                    value = dueDateLabel,
+                    onValueChange = { /* read-only — vem do DatePicker */ },
+                    readOnly = true,
+                    label = { Text(text = stringResource(id = R.string.project_detail_new_task_due_date_label)) },
+                    placeholder = {
+                        Text(text = stringResource(id = R.string.project_detail_new_task_due_date_clear))
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(ProjectDetailTestTags.NEW_TASK_DUE_DATE_FIELD),
+                )
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(4.dp))
+                            .testTag(ProjectDetailTestTags.NEW_TASK_DUE_DATE_FIELD_OVERLAY),
+                        color = androidx.compose.ui.graphics.Color.Transparent,
+                        content = {},
+                        onClick = { showDatePicker = true },
+                    )
+                }
+                if (holidayHint != null) {
+                    Text(
+                        text = holidayHint!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(ProjectDetailTestTags.NEW_TASK_HOLIDAY_HINT),
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title, priority) },
+                onClick = { onConfirm(title, priority, dueDate) },
                 modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
             ) {
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
@@ -566,6 +654,28 @@ private fun NewTaskDialog(
         },
         modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
     )
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = dueDateMillis)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        dueDateMillis = pickerState.selectedDateMillis ?: dueDateMillis
+                        showDatePicker = false
+                    },
+                ) { Text(text = stringResource(id = R.string.project_detail_new_task_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(text = stringResource(id = R.string.project_detail_new_task_cancel))
+                }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
 }
 
 @Composable
