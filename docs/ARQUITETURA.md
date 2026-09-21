@@ -77,9 +77,13 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 - **DTOs remotos** (`RemoteDtos.kt`): espelham o contrato do backend com
   `@SerialName` snake_case; conversão para o domínio fica nos repositórios.
 - **`BrainOutApi`**: interface Retrofit (`/v1/ping`, `/v1/projects`,
-  `/v1/tasks`) — nenhum host hard-coded; a URL vem do `BuildConfig`.
+  `/v1/tasks`, `/v1/tags`) — nenhum host hard-coded; a URL vem do `BuildConfig`.
 - **`RemoteDataSource`**: envolve a API, loga erros e re-sinaliza a
-  exceção para o chamador (fila offline do E3.4 decide a estratégia).
+  exceção para o chamador (fila offline do E3.3 decide a estratégia).
+- **Política de IDs**: o app gera UUID localmente (Room) e envia no
+  body (`POST`) ou no path (`PUT`); o servidor respeita o ID recebido
+  e nunca o substitui. Veja detalhes em `backend-stub/README.md` e na
+  seção 5 (sincronização).
 - **Testes**: `MockWebServer` exercita parse e erros HTTP sem rede real.
 
 ## 3. Stack técnica
@@ -116,12 +120,55 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 
 ## 5. Sincronização e conectividade
 
-- Fila de operações offline persistida em Room (`pending_operations`).
+- Fila de operações offline persistida em Room (`pending_ops`) —
+  cada item guarda `entity_type`, `entity_id`, `op_type`
+  (`INSERT|UPDATE|DELETE`), payload JSON serializado, `created_at`
+  e contador de `attempts`.
 - `WorkManager` com `Constraints.NetworkType.CONNECTED` reconcilia
-  periodicamente e imediatamente após retorno de rede.
+  periodicamente (`enqueueUniquePeriodicWork`, 15 min) e imediatamente
+  após retorno de rede. Backoff exponencial entre tentativas.
 - Estratégia **last-writer-wins** com timestamp do cliente; conflitos
   detectados são registrados em log local para revisão.
 - *Atende R5 e R6.*
+
+### 5.1 Contrato do backend para sincronização
+
+O stub em `backend-stub/` (e o backend FastAPI definitivo, AD-3)
+expõe o contrato abaixo. **Política de IDs: cliente-supplied UUID** —
+o app gera o UUID localmente e envia no `POST`/`PUT`; o servidor
+respeita o ID recebido, garantindo idempotência de replay e
+estabilidade das foreign keys (project_id ↔ tag, project_id ↔ task).
+
+| Método | Caminho                          | Função                                       |
+|--------|----------------------------------|----------------------------------------------|
+| GET    | `/v1/projects`                   | Lista projetos                               |
+| POST   | `/v1/projects`                   | Cria projeto (id do cliente opcional)        |
+| GET    | `/v1/projects/{id}`              | Busca projeto                                |
+| PUT    | `/v1/projects/{id}`              | **Upsert idempotente**                       |
+| DELETE | `/v1/projects/{id}`              | Remove projeto (cascade de tasks) — **204**  |
+| POST   | `/v1/projects/{id}/tags`         | Associa tag existente                        |
+| GET    | `/v1/projects/{id}/tags`         | Lista tags do projeto                        |
+| GET    | `/v1/tasks`                      | Lista tarefas (filtro `?project_id=`)        |
+| POST   | `/v1/tasks`                      | Cria tarefa (id do cliente opcional)         |
+| PUT    | `/v1/tasks/{id}`                 | **Upsert idempotente**                       |
+| DELETE | `/v1/tasks/{id}`                 | Remove tarefa — **204**                      |
+| GET    | `/v1/tags`                       | Lista tags                                   |
+| POST   | `/v1/tags`                       | Cria tag (id gerado no servidor)             |
+| DELETE | `/v1/tags/{id}`                  | Remove tag — **204**                         |
+
+Regras:
+
+- `POST` com `id` no corpo: se já existir registro com esse `id`, o
+  servidor devolve o registro existente (não duplica).
+- `PUT` é upsert: cria se ausente, substitui se presente; `created_at`
+  é fixado na primeira inserção e preservado em updates.
+- `DELETE` é intencionalmente idempotente (204 mesmo ausente) para
+  não travar o replay da fila offline.
+- IDs mal formados (não-UUID) → `400`. `id` do body divergente do
+  path no `PUT` → `400`.
+
+A suíte pytest em `backend-stub/tests/test_contract.py` cobre esses
+casos; o smoke HTTP roda no job `backend-integration` do CI.
 
 ## 6. Segurança
 
