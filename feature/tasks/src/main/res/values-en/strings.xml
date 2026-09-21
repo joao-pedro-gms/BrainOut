@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <!-- Tasks screen (aba "Tarefas" da HomeScreen) -->
+    <string name="tasks_screen_title">Tasks</string>
+    <string name="tasks_empty_title">No tasks yet</string>
+    <string name="tasks_empty_body">Create tasks inside a project to see them here.</string>
+
+    <!-- Task status labels (espelha :feature:projects para reuso no card) -->
+    <string name="task_status_todo">To do</string>
+    <string name="task_status_doing">In progress</string>
+    <string name="task_status_done">Done</string>
+
+    <!-- Task priority labels (espelha :feature:projects para reuso no card) -->
+    <string name="task_priority_low">Low</string>
+    <string name="task_priority_medium">Medium</string>
+    <string name="task_priority_high">High</string>
+    <string name="task_priority_urgent">Urgent</string>
+    <string name="task_priority_critical">Critical</string>
+</resources>
