@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
@@ -51,6 +54,18 @@ sealed interface HomeUserState {
         val initials: String,
         val role: HomeUserRole,
     ) : HomeUserState
+}
+
+/**
+ * Estado de conectividade/fila de sincronização consumido pela
+ * [HomeScreen] para o banner offline e o indicador da fila (E3.4).
+ */
+data class HomeSyncState(
+    val isOnline: Boolean = true,
+    val pendingOps: Int = 0,
+) {
+    /** Indica se o banner offline deve estar visível. */
+    val showOfflineBanner: Boolean get() = !isOnline
 }
 
 /**
@@ -108,6 +123,8 @@ class HomeViewModel @Inject constructor(
     private val tagRepository: TagRepository,
     private val activeUserProvider: ActiveUserProvider,
     private val listingPreferences: ListingPreferencesRepository,
+    private val connectivityObserver: ConnectivityObserver,
+    private val pendingSyncMonitor: PendingSyncMonitor,
     private val createProject: CreateProjectUseCase,
     private val updateProject: UpdateProjectUseCase,
     private val deleteProject: DeleteProjectUseCase,
@@ -125,6 +142,25 @@ class HomeViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = HomeUserState.Loading,
+        )
+
+    /**
+     * Estado de conectividade + fila pendente (E3.4). Combina o
+     * callback de rede ([ConnectivityObserver]) com a contagem da
+     * tabela `pending_ops` ([PendingSyncMonitor]) em um único
+     * [StateFlow] — a UI mostra o banner offline e o indicador
+     * "X alterações aguardando sincronização" a partir dele.
+     */
+    val syncState: StateFlow<HomeSyncState> = combine(
+        connectivityObserver.observe(),
+        pendingSyncMonitor.observePendingCount(),
+    ) { connectivity: ConnectivityState, pending: Int ->
+        HomeSyncState(isOnline = connectivity.isOnline, pendingOps = pending)
+    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = HomeSyncState(),
         )
 
     /**

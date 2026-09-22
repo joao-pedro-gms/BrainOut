@@ -134,4 +134,9 @@
     <string name="home_no_matches_title">Nenhum projeto encontrado</string>
     <string name="home_no_matches_title_with_query">Nenhum projeto encontrado para \"%1$s\"</string>
     <string name="home_no_matches_body">Ajuste a busca ou o filtro de tag para ver mais resultados.</string>
+
+    <!-- E3.4 — banner offline + fila de sincronização visível -->
+    <string name="home_offline_banner_title">Sem conexão</string>
+    <string name="home_pending_ops_message">%1$d alteração aguardando sincronização</string>
+    <string name="home_pending_ops_message_plural">%1$d alterações aguardando sincronização</string>
 </resources>

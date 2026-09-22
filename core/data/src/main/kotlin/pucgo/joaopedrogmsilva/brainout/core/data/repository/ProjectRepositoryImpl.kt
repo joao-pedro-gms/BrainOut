@@ -5,9 +5,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectSyncPayload
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
@@ -30,11 +35,13 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
  * @property projectDao DAO de projetos injetado pelo Hilt via `DataModule`.
  * @property tagDao DAO de tags injetado pelo Hilt via `DataModule` — usado
  * para validar a propriedade das tags antes de associá-las.
+ * @property pendingOpDao DAO da fila de sincronização (E3.3).
  */
 @Singleton
 class ProjectRepositoryImpl @Inject constructor(
     private val projectDao: ProjectDao,
     private val tagDao: TagDao,
+    private val pendingOpDao: PendingOpDao,
 ) : ProjectRepository {
 
     override fun observeAllForOwner(ownerId: String): Flow<List<Project>> =
@@ -58,23 +65,61 @@ class ProjectRepositoryImpl @Inject constructor(
     override fun observeTagsFor(projectId: String): Flow<List<Tag>> =
         projectDao.observeTagsFor(projectId).map { rows -> rows.map { it.toDomain() } }
 
+    /**
+     * Cria o projeto e enfileira a op CREATE na mesma transação.
+     *
+     * A validação das tags acontece dentro da transação — se falhar,
+     * nem o projeto nem a op são gravados (rollback total).
+     */
     override suspend fun create(project: Project, tagIds: List<String>): Project {
-        projectDao.insert(ProjectEntity.fromDomain(project))
-        validateTagOwnership(tagIds, project.ownerId)
-        projectDao.replaceProjectTags(project.id, tagIds)
+        pendingOpDao.enqueueInTx(
+            op = PendingOpEntity.enqueue(
+                entityType = SyncEntityType.PROJECT,
+                entityId = project.id,
+                opType = SyncOpType.CREATE,
+                payloadObj = payloadOf(project),
+            ),
+        ) {
+            projectDao.insert(ProjectEntity.fromDomain(project))
+            validateTagOwnership(tagIds, project.ownerId)
+            projectDao.replaceProjectTags(project.id, tagIds)
+        }
         return project
     }
 
+    /** Atualiza o projeto e enfileira a op UPDATE na mesma transação. */
     override suspend fun update(project: Project, tagIds: List<String>): Project {
-        projectDao.update(ProjectEntity.fromDomain(project))
-        validateTagOwnership(tagIds, project.ownerId)
-        projectDao.replaceProjectTags(project.id, tagIds)
+        pendingOpDao.enqueueInTx(
+            op = PendingOpEntity.enqueue(
+                entityType = SyncEntityType.PROJECT,
+                entityId = project.id,
+                opType = SyncOpType.UPDATE,
+                payloadObj = payloadOf(project),
+            ),
+        ) {
+            projectDao.update(ProjectEntity.fromDomain(project))
+            validateTagOwnership(tagIds, project.ownerId)
+            projectDao.replaceProjectTags(project.id, tagIds)
+        }
         return project
     }
 
+    /**
+     * Remove o projeto e enfileira a op DELETE na mesma transação.
+     * Associações em `project_tags` e tarefas filhas são removidas
+     * em cascata pelo schema; a op DELETE do backend também cascata
+     * no stub.
+     */
     override suspend fun delete(id: String) {
-        // Associações em `project_tags` são removidas via ON DELETE CASCADE.
-        projectDao.deleteById(id)
+        pendingOpDao.enqueueInTx(
+            op = PendingOpEntity.enqueue(
+                entityType = SyncEntityType.PROJECT,
+                entityId = id,
+                opType = SyncOpType.DELETE,
+            ),
+        ) {
+            projectDao.deleteById(id)
+        }
     }
 
     /**
@@ -93,4 +138,11 @@ class ProjectRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    /** Payload de sincronização do projeto (contrato cliente-supplied). */
+    private fun payloadOf(project: Project) = ProjectSyncPayload(
+        id = project.id,
+        name = project.name,
+        description = project.description,
+    )
 }

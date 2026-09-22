@@ -16,6 +16,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.BuildConfig
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_2_3
+import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_3_4
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
@@ -31,6 +33,10 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.BrainOutSyncDispatcher
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.AndroidConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.SyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
@@ -75,7 +81,9 @@ object DataModule {
         // `tasks.completed_at` (`ALTER TABLE ADD COLUMN INTEGER
         // nullable`) sem destruir dados. Tarefas preexistentes
         // ficam com `completed_at IS NULL`.
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+        // Migration v3 → v4 (E3.3): cria a tabela `pending_ops` da
+        // fila de sincronização offline — não destrutiva.
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
         .build()
 
     @Provides
@@ -91,6 +99,9 @@ object DataModule {
     fun provideTagDao(database: BrainOutDatabase): TagDao = database.tagDao()
 
     @Provides
+    fun providePendingOpDao(database: BrainOutDatabase): PendingOpDao = database.pendingOpDao()
+
+    @Provides
     @Singleton
     fun provideUserRepository(impl: UserRepositoryImpl): UserRepository = impl
 
@@ -99,18 +110,23 @@ object DataModule {
     fun provideProjectRepository(
         projectDao: ProjectDao,
         tagDao: TagDao,
-    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao)
+        pendingOpDao: PendingOpDao,
+    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, pendingOpDao)
 
     @Provides
     @Singleton
     fun provideTaskRepository(
         taskDao: TaskDao,
         projectDao: ProjectDao,
-    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao)
+        pendingOpDao: PendingOpDao,
+    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao, pendingOpDao)
 
     @Provides
     @Singleton
-    fun provideTagRepository(tagDao: TagDao): TagRepository = TagRepositoryImpl(tagDao)
+    fun provideTagRepository(
+        tagDao: TagDao,
+        pendingOpDao: PendingOpDao,
+    ): TagRepository = TagRepositoryImpl(tagDao, pendingOpDao)
 
     /**
      * Bind de [ListingPreferencesRepository] para a implementação
@@ -151,6 +167,28 @@ object DataModule {
     @Singleton
     fun provideRemoteDataSource(): RemoteDataSource =
         RemoteDataSource(baseUrl = BuildConfig.BASE_URL)
+
+    /**
+     * Despachante de sincronização (E3.3): envolve o cliente remoto
+     * com a tradução de erros IOException/5xx → retriable, 4xx →
+     * permanente. O `SyncWorker` (`:app`) drena a fila `pending_ops`
+     * através dele.
+     */
+    @Provides
+    @Singleton
+    fun provideSyncDispatcher(remote: RemoteDataSource): SyncDispatcher =
+        BrainOutSyncDispatcher(remote)
+
+    /**
+     * Observador de conectividade reativo (E3.4): alimenta o banner
+     * "offline" da Home e do detalhe do projeto via callback de rede
+     * do sistema (sem polling).
+     */
+    @Provides
+    @Singleton
+    fun provideConnectivityObserver(
+        impl: AndroidConnectivityObserver,
+    ): ConnectivityObserver = impl
 
     /**
      * Fonte de dados remota do serviço público de feriados nacionais

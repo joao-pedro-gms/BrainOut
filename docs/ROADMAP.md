@@ -300,17 +300,44 @@ dashboard consolidado.
       *Critério:* `BASE_URL` injetada via `local.properties`; nenhum host
       hard-coded no código. *Atende R6.* *Estimativa:* 5 PH.
 
-- [ ] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
+- [x] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
       `WorkManager` com `OneTimeWorkRequest` ao detectar conectividade;
       fila de operações offline persistida em Room.
       *Critério:* testes de integração (Compose + Robolectric + MockWebServer)
       validam o fluxo online e offline. *Atende R5 e R6.*
       *Estimativa:* 13 PH.
+      _Entregue no branch `feat/sync-room-backend` — fila
+      `pending_ops` em Room (schema v3→v4, migração não destrutiva,
+      `4.json` exportado), escrita dupla atômica local+fila nos
+      repositórios de projeto/tarefa/tag, `SyncDispatcher` com política
+      `SyncOutcome` (2xx remove; IOException/5xx volta com backoff;
+      4xx/payload inválido descarta com log) e `SyncWorker` +
+      `SyncScheduler` (trabalho periódico único de 15 min, constraint
+      de rede, KEEP). Testes: `PendingOpDaoTest` (10),
+      `BrainOutSyncDispatcherTest` (9, MockWebServer) e
+      `SyncWorkerTest` (8, Robolectric + fila real), cobrindo os
+      fluxos online, offline, 4xx e 5xx._
 
-- [ ] **E3.4** — Tratamento de ausência de conectividade: banner
+- [x] **E3.4** — Tratamento de ausência de conectividade: banner
       persistente "offline", fila visível ao usuário, reconciliação
       automática quando a rede retorna. *Critério:* teste manual em modo
       avião reproduz o fluxo. *Atende R5, R10.* *Estimativa:* 3 PH.
+      _Entregue no branch `feat/offline-banner` — banner persistente
+      "Sem conexão" na Home e no detalhe do projeto observando
+      conectividade via callback do sistema
+      (`ConnectivityObserver`, sem polling); contagem de
+      `pending_ops` exposta nos ViewModels (`PendingSyncMonitor`)
+      com indicador "X alterações aguardando sincronização";
+      reconciliação automática via `SyncConnectivityWatcher`
+      (`NetworkCallback` enfileira o `OneTimeWorkRequest` do
+      `SyncWorker` em `onAvailable`). Correção latente: `INTERNET` +
+      `ACCESS_NETWORK_STATE` adicionados ao manifest (a fila do E3.3
+      nunca teria drenado no dispositivo sem a permissão de rede) e
+      `usesCleartextTraffic` para o stub dev. Teste manual em modo
+      avião documentado em `docs/SMOKE-TEST-CRUD.md` (bloco 11).
+      Testes: `ConnectivityObserverTest` (Robolectric shadow),
+      novos casos E3.4 em `HomeViewModelTest` e
+      `ProjectDetailViewModelTest`._
 
 - [ ] **E3.5** — Consumir 1 serviço externo pertinente ao domínio.
       *Sugestões:* ICS feed para sincronizar prazos (iCal); API pública de

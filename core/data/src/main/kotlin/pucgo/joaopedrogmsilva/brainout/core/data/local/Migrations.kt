@@ -130,3 +130,36 @@ val MIGRATION_2_3: Migration = object : Migration(2, 3) {
         db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER")
     }
 }
+
+/**
+ * Migração Room v3 → v4 (E3.3 — fila offline).
+ *
+ * Cria a tabela `pending_ops` da fila de operações pendentes de
+ * sincronização. Não destrutiva: apenas `CREATE TABLE IF NOT EXISTS`
+ * + índice; nenhum dado existente é tocado. A tabela não tem FK —
+ * ops podem sobreviver à entidade referenciada (ver
+ * [pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity]).
+ * A forma textual casa com o schema exportado v4 (backticks, PK
+ * autoincrement, índice `created_at`), então o `identityHash`
+ * calculado durante o build bate com o esperado.
+ */
+val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `pending_ops` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `entity_type` TEXT NOT NULL,
+                `entity_id` TEXT NOT NULL,
+                `op_type` TEXT NOT NULL,
+                `payload` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `attempts` INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `idx_pending_ops_created_at` ON `pending_ops`(`created_at`)",
+        )
+    }
+}

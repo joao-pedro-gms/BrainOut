@@ -134,4 +134,9 @@
     <string name="home_no_matches_title">No projects match your filters</string>
     <string name="home_no_matches_title_with_query">No projects match \"%1$s\"</string>
     <string name="home_no_matches_body">Adjust the search query or tag filter to see more results.</string>
+
+    <!-- E3.4 — offline banner + visible sync queue -->
+    <string name="home_offline_banner_title">No connection</string>
+    <string name="home_pending_ops_message">%1$d change waiting for sync</string>
+    <string name="home_pending_ops_message_plural">%1$d changes waiting for sync</string>
 </resources>

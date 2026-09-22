@@ -233,3 +233,49 @@ Android e Estudo Kotlin), `Urgente` (cobre Reunião semanal), `Outros`
 - [ ] Passos 9.2.x e 9.6.x executados sem crash e com a localização correta.
 - [ ] Cenários 9.3, 9.4, 9.5 cobertos por pelo menos uma captura OU por referência explícita ao teste unitário correspondente (`HomeViewModelTest.E2 8 erro do Flow...`, `ProjectDetailViewModelTest.E2 8 erro do Flow de tarefas...`, `TasksViewModelTest.E2 8 erro do Flow de tasks...`).
 - [ ] `MissingTranslation` continua fatal — qualquer chave nova sem par pt/en quebra o build.
+---
+
+## 11. Banner offline + fila visível + reconciliação (E3.4)
+
+> Roteiro adicional para o **E3.4** (banner offline, contagem de
+> operações pendentes, reconciliação ao voltar a rede). Deve ser
+> executado em **emulador Android (API 33+)** com a APK debug
+> (`./gradlew :app:assembleDebug`) e o backend-stub rodando no host
+> (`python3 backend-stub/server.py` — o app dev aponta para
+> `http://10.0.2.2:8000/`).
+
+### Pré-condições
+
+- Backend-stub ativo no host (porta 8000) e app conectado a ele.
+- Owner com sessão ativa na Home.
+
+### 11.1. Banner offline + contagem da fila
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 11.1.1 | Com o app aberto na Home e backend acessível, ativar o **modo avião** do emulador (`Extended Controls → Cellular/Wi-Fi` off, ou `adb shell cmd connectivity airplane-mode enable`). | Banner persistente "Sem conexão" aparece no topo da aba Projetos (testTag `home_offline_banner`), acima da barra de busca. |
+| 11.1.2 | Com o modo avião ativo, criar um projeto "Offline P1" e uma tag "Offline". | Escritas locais sucedem (Room); banner mostra "2 alterações aguardando sincronização" (projeto + tag enfileirados em `pending_ops`). |
+| 11.1.3 | Abrir o projeto "Offline P1" e criar a tarefa "Tarefa offline". | Banner do detalhe também aparece ("Sem conexão" + "3 alterações aguardando sincronização", testTag `project_detail_offline_banner`). |
+| 11.1.4 | Verificar a fila local: `adb shell run-as pucgo.joaopedrogmsilva.brainout.debug sqlite3 databases/brainout.db "SELECT COUNT(*) FROM pending_ops"`. | Contagem = 3 (ou o número de escritas feitas offline). |
+
+### 11.2. Reconciliação ao voltar a rede
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 11.2.1 | Desativar o modo avião (rede volta). | O callback de rede enfileira um `OneTimeWorkRequest` (`brainout-sync-now`); o banner some quando a rede é detectada. |
+| 11.2.2 | Aguardar alguns segundos e verificar a fila (`SELECT COUNT(*) FROM pending_ops`). | Contagem zera — o `SyncWorker` drenou as 3 ops contra o stub. |
+| 11.2.3 | Verificar o backend-stub: `curl -s http://localhost:8000/v1/projects | grep "Offline P1"`. | O projeto criado offline aparece no backend (reconciliado). |
+| 11.2.4 | Reabrir a Home. | Nenhum banner; sem indicação de pendências (fila vazia). |
+
+### 11.3. Localização pt/en
+
+| Passo | Ação | Resultado esperado |
+|-------|------|--------------------|
+| 11.3.1 | Com o app em inglês e o modo avião ativo. | "No connection" + "2 changes waiting for sync". |
+| 11.3.2 | Voltar para português. | "Sem conexão" + "2 alterações aguardando sincronização". |
+
+**Critérios de pronto (E3.4):**
+
+- [ ] Passos 11.1 a 11.3 executados sem crash; banner aparece offline, some online e a fila drena.
+- [ ] Caso 11.2.3 evidencia reconciliação ponta a ponta (projeto offline presente no backend).
+- [ ] `MissingTranslation` continua fatal — chaves `home_offline_banner_title`/`home_pending_ops_message*` têm par pt/en.
