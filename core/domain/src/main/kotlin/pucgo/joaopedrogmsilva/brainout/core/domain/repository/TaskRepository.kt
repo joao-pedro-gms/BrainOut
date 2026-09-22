@@ -22,6 +22,23 @@ interface TaskRepository {
     suspend fun countActiveByProject(projectId: String): Int
 
     /**
+     * E2.7 — observa, de forma reativa, a contagem de tarefas do
+     * [ownerId] por prioridade (níveis 0..4, sempre completos: níveis
+     * sem tarefas retornam contagem zero). O Flow re-emite a cada
+     * mudança relevante no banco (invalidação do Room), garantindo que
+     * o gráfico do Dashboard acompanhe escritas sem recarregar a tela.
+     */
+    fun observeCountByPriority(ownerId: String): Flow<List<TaskPriorityCount>>
+
+    /**
+     * E2.7 — observa, de forma reativa, as estatísticas de conclusão
+     * do [ownerId]: total de tarefas, concluídas e concluídas na semana
+     * corrente (a partir de [weekStartMillis], epoch millis UTC).
+     * Base da taxa de conclusão semanal do Dashboard.
+     */
+    fun observeCompletionStats(ownerId: String, weekStartMillis: Long): Flow<TaskCompletionStats>
+
+    /**
      * Marca uma tarefa como [TaskStatus.DONE] **e** aplica a cascata
      * de RN03 (E2.5) **na mesma transação Room**: ao concluir a
      * última tarefa ativa do projeto, o projeto é marcado como

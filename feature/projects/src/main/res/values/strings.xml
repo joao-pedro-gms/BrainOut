@@ -14,6 +14,7 @@
     <!-- Bottom navigation -->
     <string name="bottom_tab_projects">Projetos</string>
     <string name="bottom_tab_tasks">Tarefas</string>
+    <string name="bottom_tab_dashboard">Painel</string>
     <string name="bottom_tab_settings">Configurações</string>
 
     <!-- Project detail -->

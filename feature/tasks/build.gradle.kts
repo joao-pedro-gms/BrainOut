@@ -57,6 +57,14 @@ android {
         abortOnError = false
         checkReleaseBuilds = false
     }
+
+    // E2.7 — testes Robolectric do Dashboard precisam dos recursos
+    // Android (strings.xml) mesclados no classpath de teste.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -85,6 +93,15 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+
+    // E2.7 — testes de UI Compose do Dashboard via Robolectric
+    // (createComposeRule roda em JVM com isIncludeAndroidResources).
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.espresso.core)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 detekt {

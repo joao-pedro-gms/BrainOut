@@ -11,7 +11,10 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskCompletionStats
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
 /**
@@ -89,6 +92,36 @@ class TaskRepositoryImpl @Inject constructor(
 
     override suspend fun countActiveByProject(projectId: String): Int =
         taskDao.countActiveByProject(projectId)
+
+    /**
+     * E2.7 — contagem reativa por prioridade. A query agrupa por
+     * `priority_code`; aqui preenchemos os níveis 0..4 ausentes com
+     * zero para que o Dashboard sempre desenhe 5 barras.
+     */
+    override fun observeCountByPriority(ownerId: String): Flow<List<TaskPriorityCount>> =
+        taskDao.observeCountByPriority(ownerId).map { rows ->
+            val byCode = rows.associate { it.priorityCode to it.taskCount }
+            TaskPriority.VALID_CODES.map { code ->
+                TaskPriorityCount(priorityCode = code, count = byCode[code] ?: 0)
+            }
+        }
+
+    /**
+     * E2.7 — estatísticas de conclusão reativas. Delegamos direto ao
+     * DAO: a conversão de `weekStartMillis` é responsabilidade do
+     * caller (o ViewModel decide a semântica de "semana").
+     */
+    override fun observeCompletionStats(
+        ownerId: String,
+        weekStartMillis: Long,
+    ): Flow<TaskCompletionStats> =
+        taskDao.observeCompletionStats(ownerId, weekStartMillis).map { row ->
+            TaskCompletionStats(
+                totalCount = row.totalCount,
+                doneCount = row.doneCount,
+                doneThisWeekCount = row.doneThisWeekCount,
+            )
+        }
 
     /**
      * RN03 (E2.5): conclui a tarefa (target = DONE) e, em cascata,

@@ -1,10 +1,13 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Identifica as três posições da bottom bar da Home mais o
+// Identifica as posições da bottom bar da Home mais o
 // filtro interno "Ativos / Concluídos" (RN03 — E2.5).
 //
 // A posição "Configurações" é uma rota externa (settings) e não
 // é uma tab interna do Scaffold — mas precisa estar presente para
 // renderizar o item correspondente na NavigationBar.
+//
+// E2.7 — a posição "Painel" também é rota externa (dashboard,
+// em :feature:tasks), acessível a partir da Home.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -14,9 +17,10 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 /**
  * Posições da bottom bar da [HomeScreen].
  *
- * - [Projects] e [Tasks] são abas internas — alteram o conteúdo do Scaffold
+ * - [Projects] é a aba interna — altera o conteúdo do Scaffold
  *   sem trocar a rota.
- * - [Settings] dispara uma navegação para a rota externa `settings` (ver
+ * - [Tasks], [Dashboard] e [Settings] disparam navegação para rotas
+ *   externas (`tasks`, `dashboard` e `settings`, ver
  *   `BrainOutNavHost`). Após a navegação, o estado local de tab perde
  *   relevância — a próxima vez que o usuário voltar para Home, ele
  *   reencontra o estado salvo via `rememberSaveable`.
@@ -24,6 +28,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 enum class HomeTab(@StringRes val labelRes: Int) {
     Projects(R.string.bottom_tab_projects),
     Tasks(R.string.bottom_tab_tasks),
+    Dashboard(R.string.bottom_tab_dashboard),
     Settings(R.string.bottom_tab_settings)
 }
 
