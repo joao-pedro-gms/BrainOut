@@ -70,3 +70,7 @@ backend-stub/*.log
 
 # Kanban scratch workspaces
 /.hermes/kanban/workspaces/
+
+# Tooling local (nao versionar)
+.rtk/
+CLAUDE.md
