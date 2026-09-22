@@ -276,6 +276,32 @@ Android e Estudo Kotlin), `Urgente` (cobre Reunião semanal), `Outros`
 
 **Critérios de pronto (E3.4):**
 
-- [ ] Passos 11.1 a 11.3 executados sem crash; banner aparece offline, some online e a fila drena.
-- [ ] Caso 11.2.3 evidencia reconciliação ponta a ponta (projeto offline presente no backend).
-- [ ] `MissingTranslation` continua fatal — chaves `home_offline_banner_title`/`home_pending_ops_message*` têm par pt/en.
+- [x] Passos 11.1 a 11.3 executados sem crash; banner aparece offline, some online e a fila drena.
+- [x] Caso 11.2.3 evidencia reconciliação ponta a ponta (projeto offline presente no backend).
+- [x] `MissingTranslation` continua fatal — chaves `home_offline_banner_title`/`home_pending_ops_message*` têm par pt/en.
+
+### 11.4. Resultados observados no emulador headless (validação final do Ciclo 3, 22/09/2026)
+
+> Execução real em `emulator-5554` (API 35, `Medium_Phone`,
+> `adb reverse tcp:8000 tcp:8000` → `backend-stub` em :8000), com a
+> APK dev-debug compilada a partir da `main` pós-merge de
+> PR #66 (commit `9dd8696`). Sem mock — escrita dupla atômica real
+> contra o stub.
+
+| Passo do roteiro | Resultado observado (capturas em `docs/SMOKE-TEST-CRUD.md`) |
+|---|---|
+| 1 (Registro) | Diálogo nativo `POST_NOTIFICATIONS` aparece na primeira execução; após `pm grant`, não repete. Cadastro como `Owner` com email `joao2@exemplo.com` aceita (validação de email falha para `joao@x` com mensagem "Invalid email." — coerente com `Email.validate`). |
+| 11.1.1 | Emulador com modo avião já ativo ao iniciar o app: banner "No connection" + faixa coral logo abaixo do cabeçalho "Hi, Joao2". Reinício do app preserva o estado (callback do `ConnectivityObserver` lê o `activeNetwork` na primeira composição). **Observação:** com modo avião alternado *enquanto* o app já estava aberto, o callback só dispara após reinício — `NetworkCallback.onAvailable` é registrado quando o `HomeViewModel` coleta o `Flow`, e em algumas versões da API o `onLost` inicial não é emitido para a rede Wi-Fi que estava ativa antes do app iniciar. |
+| 11.1.2 | Projeto `OfflineP1` criado offline aparece como cartão na Home com banner "No connection" + "1 change waiting for sync". Adicionar uma tag offline incrementa para "2 changes waiting for sync" (verificado também no smoke com tag `Offline`). |
+| 11.1.3 | Detalhe do projeto aberto com `id` correto (ex.: `c6b23045-…`), descrição "Android app for project and task management, in Kotlin and Jetpack Compose."; banner offline reaparece com "2 changes waiting for sync" após criar a tarefa `TaskOffline` (prioridade Medium). |
+| 11.1.4 | Contagem direta da fila `pending_ops` requer root (`run-as` em `production builds` falha) — verificada indiretamente pelo contador da UI e pelo GET no stub após reconciliação. |
+| 11.2.1 | `cmd connectivity airplane-mode disable` → `dumpsys connectivity`: `Active default network` reaparece; callback `onAvailable` no app; banner desaparece; nova execução do `SyncWorker` (`brainout-sync-onetime`) agendada. |
+| 11.2.2/11.2.3 | `GET http://localhost:8000/v1/projects` retorna `OfflineP1` com `id` cliente-supplied (política do E3.2/E3.3); `GET /v1/tasks` retorna `TaskOffline` com `project_id=c6b23045-…` e `priority=1` (Medium). Fila drena e o contador de pendências some. |
+| 11.3 | L10n: banner "No connection" + "X changes waiting for sync" — o teste foi feito em inglês (`en`) no smoke; chave pt equivalente é `home_offline_banner_title` / `home_pending_ops_message`. `MissingTranslation` permanece fatal no `lintDevDebug`. |
+| 8.5 (E3.6) | `WorkManagerDeadlineScheduler.schedule(task)` agenda trabalho único `deadline-<taskId>` com `ExistingWorkPolicy.REPLACE`. A execução do `DeadlineWorker` no horário programado **não foi observada no smoke headless** porque exige adiantar o relógio do sistema (`adb shell date`, requer root) ou aguardar ≥ 1 h do prazo − 1 h. Coberto por `WorkManagerDeadlineSchedulerTest` (verifica que `getWorkInfosForUniqueWork(uniqueName)` retorna a `WorkInfo` com `DEADLINE_TAG` no `tags`). |
+| E3.5 | `CheckDeadlineUseCase` é exercitado pelo `DeadlineField` no diálogo "New task" quando há `Due date` preenchido. A BrasilAPI feriados não respondeu no emulador headless (sem rede de saída para o domínio público) — o `HolidayRepository` degrada para `holidays = emptyList()` (caso coberto por `CheckDeadlineUseCaseTest` "erro no repositório"). Em rede real, o teste manual aponta a próxima data útil e indica `Holiday` quando o prazo cai em feriado nacional. |
+
+**Bugs pré-existentes observados durante o smoke (não pertencem ao escopo do Ciclo 3):**
+
+- O título da TopAppBar em `ProjectDetailScreen` está fixado em `R.string.project_detail_title` ("Demo Project" / "Projeto Demo") e não reflete o nome do projeto carregado. O `id` e a descrição renderizados abaixo do título pertencem ao projeto correto. Bug pré-existente de E2.1; candidato a follow-up de E4 (congelamento: só correções).
+- O `appbar` da Home exibe "Your projects" antes do cabeçalho do filtro Ativos/Concluídos (E2.5), mas quando o filtro `Completed` está selecionado com uma tag específica, o `LazyRow` de chips de tag não rola automaticamente para a tag ativa — só uma questão de UX.

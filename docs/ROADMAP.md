@@ -306,7 +306,9 @@ dashboard consolidado.
       *Critério:* testes de integração (Compose + Robolectric + MockWebServer)
       validam o fluxo online e offline. *Atende R5 e R6.*
       *Estimativa:* 13 PH.
-      _Entregue no branch `feat/sync-room-backend` — fila
+      _Entregue em PR #66 (squash: `feat(sync): E3.3 sincronização
+      offline-first + E3.4 banner offline e reconciliação`,
+      commit `9dd8696` na `main` em 22/09/2026 13:48 UTC) — fila
       `pending_ops` em Room (schema v3→v4, migração não destrutiva,
       `4.json` exportado), escrita dupla atômica local+fila nos
       repositórios de projeto/tarefa/tag, `SyncDispatcher` com política
@@ -316,28 +318,46 @@ dashboard consolidado.
       de rede, KEEP). Testes: `PendingOpDaoTest` (10),
       `BrainOutSyncDispatcherTest` (9, MockWebServer) e
       `SyncWorkerTest` (8, Robolectric + fila real), cobrindo os
-      fluxos online, offline, 4xx e 5xx._
+      fluxos online, offline, 4xx e 5xx. Smoke manual ponta a ponta
+      em emulador headless (API 35, `Medium_Phone`) com `backend-stub`
+      em :8000 (`adb reverse`): projeto `OfflineP1` criado offline
+      aparece em `GET /v1/projects` após desativar modo avião
+      (reconciliação via `SyncConnectivityWatcher.onAvailable` →
+      `SyncWorker` → stub), evidenciado em
+      `docs/SMOKE-TEST-CRUD.md` §11._
 
 - [x] **E3.4** — Tratamento de ausência de conectividade: banner
       persistente "offline", fila visível ao usuário, reconciliação
       automática quando a rede retorna. *Critério:* teste manual em modo
       avião reproduz o fluxo. *Atende R5, R10.* *Estimativa:* 3 PH.
-      _Entregue no branch `feat/offline-banner` — banner persistente
-      "Sem conexão" na Home e no detalhe do projeto observando
-      conectividade via callback do sistema
+      _Entregue em PR #66 (squash, mesmo commit de E3.3) — banner
+      persistente "Sem conexão" na Home e no detalhe do projeto
+      observando conectividade via callback do sistema
       (`ConnectivityObserver`, sem polling); contagem de
       `pending_ops` exposta nos ViewModels (`PendingSyncMonitor`)
-      com indicador "X alterações aguardando sincronização";
+      com indicador "1 change waiting for sync" (pluraliza pt/en);
       reconciliação automática via `SyncConnectivityWatcher`
       (`NetworkCallback` enfileira o `OneTimeWorkRequest` do
       `SyncWorker` em `onAvailable`). Correção latente: `INTERNET` +
       `ACCESS_NETWORK_STATE` adicionados ao manifest (a fila do E3.3
       nunca teria drenado no dispositivo sem a permissão de rede) e
       `usesCleartextTraffic` para o stub dev. Teste manual em modo
-      avião documentado em `docs/SMOKE-TEST-CRUD.md` (bloco 11).
+      avião documentado em `docs/SMOKE-TEST-CRUD.md` §11 — banner
+      "No connection" + "X changes waiting for sync" observados
+      na Home e no detalhe do projeto após `cmd connectivity
+      airplane-mode enable`; reconciliação observada em `GET
+      /v1/projects` do stub (`OfflineP1` aparece após desativar
+      modo avião, com `id` cliente-supplied e `name=OfflineP1`).
       Testes: `ConnectivityObserverTest` (Robolectric shadow),
-      novos casos E3.4 em `HomeViewModelTest` e
-      `ProjectDetailViewModelTest`._
+      novos casos E3.4 em `HomeViewModelTest` (17 casos, 0
+      falhas) e `ProjectDetailViewModelTest` (14 casos, 0
+      falhas)._
+      **Observação de smoke:** o título da TopAppBar em
+      `ProjectDetailScreen` está fixado em
+      `R.string.project_detail_title` (placeholder "Demo Project" /
+      "Projeto Demo"), sem refletir o nome real do projeto carregado
+      — bug pré-existente de E2.1 (não coberto por E3.4); o ID e a
+      descrição renderizados na tela pertencem ao projeto correto.
 
 - [ ] **E3.5** — Consumir 1 serviço externo pertinente ao domínio.
       *Sugestões:* ICS feed para sincronizar prazos (iCal); API pública de
@@ -345,6 +365,21 @@ dashboard consolidado.
       associar Task a um local.
       *Critério:* integração coberta por testes com MockWebServer.
       *Atende R7.* *Estimativa:* 5 PH.
+      _Implementado parcialmente (feriados via BrasilAPI) na
+      branch `feat/external-holiday-api-rb` (PR #59 já mergeado em
+      21/09): `HolidayRepository`, `CheckDeadlineUseCase` com
+      `DeadlineInfo`/`Holiday` no domínio, `DeadlineField` no diálogo
+      "New task", `HolidayRepositoryTest` (3 cenários
+      MockWebServer + fallback em erro) e
+      `CheckDeadlineUseCaseTest` (5 cenários: prazo em feriado,
+      prazo em fim de semana, feriado nos 7 dias anteriores,
+      `deadline == null`, erro no repo). Smoke manual na validação
+      final do Ciclo 3 não conseguiu validar a UI no emulador
+      headless (BrasilAPI inacessível pela rede interna) — a UI
+      degrada para `unavailable=true` sem exibir dica, comportamento
+      já coberto pelos testes. Marco ainda `[ ]` no ROADMAP até ser
+      exercitado ponta-a-ponta no ROTEIRO DE TESTES (E4.1, TF-09) em
+      rede real; pode ser revisitado pelo follow-up do E5.4._
 
 - [ ] **E3.6** — Recurso nativo do dispositivo: **notificações push
       locais** (lembretes de prazos). Configurado com permissão runtime
@@ -353,6 +388,35 @@ dashboard consolidado.
       *Critério:* notificação agendada dispara no horário programado;
       ação altera o status da Task via WorkManager. *Atende R8.*
       *Estimativa:* 5 PH.
+      _Implementado no PR #45 (`feat/local-notifications`) já
+      mergeado em 21/09: `WorkManagerDeadlineScheduler` enfileira
+      trabalho único `deadline-<taskId>` com
+      `ExistingWorkPolicy.REPLACE` em `max(0, deadline − 1h)`;
+      `DeadlineWorker` posta notificação no canal
+      `brainout_deadlines` (importance HIGH); `DeadlineReceiver`
+      trata "Concluir" → enfileira `CompleteTaskWorker` via
+      WorkManager; `CompleteTaskWorker` chama
+      `CompleteTaskUseCase` + cancela o lembrete.
+      `BrainOutApplication.onCreate` cria o canal idempotente.
+      `NotificationPermissionStore` (DataStore) lembra a escolha do
+      usuário e evita diálogo repetido. Manifest tem
+      `POST_NOTIFICATIONS` runtime e `RECEIVE_BOOT_COMPLETED` para
+      reagendamento. Testes:
+      `WorkManagerDeadlineSchedulerTest` (verifica
+      `getWorkInfosForUniqueWork` + `DEADLINE_TAG`),
+      `CompleteTaskWorkerTest`. **Smoke na validação final do Ciclo
+      3 (22/09/2026, emulador headless):** diálogo nativo
+      `POST_NOTIFICATIONS` apareceu na primeira execução, conforme
+      esperado; após `pm grant`, não repetiu (coerente com o
+      `NotificationPermissionStore`). Criação de tarefa com prazo
+      próximo (hoje/amanhã) e observação direta da notificação no
+      horário programado **não foi possível em emulador headless**
+      (requer adiantar o relógio do sistema via `adb shell date`,
+      bloqueado por falta de root na `production build`). A
+      observação real da notificação fica registrada em TF-12 do
+      roteiro (`docs/ROTEIRO-TESTES.md`) a executar em dispositivo
+      físico do E5.3. Marco mantido como `[ ]` no ROADMAP até
+      validação em hardware._
 
 - [x] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
       e os segredos necessários (R12, R14). *Critério:* secrets
@@ -520,6 +584,9 @@ usabilidade concluída.
 | Não-conformidade de acessibilidade identificada tardia  | Média         | Médio   | E4.4 começa com auditoria no fim do Ciclo 2, não no Ciclo 4                |
 | Dependabot quebrando builds por atualização major        | Baixa         | Médio   | Groups configurados para minor/patch apenas; majors viram Auto-PR manual   |
 | 2º dispositivo físico emprestado indisponível na data de E5.3 | Baixa    | Médio   | Mapeamento e checklist pré-aprovados em `docs/DISPOSITIVOS.md` (compatibilidade com `minSdk` 24 / `targetSdk` 35 verificada antes do teste) |
+| Smoke headless não exercita `ConnectivityObserver` em runtime real | Baixa | Médio   | Cobertura dupla: testes Robolectric (`ConnectivityObserverTest`, `HomeViewModelTest` E3.4, `ProjectDetailViewModelTest` E3.4) + smoke real em emulador API 35 com `cmd connectivity airplane-mode enable/disable`. Validação final do Ciclo 3 (22/09/2026) já produziu capturas de banner/contragem/reconciliação ponta a ponta. |
+| BrasilAPI feriados inacessível em emulador headless / sem rede de saída | Baixa | Baixo | `HolidayRepository` degrada para `emptyList()`; `CheckDeadlineUseCaseTest` cobre o cenário "erro no repositório". UI mostra `holidays unavailable` apenas se a chamada falhar explicitamente; em rede real (dispositivo físico E5.3 / TF-09 do roteiro) a dica de próximo feriado é exibida. |
+| `adb shell date` para adiantar o relógio do sistema requer `root` em builds de produção | Baixa | Baixo | Smoke do E3.6 (notificação de prazo) não foi exercitado ponta-a-ponta no emulador headless — coberto por `WorkManagerDeadlineSchedulerTest` (verifica `WorkInfo` com `DEADLINE_TAG` no `tags`) e `CompleteTaskWorkerTest`. Disparo real registrado em TF-12 do `docs/ROTEIRO-TESTES.md` para o dispositivo físico do E5.3. |
 
 ## Acompanhamento
 
