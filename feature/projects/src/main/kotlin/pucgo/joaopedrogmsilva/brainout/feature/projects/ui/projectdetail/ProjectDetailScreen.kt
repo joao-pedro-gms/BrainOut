@@ -29,6 +29,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -102,6 +104,7 @@ fun ProjectDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -178,6 +181,7 @@ fun ProjectDetailScreen(
             onChangeStatus = viewModel::changeStatus,
             onDeleteTask = viewModel::deleteTask,
             onRenameTask = viewModel::renameTask,
+            syncState = syncState,
             onChangePriority = { task, _ ->
                 // RN02 — defesa em profundidade: a UI também bloqueia
                 // tarefas DONE via DropdownMenuItem(enabled = false);
@@ -289,6 +293,9 @@ object ProjectDetailTestTags {
     const val ERROR_BANNER: String = "project_detail_error_banner"
     const val ERROR_RETRY: String = "project_detail_error_retry"
     const val ERROR_DISMISS: String = "project_detail_error_dismiss"
+
+    // E3.4 — banner offline + contagem da fila de sincronização.
+    const val OFFLINE_BANNER: String = "project_detail_offline_banner"
 }
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -306,6 +313,7 @@ private fun ProjectDetailBody(
     onDeleteTask: (Task) -> Unit,
     @Suppress("unused") onRenameTask: (Task, String) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
+    syncState: ProjectDetailSyncState,
 ) {
     Column(
         modifier = Modifier
@@ -324,6 +332,11 @@ private fun ProjectDetailBody(
             text = stringResource(id = R.string.project_detail_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // E3.4 — banner persistente de conectividade + fila pendente.
+        ProjectDetailOfflineBanner(
+            syncState = syncState,
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
@@ -360,6 +373,84 @@ private fun ProjectDetailBody(
         }
 
         Spacer(modifier = Modifier.height(80.dp)) // espaço para o FAB
+    }
+}
+
+/**
+ * Banner persistente de conectividade + fila de sincronização do
+ * detalhe do projeto (E3.4). Espelha `HomeOfflineBanner`: visível
+ * quando offline, com o indicador "X alterações aguardando
+ * sincronização" enquanto houver ops pendentes. Some sozinho quando
+ * a rede volta e a fila drena.
+ */
+@Composable
+private fun ProjectDetailOfflineBanner(
+    syncState: ProjectDetailSyncState,
+    modifier: Modifier = Modifier,
+) {
+    val showBanner = syncState.showOfflineBanner
+    val pendingOps = syncState.pendingOps
+    if (!showBanner && pendingOps == 0) return
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(ProjectDetailTestTags.OFFLINE_BANNER),
+        shape = RoundedCornerShape(12.dp),
+        color = if (showBanner) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = if (showBanner) {
+                    Icons.Outlined.CloudOff
+                } else {
+                    Icons.Outlined.CloudSync
+                },
+                contentDescription = null,
+                tint = if (showBanner) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (showBanner) {
+                    Text(
+                        text = stringResource(id = R.string.home_offline_banner_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+                if (pendingOps > 0) {
+                    Text(
+                        text = stringResource(
+                            id = if (pendingOps == 1) {
+                                R.string.home_pending_ops_message
+                            } else {
+                                R.string.home_pending_ops_message_plural
+                            },
+                            pendingOps,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (showBanner) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
+                    )
+                }
+            }
+        }
     }
 }
 

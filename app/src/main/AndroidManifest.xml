@@ -11,6 +11,14 @@
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+      INTERNET + ACCESS_NETWORK_STATE (E3.2/E3.3/E3.4): chamadas HTTP ao
+      backend-stub (Retrofit/OkHttp) e observação de conectividade
+      (banner offline + reconciliação E3.4 + constraints do WorkManager).
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:name=".BrainOutApplication"
         android:allowBackup="true"
@@ -19,7 +27,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BrainOut"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <!--
+          usesCleartextTraffic (E3.2): o flavor dev aponta para o
+          backend-stub em http://10.0.2.2:8000/ (HTTP puro no emulador).
+          Sem esta flag, o OkHttp recebe "Cleartext HTTP traffic not
+          permitted" no Android 9+. Prod usa https (placeholder TBD).
+        -->
 
         <activity
             android:name=".MainActivity"

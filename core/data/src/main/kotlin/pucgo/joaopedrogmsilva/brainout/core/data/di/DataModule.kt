@@ -34,6 +34,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.BrainOutSyncDispatcher
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.AndroidConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.SyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
@@ -176,6 +178,17 @@ object DataModule {
     @Singleton
     fun provideSyncDispatcher(remote: RemoteDataSource): SyncDispatcher =
         BrainOutSyncDispatcher(remote)
+
+    /**
+     * Observador de conectividade reativo (E3.4): alimenta o banner
+     * "offline" da Home e do detalhe do projeto via callback de rede
+     * do sistema (sem polling).
+     */
+    @Provides
+    @Singleton
+    fun provideConnectivityObserver(
+        impl: AndroidConnectivityObserver,
+    ): ConnectivityObserver = impl
 
     /**
      * Fonte de dados remota do serviço público de feriados nacionais

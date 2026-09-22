@@ -8,6 +8,7 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteTaskUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateTaskUseCase
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
 
 /**
  * Cobre o contrato do [ProjectDetailViewModel]:
@@ -60,6 +64,14 @@ class ProjectDetailViewModelTest {
     private lateinit var deleteProject: DeleteProjectUseCase
     private lateinit var deleteTask: DeleteTaskUseCase
     private lateinit var checkDeadline: CheckDeadlineUseCase
+    private lateinit var connectivityObserver: ConnectivityObserver
+    private lateinit var pendingSyncMonitor: PendingSyncMonitor
+
+    /** Estado de rede controlável nos testes (default: online). */
+    private val connectivityFlow = MutableStateFlow(ConnectivityState(isOnline = true))
+
+    /** Contagem da fila controlável nos testes (default: vazia). */
+    private val pendingOpsFlow = MutableStateFlow(0)
 
     private fun viewModel(): ProjectDetailViewModel {
         val savedStateHandle = SavedStateHandle(mapOf(ProjectDetailViewModel.PROJECT_ID_ARG to projectId))
@@ -72,6 +84,12 @@ class ProjectDetailViewModelTest {
             deleteProject = deleteProject,
             deleteTask = deleteTask,
             checkDeadline = checkDeadline,
+            connectivityObserver = object : ConnectivityObserver {
+                override fun observe() = connectivityFlow
+            },
+            pendingSyncMonitor = mockk {
+                every { observePendingCount() } returns pendingOpsFlow
+            },
         )
     }
 
@@ -346,5 +364,57 @@ class ProjectDetailViewModelTest {
         advanceUntilIdle()
 
         assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+    }
+
+    /**
+     * E3.4 — banner offline: quando o observador de conectividade
+     * emite offline, [ProjectDetailViewModel.syncState] reflete
+     * `isOnline = false`; ao voltar, volta a `true`.
+     */
+    @Test
+    fun `E3 4 syncState reflete offline e online via connectivityObserver`() = runTest {
+        val vm = viewModel()
+
+        vm.syncState.test {
+            advanceUntilIdle()
+            // Estado inicial: online, fila vazia.
+            var state = expectMostRecentItem()
+            assertThat(state.isOnline).isTrue()
+            assertThat(state.pendingOps).isEqualTo(0)
+
+            connectivityFlow.value = ConnectivityState(isOnline = false)
+            advanceUntilIdle()
+            state = expectMostRecentItem()
+            assertThat(state.isOnline).isFalse()
+            assertThat(state.showOfflineBanner).isTrue()
+
+            connectivityFlow.value = ConnectivityState(isOnline = true)
+            advanceUntilIdle()
+            state = expectMostRecentItem()
+            assertThat(state.isOnline).isTrue()
+            assertThat(state.showOfflineBanner).isFalse()
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * E3.4 — fila visível: a contagem emitida pelo
+     * [PendingSyncMonitor] chega em `syncState.pendingOps`.
+     */
+    @Test
+    fun `E3 4 syncState expõe contagem de ops pendentes`() = runTest {
+        val vm = viewModel()
+
+        vm.syncState.test {
+            advanceUntilIdle()
+            pendingOpsFlow.value = 3
+            advanceUntilIdle()
+
+            val state = expectMostRecentItem()
+            assertThat(state.pendingOps).isEqualTo(3)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

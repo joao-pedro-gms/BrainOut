@@ -6,6 +6,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import pucgo.joaopedrogmsilva.brainout.notifications.WorkManagerDeadlineScheduler
+import pucgo.joaopedrogmsilva.brainout.sync.SyncConnectivityWatcher
 import pucgo.joaopedrogmsilva.brainout.sync.SyncScheduler
 import javax.inject.Inject
 
@@ -33,6 +34,9 @@ class BrainOutApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var syncScheduler: SyncScheduler
 
+    @Inject
+    lateinit var syncConnectivityWatcher: SyncConnectivityWatcher
+
     override fun onCreate() {
         super.onCreate()
         WorkManagerDeadlineScheduler.ensureChannel(this)
@@ -40,6 +44,9 @@ class BrainOutApplication : Application(), Configuration.Provider {
         // KEEP garante idempotência entre boots; a constraint de rede
         // e o OneTimeWorkRequest de reconciliação ficam no scheduler.
         syncScheduler.ensurePeriodicSync()
+        // Reconciliação automática ao voltar a conectividade (E3.4):
+        // callback de rede enfileira o OneTimeWorkRequest em onAvailable.
+        syncConnectivityWatcher.start()
     }
 
     override val workManagerConfiguration: Configuration

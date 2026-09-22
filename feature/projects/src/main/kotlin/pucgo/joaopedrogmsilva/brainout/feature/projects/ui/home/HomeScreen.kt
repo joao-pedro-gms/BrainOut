@@ -38,6 +38,8 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -188,6 +190,7 @@ fun HomeScreen(
                 onTagFilterChange = viewModel::onTagFilterChange,
                 sortOrder = listState.sortOrder,
                 onSortOrderChange = viewModel::onSortOrderChange,
+                syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
             )
             HomeTab.Tasks -> Unit
             HomeTab.Dashboard -> Unit
@@ -231,6 +234,9 @@ object HomeTestTags {
     const val ERROR_BANNER: String = "home_error_banner"
     const val ERROR_RETRY: String = "home_error_retry"
     const val ERROR_DISMISS: String = "home_error_dismiss"
+
+    // E3.4 — banner offline + contagem da fila de sincronização.
+    const val OFFLINE_BANNER: String = "home_offline_banner"
 
     // E2.6 — busca + filtro por tag + ordenação.
     const val SEARCH_FIELD: String = "home_search_field"
@@ -448,6 +454,7 @@ private fun HomeProjectsContent(
     onTagFilterChange: (String?) -> Unit,
     sortOrder: SortOrder,
     onSortOrderChange: (SortOrder) -> Unit,
+    syncState: HomeSyncState,
 ) {
     Column(
         modifier = Modifier
@@ -456,6 +463,12 @@ private fun HomeProjectsContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // E3.4 — banner persistente de conectividade + contagem da
+        // fila de sincronização. Fica acima da busca: é estado global
+        // da tela, não da lista. Sempre visível quando offline.
+        HomeOfflineBanner(
+            syncState = syncState,
+        )
         // E2.6 — barra de busca textual. `OutlinedTextField` com ícone
         // de limpar (X) à direita quando o texto não está vazio. O
         // placeholder vem de `values/strings.xml` para manter a regra
@@ -544,6 +557,88 @@ private fun HomeProjectsContent(
                     ProjectCard(
                         item = card,
                         onClick = { onOpenProject(card.project.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Banner persistente de conectividade + fila de sincronização
+ * (E3.4). Aparece sempre que o dispositivo está offline
+ * ([HomeSyncState.showOfflineBanner]); quando há alterações pendentes
+ * de sincronização, acrescenta o indicador "X alterações aguardando
+ * sincronização" — visível também online enquanto a fila drena.
+ *
+ * Persistente: sem ação de dispensa — o banner some sozinho quando a
+ * conectividade volta (callback de rede, E3.4 item 1) e a fila zera
+ * (reconciliação, item 3).
+ */
+@Composable
+private fun HomeOfflineBanner(
+    syncState: HomeSyncState,
+    modifier: Modifier = Modifier,
+) {
+    val showBanner = syncState.showOfflineBanner
+    val pendingOps = syncState.pendingOps
+    if (!showBanner && pendingOps == 0) return
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(HomeTestTags.OFFLINE_BANNER),
+        shape = RoundedCornerShape(12.dp),
+        color = if (showBanner) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = if (showBanner) {
+                    Icons.Outlined.CloudOff
+                } else {
+                    Icons.Outlined.CloudSync
+                },
+                contentDescription = null,
+                tint = if (showBanner) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (showBanner) {
+                    Text(
+                        text = stringResource(id = R.string.home_offline_banner_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+                if (pendingOps > 0) {
+                    Text(
+                        text = stringResource(
+                            id = if (pendingOps == 1) {
+                                R.string.home_pending_ops_message
+                            } else {
+                                R.string.home_pending_ops_message_plural
+                            },
+                            pendingOps,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (showBanner) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
                     )
                 }
             }

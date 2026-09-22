@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
@@ -25,6 +26,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
@@ -77,6 +81,12 @@ class HomeViewModelTest {
     private val deleteProject: DeleteProjectUseCase = mockk()
     private val createTag: CreateTagUseCase = mockk()
 
+    /** Estado de rede controlável nos testes (default: online). */
+    private val connectivityFlow = MutableStateFlow(ConnectivityState(isOnline = true))
+
+    /** Contagem da fila controlável nos testes (default: vazia). */
+    private val pendingOpsFlow = MutableStateFlow(0)
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -98,6 +108,12 @@ class HomeViewModelTest {
         tagRepository = tagRepository,
         activeUserProvider = activeUserProvider,
         listingPreferences = listingPreferences,
+        connectivityObserver = object : ConnectivityObserver {
+            override fun observe() = connectivityFlow
+        },
+        pendingSyncMonitor = mockk {
+            every { observePendingCount() } returns pendingOpsFlow
+        },
         createProject = createProject,
         updateProject = updateProject,
         deleteProject = deleteProject,
@@ -507,6 +523,36 @@ class HomeViewModelTest {
             val state = expectMostRecentItem()
             assertThat(state.isLoading).isFalse()
             assertThat(state.searchQuery).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * E3.4 — banner offline da Home: `syncState` reflete o estado
+     * emitido pelo [ConnectivityObserver] (offline → banner, volta →
+     * some) e a contagem do [PendingSyncMonitor].
+     */
+    @Test
+    fun `E3 4 syncState reflete offline e contagem pendente`() = runTest {
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        val viewModel = newViewModel()
+
+        viewModel.syncState.test {
+            advanceUntilIdle()
+            var state = expectMostRecentItem()
+            assertThat(state.isOnline).isTrue()
+            assertThat(state.showOfflineBanner).isFalse()
+            assertThat(state.pendingOps).isEqualTo(0)
+
+            connectivityFlow.value = ConnectivityState(isOnline = false)
+            pendingOpsFlow.value = 2
+            advanceUntilIdle()
+
+            state = expectMostRecentItem()
+            assertThat(state.isOnline).isFalse()
+            assertThat(state.showOfflineBanner).isTrue()
+            assertThat(state.pendingOps).isEqualTo(2)
+
             cancelAndIgnoreRemainingEvents()
         }
     }
