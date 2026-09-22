@@ -294,11 +294,31 @@ dashboard consolidado.
       `backend-stub/`. Justificativa em `docs/ARQUITETURA.md`, Seção 9;
       ata em `docs/ATAS/checkpoint2.md`._
 
-- [ ] **E3.2** — Implementar cliente HTTP (Ktor ou Retrofit) configurado
+- [x] **E3.2** — Implementar cliente HTTP (Ktor ou Retrofit) configurado
       por build flavor (`debug` aponta para o stub FastAPI em
       `backend-stub/`; `release` aponta para o serviço definitivo).
       *Critério:* `BASE_URL` injetada via `local.properties`; nenhum host
       hard-coded no código. *Atende R6.* *Estimativa:* 5 PH.
+      _Entregue em PR #44 (`feat(data): cliente HTTP por flavor com
+      BASE_URL injetada (E3.2)`, commit `53ee515` na `main` em
+      21/09/2026): camada `remote` em `:core:data` com Retrofit +
+      OkHttp + kotlinx-serialization via version catalog; DTOs
+      alinhados ao contrato snake_case do backend FastAPI; flavors
+      `dev`/`prod` em `:app` e `:core:data` expondo
+      `BuildConfig.BASE_URL` (dev: emulador em :8000; prod:
+      placeholder `https://TBD/` até a hospedagem definitiva);
+      módulos `feature/*` sem flavors fixam
+      `missingDimensionStrategy "dev"`; `BrainOutApi` cobrindo
+      `/v1/ping`, `/v1/projects`, `/v1/tasks` (GET/POST/PUT/DELETE);
+      `RemoteDataSource` com log injetável exposto via Hilt em
+      `DataModule`; override opcional `brainout.baseUrl.dev` em
+      `local.properties.example`. Testes com MockWebServer
+      (`BrainOutApiTest`): `/v1/projects` lista vazia e com 1
+      projeto, `/v1/tasks` com snake_case, POST 201, erro 404.
+      `docs/ARQUITETURA.md` ganhou a seção 2.1 com o diagrama da
+      camada remote. Compat: contratos da retaguarda foram
+      estendidos depois em PR #52 (PUT/DELETE/tags, UUID
+      cliente-supplied)._
 
 - [x] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
       `WorkManager` com `OneTimeWorkRequest` ao detectar conectividade;
@@ -359,38 +379,46 @@ dashboard consolidado.
       — bug pré-existente de E2.1 (não coberto por E3.4); o ID e a
       descrição renderizados na tela pertencem ao projeto correto.
 
-- [ ] **E3.5** — Consumir 1 serviço externo pertinente ao domínio.
+- [x] **E3.5** — Consumir 1 serviço externo pertinente ao domínio.
       *Sugestões:* ICS feed para sincronizar prazos (iCal); API pública de
       feriados nacionais para alertas de data; serviço de geocoding para
       associar Task a um local.
       *Critério:* integração coberta por testes com MockWebServer.
       *Atende R7.* *Estimativa:* 5 PH.
-      _Implementado parcialmente (feriados via BrasilAPI) na
-      branch `feat/external-holiday-api-rb` (PR #59 já mergeado em
-      21/09): `HolidayRepository`, `CheckDeadlineUseCase` com
-      `DeadlineInfo`/`Holiday` no domínio, `DeadlineField` no diálogo
-      "New task", `HolidayRepositoryTest` (3 cenários
-      MockWebServer + fallback em erro) e
-      `CheckDeadlineUseCaseTest` (5 cenários: prazo em feriado,
-      prazo em fim de semana, feriado nos 7 dias anteriores,
-      `deadline == null`, erro no repo). Smoke manual na validação
-      final do Ciclo 3 não conseguiu validar a UI no emulador
-      headless (BrasilAPI inacessível pela rede interna) — a UI
-      degrada para `unavailable=true` sem exibir dica, comportamento
-      já coberto pelos testes. Marco ainda `[ ]` no ROADMAP até ser
-      exercitado ponta-a-ponta no ROTEIRO DE TESTES (E4.1, TF-09) em
-      rede real; pode ser revisitado pelo follow-up do E5.4._
+      _Entregue em PR #59 (`feat(holidays): integrar consulta de
+      feriados e prazos (E3.5)`, commit `bb95109` na `main` em
+      21/09/2026 12:13 -03; ajustes pós-review em
+      `e828544`): integração com a BrasilAPI
+      (`/api/feriados/v1/{ano}`) via `HolidayRepository`; novo caso
+      de uso `CheckDeadlineUseCase` com `DeadlineInfo`/`Holiday` no
+      domínio; `DeadlineField` no diálogo "New task" sugere
+      antecipação quando o prazo cai em feriado ou fim de semana
+      (regra "prazo → antecipar para o último dia útil anterior");
+      fallback `unavailable=true` quando a API não está acessível,
+      sem quebrar o fluxo da feature. Testes com MockWebServer:
+      `HolidayRepositoryTest` (3 cenários — sucesso, lista vazia,
+      5xx com fallback) e `CheckDeadlineUseCaseTest` (5 cenários:
+      prazo em feriado, prazo em fim de semana, feriado nos 7 dias
+      anteriores ao prazo, `deadline == null`, erro no repo).
+      Smoke manual na validação final do Ciclo 3 (22/09) não
+      conseguiu validar a UI ponta-a-ponta no emulador headless
+      porque a BrasilAPI estava inacessível pela rede interna do
+      laboratório — a UI degrada para `unavailable=true` sem dica,
+      comportamento coberto pelos testes. Exercitação real do
+      diálogo segue registrada em TF-09 do
+      `docs/ROTEIRO-TESTES.md` (rede real, dispositivo do E5.3)._
 
-- [ ] **E3.6** — Recurso nativo do dispositivo: **notificações push
+- [x] **E3.6** — Recurso nativo do dispositivo: **notificações push
       locais** (lembretes de prazos). Configurado com permissão runtime
       para Android 13+ (`POST_NOTIFICATIONS`), canal dedicado,
       `BroadcastReceiver` para ação de "concluir".
       *Critério:* notificação agendada dispara no horário programado;
       ação altera o status da Task via WorkManager. *Atende R8.*
       *Estimativa:* 5 PH.
-      _Implementado no PR #45 (`feat/local-notifications`) já
-      mergeado em 21/09: `WorkManagerDeadlineScheduler` enfileira
-      trabalho único `deadline-<taskId>` com
+      _Entregue em PR #45 (`feat(notifications): E3.6 — lembretes
+      de prazo com WorkManager`, commit `13ddb00` na `main` em
+      21/09/2026 09:59 -03): `WorkManagerDeadlineScheduler`
+      enfileira trabalho único `deadline-<taskId>` com
       `ExistingWorkPolicy.REPLACE` em `max(0, deadline − 1h)`;
       `DeadlineWorker` posta notificação no canal
       `brainout_deadlines` (importance HIGH); `DeadlineReceiver`
@@ -398,14 +426,17 @@ dashboard consolidado.
       WorkManager; `CompleteTaskWorker` chama
       `CompleteTaskUseCase` + cancela o lembrete.
       `BrainOutApplication.onCreate` cria o canal idempotente.
-      `NotificationPermissionStore` (DataStore) lembra a escolha do
-      usuário e evita diálogo repetido. Manifest tem
+      `NotificationPermissionStore` (DataStore) lembra a escolha
+      do usuário e evita diálogo repetido. Manifest tem
       `POST_NOTIFICATIONS` runtime e `RECEIVE_BOOT_COMPLETED` para
-      reagendamento. Testes:
+      reagendamento. Hotfix posterior em PR #61 (merge de
+      compat): ajustes para que o reagendamento pós-boot
+      reenfileire todos os prazos ativos e o `DeadlineReceiver`
+      conviva com a fila do E3.3 sem perder a ação. Testes:
       `WorkManagerDeadlineSchedulerTest` (verifica
       `getWorkInfosForUniqueWork` + `DEADLINE_TAG`),
-      `CompleteTaskWorkerTest`. **Smoke na validação final do Ciclo
-      3 (22/09/2026, emulador headless):** diálogo nativo
+      `CompleteTaskWorkerTest`. **Smoke na validação final do
+      Ciclo 3 (22/09/2026, emulador headless):** diálogo nativo
       `POST_NOTIFICATIONS` apareceu na primeira execução, conforme
       esperado; após `pm grant`, não repetiu (coerente com o
       `NotificationPermissionStore`). Criação de tarefa com prazo
@@ -414,9 +445,8 @@ dashboard consolidado.
       (requer adiantar o relógio do sistema via `adb shell date`,
       bloqueado por falta de root na `production build`). A
       observação real da notificação fica registrada em TF-12 do
-      roteiro (`docs/ROTEIRO-TESTES.md`) a executar em dispositivo
-      físico do E5.3. Marco mantido como `[ ]` no ROADMAP até
-      validação em hardware._
+      roteiro (`docs/ROTEIRO-TESTES.md`) a executar em
+      dispositivo físico do E5.3._
 
 - [x] **E3.7** — Atualizar `docs/CI-CD.md` com o procedimento de release
       e os segredos necessários (R12, R14). *Critério:* secrets
