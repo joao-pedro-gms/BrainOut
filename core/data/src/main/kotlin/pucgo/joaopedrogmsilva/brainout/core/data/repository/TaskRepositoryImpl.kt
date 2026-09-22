@@ -6,9 +6,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
@@ -18,15 +23,18 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
 /**
- * Implementação Room de [TaskRepository].
+ * Implementação Room de [TaskRepository] com **escrita dual**
+ * offline-first (E3.3).
  *
- * Mantém o mapeamento entre [Task] (domínio) e [TaskEntity] (Room).
+ * Toda mutação grava no Room **e** enfileira a op em `pending_ops`
+ * na mesma transação Room ([PendingOpDao.enqueueInTx]). O corpo do
+ * payload segue o contrato do stub (`backend-stub/server.py`): PUT
+ * upsert idempotente com o `id` do cliente no path e no body; o campo
+ * `done` espelha `status == DONE`.
+ *
  * Em [changeStatus], aplica a matriz de transições do domínio via
  * [Task.transitionTo] antes de persistir — validações de estado
  * ficam no domínio, a persistência é agnóstica.
- *
- * Expõe [countActiveByProject] para que o `CreateTaskUseCase`
- * consiga aplicar a regra RN01 sem importar `:core:data`.
  *
  * **RN03 — E2.5 (conclusão cascata):** [completeAndCascade] e
  * [reopenAndCascade] coordenam a transição de status da tarefa
@@ -36,15 +44,22 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  * tarefa está DONE mas o projeto permanece ativo — ou tudo é
  * aplicado, ou nada é (rollback automático do Room).
  *
+ * A op pendente das cascatas é o UPDATE da tarefa (payload completo);
+ * a marca de conclusão do projeto é derivada no backend pelo mesmo
+ * caminho de negócio — não enfileiramos ops separadas para o projeto,
+ * mantendo a fila 1:1 com as ações do usuário.
+ *
  * `@property taskDao` DAO de tarefas injetado pelo Hilt via `DataModule`.
  * `@property projectDao` DAO de projetos — necessário para acessar
  *  os métodos `@Transaction` de cascata que coordenam `tasks` e
  *  `projects` atomicamente.
+ * `@property pendingOpDao` DAO da fila de sincronização (E3.3).
  */
 @Singleton
 class TaskRepositoryImpl @Inject constructor(
     private val taskDao: TaskDao,
     private val projectDao: ProjectDao,
+    private val pendingOpDao: PendingOpDao,
 ) : TaskRepository {
 
     override fun observeForProject(projectId: String): Flow<List<Task>> =
@@ -56,38 +71,69 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun findById(id: String): Task? =
         taskDao.findById(id)?.toDomain()
 
+    /** Cria a tarefa e enfileira a op CREATE na mesma transação. */
     override suspend fun create(task: Task): Task {
-        taskDao.insert(TaskEntity.fromDomain(task))
+        pendingOpDao.enqueueInTx(
+            op = opFor(task.id, SyncOpType.CREATE, task),
+        ) {
+            taskDao.insert(TaskEntity.fromDomain(task))
+        }
         return task
     }
 
+    /** Atualiza a tarefa e enfileira a op UPDATE na mesma transação. */
     override suspend fun update(task: Task): Task {
-        taskDao.update(TaskEntity.fromDomain(task))
+        pendingOpDao.enqueueInTx(
+            op = opFor(task.id, SyncOpType.UPDATE, task),
+        ) {
+            taskDao.update(TaskEntity.fromDomain(task))
+        }
         return task
     }
 
+    /**
+     * Aplica a transição de status (matriz do domínio) e enfileira a
+     * op UPDATE — tudo dentro da mesma transação Room: se a matriz
+     * rejeitar a transição, nem o Room nem a fila mudam.
+     */
     override suspend fun changeStatus(id: String, target: TaskStatus): Task {
         val current = taskDao.findById(id)?.toDomain()
             ?: throw IllegalArgumentException("Tarefa não encontrada: $id")
         val updated = current.transitionTo(target)
-        taskDao.update(TaskEntity.fromDomain(updated))
+        pendingOpDao.enqueueInTx(
+            op = opFor(id, SyncOpType.UPDATE, updated),
+        ) {
+            taskDao.update(TaskEntity.fromDomain(updated))
+        }
         return updated
     }
 
+    /**
+     * Remove a tarefa e enfileira a op DELETE na mesma transação.
+     *
+     * RN03 — exclusão da última tarefa ativa também conclui o
+     * projeto. Precisamos saber se a tarefa era ativa antes de
+     * removê-la (para reaplicar a regra "countActive == 0 ⇒
+     * projeto concluído").
+     */
     override suspend fun delete(id: String) {
-        // RN03 — exclusão da última tarefa ativa também conclui o
-        // projeto. Precisamos saber se a tarefa era ativa antes de
-        // removê-la (para reaplicar a regra "countActive == 0 ⇒
-        // projeto concluído").
         val current = taskDao.findById(id)
             ?: return // idempotente: tarefa inexistente = nada a fazer
         val wasActive = current.status != TaskStatus.DONE.name
-        projectDao.cascadeDeleteTask(
-            taskDao = taskDao,
-            taskId = id,
-            projectId = current.projectId,
-            wasActive = wasActive,
-        )
+        pendingOpDao.enqueueInTx(
+            op = PendingOpEntity.enqueue(
+                entityType = SyncEntityType.TASK,
+                entityId = id,
+                opType = SyncOpType.DELETE,
+            ),
+        ) {
+            projectDao.cascadeDeleteTask(
+                taskDao = taskDao,
+                taskId = id,
+                projectId = current.projectId,
+                wasActive = wasActive,
+            )
+        }
     }
 
     override suspend fun countActiveByProject(projectId: String): Int =
@@ -135,7 +181,8 @@ class TaskRepositoryImpl @Inject constructor(
      * TODO → DOING → DONE dentro do mesmo método, cada uma
      * passando pelos invariantes do domínio. O resultado é uma
      * única alteração observável no Room, aplicada atomicamente
-     * via [ProjectDao.cascadeCompleteTask].
+     * via [ProjectDao.cascadeCompleteTask] — e a op pendente
+     * (UPDATE da tarefa em DONE) entra na mesma transação.
      *
      * A exceção [InvalidStateTransitionException] é propagada sem
      * efeito no banco caso nenhuma transição intermediária seja
@@ -155,13 +202,17 @@ class TaskRepositoryImpl @Inject constructor(
         val done = doing.transitionTo(TaskStatus.DONE)
         val completedAt = done.completedAt
             ?: Instant.now() // fallback defensivo: transitionTo popula
-        projectDao.cascadeCompleteTask(
-            taskDao = taskDao,
-            taskId = taskId,
-            newStatus = TaskStatus.DONE.name,
-            completedAt = completedAt,
-            projectId = current.projectId,
-        )
+        pendingOpDao.enqueueInTx(
+            op = opFor(taskId, SyncOpType.UPDATE, done),
+        ) {
+            projectDao.cascadeCompleteTask(
+                taskDao = taskDao,
+                taskId = taskId,
+                newStatus = TaskStatus.DONE.name,
+                completedAt = completedAt,
+                projectId = current.projectId,
+            )
+        }
         return done
     }
 
@@ -169,7 +220,8 @@ class TaskRepositoryImpl @Inject constructor(
      * RN03 (E2.5): reabre a tarefa para [target] (status ativo) e,
      * em cascata, desmarca o projeto como concluído caso ele
      * estivesse marcado. Aplica a matriz de transições do domínio
-     * via [Task.transitionTo].
+     * via [Task.transitionTo]. A op pendente entra na mesma
+     * transação da cascata.
      */
     override suspend fun reopenAndCascade(taskId: String, target: TaskStatus): Task {
         require(target != TaskStatus.DONE) {
@@ -186,14 +238,34 @@ class TaskRepositoryImpl @Inject constructor(
             )
         }
         val updated = current.transitionTo(target)
-        // cascadeReopenTask é @Transaction — a reabertura da tarefa
-        // e a desmarcação do projeto são aplicadas atomicamente.
-        projectDao.cascadeReopenTask(
-            taskDao = taskDao,
-            taskId = taskId,
-            newStatus = target.name,
-            projectId = current.projectId,
-        )
+        pendingOpDao.enqueueInTx(
+            op = opFor(taskId, SyncOpType.UPDATE, updated),
+        ) {
+            // cascadeReopenTask é @Transaction — a reabertura da
+            // tarefa e a desmarcação do projeto são aplicadas
+            // atomicamente junto com o enfileiramento.
+            projectDao.cascadeReopenTask(
+                taskDao = taskDao,
+                taskId = taskId,
+                newStatus = target.name,
+                projectId = current.projectId,
+            )
+        }
         return updated
     }
+
+    /** Op pendente de tarefa com payload completo (PUT upsert). */
+    private fun opFor(taskId: String, opType: SyncOpType, task: Task) =
+        PendingOpEntity.enqueue(
+            entityType = SyncEntityType.TASK,
+            entityId = taskId,
+            opType = opType,
+            payloadObj = TaskSyncPayload(
+                id = task.id,
+                projectId = task.projectId,
+                title = task.title,
+                priority = task.priority.priorityCode,
+                done = task.status == TaskStatus.DONE,
+            ),
+        )
 }

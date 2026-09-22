@@ -59,4 +59,13 @@ interface BrainOutApi {
 
     @DELETE("v1/tasks/{task_id}")
     suspend fun deleteTask(@Path("task_id") taskId: String)
+
+    @GET("v1/tags")
+    suspend fun listTags(): TagListDto
+
+    @POST("v1/tags")
+    suspend fun createTag(@Body body: TagCreateDto): TagDto
+
+    @DELETE("v1/tags/{tag_id}")
+    suspend fun deleteTag(@Path("tag_id") tagId: String)
 }

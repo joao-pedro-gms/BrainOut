@@ -79,6 +79,8 @@ data class TaskDto(
  */
 @Serializable
 data class TaskCreateDto(
+    @SerialName("id")
+    val id: String? = null,
     @SerialName("project_id")
     val projectId: String,
     @SerialName("title")
@@ -89,35 +91,60 @@ data class TaskCreateDto(
     val done: Boolean = false,
 )
 
-/**
- * Corpo de criação de projeto (`POST /v1/projects`) — não leva `id` nem
- * `created_at`, gerados pelo servidor.
+/*
+ * Corpo de criação/upsert de projeto (`POST`/`PUT /v1/projects`). Não leva
+ * `created_at`, gerado pelo servidor. `id` é opcional (política
+ * cliente-supplied do stub): em PUT o dispatcher o informa no body
+ * (obrigatório no upsert, divergência com o path é 400); em POST fica
+ * nulo e o servidor gera um UUID.
  */
 @Serializable
 data class ProjectCreateDto(
+    @SerialName("id")
+    val id: String? = null,
     @SerialName("name")
     val name: String,
     @SerialName("description")
     val description: String? = null,
 )
 
+/** Resposta de listagem de tags (`items`). */
+@Serializable
+data class TagListDto(
+    val items: List<TagDto> = emptyList(),
+)
+
+/**
+ * Corpo de criação de tag (`POST /v1/tags`) — o servidor gera o `id`
+ * (tags são vocabulário controlado; sem identidade local forte).
+ */
+@Serializable
+data class TagCreateDto(
+    @SerialName("name")
+    val name: String,
+    @SerialName("color")
+    val color: String = "#888888",
+)
+
 /**
  * Tag no contrato remoto (espelho da entidade Room `TagEntity`).
- * O stub FastAPI ainda não expõe `/v1/tags`; o DTO fica pronto para o
- * endpoint definitivo mantendo o mesmo padrão snake_case.
+ *
+ * `owner_id` e `created_at` são opcionais no decode: o stub gera o id
+ * no servidor e nem sempre devolve todos os campos em respostas de
+ * associação; o dispatcher do sync só precisa do `id`/`name`.
  */
 @Serializable
 data class TagDto(
     @SerialName("id")
     val id: String,
     @SerialName("owner_id")
-    val ownerId: String,
+    val ownerId: String? = null,
     @SerialName("name")
     val name: String,
     @SerialName("color")
-    val color: String,
+    val color: String = "#888888",
     @SerialName("created_at")
-    val createdAt: String,
+    val createdAt: String? = null,
 )
 
 /** Resposta do healthcheck `GET /v1/ping`. */

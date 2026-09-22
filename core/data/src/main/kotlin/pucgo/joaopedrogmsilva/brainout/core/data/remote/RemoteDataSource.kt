@@ -78,7 +78,10 @@ class RemoteDataSource(
 
     /** Atualiza um projeto (PUT /v1/projects/{id}). */
     suspend fun updateProject(projectId: String, name: String, description: String?): ProjectDto = try {
-        api.updateProject(projectId, ProjectCreateDto(name = name, description = description))
+        api.updateProject(
+            projectId,
+            ProjectCreateDto(id = projectId, name = name, description = description),
+        )
     } catch (e: Exception) {
         logError("updateProject($projectId) falhou: ${e.message}")
         throw e
@@ -110,6 +113,64 @@ class RemoteDataSource(
         api.createTask(TaskCreateDto(projectId = projectId, title = title, priority = priority, done = done))
     } catch (e: Exception) {
         logError("createTask falhou: ${e.message}")
+        throw e
+    }
+
+    /**
+     * Atualiza (upsert) uma tarefa (PUT /v1/tasks/{id}) — o `id` vai
+     * no path e no body; divergência é 400 no contrato do stub.
+     */
+    suspend fun updateTask(
+        taskId: String,
+        projectId: String,
+        title: String,
+        priority: Int,
+        done: Boolean,
+    ): TaskDto = try {
+        api.updateTask(
+            taskId,
+            TaskCreateDto(
+                id = taskId,
+                projectId = projectId,
+                title = title,
+                priority = priority,
+                done = done,
+            ),
+        )
+    } catch (e: Exception) {
+        logError("updateTask($taskId) falhou: ${e.message}")
+        throw e
+    }
+
+    /** Remove uma tarefa (DELETE /v1/tasks/{id}) — 204 mesmo ausente. */
+    suspend fun deleteTask(taskId: String) = try {
+        api.deleteTask(taskId)
+    } catch (e: Exception) {
+        logError("deleteTask($taskId) falhou: ${e.message}")
+        throw e
+    }
+
+    /** Lista tags (GET /v1/tags). */
+    suspend fun listTags(): List<TagDto> = try {
+        api.listTags().items
+    } catch (e: Exception) {
+        logError("listTags falhou: ${e.message}")
+        throw e
+    }
+
+    /** Cria tag (POST /v1/tags) — o servidor gera o id. */
+    suspend fun createTag(name: String, color: String): TagDto = try {
+        api.createTag(TagCreateDto(name = name, color = color))
+    } catch (e: Exception) {
+        logError("createTag falhou: ${e.message}")
+        throw e
+    }
+
+    /** Remove tag (DELETE /v1/tags/{id}) — 204 mesmo ausente. */
+    suspend fun deleteTag(tagId: String) = try {
+        api.deleteTag(tagId)
+    } catch (e: Exception) {
+        logError("deleteTag($tagId) falhou: ${e.message}")
         throw e
     }
 

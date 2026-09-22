@@ -214,6 +214,9 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.mockk)
+    // E3.3 — SyncWorkerTest: banco Room em memória + MockWebServer.
+    testImplementation(libs.androidx.room.runtime)
+    testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
