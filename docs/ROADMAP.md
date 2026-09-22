@@ -300,12 +300,23 @@ dashboard consolidado.
       *Critério:* `BASE_URL` injetada via `local.properties`; nenhum host
       hard-coded no código. *Atende R6.* *Estimativa:* 5 PH.
 
-- [ ] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
+- [x] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
       `WorkManager` com `OneTimeWorkRequest` ao detectar conectividade;
       fila de operações offline persistida em Room.
       *Critério:* testes de integração (Compose + Robolectric + MockWebServer)
       validam o fluxo online e offline. *Atende R5 e R6.*
       *Estimativa:* 13 PH.
+      _Entregue no branch `feat/sync-room-backend` — fila
+      `pending_ops` em Room (schema v3→v4, migração não destrutiva,
+      `4.json` exportado), escrita dupla atômica local+fila nos
+      repositórios de projeto/tarefa/tag, `SyncDispatcher` com política
+      `SyncOutcome` (2xx remove; IOException/5xx volta com backoff;
+      4xx/payload inválido descarta com log) e `SyncWorker` +
+      `SyncScheduler` (trabalho periódico único de 15 min, constraint
+      de rede, KEEP). Testes: `PendingOpDaoTest` (10),
+      `BrainOutSyncDispatcherTest` (9, MockWebServer) e
+      `SyncWorkerTest` (8, Robolectric + fila real), cobrindo os
+      fluxos online, offline, 4xx e 5xx._
 
 - [ ] **E3.4** — Tratamento de ausência de conectividade: banner
       persistente "offline", fila visível ao usuário, reconciliação
