@@ -10,8 +10,8 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Roda semanalmente na madrugada de domingo.
-    - cron: '17 6 * * * 0'
+    # Roda semanalmente na madrugada de domingo (cron de 5 campos).
+    - cron: '17 6 * * 0'
 
 permissions:
   actions: read
