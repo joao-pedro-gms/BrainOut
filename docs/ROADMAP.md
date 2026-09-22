@@ -584,6 +584,9 @@ usabilidade concluída.
 | Não-conformidade de acessibilidade identificada tardia  | Média         | Médio   | E4.4 começa com auditoria no fim do Ciclo 2, não no Ciclo 4                |
 | Dependabot quebrando builds por atualização major        | Baixa         | Médio   | Groups configurados para minor/patch apenas; majors viram Auto-PR manual   |
 | 2º dispositivo físico emprestado indisponível na data de E5.3 | Baixa    | Médio   | Mapeamento e checklist pré-aprovados em `docs/DISPOSITIVOS.md` (compatibilidade com `minSdk` 24 / `targetSdk` 35 verificada antes do teste) |
+| Smoke headless não exercita `ConnectivityObserver` em runtime real | Baixa | Médio   | Cobertura dupla: testes Robolectric (`ConnectivityObserverTest`, `HomeViewModelTest` E3.4, `ProjectDetailViewModelTest` E3.4) + smoke real em emulador API 35 com `cmd connectivity airplane-mode enable/disable`. Validação final do Ciclo 3 (22/09/2026) já produziu capturas de banner/contragem/reconciliação ponta a ponta. |
+| BrasilAPI feriados inacessível em emulador headless / sem rede de saída | Baixa | Baixo | `HolidayRepository` degrada para `emptyList()`; `CheckDeadlineUseCaseTest` cobre o cenário "erro no repositório". UI mostra `holidays unavailable` apenas se a chamada falhar explicitamente; em rede real (dispositivo físico E5.3 / TF-09 do roteiro) a dica de próximo feriado é exibida. |
+| `adb shell date` para adiantar o relógio do sistema requer `root` em builds de produção | Baixa | Baixo | Smoke do E3.6 (notificação de prazo) não foi exercitado ponta-a-ponta no emulador headless — coberto por `WorkManagerDeadlineSchedulerTest` (verifica `WorkInfo` com `DEADLINE_TAG` no `tags`) e `CompleteTaskWorkerTest`. Disparo real registrado em TF-12 do `docs/ROTEIRO-TESTES.md` para o dispositivo físico do E5.3. |
 
 ## Acompanhamento
 
