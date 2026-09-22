@@ -23,4 +23,25 @@
     <string name="tasks_error_load_failed">Não foi possível carregar suas tarefas</string>
     <string name="tasks_error_retry">Tentar novamente</string>
     <string name="tasks_error_dismiss">Dispensar</string>
+
+    <!-- E2.7 — Dashboard (Painel) -->
+    <string name="dashboard_screen_title">Painel</string>
+    <string name="dashboard_loading_aria_label">Carregando painel</string>
+    <string name="dashboard_error_load_failed">Não foi possível carregar o painel</string>
+    <string name="dashboard_error_retry">Tentar novamente</string>
+    <string name="dashboard_error_dismiss">Dispensar</string>
+    <string name="dashboard_empty_title">Nada para mostrar ainda</string>
+    <string name="dashboard_empty_body">Crie projetos e tarefas para ver as estatísticas aqui.</string>
+    <string name="dashboard_projects_title">Projetos por estado</string>
+    <string name="dashboard_projects_active">Ativos</string>
+    <string name="dashboard_projects_completed">Concluídos</string>
+    <string name="dashboard_priority_title">Tarefas por prioridade</string>
+    <string name="dashboard_priority_short_low">B</string>
+    <string name="dashboard_priority_short_medium">M</string>
+    <string name="dashboard_priority_short_high">A</string>
+    <string name="dashboard_priority_short_urgent">U</string>
+    <string name="dashboard_priority_short_critical">C</string>
+    <string name="dashboard_weekly_rate_title">Taxa de conclusão semanal</string>
+    <string name="dashboard_overall_rate_title">Taxa de conclusão geral</string>
+    <string name="dashboard_rate_percent">%1$d%%</string>
 </resources>

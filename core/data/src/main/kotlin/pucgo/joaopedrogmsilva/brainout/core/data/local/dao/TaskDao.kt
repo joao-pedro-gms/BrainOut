@@ -48,6 +48,46 @@ interface TaskDao {
     )
     fun observeAllForOwner(ownerId: String): Flow<List<TaskEntity>>
 
+    /**
+     * Observa, para cada `priority_code` (0..4) das tarefas de projetos
+     * do [ownerId], a contagem agregada por prioridade. Consulta
+     * reativa (E2.7): emite novamente sempre que a tabela `tasks` ou
+     * `projects` mudar (invalidação do Room).
+     *
+     * Retorna uma linha por prioridade presente no banco — prioridades
+     * sem tarefas não aparecem; o consumidor preenche os níveis
+     * faltantes com zero.
+     */
+    @Query(
+        """
+        SELECT t.priority_code AS priorityCode, COUNT(*) AS taskCount
+        FROM tasks t
+        INNER JOIN projects p ON p.id = t.project_id
+        WHERE p.owner_id = :ownerId
+        GROUP BY t.priority_code
+        """,
+    )
+    fun observeCountByPriority(ownerId: String): Flow<List<PriorityCountRow>>
+
+    /**
+     * Contagem global de tarefas do [ownerId] por estado: totais e
+     * concluídas (`status = 'DONE'`), usadas pela taxa de conclusão
+     * semanal do Dashboard (E2.7). Reativa — re-emite a cada mudança
+     * em `tasks`/`projects`.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) AS totalCount,
+               SUM(CASE WHEN t.status = 'DONE' THEN 1 ELSE 0 END) AS doneCount,
+               SUM(CASE WHEN t.status = 'DONE'
+                         AND t.completed_at >= :weekStartMillis THEN 1 ELSE 0 END) AS doneThisWeekCount
+        FROM tasks t
+        INNER JOIN projects p ON p.id = t.project_id
+        WHERE p.owner_id = :ownerId
+        """,
+    )
+    fun observeCompletionStats(ownerId: String, weekStartMillis: Long): Flow<CompletionStatsRow>
+
     /** Busca pontual por `id`. Retorna `null` se não existir. */
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): TaskEntity?

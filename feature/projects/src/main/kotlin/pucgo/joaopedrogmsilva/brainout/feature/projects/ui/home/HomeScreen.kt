@@ -37,6 +37,7 @@ import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -114,6 +115,7 @@ fun HomeScreen(
     onOpenProject: (projectId: String) -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenTasks: () -> Unit = {},
+    onOpenDashboard: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -148,6 +150,7 @@ fun HomeScreen(
                     when (selected) {
                         HomeTab.Settings -> onOpenSettings()
                         HomeTab.Tasks -> onOpenTasks()
+                        HomeTab.Dashboard -> onOpenDashboard()
                         HomeTab.Projects -> currentTab = selected
                     }
                 }
@@ -187,6 +190,7 @@ fun HomeScreen(
                 onSortOrderChange = viewModel::onSortOrderChange,
             )
             HomeTab.Tasks -> Unit
+            HomeTab.Dashboard -> Unit
             HomeTab.Settings -> Unit
         }
     }
@@ -356,6 +360,7 @@ private fun HomeBottomBar(
 private fun HomeTab.icon(): ImageVector = when (this) {
     HomeTab.Projects -> Icons.Outlined.Folder
     HomeTab.Tasks -> Icons.AutoMirrored.Outlined.Assignment
+    HomeTab.Dashboard -> Icons.Outlined.BarChart
     HomeTab.Settings -> Icons.Outlined.Settings
 }
 

@@ -217,11 +217,37 @@ histórico Git versionado continuamente.
         VM). Smoke test manual atualizado em
         `docs/SMOKE-TEST-CRUD.md` §10._
 
-- [ ] **E2.7** — Visão consolidada em Dashboard: contagem de projetos
+- [x] **E2.7** — Visão consolidada em Dashboard: contagem de projetos
       por estado, gráfico de tarefas por prioridade, taxa de conclusão
       semanal.
       *Critério:* gráficos atualizam quando o banco muda; testes de UI
       verificam valores iniciais. *Atende R9.* *Estimativa:* 5 PH.
+      _Entregue no PR `feat/dashboard-e27` —
+      `DashboardViewModel` (:feature:tasks) combina três Flows
+      reativos do Room: `ProjectRepository.observeAllForOwner`
+      (contagem ativos/concluídos por `isCompleted`),
+      `TaskRepository.observeCountByPriority` (nova consulta
+      `GROUP BY priority_code` no `TaskDao`, normalizada para os 5
+      níveis 0..4 com zeros preenchidos) e
+      `TaskRepository.observeCompletionStats` (total/concluídas/
+      concluídas na semana, janela a partir de segunda-feira 00:00
+      UTC via `TemporalAdjusters.previousOrSame`). Padrão E2.8
+      preservado: `.catch` com rethrow de `CancellationException`,
+      `errorMessage` canônico e token de retry via
+      `MutableStateFlow<Int>` + `flatMapLatest`. Tela
+      `DashboardScreen` com gráfico de barras desenhado em Compose
+      Canvas puro (sem dependência nova), cartões de estado de
+      projeto e taxas semanal/global; acessa pela nova aba "Painel"
+      da bottom bar da Home (rota `dashboard` em :feature:tasks,
+      registrada via `dashboardGraph()` no NavHost). Reatividade
+      garantida pela invalidação do Room: os gráficos re-emitem a
+      cada mudança no banco sem recarregar. Strings pt/en (17 novas
+      chaves), áreas de toque ≥ 48dp e cores dos tokens do tema
+      (padrão E4.4). Testes: `DashboardViewModelTest` (10 casos —
+      contagens, normalização do histograma, taxas com divisão por
+      zero, reatividade, erro/retry/clearError) e
+      `DashboardScreenTest` (3 casos Robolectric — valores iniciais
+      renderizados, empty state e banner de erro)._
 
 - [x] **E2.8** — Tratamento explícito de erros: loaders durante
       carregamento, empty states nas listas, mensagens amigáveis em

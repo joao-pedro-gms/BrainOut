@@ -43,5 +43,8 @@ enum class TaskPriority(val priorityCode: Int) {
 
         /** Intervalo válido conforme especificado pelo domínio. */
         val VALID_RANGE: IntRange = entries.minOf { it.priorityCode }..entries.maxOf { it.priorityCode }
+
+        /** Códigos válidos em ordem crescente (0..4) — uso agregado E2.7. */
+        val VALID_CODES: List<Int> = entries.map { it.priorityCode }
     }
 }

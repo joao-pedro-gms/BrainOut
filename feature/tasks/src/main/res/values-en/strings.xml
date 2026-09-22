@@ -23,4 +23,25 @@
     <string name="tasks_error_load_failed">Couldn\'t load your tasks</string>
     <string name="tasks_error_retry">Try again</string>
     <string name="tasks_error_dismiss">Dismiss</string>
+
+    <!-- E2.7 — Dashboard -->
+    <string name="dashboard_screen_title">Dashboard</string>
+    <string name="dashboard_loading_aria_label">Loading dashboard</string>
+    <string name="dashboard_error_load_failed">Couldn\'t load the dashboard</string>
+    <string name="dashboard_error_retry">Try again</string>
+    <string name="dashboard_error_dismiss">Dismiss</string>
+    <string name="dashboard_empty_title">Nothing to show yet</string>
+    <string name="dashboard_empty_body">Create projects and tasks to see statistics here.</string>
+    <string name="dashboard_projects_title">Projects by state</string>
+    <string name="dashboard_projects_active">Active</string>
+    <string name="dashboard_projects_completed">Completed</string>
+    <string name="dashboard_priority_title">Tasks by priority</string>
+    <string name="dashboard_priority_short_low">L</string>
+    <string name="dashboard_priority_short_medium">M</string>
+    <string name="dashboard_priority_short_high">H</string>
+    <string name="dashboard_priority_short_urgent">U</string>
+    <string name="dashboard_priority_short_critical">C</string>
+    <string name="dashboard_weekly_rate_title">Weekly completion rate</string>
+    <string name="dashboard_overall_rate_title">Overall completion rate</string>
+    <string name="dashboard_rate_percent">%1$d%%</string>
 </resources>
