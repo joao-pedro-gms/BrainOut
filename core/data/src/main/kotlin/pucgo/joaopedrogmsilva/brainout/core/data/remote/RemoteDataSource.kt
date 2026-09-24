@@ -21,6 +21,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 class RemoteDataSource(
     baseUrl: String,
     private val logError: (String) -> Unit = { message -> Log.e(TAG, message) },
+    private val loggingEnabled: Boolean = true,
 ) {
 
     private val json = Json {
@@ -28,13 +29,15 @@ class RemoteDataSource(
         encodeDefaults = true
     }
 
-    private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BASIC
-    }
-
-    private val okHttp: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .build()
+    private val okHttp: OkHttpClient = OkHttpClient.Builder().apply {
+        if (loggingEnabled) {
+            addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                },
+            )
+        }
+    }.build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
