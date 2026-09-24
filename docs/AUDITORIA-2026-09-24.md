@@ -316,27 +316,28 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - **P2 (feature/auth)** `feature/auth/src/main/res/values*/strings.xml` — removidas 4 chaves `home_*` (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) que eram cópias mortas das chaves correspondentes em `feature/projects/res` (usadas pelo `HomeFab.kt` via `feature.projects.R`). Sem isso, risco de drift entre as duas cópias.
 - **P2 (feature/projects)** `ProjectDetailScreen.kt` — decompose de 971 LoC em orchestrator (186 LoC) + 9 arquivos extraídos: `ProjectDetailTopBar`, `ProjectDetailOfflineBanner`, `ProjectDetailStates` (loading/error/empty + resolveMessage), `ProjectDetailBody` (Column + LazyColumn de tasks), `TaskRow` (row + chips + menu + StatusChip + PriorityChip + extensões `TaskPriority.labelRes`, `TaskStatus.{allowedTransitions,menuTag}`), `NewTaskDialog`, `DeleteProjectDialog`, `ChangeTaskPriorityDialog`, `ProjectDetailTestTags`. API pública preservada; detekt + ktlintCheck verde.
 - **P2 (feature/tasks)** `DashboardScreen.kt` — decompose de 593 LoC em orchestrator (164 LoC) + 6 arquivos: `DashboardLoading`, `DashboardErrorBanner`, `DashboardEmptyState`, `DashboardProjectStateCard`, `DashboardPriorityChart` (com `PriorityBarsCanvas`, `PriorityBarsLegend`, `priorityShortLabel` e constantes `BAR_TO_SLOT_RATIO`/`BAR_CORNER_RADIUS_PX` que resolvem o `MagicNumber`), `DashboardCompletionRateCards`. API pública preservada; detekt + ktlintCheck verde.
+- **P2 (feature/projects)** `HomeViewModel.kt` — decompose de 595 LoC em orchestrator (197 LoC) + 4 arquivos: `HomeUiModels` (HomeUserState/HomeSyncState/HomeUiState/ProjectCardItem/TagChip), `HomeMappers` (toHomeRole/toHomeUserState/toChip/toHomeErrorMessage/toHomeActionErrorMessage/computeInitials), `HomeListingPipeline` (ListingSnapshot/ListingInputs/debouncedSearchInput/listingPrefsFlow/tagChipsForOwnerFlow/homeUiStateFlow/buildHomeUiState), `HomeActions` (runCreateProject/runUpdateProject/runDeleteProject/runCreateTag/runOnSearchQueryChange/runOnTagFilterChange/runOnSortOrderChange). Os actions passam a delegar para funções top-level que recebem dependências + error sink como params. API pública (construtor, flows, actions, companion) preservada; detekt + ktlintCheck verde.
 
 ### Não corrigidos (P2+ / fora de escopo deste lote)
 
-- `DeleteProjectDialog` usa `R.string.project_detail_delete_confirm_body` (ok); `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross).
-- `project_detail_new_task_due_date_format` em `feature/projects/res/values*/strings.xml` — corrigido (lido por `DeadlineField.kt`).
+- `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross).
+- `feature/auth/res` contém 4 chaves `home_*` duplicadas.
 - Auth: `resolveAuthMessage` em composable; `else -> message` vaza PT em EN.
 - Auth: `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` que não existe.
 - `feature/tasks` — read-only (zero CRUD), `PriorityBarsCanvas` raw px, UTC Monday hardcoded.
 - `feature/settings` — sem VM (estado de Settings é todo stateless no escopo do E1.3); sem decompose estrutural.
-- Decomposição `HomeViewModel.kt` (583) em arquivos ≤200 LoC (subagente em background no PR).
-- core/data: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub (PATCH já passa id explicitamente; risco residual).
-- core/data: TAG UPDATE rejeitado por design (aceitável, alinhado a R6).
-- core/data: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare + dispatch).
-- core/ui: `ThemeSelectionTest` tautológico; subset-only `ContrastRatioTest`; dynamic color path sem teste.
-- core/ui: 23 hardcoded `RoundedCornerShape` em `feature/*` violando contrato do `Shape.kt`.
-- backend-stub: `TaskUpsert.project_id` sem UUID validator (404 em vez de 400); `_normalize_id` aceita hex-32 mas `_require_uuid` não (assimetria path/body).
-- CI: backend-integration continua sem `setup-java` (atualizei, mas só até onde tem JDK já implícito).
+- `core/ui`: `ThemeSelectionTest` tautológico; `ContrastRatioTest` com subset de pares; dynamic color path sem teste.
+- `core/ui`: 23 hardcoded `RoundedCornerShape` em `feature/*` violando contrato de `Shape.kt`.
+- `core/data`: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub.
+- `core/data`: TAG UPDATE rejeitado por design (aceitável, alinhado a R6).
+- `core/data`: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare + dispatch).
+- `core/data`: `ProjectRepositoryImpl` — exceções de domínio tipadas com teste, mas "bypass" via `Task.copy` não travado por teste (E14).
+- `core/data`: `HomeScreenTest`/`ProjectDetailScreenTest` Compose ausentes (testTag infra pronta).
+- `backend-stub`: `TaskUpsert.project_id` sem UUID validator (404 em vez de 400); `_normalize_id` aceita hex-32 mas `_require_uuid` não (assimetria path/body).
+- CI: backend-integration sem `setup-java`.
 - docs: README link para RELATORIO-TECNICO.md quebrado; ARQUITETURA stack table stale.
-- Workflow (docs/): pre-commit hook, pre-push hook, configuration cache, `gradle/actions/setup-gradle@v6`, `release-please`, ADRs — todos não implementados.
 
-Próxima rodada: decompose restante (HomeViewModel em background) + workflow scripts + ADR directory + feature/tasks CRUD (ref. §Workflows).
+Próxima rodada: workflow scripts + ADR directory + feature/tasks CRUD (ref. §Workflows).
 
 ### Verificação executada
 
