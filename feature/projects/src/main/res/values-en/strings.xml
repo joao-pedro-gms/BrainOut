@@ -9,7 +9,6 @@
     <string name="home_empty_title">No projects yet</string>
     <string name="home_empty_body">Tap the “+” button to create your first project.</string>
     <string name="home_fab_create">Create new project</string>
-    <string name="home_fab_disabled_label">Coming soon: create project</string>
 
     <!-- Bottom navigation -->
     <string name="bottom_tab_projects">Projects</string>
@@ -22,7 +21,6 @@
     <string name="project_detail_description">Android app for project and task management, in Kotlin and Jetpack Compose.</string>
     <string name="project_detail_tasks_title">Tasks</string>
     <string name="project_detail_new_task">New task</string>
-    <string name="project_detail_back">Back</string>
     <string name="project_detail_delete_project">Delete project</string>
     <string name="project_detail_delete_confirm_title">Delete project</string>
     <string name="project_detail_delete_confirm_body">Delete this project and its tasks? This action cannot be undone.</string>
@@ -36,7 +34,6 @@
     <string name="project_detail_new_task_priority_label">Priority</string>
     <string name="project_detail_new_task_due_date_label">Due date (optional)</string>
     <string name="project_detail_new_task_due_date_clear">No due date</string>
-    <string name="project_detail_new_task_due_date_picker_title">Pick a due date</string>
     <string name="project_detail_new_task_due_date_format">MM/dd/yyyy</string>
     <!-- E3.5: inline hint when a national holiday falls in the deadline window. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Next holiday: %1$s (%2$s) before the deadline</string>
@@ -104,7 +101,7 @@
     <!-- RN02 (E2.4) — priority required, immutable when done -->
     <string name="project_detail_error_priority_locked_on_done">Priority cannot be changed on a completed task (RN02).</string>
     <string name="project_detail_task_priority_dialog_title">Change priority</string>
-    <string name="project_detail_task_priority_locked_info">Completed task: priority is fixed.</string>
+
     <string name="project_detail_task_menu_change_priority">Change priority</string>
     <string name="project_detail_task_menu_priority_locked_label">Priority (read-only)</string>
 
