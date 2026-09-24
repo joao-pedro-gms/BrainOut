@@ -872,9 +872,9 @@ private fun DeleteProjectDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(id = R.string.project_detail_delete_project)) },
+        title = { Text(text = stringResource(id = R.string.project_detail_delete_confirm_title)) },
         text = {
-            Text(text = stringResource(id = R.string.project_detail_description))
+            Text(text = stringResource(id = R.string.project_detail_delete_confirm_body))
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {

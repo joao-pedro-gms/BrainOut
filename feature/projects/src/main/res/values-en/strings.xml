@@ -24,6 +24,8 @@
     <string name="project_detail_new_task">New task</string>
     <string name="project_detail_back">Back</string>
     <string name="project_detail_delete_project">Delete project</string>
+    <string name="project_detail_delete_confirm_title">Delete project</string>
+    <string name="project_detail_delete_confirm_body">Delete this project and its tasks? This action cannot be undone.</string>
     <string name="project_detail_empty_title">No tasks registered</string>
     <string name="project_detail_empty_body">Tap “+New task” to get started.</string>
 

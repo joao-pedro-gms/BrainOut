@@ -5,12 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
@@ -49,8 +48,8 @@ class AuthViewModel @Inject constructor(
     private val _state: MutableStateFlow<AuthUiState> = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
-    private val _events: MutableSharedFlow<AuthEvent> = MutableSharedFlow()
-    val events: SharedFlow<AuthEvent> = _events.asSharedFlow()
+    private val _events = Channel<AuthEvent>(capacity = Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     // --- Field updates --------------------------------------------------
 
@@ -108,7 +107,6 @@ class AuthViewModel @Inject constructor(
                     isLoading = false,
                 )
             }
-            viewModelScope.launch { _events.emit(AuthEvent.FocusField(errors.firstInvalidField)) }
             return
         }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
@@ -126,7 +124,6 @@ class AuthViewModel @Inject constructor(
                         passwordError = INVALID_CREDENTIALS_MESSAGE,
                     )
                 }
-                _events.emit(AuthEvent.FocusField(AuthField.Password))
             } catch (error: DomainException) {
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
@@ -168,7 +165,6 @@ class AuthViewModel @Inject constructor(
                     isLoading = false,
                 )
             }
-            viewModelScope.launch { _events.emit(AuthEvent.FocusField(errors.firstInvalidField)) }
             return
         }
         // Marca `isLoading` sincronamente antes de despachar a coroutine
@@ -193,7 +189,6 @@ class AuthViewModel @Inject constructor(
                         emailError = DUPLICATE_EMAIL_MESSAGE,
                     )
                 }
-                _events.emit(AuthEvent.FocusField(AuthField.Email))
             } catch (error: DomainException) {
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
@@ -223,7 +218,7 @@ class AuthViewModel @Inject constructor(
     private suspend fun persistSessionAndNavigate(user: User) {
         sessionStore.saveUserId(user.id)
         _state.update { it.copy(isLoading = false, success = true) }
-        _events.emit(AuthEvent.NavigateHome)
+        _events.send(AuthEvent.NavigateHome)
     }
 
     /**
@@ -375,9 +370,6 @@ class AuthViewModel @Inject constructor(
 sealed interface AuthEvent {
     /** Dispara a navegação para a tela inicial. */
     data object NavigateHome : AuthEvent
-
-    /** Solicita que a UI mova o foco para o campo indicado. */
-    data class FocusField(val field: AuthField) : AuthEvent
 }
 
 /** Identifica um campo do formulário para focar / sinalizar erro. */

@@ -24,6 +24,8 @@
     <string name="project_detail_new_task">Nova tarefa</string>
     <string name="project_detail_back">Voltar</string>
     <string name="project_detail_delete_project">Excluir projeto</string>
+    <string name="project_detail_delete_confirm_title">Excluir projeto</string>
+    <string name="project_detail_delete_confirm_body">Deseja excluir este projeto e suas tarefas? Esta ação não pode ser desfeita.</string>
     <string name="project_detail_empty_title">Sem tarefas cadastradas</string>
     <string name="project_detail_empty_body">Toque em \u201c+Nova tarefa\u201d para começar.</string>
 

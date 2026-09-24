@@ -31,3 +31,7 @@ class TaskNotFoundException(taskId: String) :
 /** Projeto referenciado por uma operação não existe. */
 class ProjectNotFoundException(projectId: String) :
     DomainException("Projeto não encontrado: $projectId")
+
+/** Tag existe mas pertence a outro usuário (owner diferente). */
+class TagOwnershipException(tagId: String) :
+    DomainException("Tag $tagId não pertence ao owner do projeto")
