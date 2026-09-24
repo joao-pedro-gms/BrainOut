@@ -13,9 +13,10 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalLayoutApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,6 +33,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -201,7 +203,7 @@ private fun CreateProjectTagsFlow(
     availableTags: List<TagChip>,
     selectedTagIds: SnapshotStateList<String>,
 ) {
-    androidx.compose.foundation.layout.FlowRow(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
