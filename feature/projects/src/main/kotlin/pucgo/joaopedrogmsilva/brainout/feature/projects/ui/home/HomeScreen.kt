@@ -44,6 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
  * @param viewModel injetado pelo Hilt; pode ser substituído por um
  *  fake nos `@Preview`/testes.
  */
+@Suppress("LongMethod") // Orquestrador: coleta 5 flows e roteia 4 abas.
 @Composable
 fun HomeScreen(
     onOpenProject: (projectId: String) -> Unit = {},
