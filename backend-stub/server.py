@@ -39,6 +39,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response
@@ -156,9 +157,7 @@ class TagAssociation(BaseModel):
 
 
 def _now_iso() -> str:
-    import datetime as _dt
-
-    return _dt.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _require_uuid(value: str, field: str) -> None:

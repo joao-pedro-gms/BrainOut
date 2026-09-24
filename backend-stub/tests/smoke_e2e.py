@@ -9,18 +9,20 @@ BASE = "http://127.0.0.1:8765"
 
 
 def curl(method: str, path: str, body=None, want_status=None) -> tuple[int, dict | str]:
-    args = ["curl", "-s", "-X", method, f"{BASE}{path}"]
+    args = ["curl", "-s", "-X", method, "-w", "\n%{http_code}", f"{BASE}{path}"]
     if body is not None:
         args += ["-d", json.dumps(body), "-H", "Content-Type: application/json"]
-    if want_status is not None:
-        args += ["-o", "/dev/null", "-w", "%{http_code}"]
     out = subprocess.check_output(args, text=True)
+    raw_body, _, raw_code = out.rpartition("\n")
+    code = int(raw_code)
     if want_status is not None:
-        return int(out), out
+        return code, raw_body
+    if not raw_body.strip():
+        return code, ""
     try:
-        return 200, json.loads(out)
+        return code, json.loads(raw_body)
     except json.JSONDecodeError:
-        return 200, out
+        return code, raw_body
 
 
 def step(label: str) -> None:
