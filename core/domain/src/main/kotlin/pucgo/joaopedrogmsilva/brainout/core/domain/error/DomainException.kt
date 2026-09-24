@@ -23,3 +23,11 @@ class InvalidCredentialsException :
 
 /** Transição de estado inválida (ex.: [Task] Done -> Todo). */
 class InvalidStateTransitionException(message: String) : DomainException(message)
+
+/** Tarefa referenciada por uma operação não existe. */
+class TaskNotFoundException(taskId: String) :
+    DomainException("Tarefa não encontrada: $taskId")
+
+/** Projeto referenciado por uma operação não existe. */
+class ProjectNotFoundException(projectId: String) :
+    DomainException("Projeto não encontrado: $projectId")

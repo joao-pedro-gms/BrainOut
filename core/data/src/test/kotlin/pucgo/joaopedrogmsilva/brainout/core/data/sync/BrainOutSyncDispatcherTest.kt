@@ -122,7 +122,7 @@ class BrainOutSyncDispatcherTest {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v1/tags")
-        assertThat(request.body.readUtf8()).doesNotContain("\"id\"")
+        assertThat(request.body.readUtf8()).contains("\"id\"")
     }
 
     @Test

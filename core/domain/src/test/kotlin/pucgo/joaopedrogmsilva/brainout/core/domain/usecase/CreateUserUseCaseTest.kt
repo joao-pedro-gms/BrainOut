@@ -65,7 +65,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "João",
                 email = "joao@example.com",
-                rawPassword = "secret",
+                rawPassword = "secretlong",
                 role = UserRole.MEMBER,
             )
         }.exceptionOrNull()
@@ -82,7 +82,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "   ",
                 email = "joao@example.com",
-                rawPassword = "secret",
+                rawPassword = "secretlong",
                 role = UserRole.MEMBER,
             )
         }.also {
@@ -97,7 +97,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "João",
                 email = "not-an-email",
-                rawPassword = "secret",
+                rawPassword = "secretlong",
                 role = UserRole.MEMBER,
             )
         }.also {
@@ -107,12 +107,14 @@ class CreateUserUseCaseTest {
     }
 
     @Test
-    fun `rejects blank raw password before touching repository`() = runTest {
+    fun `rejects short raw password before touching repository`() = runTest {
+        // da senha (MIN_PASSWORD_LENGTH = 8) é autoridade única no
+        // domínio — antes era apenas client-side.
         kotlin.runCatching {
             useCase(
                 name = "João",
                 email = "joao@example.com",
-                rawPassword = "",
+                rawPassword = "shrt",
                 role = UserRole.MEMBER,
             )
         }.also {

@@ -102,7 +102,7 @@ class BrainOutSyncDispatcher @Inject constructor(
                 SyncOpType.CREATE -> {
                     val payload = decodeOrReject<TagSyncPayload>(op)
                         ?: return permanent(op, "payload JSON inválido para TAG")
-                    guard { remote.createTag(name = payload.name, color = payload.color) }
+                    guard { remote.createTag(name = payload.name, color = payload.color, id = payload.id) }
                 }
                 SyncOpType.DELETE -> guard { remote.deleteTag(op.entityId) }
                 // UPDATE de tag não é suportado pelo contrato atual

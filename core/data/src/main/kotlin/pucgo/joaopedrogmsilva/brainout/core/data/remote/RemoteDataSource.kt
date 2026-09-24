@@ -159,8 +159,8 @@ class RemoteDataSource(
     }
 
     /** Cria tag (POST /v1/tags) — o servidor gera o id. */
-    suspend fun createTag(name: String, color: String): TagDto = try {
-        api.createTag(TagCreateDto(name = name, color = color))
+    suspend fun createTag(name: String, color: String, id: String? = null): TagDto = try {
+        api.createTag(TagCreateDto(id = id, name = name, color = color))
     } catch (e: Exception) {
         logError("createTag falhou: ${e.message}")
         throw e

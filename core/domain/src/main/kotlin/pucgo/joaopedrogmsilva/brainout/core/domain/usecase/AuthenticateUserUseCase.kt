@@ -32,7 +32,9 @@ class AuthenticateUserUseCase @Inject constructor(
      */
     suspend operator fun invoke(email: String, rawPassword: String): User {
         User.requireValidEmail(email)
-        require(rawPassword.isNotBlank()) { "Senha não pode ser vazia" }
+        require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
+            "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
+        }
 
         val normalizedEmail = email.trim()
         val user = userRepository.findByEmail(normalizedEmail)

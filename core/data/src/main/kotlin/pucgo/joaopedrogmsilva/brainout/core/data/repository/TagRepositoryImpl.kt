@@ -64,7 +64,11 @@ class TagRepositoryImpl @Inject constructor(
                 entityType = SyncEntityType.TAG,
                 entityId = tag.id,
                 opType = SyncOpType.CREATE,
-                payloadObj = TagSyncPayload(name = tag.name, color = tag.color),
+                payloadObj = TagSyncPayload(
+                    id = tag.id,
+                    name = tag.name,
+                    color = tag.color,
+                ),
             ),
         ) {
             tagDao.insert(TagEntity.fromDomain(tag))

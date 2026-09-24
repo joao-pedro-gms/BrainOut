@@ -139,7 +139,6 @@ class AuthViewModelTest {
         assertThat(state.isLoading).isFalse()
         assertThat(state.success).isFalse()
         assertThat(state.emailError).isEqualTo(AuthViewModel.DUPLICATE_EMAIL_MESSAGE)
-        assertThat(state.errorMessage).isEqualTo(AuthViewModel.DUPLICATE_EMAIL_MESSAGE)
         coVerify(exactly = 0) { sessionStore.saveUserId(any()) }
     }
 
@@ -158,7 +157,6 @@ class AuthViewModelTest {
         val state = viewModel.state.value
         assertThat(state.isLoading).isFalse()
         assertThat(state.success).isFalse()
-        assertThat(state.errorMessage).isEqualTo(AuthViewModel.INVALID_EMAIL_MESSAGE)
         assertThat(state.emailError).isEqualTo(AuthViewModel.INVALID_EMAIL_MESSAGE)
     }
 
@@ -235,7 +233,6 @@ class AuthViewModelTest {
         assertThat(state.isLoading).isFalse()
         assertThat(state.success).isFalse()
         assertThat(state.passwordError).isEqualTo(AuthViewModel.INVALID_CREDENTIALS_MESSAGE)
-        assertThat(state.errorMessage).isEqualTo(AuthViewModel.INVALID_CREDENTIALS_MESSAGE)
     }
 
     @Test

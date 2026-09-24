@@ -4,6 +4,7 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 import java.time.Instant
 import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BusinessRuleException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
@@ -56,7 +57,7 @@ class ChangeTaskStatusUseCase @Inject constructor(
             // Reabertura (saída de DONE) também muda a contagem e pode
             // precisar desmarcar o projeto: mesma via.
             else -> {
-                val current = repository.findById(taskId) ?: error("Tarefa não encontrada: $taskId")
+                val current = repository.findById(taskId) ?: throw TaskNotFoundException(taskId)
                 if (current.status == TaskStatus.DONE) {
                     repository.reopenAndCascade(taskId, target)
                 } else {

@@ -9,6 +9,16 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
 /**
+ * Regra de tamanho mínimo da senha.
+ *
+ * Única autoridade — a ViewModel e a camada de UI apenas espelham
+ * esta constante para mensagens e validações antecipadas. Centralizar
+ * evita divergência entre a regra client-side (UX rápida) e a regra
+ * de domínio (defesa em profundidade).
+ */
+const val MIN_PASSWORD_LENGTH: Int = 8
+
+/**
  * Caso de uso responsável por cadastrar um novo usuário.
  *
  * Fluxo:
@@ -20,6 +30,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  * Lança:
  * - [pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException]
  *   se nome ou e-mail forem inválidos.
+ * - [BusinessRuleException] se a senha for mais curta que [MIN_PASSWORD_LENGTH].
  * - [DuplicateEmailException] se já existir usuário com o mesmo e-mail.
  *
  * Detalhes completos ficam em [invoke].
@@ -31,7 +42,8 @@ class CreateUserUseCase @Inject constructor(
     /**
      * @param name Nome completo (1..120 caracteres).
      * @param email E-mail válido.
-     * @param rawPassword Senha em texto puro (será hashed).
+     * @param rawPassword Senha em texto puro. Mínimo [MIN_PASSWORD_LENGTH]
+     *   caracteres (será hashed).
      * @param role Papel inicial ([UserRole.OWNER] ou [UserRole.MEMBER]).
      * @return O [User] criado e persistido.
      */
@@ -43,7 +55,9 @@ class CreateUserUseCase @Inject constructor(
     ): User {
         User.requireValidName(name)
         User.requireValidEmail(email)
-        require(rawPassword.isNotBlank()) { "Senha não pode ser vazia" }
+        require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
+            "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
+        }
 
         val normalizedEmail = email.trim()
         userRepository.findByEmail(normalizedEmail)?.let {

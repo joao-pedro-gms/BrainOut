@@ -115,11 +115,15 @@ data class TagListDto(
 )
 
 /**
- * Corpo de criação de tag (`POST /v1/tags`) — o servidor gera o `id`
- * (tags são vocabulário controlado; sem identidade local forte).
+ * Corpo de criação de tag (`POST /v1/tags`) — `id` é cliente-supplied
+ * (R6, paridade com Project/Task). Se ausente o servidor gera um
+ * UUID canônico. POST com id já existente devolve o registro sem
+ * duplicar (replay idempotente).
  */
 @Serializable
 data class TagCreateDto(
+    @SerialName("id")
+    val id: String? = null,
     @SerialName("name")
     val name: String,
     @SerialName("color")

@@ -74,3 +74,4 @@ backend-stub/*.log
 # Tooling local (nao versionar)
 .rtk/
 CLAUDE.md
+.omo/

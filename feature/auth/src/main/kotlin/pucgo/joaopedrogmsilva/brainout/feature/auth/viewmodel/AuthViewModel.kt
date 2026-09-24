@@ -21,6 +21,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MIN_PASSWORD_LENGTH
 
 /**
  * ViewModel único para os fluxos de Login e Cadastro (E1.6).
@@ -98,11 +99,12 @@ class AuthViewModel @Inject constructor(
         val errors = validateLoginFields(current)
         if (errors != null) {
             val (emailErrorValue, passwordErrorValue) = splitLoginErrors(errors)
+            // `errorMessage` (banner) — o erro já aparece no campo.
+            // O banner fica reservado para erros de domínio não-campo.
             _state.update {
                 it.copy(
                     emailError = emailErrorValue,
                     passwordError = passwordErrorValue,
-                    errorMessage = errors.general,
                     isLoading = false,
                 )
             }
@@ -122,7 +124,6 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         passwordError = INVALID_CREDENTIALS_MESSAGE,
-                        errorMessage = INVALID_CREDENTIALS_MESSAGE,
                     )
                 }
                 _events.emit(AuthEvent.FocusField(AuthField.Password))
@@ -157,13 +158,13 @@ class AuthViewModel @Inject constructor(
         val errors = validateRegisterFields(current)
         if (errors != null) {
             val split = splitRegisterErrors(errors)
+            // para o campo; o banner fica para erros de domínio não-campo.
             _state.update {
                 it.copy(
                     nameError = split.name,
                     emailError = split.email,
                     passwordError = split.password,
                     passwordConfirmationError = split.passwordConfirmation,
-                    errorMessage = errors.general,
                     isLoading = false,
                 )
             }
@@ -190,7 +191,6 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         emailError = DUPLICATE_EMAIL_MESSAGE,
-                        errorMessage = DUPLICATE_EMAIL_MESSAGE,
                     )
                 }
                 _events.emit(AuthEvent.FocusField(AuthField.Email))
@@ -307,7 +307,7 @@ class AuthViewModel @Inject constructor(
     @Suppress("ReturnCount")
     private fun validatePasswordLength(password: String): String? = when {
         password.isEmpty() -> EMPTY_PASSWORD_MESSAGE
-        password.length < AuthUiState.MIN_PASSWORD_LENGTH -> SHORT_PASSWORD_MESSAGE
+        password.length < MIN_PASSWORD_LENGTH -> SHORT_PASSWORD_MESSAGE
         else -> null
     }
 
@@ -351,7 +351,7 @@ class AuthViewModel @Inject constructor(
         const val INVALID_EMAIL_MESSAGE: String = "E-mail inválido."
         const val EMPTY_PASSWORD_MESSAGE: String = "Informe sua senha."
         const val SHORT_PASSWORD_MESSAGE: String =
-            "A senha deve ter pelo menos ${AuthUiState.MIN_PASSWORD_LENGTH} caracteres."
+            "A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres."
         const val INVALID_CREDENTIALS_MESSAGE: String =
             "E-mail ou senha incorretos."
         const val DUPLICATE_EMAIL_MESSAGE: String =
