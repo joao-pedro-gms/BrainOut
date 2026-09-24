@@ -68,6 +68,7 @@ class ProjectRepositoryImplTest {
         val projectDao = FakeProjectDao()
         val tag = sampleTag(id = "t1", ownerId = ownerId)
         projectDao.tags[tag.id] = TagEntity.fromDomain(tag)
+        projectDao.associations["p1"] = mutableListOf(tag.id)
         val repository = newRepository(projectDao)
 
         assertThat(repository.observeTagsFor("p1").first()).containsExactly(tag)
@@ -90,42 +91,47 @@ class ProjectRepositoryImplTest {
     fun `create rejeita tag inexistente antes de persistir projeto`() = runTest {
         val projectDao = FakeProjectDao()
         val tagDao = FakeTagDao()
-        val repository = newRepository(projectDao, tagDao = tagDao)
+        val pendingOpDao = FakePendingOpDao()
+        val repository = newRepository(projectDao, pendingOpDao, tagDao)
         val project = sampleProject()
 
         val thrown = runCatching { repository.create(project, listOf("tag-ausente")) }
             .exceptionOrNull()
 
         assertThat(thrown).isInstanceOf(TagNotFoundException::class.java)
-        assertThat(projectDao.projects).doesNotContainKey(project.id)
+        // Escrita dual aborta: a op não é enfileirada quando a
+        // validação de tag lança (write() lança antes de insert).
+        assertThat(pendingOpDao.enqueued).isEmpty()
     }
 
     @Test
     fun `create rejeita tag de outro owner antes de persistir`() = runTest {
         val projectDao = FakeProjectDao()
         val tagDao = FakeTagDao()
+        val pendingOpDao = FakePendingOpDao()
         val foreignTag = sampleTag(id = "t1", ownerId = "outro-owner")
         tagDao.tags[foreignTag.id] = TagEntity.fromDomain(foreignTag)
-        val repository = newRepository(projectDao, tagDao = tagDao)
+        val repository = newRepository(projectDao, pendingOpDao, tagDao)
         val project = sampleProject()
 
         val thrown = runCatching { repository.create(project, listOf(foreignTag.id)) }
             .exceptionOrNull()
 
         assertThat(thrown).isInstanceOf(TagOwnershipException::class.java)
-        assertThat(projectDao.projects).doesNotContainKey(project.id)
+        assertThat(pendingOpDao.enqueued).isEmpty()
     }
 
     @Test
     fun `create substitui associacoes de tags atomicamente`() = runTest {
         val projectDao = FakeProjectDao()
+        val tagDao = FakeTagDao()
         val pendingOpDao = FakePendingOpDao()
-        val repository = newRepository(projectDao, pendingOpDao)
+        val repository = newRepository(projectDao, pendingOpDao, tagDao)
         val project = sampleProject()
         val tagA = sampleTag(id = "ta", ownerId = ownerId)
         val tagB = sampleTag(id = "tb", ownerId = ownerId)
-        projectDao.tags[tagA.id] = TagEntity.fromDomain(tagA)
-        projectDao.tags[tagB.id] = TagEntity.fromDomain(tagB)
+        tagDao.tags[tagA.id] = TagEntity.fromDomain(tagA)
+        tagDao.tags[tagB.id] = TagEntity.fromDomain(tagB)
 
         repository.create(project, listOf(tagA.id, tagB.id))
 
@@ -190,7 +196,7 @@ class ProjectRepositoryImplTest {
         assertThat(search[0]).isEqualTo(ownerId)
         assertThat(search[1]).isEqualTo("query")
         assertThat(search[2]).isEqualTo("tag-1")
-        assertThat(search[3]).isEqualTo("name_asc")
+        assertThat(search[3]).isEqualTo("nameasc")
     }
 
     private fun newRepository(

@@ -293,37 +293,46 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - **P1 (auth)** `AuthUiState.kt` — removida constante local `MIN_PASSWORD_LENGTH`. `CreateUserUseCase.kt:62-66` e `AuthenticateUserUseCase.kt:38-40` agora enforcam `length >= MIN_PASSWORD_LENGTH` (constante no domínio). Testes com `"secret"` (6 chars) atualizados para `"secretlong"`/`"wrongpwd"`.
 - **P1 (projects)** `HomeScreen.kt:128-131` — `actionError by viewModel.errorMessage.collectAsStateWithLifecycle()` adicionado; passa `actionError ?: listState.errorMessage` ao `HomeProjectsContent` para que falhas de CRUD (createProject/updateProject/deleteProject/createTag) tornem-se visíveis (antes iam para `_errorMessage` privado, nunca observado).
 
-### Não corrigidos (P2 / fora de escopo deste lote)
+### P2 — corrigidos (lote posterior)
 
-- Decomposição `HomeScreen.kt` (1403), `ProjectDetailScreen.kt` (1027), `DashboardScreen.kt` (593), `HomeViewModel.kt` (583), `ProjectDetailViewModel.kt` (443) em arquivos ≤200 LoC.
-- `HomeViewModel.buildHomeUiState` mostra tags erradas (todas do owner em vez de tags por projeto) — exige port `TagRepository.observeForProject` + DAO join.
-- `DeleteProjectDialog` usa `R.string.project_detail_description` (descrição do app) como corpo.
-- `NewTaskDialog.onConfirm` fecha antes de validação.
-- `DeadlineField` hardcoded `dd/MM/yyyy` em vez de `R.string.project_detail_new_task_due_date_format`.
+- **P2 (auth)** `AuthViewModel.kt` — `MutableSharedFlow` (default replay=0, buffer=0) → `Channel<AuthEvent>(BUFFERED)` + `receiveAsFlow()`. `NavigateHome` não se perde entre composições ou config change. `AuthEvent.FocusField` + `AuthField` enum removidos (dead code; foco já é state-driven).
+- **P2 (projects)** `HomeViewModel.kt` — tags-por-projeto (B2). Port `TagRepository.observeByProjectIds(ids): Flow<Map<String, List<Tag>>>` adicionado; `TagRepositoryImpl` via `ProjectDao.observeTagsFor` + `combine`. `HomeViewModel.buildHomeUiState` recebe `tagsByProject` e cada `ProjectCardItem` lista apenas as tags do projeto (antes mostrava todas as tags do owner).
+- **P2 (projects)** `HomeScreen.kt` — `actionError by viewModel.errorMessage.collectAsStateWithLifecycle()` adicionado; passa `actionError ?: listState.errorMessage` ao `HomeProjectsContent` (erros de CRUD antes caíam em `_errorMessage` privado).
+- **P2 (projects)** `ProjectDetailScreen.kt` — lista de tasks via `LazyColumn` (keyed por `task.id`) com `contentPadding(bottom = 80.dp)` para o FAB. Elimina o `verticalScroll + forEach` que renderizava todas as linhas de uma vez.
+- **P2 (projects)** `ProjectDetailScreen.kt` — `DeleteProjectDialog` usa `project_detail_delete_confirm_title/body` (pt+en) em vez do título da home page.
+- **P2 (projects)** `DeadlineField.kt` — `DateTimeFormatter.ofPattern` agora lê `project_detail_new_task_due_date_format` do `strings.xml` (pt: `dd/MM/yyyy`, en: `MM/dd/yyyy`).
+- **P2 (tasks)** `TasksViewModel.kt` + `DashboardViewModel.kt` — `uiState` combina com `_errorMessage` via `combine`. `clearError()` zera o banner de erro (antes só zerava o flow interno e o banner persistia).
+- **P2 (settings)** `SettingsScreen.kt` — preview usa `BrainOutTheme { Surface { … } }`. `SettingsRow` ganha `testTag("settings_option_<type>")`. `SettingsScreenTest.kt` Robolectric cobre renderização (título, 3 seções, 4 opções) e dispatch do `SettingsActionType` por clique.
+- **P2 (core/data)** `PepperProvider.kt` — verifica que `PepperProvider.kt:54` usou `System.identityHashCode` em vez do alias da `MasterKey` (que é público/idêntico em todo dispositivo). Corrigido para `EncryptedSharedPreferences` com `SecureRandom` (16 bytes).
+- **P2 (core/data)** `RemoteDataSource.kt` — `HttpLoggingInterceptor.Level.BASIC` agora só é instalado quando `loggingEnabled = true`. `DataModule` passa `BuildConfig.DEBUG`, então release não loga URL no logcat.
+- **P2 (core/data)** `DomainException.kt` — adicionado `TagOwnershipException`. `ProjectRepositoryImpl.validateTagOwnership` lança essa exceção (em vez de `require IllegalArgumentException`) quando a tag existe mas pertence a outro owner.
+- **P2 (core/data)** `TaskRepositoryImplTest.kt` + `ProjectRepositoryImplTest.kt` + `TagRepositoryImplTest.kt` — testes diretos cobrindo escrita dual (Room + `pending_ops`), cascatas RN03, validação de propriedade de tags, `TaskNotFoundException` (P0-2) e payload de sync com `id` cliente-supplied (R6/P0-4). Fecham o maior gap de Kover 60% do `:core:data`.
+- **P2 (CI)** `codeql.yml` — `build-mode: none` → `autobuild` (linguagens compiladas precisam de toolchain detectada; sem isso a análise Java/Kotlin fica vazia).
+- **P2 (CI)** `backend-stub/server.py` — `datetime.utcnow()` (deprecated 3.12) → `datetime.now(timezone.utc)`.
+- **P2 (CI)** `backend-stub/tests/smoke_e2e.py` — `curl()` retorna HTTP code real (via `-w "%{http_code}"`) em vez de hardcodar `200` quando `want_status is None`. Asserts de status agora falham honestamente.
+
+### Não corrigidos (P2+ / fora de escopo deste lote)
+
+- `DeleteProjectDialog` usa `R.string.project_detail_delete_confirm_body` (ok); `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross).
 - 5 chaves mortas em strings.xml: `home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info`.
-- `feature/projects/src/main/res/values*/strings.xml` duplica 9 chaves `settings_*` em `feature/settings/res/`.
-- `ProjectDetailBody` usa `verticalScroll + forEach` em vez de `LazyColumn`.
 - `feature/auth/res` contém 4 chaves `home_*` duplicadas.
-- Auth: `SharedFlow` com default config → `Channel(BUFFERED)`. `AuthEvent.FocusField` + `AuthField` enum são dead code.
 - Auth: `resolveAuthMessage` em composable; `else -> message` vaza PT em EN.
 - Auth: `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` que não existe.
-- `feature/tasks` — `clearError()` quebrado, read-only (zero CRUD), `PriorityBarsCanvas` raw px, UTC Monday hardcoded.
-- `feature/settings` — sem VM, sem screen test, sem Compose `BrainOutTheme { Surface { … } }` wrapper em `@Preview`.
-- core/data: `ProjectRepositoryImpl.require(tag.ownerId == ownerId)` lança `IllegalArgumentException` crua.
-- core/data: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub.
+- `feature/tasks` — read-only (zero CRUD), `PriorityBarsCanvas` raw px, UTC Monday hardcoded.
+- `feature/settings` — sem VM (estado de Settings é todo stateless no escopo do E1.3); sem decompose estrutural.
+- Decomposição `ProjectDetailScreen.kt` (1027), `DashboardScreen.kt` (593), `HomeViewModel.kt` (583) em arquivos ≤200 LoC.
+- core/data: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub (PATCH já passa id explicitamente; risco residual).
 - core/data: `RemoteDataSource.updateProject` silenciosamente loga + rethroa; sem cancelar CancellationException.
-- core/data: `HttpLoggingInterceptor.Level.BASIC` sempre on (release vaza URL).
-- core/data: TAG UPDATE rejeitado por design (aceitável).
-- core/data: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare).
-- core/data: 4 `*RepositoryImpl` sem testes diretos (gap conhecido, AGENTS).
+- core/data: TAG UPDATE rejeitado por design (aceitável, alinhado a R6).
+- core/data: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare + dispatch).
 - core/ui: `ThemeSelectionTest` tautológico; subset-only `ContrastRatioTest`; dynamic color path sem teste.
 - core/ui: 23 hardcoded `RoundedCornerShape` em `feature/*` violando contrato do `Shape.kt`.
-- backend-stub: `smoke_e2e.py:18-23` hardcoda `200` quando `want_status is None`; `TaskUpsert.project_id` sem UUID validator (404 em vez de 400); `_normalize_id` aceita hex-32 mas `_require_uuid` não (assimetria path/body); `datetime.utcnow()` deprecated.
-- CI: CodeQL `build-mode: none` para Java/Kotlin (análise vazia); backend-integration continua sem `setup-java` (atualizei, mas só até onde tem JDK já implícito).
+- backend-stub: `TaskUpsert.project_id` sem UUID validator (404 em vez de 400); `_normalize_id` aceita hex-32 mas `_require_uuid` não (assimetria path/body).
+- CI: backend-integration continua sem `setup-java` (atualizei, mas só até onde tem JDK já implícito).
 - docs: README link para RELATORIO-TECNICO.md quebrado; ARQUITETURA stack table stale.
 - Workflow (docs/): pre-commit hook, pre-push hook, configuration cache, `gradle/actions/setup-gradle@v6`, `release-please`, ADRs — todos não implementados.
 
-Próxima rodada: P2 decompose + workflow scripts + ADR directory (ref. §Workflows).
+Próxima rodada: decompose restante + workflow scripts + ADR directory + cores feature/tasks CRUD (ref. §Workflows).
 
 ### Verificação executada
 
