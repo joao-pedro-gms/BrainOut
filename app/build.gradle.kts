@@ -205,6 +205,12 @@ dependencies {
     // Core library desugaring — ver `compileOptions` acima.
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    // Tink (EncryptedSharedPreferences usado pelo PepperProvider do
+    // :core:data) referencia error_prone_annotations em runtime; o R8
+    // minify do :app exige a dep no classpath para resolver
+    // com.google.errorprone.annotations.CanIgnoreReturnValue.
+    implementation(libs.errorprone.annotations)
+
     testImplementation(libs.junit)
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)
