@@ -23,9 +23,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -295,6 +295,7 @@ object ProjectDetailTestTags {
 
     // E3.4 — banner offline + contagem da fila de sincronização.
     const val OFFLINE_BANNER: String = "project_detail_offline_banner"
+    const val TASK_LIST: String = "project_detail_task_list"
 }
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -318,7 +319,6 @@ private fun ProjectDetailBody(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -333,7 +333,6 @@ private fun ProjectDetailBody(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        // E3.4 — banner persistente de conectividade + fila pendente.
         ProjectDetailOfflineBanner(
             syncState = syncState,
         )
@@ -346,10 +345,6 @@ private fun ProjectDetailBody(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        // E2.8 — prioridade ao banner de erro: se o Room falhou,
-        // exibimos o banner com retry e escondemos a lista (que
-        // estaria vazia/enganosa). Em seguida, o loader; por último,
-        // o empty state.
         if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
             ProjectDetailErrorBanner(
                 message = errorMessage,
@@ -361,17 +356,27 @@ private fun ProjectDetailBody(
         } else if (tasks.isEmpty()) {
             EmptyTasksCard()
         } else {
-            tasks.forEach { task ->
-                TaskRow(
-                    task = task,
-                    onChangeStatus = onChangeStatus,
-                    onDeleteTask = onDeleteTask,
-                    onChangePriority = onChangePriority,
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .testTag(ProjectDetailTestTags.TASK_LIST),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
+            ) {
+                items(
+                    items = tasks,
+                    key = { it.id },
+                ) { task ->
+                    TaskRow(
+                        task = task,
+                        onChangeStatus = onChangeStatus,
+                        onDeleteTask = onDeleteTask,
+                        onChangePriority = onChangePriority,
+                    )
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(80.dp)) // espaço para o FAB
     }
 }
 
