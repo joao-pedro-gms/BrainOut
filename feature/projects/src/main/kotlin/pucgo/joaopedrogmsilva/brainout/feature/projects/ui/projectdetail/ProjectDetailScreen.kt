@@ -29,8 +29,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -80,6 +78,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.common.OfflineBanner
 import java.time.Instant
 
 /**
@@ -378,80 +377,20 @@ private fun ProjectDetailBody(
 
 /**
  * Banner persistente de conectividade + fila de sincronização do
- * detalhe do projeto (E3.4). Espelha `HomeOfflineBanner`: visível
- * quando offline, com o indicador "X alterações aguardando
- * sincronização" enquanto houver ops pendentes. Some sozinho quando
- * a rede volta e a fila drena.
+ * detalhe do projeto (E3.4). Aplica a testTag do detalhe e delega
+ * para o [OfflineBanner] compartilhado em `ui/common` (mesmo corpo
+ * do banner da Home, sem duplicação).
  */
 @Composable
 private fun ProjectDetailOfflineBanner(
     syncState: ProjectDetailSyncState,
     modifier: Modifier = Modifier,
 ) {
-    val showBanner = syncState.showOfflineBanner
-    val pendingOps = syncState.pendingOps
-    if (!showBanner && pendingOps == 0) return
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag(ProjectDetailTestTags.OFFLINE_BANNER),
-        shape = RoundedCornerShape(12.dp),
-        color = if (showBanner) {
-            MaterialTheme.colorScheme.errorContainer
-        } else {
-            MaterialTheme.colorScheme.secondaryContainer
-        },
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(
-                imageVector = if (showBanner) {
-                    Icons.Outlined.CloudOff
-                } else {
-                    Icons.Outlined.CloudSync
-                },
-                contentDescription = null,
-                tint = if (showBanner) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                },
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                if (showBanner) {
-                    Text(
-                        text = stringResource(id = R.string.home_offline_banner_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                }
-                if (pendingOps > 0) {
-                    Text(
-                        text = stringResource(
-                            id = if (pendingOps == 1) {
-                                R.string.home_pending_ops_message
-                            } else {
-                                R.string.home_pending_ops_message_plural
-                            },
-                            pendingOps,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (showBanner) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                    )
-                }
-            }
-        }
-    }
+    OfflineBanner(
+        showBanner = syncState.showOfflineBanner,
+        pendingOps = syncState.pendingOps,
+        modifier = modifier.testTag(ProjectDetailTestTags.OFFLINE_BANNER),
+    )
 }
 
 /**
