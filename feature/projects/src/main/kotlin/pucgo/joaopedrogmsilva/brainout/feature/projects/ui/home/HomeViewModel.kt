@@ -333,11 +333,22 @@ class HomeViewModel @Inject constructor(
                                     tagId = inputs.prefs.selectedTagId,
                                     sortOrder = inputs.prefs.sortOrder,
                                 )
+                            // E2.6/R5 — tags por projeto (não todas as
+                            // tags do owner). Cada card lista apenas as
+                            // tags associadas ao seu projeto.
+                            val tagsByProject: Flow<Map<String, List<Tag>>> =
+                                projectsFromRoom.flatMapLatest { projects ->
+                                    tagRepository.observeByProjectIds(projects.map { it.id }.toSet())
+                                }
                             combine(
                                 projectsFromRoom,
+                                tagsByProject,
                                 flowOf(inputs),
-                            ) { projects: List<Project>, inp: ListingInputs ->
-                                buildHomeUiState(inp, currentInput, projects)
+                            ) { projects: List<Project>,
+                                tagsMap: Map<String, List<Tag>>,
+                                inp: ListingInputs,
+                                ->
+                                buildHomeUiState(inp, currentInput, projects, tagsMap)
                             }
                         }.flatMapLatest { it }
                     }
@@ -370,6 +381,7 @@ class HomeViewModel @Inject constructor(
         inputs: ListingInputs,
         currentInput: String,
         rows: List<Project>,
+        tagsByProject: Map<String, List<Tag>> = emptyMap(),
     ): HomeUiState {
         val filtered = rows.filter { project ->
             when (inputs.filter) {
@@ -380,7 +392,7 @@ class HomeViewModel @Inject constructor(
         val items = filtered.map { project ->
             ProjectCardItem(
                 project = project,
-                tags = inputs.tagChips,
+                tags = tagsByProject[project.id]?.map { it.toChip() } ?: emptyList(),
             )
         }
         return HomeUiState(
