@@ -310,19 +310,23 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - **P2 (CI)** `codeql.yml` — `build-mode: none` → `autobuild` (linguagens compiladas precisam de toolchain detectada; sem isso a análise Java/Kotlin fica vazia).
 - **P2 (CI)** `backend-stub/server.py` — `datetime.utcnow()` (deprecated 3.12) → `datetime.now(timezone.utc)`.
 - **P2 (CI)** `backend-stub/tests/smoke_e2e.py` — `curl()` retorna HTTP code real (via `-w "%{http_code}"`) em vez de hardcodar `200` quando `want_status is None`. Asserts de status agora falham honestamente.
+- **P2 (CI)** `:app` `build.gradle.kts` + `libs.versions.toml` — adicionado `errorprone-annotations 2.28.0`. Necessário porque o `build-mode: autobuild` do CodeQL aciona R8 minify do :app, que precisa de `com.google.errorprone.annotations.CanIgnoreReturnValue` (referenciada em runtime por Tink/EncryptedSharedPreferences via PepperProvider do :core:data). Sem o dep, `:app:minifyDevReleaseWithR8` quebrava o build do CodeQL.
+- **P2 (core/data)** `RemoteDataSource.kt` — `catch (e: CancellationException) { throw e }` antes de cada um dos 13 `catch (e: Exception)`. Antes, o catch genérico engolia `CancellationException` quando uma coroutine era cancelada (ex.: viewModelScope cancelado em logout, SyncWorker cancelado), fazendo o `BrainOutSyncDispatcher` interpretar como falha retentável em vez de cancelamento normal.
+- **P2 (feature/projects)** `feature/projects/src/main/res/values*/strings.xml` — removidas 4 chaves mortas (`home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_task_priority_locked_info`) que não eram referenciadas pelo código (grep em .kt confirma zero usos).
+- **P2 (feature/auth)** `feature/auth/src/main/res/values*/strings.xml` — removidas 4 chaves `home_*` (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) que eram cópias mortas das chaves correspondentes em `feature/projects/res` (usadas pelo `HomeFab.kt` via `feature.projects.R`). Sem isso, risco de drift entre as duas cópias.
+- **P2 (feature/projects)** `ProjectDetailScreen.kt` — decompose de 971 LoC em orchestrator (186 LoC) + 9 arquivos extraídos: `ProjectDetailTopBar`, `ProjectDetailOfflineBanner`, `ProjectDetailStates` (loading/error/empty + resolveMessage), `ProjectDetailBody` (Column + LazyColumn de tasks), `TaskRow` (row + chips + menu + StatusChip + PriorityChip + extensões `TaskPriority.labelRes`, `TaskStatus.{allowedTransitions,menuTag}`), `NewTaskDialog`, `DeleteProjectDialog`, `ChangeTaskPriorityDialog`, `ProjectDetailTestTags`. API pública preservada; detekt + ktlintCheck verde.
+- **P2 (feature/tasks)** `DashboardScreen.kt` — decompose de 593 LoC em orchestrator (164 LoC) + 6 arquivos: `DashboardLoading`, `DashboardErrorBanner`, `DashboardEmptyState`, `DashboardProjectStateCard`, `DashboardPriorityChart` (com `PriorityBarsCanvas`, `PriorityBarsLegend`, `priorityShortLabel` e constantes `BAR_TO_SLOT_RATIO`/`BAR_CORNER_RADIUS_PX` que resolvem o `MagicNumber`), `DashboardCompletionRateCards`. API pública preservada; detekt + ktlintCheck verde.
 
 ### Não corrigidos (P2+ / fora de escopo deste lote)
 
 - `DeleteProjectDialog` usa `R.string.project_detail_delete_confirm_body` (ok); `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross).
-- 5 chaves mortas em strings.xml: `home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info`.
-- `feature/auth/res` contém 4 chaves `home_*` duplicadas.
+- `project_detail_new_task_due_date_format` em `feature/projects/res/values*/strings.xml` — corrigido (lido por `DeadlineField.kt`).
 - Auth: `resolveAuthMessage` em composable; `else -> message` vaza PT em EN.
 - Auth: `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` que não existe.
 - `feature/tasks` — read-only (zero CRUD), `PriorityBarsCanvas` raw px, UTC Monday hardcoded.
 - `feature/settings` — sem VM (estado de Settings é todo stateless no escopo do E1.3); sem decompose estrutural.
-- Decomposição `ProjectDetailScreen.kt` (1027), `DashboardScreen.kt` (593), `HomeViewModel.kt` (583) em arquivos ≤200 LoC.
+- Decomposição `HomeViewModel.kt` (583) em arquivos ≤200 LoC (subagente em background no PR).
 - core/data: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub (PATCH já passa id explicitamente; risco residual).
-- core/data: `RemoteDataSource.updateProject` silenciosamente loga + rethroa; sem cancelar CancellationException.
 - core/data: TAG UPDATE rejeitado por design (aceitável, alinhado a R6).
 - core/data: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare + dispatch).
 - core/ui: `ThemeSelectionTest` tautológico; subset-only `ContrastRatioTest`; dynamic color path sem teste.
@@ -332,7 +336,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - docs: README link para RELATORIO-TECNICO.md quebrado; ARQUITETURA stack table stale.
 - Workflow (docs/): pre-commit hook, pre-push hook, configuration cache, `gradle/actions/setup-gradle@v6`, `release-please`, ADRs — todos não implementados.
 
-Próxima rodada: decompose restante + workflow scripts + ADR directory + cores feature/tasks CRUD (ref. §Workflows).
+Próxima rodada: decompose restante (HomeViewModel em background) + workflow scripts + ADR directory + feature/tasks CRUD (ref. §Workflows).
 
 ### Verificação executada
 
