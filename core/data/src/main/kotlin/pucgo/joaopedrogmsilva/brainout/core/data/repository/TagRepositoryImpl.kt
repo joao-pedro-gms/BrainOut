@@ -4,8 +4,10 @@ package pucgo.joaopedrogmsilva.brainout.core.data.repository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
@@ -41,11 +43,21 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 @Singleton
 class TagRepositoryImpl @Inject constructor(
     private val tagDao: TagDao,
+    private val projectDao: ProjectDao,
     private val pendingOpDao: PendingOpDao,
 ) : TagRepository {
 
     override fun observeForOwner(ownerId: String): Flow<List<Tag>> =
         tagDao.observeForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>> =
+        combine(
+            ids.map { id -> projectDao.observeTagsFor(id).map { id to it } },
+        ) { pairs ->
+            @Suppress("UNCHECKED_CAST")
+            (pairs as Array<Pair<String, List<TagEntity>>>)
+                .associate { (projectId, tags) -> projectId to tags.map { it.toDomain() } }
+        }
 
     override suspend fun findById(id: String): Tag? =
         tagDao.findById(id)?.toDomain()
@@ -64,7 +76,11 @@ class TagRepositoryImpl @Inject constructor(
                 entityType = SyncEntityType.TAG,
                 entityId = tag.id,
                 opType = SyncOpType.CREATE,
-                payloadObj = TagSyncPayload(name = tag.name, color = tag.color),
+                payloadObj = TagSyncPayload(
+                    id = tag.id,
+                    name = tag.name,
+                    color = tag.color,
+                ),
             ),
         ) {
             tagDao.insert(TagEntity.fromDomain(tag))

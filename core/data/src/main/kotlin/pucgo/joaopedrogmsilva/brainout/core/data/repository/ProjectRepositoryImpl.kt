@@ -14,6 +14,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
@@ -133,9 +134,7 @@ class ProjectRepositoryImpl @Inject constructor(
     private suspend fun validateTagOwnership(tagIds: List<String>, ownerId: String) {
         tagIds.forEach { tagId ->
             val tag = tagDao.findById(tagId) ?: throw TagNotFoundException(tagId)
-            require(tag.ownerId == ownerId) {
-                "Tag $tagId não pertence ao owner do projeto"
-            }
+            if (tag.ownerId != ownerId) throw TagOwnershipException(tagId)
         }
     }
 

@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
@@ -130,6 +131,25 @@ class ChangeTaskStatusUseCaseTest {
             kotlinx.coroutines.runBlocking { useCase(task.id, TaskStatus.TODO) }
         }
         assertThat(ex.message).contains("DOING")
+        verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
+        verify(exactly = 0) { deadlineScheduler.cancel(any()) }
+    }
+
+    @Test
+    fun `task inexistente lanca TaskNotFoundException (R7 idempotencia fronteira)`() = runTest {
+        // Caminho de reabertura ou transição intermediária:
+        // findById retorna null. Antes era `error(...)` que lançava
+        // IllegalStateException cru (P0-8). Agora é a exceção de
+        // domínio, capturável pela UI sem hack.
+        coEvery { repository.findById("ausente") } returns null
+
+        val ex = assertThrows(TaskNotFoundException::class.java) {
+            kotlinx.coroutines.runBlocking { useCase("ausente", TaskStatus.DOING) }
+        }
+        assertThat(ex.message).contains("ausente")
+        coVerify(exactly = 0) { repository.completeAndCascade(any()) }
+        coVerify(exactly = 0) { repository.changeStatus(any(), any()) }
+        coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
         verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
         verify(exactly = 0) { deadlineScheduler.cancel(any()) }
     }

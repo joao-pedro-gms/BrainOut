@@ -32,13 +32,13 @@ class AuthenticateUserUseCaseTest {
         val stored = User.create(
             name = "João",
             email = "joao@example.com",
-            passwordHash = "hashed::secret",
+            passwordHash = "hashed::plain-text-fixture-input",
             role = UserRole.MEMBER,
         )
         coEvery { repository.findByEmail("joao@example.com") } returns stored
-        coEvery { hasher.verify("secret", "hashed::secret") } returns true
+        coEvery { hasher.verify("plain-text-fixture-input", "hashed::plain-text-fixture-input") } returns true
 
-        val result = useCase("  joao@example.com  ", "secret")
+        val result = useCase("  joao@example.com  ", "plain-text-fixture-input")
 
         assertThat(result).isEqualTo(stored)
     }
@@ -48,7 +48,7 @@ class AuthenticateUserUseCaseTest {
         coEvery { repository.findByEmail("ghost@example.com") } returns null
 
         val ex = kotlin.runCatching {
-            useCase("ghost@example.com", "any")
+            useCase("ghost@example.com", "anypassword")
         }.exceptionOrNull()
 
         assertThat(ex).isInstanceOf(InvalidCredentialsException::class.java)
@@ -60,14 +60,14 @@ class AuthenticateUserUseCaseTest {
         val stored = User.create(
             name = "João",
             email = "joao@example.com",
-            passwordHash = "hashed::secret",
+            passwordHash = "hashed::plain-text-fixture-input",
             role = UserRole.MEMBER,
         )
         coEvery { repository.findByEmail("joao@example.com") } returns stored
-        coEvery { hasher.verify("wrong", "hashed::secret") } returns false
+        coEvery { hasher.verify("fixture-pwd-wrong-EEE", "hashed::plain-text-fixture-input") } returns false
 
         val ex = kotlin.runCatching {
-            useCase("joao@example.com", "wrong")
+            useCase("joao@example.com", "fixture-pwd-wrong-EEE")
         }.exceptionOrNull()
 
         assertThat(ex).isInstanceOf(InvalidCredentialsException::class.java)
@@ -75,15 +75,15 @@ class AuthenticateUserUseCaseTest {
 
     @Test
     fun `rejects invalid email format before any IO`() = runTest {
-        kotlin.runCatching { useCase("not-an-email", "any") }.also {
+        kotlin.runCatching { useCase("not-an-email", "anypassword") }.also {
             assertThat(it.exceptionOrNull()).isInstanceOf(InvalidModelException::class.java)
         }
         coVerify(exactly = 0) { repository.findByEmail(any()) }
     }
 
     @Test
-    fun `rejects blank password before any IO`() = runTest {
-        kotlin.runCatching { useCase("joao@example.com", "") }.also {
+    fun `rejects short password before any IO`() = runTest {
+        kotlin.runCatching { useCase("joao@example.com", "short") }.also {
             assertThat(it.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
         }
         coVerify(exactly = 0) { repository.findByEmail(any()) }

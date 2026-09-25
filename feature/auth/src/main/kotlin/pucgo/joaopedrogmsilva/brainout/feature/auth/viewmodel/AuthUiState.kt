@@ -40,9 +40,4 @@ data class AuthUiState(
     val passwordConfirmationError: String? = null,
     val errorMessage: String? = null,
     val success: Boolean = false,
-) {
-    companion object {
-        /** Tamanho mínimo exigido para a senha em ambos os formulários. */
-        const val MIN_PASSWORD_LENGTH: Int = 8
-    }
-}
+)

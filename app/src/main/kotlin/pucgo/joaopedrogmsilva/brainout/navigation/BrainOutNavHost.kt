@@ -9,13 +9,14 @@
 package pucgo.joaopedrogmsilva.brainout.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.LoginScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register.RegisterScreen
@@ -160,20 +161,19 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
     activeUserProvider: ActiveUserProvider,
 ) {
     composable(route = BrainOutRoutes.Settings) {
-        val scope = rememberCoroutineScope()
+        val lifecycleOwner = LocalLifecycleOwner.current
         SettingsScreen(
             onOptionClicked = { action ->
                 when (action) {
                     SettingsActionType.SignOut -> {
-                        // Limpa a sessão no DataStore (E1.8) antes de
-                        // navegar para Login. Fazemos em uma coroutine
-                        // para não bloquear a UI; a navegação ocorre
-                        // em seguida e a próxima leitura do
-                        // `currentUserId()` no `MainActivity` verá o
-                        // valor limpo após reinício.
-                        scope.launch { activeUserProvider.signOut() }
-                        navController.navigate(BrainOutRoutes.Login) {
-                            popUpTo(0) { inclusive = true }
+                        // Limpa a sessão no DataStore (E1.8) num escopo que
+                        // sobrevive à saída de Settings e navega apenas após
+                        // a escrita concluir — evita sessão órfã no próximo
+                        lifecycleOwner.lifecycleScope.launch {
+                            activeUserProvider.signOut()
+                            navController.navigate(BrainOutRoutes.Login) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     }
                     SettingsActionType.Profile,

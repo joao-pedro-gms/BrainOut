@@ -44,15 +44,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Validate signing secrets (P0-6)
+        # Se qualquer dos 4 secrets estiver ausente o build de release
+        # cai no caminho "unsigned fallback" do `:app/build.gradle.kts`
+        # e produz um .aab não-assinado silenciosamente verde.
+        # Validar explicitamente para falhar o job antes do upload.
+        env:
+          BASE64: ${{ secrets.BRAINOUT_KEYSTORE_BASE64 }}
+          STORE_PWD: ${{ secrets.BRAINOUT_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.BRAINOUT_KEY_ALIAS }}
+          KEY_PWD: ${{ secrets.BRAINOUT_KEY_PASSWORD }}
+        run: |
+          set -e
+          missing=0
+          for var in BASE64 STORE_PWD ALIAS KEY_PWD; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Secret $var ausente — cadastre os 4 secrets antes de cortar uma tag (ver docs/CI-CD.md)."
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+
       - name: Decode keystore
         env:
           BRAINOUT_KEYSTORE_BASE64: ${{ secrets.BRAINOUT_KEYSTORE_BASE64 }}
         run: |
           set -e
-          if [ -z "$BRAINOUT_KEYSTORE_BASE64" ]; then
-            echo "::error::Secret BRAINOUT_KEYSTORE_BASE64 ausente - cadastre os 4 secrets antes de cortar uma tag de release (ver docs/CI-CD.md)."
-            exit 1
-          fi
           echo "$BRAINOUT_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/brainout-release.jks"
 
       - name: bundleRelease assinado
@@ -62,6 +79,24 @@ jobs:
           BRAINOUT_KEY_ALIAS: ${{ secrets.BRAINOUT_KEY_ALIAS }}
           BRAINOUT_KEY_PASSWORD: ${{ secrets.BRAINOUT_KEY_PASSWORD }}
         run: ./gradlew :app:bundleRelease --no-daemon --console=plain
+
+      - name: Verify .aab signature (P0-6)
+        # Validação adicional: confirma que o .aab publicado é o assinado.
+        # Se o fallback não-assinado tiver sido acionado, o job falha aqui
+        # antes do upload.
+        run: |
+          set -e
+          AAB=$(ls app/build/outputs/bundle/release/app-release.aab | head -n1)
+          if [ -z "$AAB" ]; then
+            echo "::error::Nenhum .aab gerado em app/build/outputs/bundle/release/."
+            exit 1
+          fi
+          if ! jarsigner -verify "$AAB" >/dev/null 2>&1; then
+            echo "::error::$AAB não passou em jarsigner -verify — provavelmente não-assinado."
+            jarsigner -verify -verbose "$AAB" || true
+            exit 1
+          fi
+          echo "jarsigner OK: $AAB"
 
       - name: Upload do .aab assinado
         uses: actions/upload-artifact@v4

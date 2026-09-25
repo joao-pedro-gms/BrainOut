@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -141,6 +142,7 @@ private fun SettingsRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
+            .testTag("settings_option_${option.type.name.lowercase()}")
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -174,5 +176,7 @@ private fun SettingsRow(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun SettingsScreenPreview() {
-    SettingsScreen(onOptionClicked = {})
+    pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme {
+        SettingsScreen(onOptionClicked = {})
+    }
 }

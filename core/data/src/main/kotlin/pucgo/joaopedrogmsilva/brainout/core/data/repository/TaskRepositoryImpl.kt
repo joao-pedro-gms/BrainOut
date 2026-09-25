@@ -15,6 +15,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
@@ -98,7 +99,7 @@ class TaskRepositoryImpl @Inject constructor(
      */
     override suspend fun changeStatus(id: String, target: TaskStatus): Task {
         val current = taskDao.findById(id)?.toDomain()
-            ?: throw IllegalArgumentException("Tarefa não encontrada: $id")
+            ?: throw TaskNotFoundException(id)
         val updated = current.transitionTo(target)
         pendingOpDao.enqueueInTx(
             op = opFor(id, SyncOpType.UPDATE, updated),
@@ -190,7 +191,7 @@ class TaskRepositoryImpl @Inject constructor(
      */
     override suspend fun completeAndCascade(taskId: String): Task {
         val current = taskDao.findById(taskId)?.toDomain()
-            ?: throw IllegalArgumentException("Tarefa não encontrada: $taskId")
+            ?: throw TaskNotFoundException(taskId)
         if (current.status == TaskStatus.DONE) {
             // Já está concluída — no-op. O projeto já deve estar
             // concluído pelo caminho original; nada a fazer.
@@ -228,7 +229,7 @@ class TaskRepositoryImpl @Inject constructor(
             "reopenAndCascade aceita apenas estados ativos; use completeAndCascade para DONE"
         }
         val current = taskDao.findById(taskId)?.toDomain()
-            ?: throw IllegalArgumentException("Tarefa não encontrada: $taskId")
+            ?: throw TaskNotFoundException(taskId)
         if (current.status != TaskStatus.DONE) {
             // Não está em DONE — não há reabertura a fazer; o caller
             // deveria usar o caminho simples. Lançamos para evitar

@@ -125,8 +125,9 @@ object DataModule {
     @Singleton
     fun provideTagRepository(
         tagDao: TagDao,
+        projectDao: ProjectDao,
         pendingOpDao: PendingOpDao,
-    ): TagRepository = TagRepositoryImpl(tagDao, pendingOpDao)
+    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, pendingOpDao)
 
     /**
      * Bind de [ListingPreferencesRepository] para a implementação
@@ -166,7 +167,10 @@ object DataModule {
     @Provides
     @Singleton
     fun provideRemoteDataSource(): RemoteDataSource =
-        RemoteDataSource(baseUrl = BuildConfig.BASE_URL)
+        RemoteDataSource(
+            baseUrl = BuildConfig.BASE_URL,
+            loggingEnabled = BuildConfig.DEBUG,
+        )
 
     /**
      * Despachante de sincronização (E3.3): envolve o cliente remoto

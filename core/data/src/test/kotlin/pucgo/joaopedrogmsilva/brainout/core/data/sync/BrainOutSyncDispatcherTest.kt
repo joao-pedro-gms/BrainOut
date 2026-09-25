@@ -114,7 +114,11 @@ class BrainOutSyncDispatcherTest {
             op(
                 SyncEntityType.TAG,
                 SyncOpType.CREATE,
-                TagSyncPayload(name = "Urgente", color = "#FF0000"),
+                TagSyncPayload(
+                    id = "33333333-3333-4333-8333-333333333333",
+                    name = "Urgente",
+                    color = "#FF0000",
+                ),
             ),
         )
 
@@ -122,7 +126,7 @@ class BrainOutSyncDispatcherTest {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v1/tags")
-        assertThat(request.body.readUtf8()).doesNotContain("\"id\"")
+        assertThat(request.body.readUtf8()).contains("\"id\"")
     }
 
     @Test

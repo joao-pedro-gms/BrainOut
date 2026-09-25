@@ -9,7 +9,6 @@
     <string name="home_empty_title">Nenhum projeto ainda</string>
     <string name="home_empty_body">Toque no botão “+” para criar o seu primeiro projeto.</string>
     <string name="home_fab_create">Criar novo projeto</string>
-    <string name="home_fab_disabled_label">Em breve: criar projeto</string>
 
     <!-- Bottom navigation -->
     <string name="bottom_tab_projects">Projetos</string>
@@ -22,8 +21,9 @@
     <string name="project_detail_description">Aplicativo Android para gestão de projetos e tarefas, em Kotlin e Jetpack Compose.</string>
     <string name="project_detail_tasks_title">Tarefas</string>
     <string name="project_detail_new_task">Nova tarefa</string>
-    <string name="project_detail_back">Voltar</string>
     <string name="project_detail_delete_project">Excluir projeto</string>
+    <string name="project_detail_delete_confirm_title">Excluir projeto</string>
+    <string name="project_detail_delete_confirm_body">Deseja excluir este projeto e suas tarefas? Esta ação não pode ser desfeita.</string>
     <string name="project_detail_empty_title">Sem tarefas cadastradas</string>
     <string name="project_detail_empty_body">Toque em \u201c+Nova tarefa\u201d para começar.</string>
 
@@ -34,7 +34,6 @@
     <string name="project_detail_new_task_priority_label">Prioridade</string>
     <string name="project_detail_new_task_due_date_label">Prazo (opcional)</string>
     <string name="project_detail_new_task_due_date_clear">Sem prazo</string>
-    <string name="project_detail_new_task_due_date_picker_title">Escolher prazo</string>
     <string name="project_detail_new_task_due_date_format">dd/MM/yyyy</string>
     <!-- E3.5: dica inline quando há feriado próximo do prazo escolhido. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Próximo feriado: %1$s (%2$s) antes do prazo</string>
@@ -102,7 +101,7 @@
     <!-- RN02 (E2.4) — prioridade obrigatória, imutável em concluídas -->
     <string name="project_detail_error_priority_locked_on_done">Prioridade não pode ser alterada em tarefa concluída (RN02).</string>
     <string name="project_detail_task_priority_dialog_title">Alterar prioridade</string>
-    <string name="project_detail_task_priority_locked_info">Tarefa concluída: prioridade é fixa.</string>
+
     <string name="project_detail_task_menu_change_priority">Alterar prioridade</string>
     <string name="project_detail_task_menu_priority_locked_label">Prioridade (somente leitura)</string>
 

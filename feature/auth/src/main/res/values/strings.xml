@@ -55,10 +55,4 @@
     <string name="auth_error_empty_pwd_confirmation">Confirme sua senha.</string>
     <string name="auth_error_pwd_mismatch">As senhas não coincidem.</string>
     <string name="auth_error_unexpected">Não foi possível concluir a operação. Tente novamente.</string>
-
-    <!-- Home (E1.7 — papel exibido + gate do FAB) -->
-    <string name="home_role_member_dialog_title">Disponível apenas para Owners</string>
-    <string name="home_role_member_dialog_body">Faça upgrade para Owner para criar projetos.</string>
-    <string name="home_role_member_dialog_ack">Entendi</string>
-    <string name="home_fab_disabled_owner">Criar projeto (em breve)</string>
 </resources>

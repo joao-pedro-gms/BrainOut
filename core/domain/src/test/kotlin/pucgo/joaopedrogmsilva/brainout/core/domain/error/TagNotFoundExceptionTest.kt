@@ -9,7 +9,7 @@ class TagNotFoundExceptionTest {
     @Test
     fun `mensagem identifica tag ausente`() {
         val exception = TagNotFoundException("tag-1")
-        assertThat(exception).isInstanceOf(RuntimeException::class.java)
+        assertThat(exception).isInstanceOf(DomainException::class.java)
         assertThat(exception.message).isEqualTo("Tag não encontrada: tag-1")
     }
 }

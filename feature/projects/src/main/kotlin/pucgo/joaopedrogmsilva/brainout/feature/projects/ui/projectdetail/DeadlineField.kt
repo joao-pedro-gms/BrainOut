@@ -44,7 +44,8 @@ internal fun DeadlineField(
     evaluateDeadline: suspend (Instant?) -> DeadlineInfo,
 ) {
     var showPicker by rememberSaveable { mutableStateOf(false) }
-    val dateText = dueDate?.atZone(ZoneId.systemDefault())?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    val pattern = stringResource(R.string.project_detail_new_task_due_date_format)
+    val dateText = dueDate?.atZone(ZoneId.systemDefault())?.format(DateTimeFormatter.ofPattern(pattern))
     Column {
         OutlinedButton(
             onClick = { showPicker = true },

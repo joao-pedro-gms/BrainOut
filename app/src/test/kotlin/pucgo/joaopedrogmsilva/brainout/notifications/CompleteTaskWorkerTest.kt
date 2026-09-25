@@ -11,6 +11,7 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -117,11 +118,11 @@ class CompleteTaskWorkerTest {
     fun `worker com tarefa inexistente termina com sucesso (idempotencia)`() = runBlocking {
         // E2.5 (PR #58): o caminho DONE passa por
         // `completeAndCascade(taskId)`; quando o id não existe,
-        // o repositório lança `IllegalArgumentException` e o
-        // worker converte em `Result.retry()` para o
-        // WorkManager reprocessar com backoff.
+        // o repositório lança `TaskNotFoundException` (Domínio) e o
+        // worker encerra com `success()` — idempotente, não deve
+        // reprocessar (P0-2).
         coEvery { taskRepository.completeAndCascade("t-desaparecida") } throws
-            IllegalArgumentException("Tarefa não encontrada: t-desaparecida")
+            TaskNotFoundException("t-desaparecida")
 
         val useCase = ChangeTaskStatusUseCase(taskRepository, deadlineScheduler)
         val worker = TestListenableWorkerBuilder<CompleteTaskWorker>(context)
@@ -137,7 +138,6 @@ class CompleteTaskWorkerTest {
 
         val result = worker.doWork()
 
-        // Falha de escrita vira retry — o WorkManager reprocessa com backoff.
-        assertThat(result).isEqualTo(ListenableWorker.Result.retry())
+        assertThat(result).isEqualTo(ListenableWorker.Result.success())
     }
 }

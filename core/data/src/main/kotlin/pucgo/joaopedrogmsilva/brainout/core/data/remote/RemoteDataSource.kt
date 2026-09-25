@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.remote
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -21,6 +22,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 class RemoteDataSource(
     baseUrl: String,
     private val logError: (String) -> Unit = { message -> Log.e(TAG, message) },
+    private val loggingEnabled: Boolean = true,
 ) {
 
     private val json = Json {
@@ -28,13 +30,15 @@ class RemoteDataSource(
         encodeDefaults = true
     }
 
-    private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BASIC
-    }
-
-    private val okHttp: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .build()
+    private val okHttp: OkHttpClient = OkHttpClient.Builder().apply {
+        if (loggingEnabled) {
+            addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                },
+            )
+        }
+    }.build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
@@ -47,6 +51,8 @@ class RemoteDataSource(
     /** Healthcheck do serviço (GET /v1/ping). */
     suspend fun ping(): Boolean = try {
         api.ping().pong
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("ping falhou: ${e.message}")
         false
@@ -55,6 +61,8 @@ class RemoteDataSource(
     /** Lista todos os projetos (GET /v1/projects). */
     suspend fun listProjects(): List<ProjectDto> = try {
         api.listProjects().items
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("listProjects falhou: ${e.message}")
         throw e
@@ -63,6 +71,8 @@ class RemoteDataSource(
     /** Busca um projeto por id (GET /v1/projects/{id}). */
     suspend fun getProject(projectId: String): ProjectDto = try {
         api.getProject(projectId)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("getProject($projectId) falhou: ${e.message}")
         throw e
@@ -71,6 +81,8 @@ class RemoteDataSource(
     /** Cria um projeto (POST /v1/projects). */
     suspend fun createProject(name: String, description: String?): ProjectDto = try {
         api.createProject(ProjectCreateDto(name = name, description = description))
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("createProject falhou: ${e.message}")
         throw e
@@ -82,6 +94,8 @@ class RemoteDataSource(
             projectId,
             ProjectCreateDto(id = projectId, name = name, description = description),
         )
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("updateProject($projectId) falhou: ${e.message}")
         throw e
@@ -90,6 +104,8 @@ class RemoteDataSource(
     /** Remove um projeto (DELETE /v1/projects/{id}). */
     suspend fun deleteProject(projectId: String) = try {
         api.deleteProject(projectId)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("deleteProject($projectId) falhou: ${e.message}")
         throw e
@@ -98,6 +114,8 @@ class RemoteDataSource(
     /** Lista tarefas, opcionalmente filtradas por projeto (GET /v1/tasks). */
     suspend fun listTasks(projectId: String? = null): List<TaskDto> = try {
         api.listTasks(projectId).items
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("listTasks falhou: ${e.message}")
         throw e
@@ -111,6 +129,8 @@ class RemoteDataSource(
         done: Boolean = false,
     ): TaskDto = try {
         api.createTask(TaskCreateDto(projectId = projectId, title = title, priority = priority, done = done))
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("createTask falhou: ${e.message}")
         throw e
@@ -137,6 +157,8 @@ class RemoteDataSource(
                 done = done,
             ),
         )
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("updateTask($taskId) falhou: ${e.message}")
         throw e
@@ -145,6 +167,8 @@ class RemoteDataSource(
     /** Remove uma tarefa (DELETE /v1/tasks/{id}) — 204 mesmo ausente. */
     suspend fun deleteTask(taskId: String) = try {
         api.deleteTask(taskId)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("deleteTask($taskId) falhou: ${e.message}")
         throw e
@@ -153,14 +177,18 @@ class RemoteDataSource(
     /** Lista tags (GET /v1/tags). */
     suspend fun listTags(): List<TagDto> = try {
         api.listTags().items
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("listTags falhou: ${e.message}")
         throw e
     }
 
     /** Cria tag (POST /v1/tags) — o servidor gera o id. */
-    suspend fun createTag(name: String, color: String): TagDto = try {
-        api.createTag(TagCreateDto(name = name, color = color))
+    suspend fun createTag(name: String, color: String, id: String? = null): TagDto = try {
+        api.createTag(TagCreateDto(id = id, name = name, color = color))
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("createTag falhou: ${e.message}")
         throw e
@@ -169,6 +197,8 @@ class RemoteDataSource(
     /** Remove tag (DELETE /v1/tags/{id}) — 204 mesmo ausente. */
     suspend fun deleteTag(tagId: String) = try {
         api.deleteTag(tagId)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         logError("deleteTag($tagId) falhou: ${e.message}")
         throw e

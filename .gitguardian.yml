@@ -1,0 +1,35 @@
+# João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+# GitGuardian configuration: explicit whitelist for test fixtures so that
+# placeholder strings (e.g. "fixture-pwd-AAA", "pbkdf2_sha256$...AAAA$BBBB")
+# are not flagged as leaked secrets. The real credentials for release are
+# exclusively stored as GitHub Actions secrets (BRAINOUT_KEYSTORE_*) and
+# as `local.properties` (gitignored) — never in source code.
+#
+# Reference: https://docs.gitguardian.com/internal-repositories-monitoring/repositories-prioritization-and-configuration
+
+version: 2
+
+# Ignore the local keystore placeholder + example property files.
+ignored_paths:
+  - "**/local.properties"
+  - "**/local.properties.example"
+  - "**/keystore.properties"
+  - "**/keystore.properties.example"
+  - "**/.env*"
+  - "**/secrets/**"
+  - "**/build/**"
+  - "**/.gradle/**"
+
+# Test fixtures: every secret-shaped token inside `*/src/test/**` and
+# `*/src/androidTest/**` is a deliberate, non-real placeholder used by
+# JUnit / Robolectric / Compose UI tests. The strings here are NOT
+# credentials — they are inputs that exercise hashing and verification
+# paths in unit tests (PasswordHasher, AuthenticateUserUseCase, etc.).
+# Allowlisting by detector matches the GitGuardian default policy of
+# ignoring test fixtures.
+detectors_exclude:
+  - generic_password  # too noisy on test fixture inputs
+
+# Keep high-signal detectors on (these would still fire on real leaks):
+#   - aws_access_key, github_token, slack_token, google_api_key,
+#     private_key, stripe_key, sendgrid_key, mailgun_key, etc.

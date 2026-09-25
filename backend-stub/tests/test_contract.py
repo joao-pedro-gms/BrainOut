@@ -236,6 +236,36 @@ def test_tag_color_must_match_hex_pattern(client: TestClient) -> None:
     assert resp.status_code == 422  # validação do Pydantic
 
 
+def test_tag_accepts_client_supplied_id_and_replay_is_idempotent(client: TestClient) -> None:
+    # R6: cliente envia UUID próprio no POST; o servidor respeita.
+    tid = _uuid_str()
+    create = client.post(
+        "/v1/tags",
+        json={"id": tid, "name": "backlog", "color": "#00ff00"},
+    )
+    assert create.status_code == 201, create.text
+    assert create.json()["id"] == tid
+
+    # Replay com o mesmo id devolve o registro existente (sem duplicar).
+    replay = client.post(
+        "/v1/tags",
+        json={"id": tid, "name": "backlog", "color": "#00ff00"},
+    )
+    assert replay.status_code == 201, replay.text
+    assert replay.json()["id"] == tid
+    listed = client.get("/v1/tags").json()["items"]
+    assert len([t for t in listed if t["id"] == tid]) == 1
+
+    # DELETE por esse id (agora sinônimo do servidor) remove de fato.
+    assert client.delete(f"/v1/tags/{tid}").status_code == 204
+    assert client.get("/v1/tags").json()["items"] == []
+
+
+def test_tag_rejects_non_canonical_client_id(client: TestClient) -> None:
+    resp = client.post("/v1/tags", json={"id": "não-uuid", "name": "x"})
+    assert resp.status_code == 422
+
+
 def test_tag_association_rejects_non_uuid(client: TestClient) -> None:
     pid = _uuid_str()
     client.put(f"/v1/projects/{pid}", json={"name": "p"})

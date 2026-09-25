@@ -39,6 +39,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response
@@ -116,8 +117,24 @@ class Task(TaskIn):
 
 
 class TagIn(BaseModel):
+    """Tag criada ou upsertida pelo cliente.
+
+    Política: o cliente envia seu próprio UUID em `id` (R6 — paridade
+    com Project/Task). Se o id já existir no servidor, a entrada é
+    reaproveitada (idempotência de replay do POST). Se ausente, o
+    servidor gera um id novo.
+    """
+
+    id: str | None = None
     name: str = Field(min_length=1, max_length=60)
     color: str = Field(default="#888888", pattern=r"^#[0-9a-fA-F]{6}$")
+
+    @field_validator("id")
+    @classmethod
+    def _check_uuid_when_present(cls, value: str | None) -> str | None:
+        if value is not None and not _is_uuid(value):
+            raise ValueError("id deve ser UUID canônico (cliente-supplied ou gerado pelo servidor)")
+        return value
 
 
 class Tag(TagIn):
@@ -140,9 +157,7 @@ class TagAssociation(BaseModel):
 
 
 def _now_iso() -> str:
-    import datetime as _dt
-
-    return _dt.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _require_uuid(value: str, field: str) -> None:
@@ -367,13 +382,17 @@ def list_tags() -> dict:
 
 @app.post("/v1/tags", status_code=201)
 def create_tag(body: TagIn) -> dict:
-    """Cria tag com ID gerado pelo servidor.
+    """Cria tag com id cliente-supplied (R6) ou gerado pelo servidor.
 
-    Tags são vocabulário controlado pelo usuário — não há identidade
-    local forte antes do upload (o app não precisa saber o ID antes de
-    criar, ele descobre via GET /v1/tags e referencia o que já existe).
+    Se `body.id` vier preenchido, o servidor usa esse id e responde
+    200 devolvendo o registro se já existir (idempotência). Caso
+    contrário, gera UUID novo e responde 201.
     """
-    tid = str(uuid.uuid4())
+    if body.id is not None and body.id in _TAGS:
+        # Replay idempotente: devolver registro existente em vez
+        # de duplicar (mesma regra aplicada a POST de project/task).
+        return _TAGS[body.id]
+    tid = body.id or str(uuid.uuid4())
     tag = {
         "id": tid,
         "created_at": _now_iso(),

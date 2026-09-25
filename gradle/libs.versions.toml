@@ -54,6 +54,11 @@ ktlint = "14.2.0"
 jacoco = "0.8.12"
 # Kover 0.9.x: cobertura de código + verificação de bound mínimo (E4.7).
 kover = "0.9.9"
+# `error_prone_annotations` é exigido pelo Tink (EncryptedSharedPreferences
+# usado pelo PepperProvider do :core:data) durante o R8 minify do :app.
+# Sem ele, `:app:minifyDevReleaseWithR8` falha com "Missing class
+# com.google.errorprone.annotations.CanIgnoreReturnValue".
+errorprone = "2.28.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -105,6 +110,7 @@ mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "moc
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+errorprone-annotations = { group = "com.google.errorprone", name = "error_prone_annotations", version.ref = "errorprone" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

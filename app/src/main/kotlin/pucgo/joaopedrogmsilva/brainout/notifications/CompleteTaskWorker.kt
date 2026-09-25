@@ -7,6 +7,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.IOException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DomainException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
 
@@ -38,11 +40,14 @@ class CompleteTaskWorker @AssistedInject constructor(
         return try {
             changeTaskStatus(taskId, TaskStatus.DONE)
             Result.success()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            // Falha transitória (Room indisponível etc.) — WorkManager
-            // reprocessa com backoff exponencial padrão. A exceção é
-            // intencionalmente engolida (SwallowedException desativada
-            // no detekt.yml): o WorkManager já registra o retry.
+        } catch (e: DomainException) {
+            // Tarefa inexistente (excluída em outro ponto) ou outra
+            // violação de regra permanente — idempotente: encerra
+            // com sucesso para que o WorkManager não reprocesse
+            Result.success()
+        } catch (e: IOException) {
+            // Falha transitória (Room indisponível, etc.) — backoff
+            // exponencial do WorkManager.
             Result.retry()
         }
     }

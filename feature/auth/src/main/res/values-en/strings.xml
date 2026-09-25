@@ -55,10 +55,4 @@
     <string name="auth_error_empty_pwd_confirmation">Confirm your password.</string>
     <string name="auth_error_pwd_mismatch">The passwords do not match.</string>
     <string name="auth_error_unexpected">Could not complete the operation. Try again.</string>
-
-    <!-- Home (E1.7 — papel exibido + gate do FAB) -->
-    <string name="home_role_member_dialog_title">Available for Owners only</string>
-    <string name="home_role_member_dialog_body">Upgrade to Owner to create projects.</string>
-    <string name="home_role_member_dialog_ack">Got it</string>
-    <string name="home_fab_disabled_owner">Create project (coming soon)</string>
 </resources>

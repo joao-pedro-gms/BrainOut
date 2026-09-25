@@ -104,51 +104,51 @@ class DashboardViewModel @Inject constructor(
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    val uiState: StateFlow<DashboardUiState> = _retryToken
-        .flatMapLatest { _ ->
-            activeUserProvider.observeActiveUserId()
-                .flatMapLatest { ownerId ->
-                    if (ownerId == null) {
-                        flowOf(DashboardUiState(isLoading = false))
-                    } else {
-                        combine(
-                            projectRepository.observeAllForOwner(ownerId),
-                            taskRepository.observeCountByPriority(ownerId),
-                            // A janela semanal é avaliada na coleta — o
-                            // flow emite stats relativas ao início da
-                            // semana UTC corrente.
-                            taskRepository.observeCompletionStats(
-                                ownerId = ownerId,
-                                weekStartMillis = currentWeekStartMillis(),
-                            ),
-                        ) { projects, priorityCounts, stats ->
-                            DashboardUiState(
-                                activeProjects = projects.count { !it.isCompleted },
-                                completedProjects = projects.count { it.isCompleted },
-                                priorityCounts = normalizePriorityCounts(priorityCounts),
-                                totalTasks = stats.totalCount,
-                                doneTasks = stats.doneCount,
-                                weeklyCompletionPercent = stats.weeklyCompletionPercent,
-                                overallCompletionPercent = stats.overallCompletionPercent,
-                                isLoading = false,
-                            )
+    val uiState: StateFlow<DashboardUiState> = combine(
+        _retryToken
+            .flatMapLatest { _ ->
+                activeUserProvider.observeActiveUserId()
+                    .flatMapLatest { ownerId ->
+                        if (ownerId == null) {
+                            flowOf(DashboardUiState(isLoading = false))
+                        } else {
+                            combine(
+                                projectRepository.observeAllForOwner(ownerId),
+                                taskRepository.observeCountByPriority(ownerId),
+                                taskRepository.observeCompletionStats(
+                                    ownerId = ownerId,
+                                    weekStartMillis = currentWeekStartMillis(),
+                                ),
+                            ) { projects, priorityCounts, stats ->
+                                DashboardUiState(
+                                    activeProjects = projects.count { !it.isCompleted },
+                                    completedProjects = projects.count { it.isCompleted },
+                                    priorityCounts = normalizePriorityCounts(priorityCounts),
+                                    totalTasks = stats.totalCount,
+                                    doneTasks = stats.doneCount,
+                                    weeklyCompletionPercent = stats.weeklyCompletionPercent,
+                                    overallCompletionPercent = stats.overallCompletionPercent,
+                                    isLoading = false,
+                                )
+                            }
                         }
                     }
-                }
-                .catch { throwable ->
-                    if (throwable is CancellationException) throw throwable
-                    val message = throwable.toDashboardErrorMessage()
-                    _errorMessage.value = message
-                    emit(DashboardUiState(isLoading = false, errorMessage = message))
-                }
-                // Limpa erro pendente APENAS em emissões vindas do
-                // `flatMapLatest` (sucesso) — paridade com TasksViewModel.
-                .onEach { state ->
-                    if (state.errorMessage == null) {
-                        _errorMessage.value = null
+                    .catch { throwable ->
+                        if (throwable is CancellationException) throw throwable
+                        val message = throwable.toDashboardErrorMessage()
+                        _errorMessage.value = message
+                        emit(DashboardUiState(isLoading = false, errorMessage = message))
                     }
-                }
-        }
+                    .onEach { state ->
+                        if (state.errorMessage == null) {
+                            _errorMessage.value = null
+                        }
+                    }
+            },
+        _errorMessage,
+    ) { ui, err ->
+        if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),

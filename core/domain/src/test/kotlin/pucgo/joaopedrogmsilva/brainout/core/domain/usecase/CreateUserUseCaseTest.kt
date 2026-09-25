@@ -30,23 +30,23 @@ class CreateUserUseCaseTest {
     fun `creates user when email is new and data is valid`() = runTest {
         val captured = slot<User>()
         coEvery { repository.findByEmail(any()) } returns null
-        coEvery { hasher.hash("secret123") } returns "hashed::secret123"
+        coEvery { hasher.hash("plain-text-fixture-input") } returns "hashed::plain-text-fixture-input"
         coEvery { repository.save(capture(captured)) } answers { captured.captured }
 
         val created = useCase(
             name = "  João Pedro  ",
             email = "  joao@example.com  ",
-            rawPassword = "secret123",
+            rawPassword = "plain-text-fixture-input",
             role = UserRole.OWNER,
         )
 
         assertThat(created.id).isNotEmpty()
         assertThat(created.email).isEqualTo("joao@example.com")
-        assertThat(created.passwordHash).isEqualTo("hashed::secret123")
+        assertThat(created.passwordHash).isEqualTo("hashed::plain-text-fixture-input")
         assertThat(created.role).isEqualTo(UserRole.OWNER)
         coVerifyOrder {
             repository.findByEmail("joao@example.com")
-            hasher.hash("secret123")
+            hasher.hash("plain-text-fixture-input")
             repository.save(created)
         }
     }
@@ -65,7 +65,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "João",
                 email = "joao@example.com",
-                rawPassword = "secret",
+                rawPassword = "fixture-pwd-long-BBB",
                 role = UserRole.MEMBER,
             )
         }.exceptionOrNull()
@@ -82,7 +82,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "   ",
                 email = "joao@example.com",
-                rawPassword = "secret",
+                rawPassword = "fixture-pwd-long-BBB",
                 role = UserRole.MEMBER,
             )
         }.also {
@@ -97,7 +97,7 @@ class CreateUserUseCaseTest {
             useCase(
                 name = "João",
                 email = "not-an-email",
-                rawPassword = "secret",
+                rawPassword = "fixture-pwd-long-BBB",
                 role = UserRole.MEMBER,
             )
         }.also {
@@ -107,12 +107,14 @@ class CreateUserUseCaseTest {
     }
 
     @Test
-    fun `rejects blank raw password before touching repository`() = runTest {
+    fun `rejects short raw password before touching repository`() = runTest {
+        // da senha (MIN_PASSWORD_LENGTH = 8) é autoridade única no
+        // domínio — antes era apenas client-side.
         kotlin.runCatching {
             useCase(
                 name = "João",
                 email = "joao@example.com",
-                rawPassword = "",
+                rawPassword = "shrt",
                 role = UserRole.MEMBER,
             )
         }.also {

@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload detekt report
         if: always() && hashFiles('**/build.gradle*') != ''
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: detekt-report
           path: |
@@ -104,7 +104,10 @@ jobs:
 
       - name: Run unit tests
         if: hashFiles('**/build.gradle*') != ''
-        run: ./gradlew testDebugUnitTest --no-daemon --console=plain
+        # P0-5: `:app` e `:core:data` têm flavors `environment` — sem
+        # a variante (`Dev`) a tarefa cruzada ignora esses módulos
+        # silenciosamente. Invocar a variante explícita cobre todos.
+        run: ./gradlew testDevDebugUnitTest --no-daemon --console=plain
 
       # E4.7: cobertura mínima de 60% em :core:domain e :core:data.
       # koverVerify falha o job se o bound não for atendido.
@@ -117,14 +120,17 @@ jobs:
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew :core:domain:koverHtmlReport :core:data:koverHtmlReport --no-daemon --console=plain
 
+      # P0-5: lint precisa ser por variante (lintDevDebug) para que
+      # `:app` e `:core:data` participem; sem isso a tarefa crua
+      # `lintDebug` pula os módulos flavor e o gate `MissingTranslation`
+      # fica invisível.
       - name: Run Android lint
         if: hashFiles('**/build.gradle*') != ''
-        run: ./gradlew lintDebug --no-daemon --console=plain
-        continue-on-error: true
+        run: ./gradlew lintDevDebug --no-daemon --console=plain
 
       - name: Publish unit test results
         if: hashFiles('**/build.gradle*') != ''
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
           path: |
@@ -136,7 +142,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: hashFiles('**/build.gradle*') != ''
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: |
@@ -152,6 +158,22 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Build backend stub image
         run: docker build -t backend-stub:local ./backend-stub
@@ -210,20 +232,23 @@ jobs:
           python -m pip install --quiet --no-cache-dir -r requirements.txt
           python -m pytest tests/ -v
 
-      - name: Backend integration suite (Android side)
+      # P0-5/R6: instrumentação Android exige emulador (não há runner
+      # gratuito confiável); substituída pela suíte Robolectric +
+      # MockWebServer já exercida em `:core:data` (HTTP) e `:app`
+      # (WorkManager). O `BASE_URL` aponta para o stub do job.
+      - name: Run JVM-side sync/datasource tests against live stub
         if: hashFiles('**/build.gradle*') != ''
         env:
           BASE_URL: http://localhost:8000
-        run: ./gradlew connectedDebugAndroidTest --no-daemon --console=plain
-        continue-on-error: true
+        run: ./gradlew :core:data:testDevDebugUnitTest :app:testDevDebugUnitTest --no-daemon --console=plain
 
       - name: Upload integration test artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: backend-integration-logs
           path: |
-            **/build/reports/androidTests/
+            **/build/reports/tests/
           if-no-files-found: ignore
           retention-days: 14
 

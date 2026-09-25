@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -114,43 +115,48 @@ class TasksViewModel @Inject constructor(
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    val uiState: StateFlow<TasksUiState> = _retryToken
-        .flatMapLatest { _ ->
-            activeUserProvider.observeActiveUserId()
-                .flatMapLatest { ownerId ->
-                    if (ownerId == null) {
-                        flowOf(TasksUiState(isLoading = false))
-                    } else {
-                        taskRepository.observeAllForOwner(ownerId)
-                            .flatMapLatest { tasks ->
-                                projectRepository.observeAllForOwner(ownerId).map { projects ->
-                                    TasksUiState(
-                                        rows = tasks.map { it.toRow(projects) },
-                                        isLoading = false,
-                                    )
+    val uiState: StateFlow<TasksUiState> = combine(
+        _retryToken
+            .flatMapLatest { _ ->
+                activeUserProvider.observeActiveUserId()
+                    .flatMapLatest { ownerId ->
+                        if (ownerId == null) {
+                            flowOf(TasksUiState(isLoading = false))
+                        } else {
+                            taskRepository.observeAllForOwner(ownerId)
+                                .flatMapLatest { tasks ->
+                                    projectRepository.observeAllForOwner(ownerId).map { projects ->
+                                        TasksUiState(
+                                            rows = tasks.map { it.toRow(projects) },
+                                            isLoading = false,
+                                        )
+                                    }
                                 }
-                            }
+                        }
                     }
-                }
-                .catch { throwable ->
-                    if (throwable is CancellationException) throw throwable
-                    val message = throwable.toTasksErrorMessage()
-                    _errorMessage.value = message
-                    emit(TasksUiState(isLoading = false, errorMessage = message))
-                }
-                // Limpa erro pendente APENAS em emissões vindas do
-                // `flatMapLatest` (sucesso), não nas emitidas pelo
-                // `catch` acima — identificadas pelo
-                // `errorMessage == null`. Sem esse filtro, o `catch`
-                // emitiria um estado com erro e o `onEach` seguinte
-                // o resetaria para `null` imediatamente, "engolindo"
-                // a falha. (E2.8)
-                .onEach { state ->
-                    if (state.errorMessage == null) {
-                        _errorMessage.value = null
+                    .catch { throwable ->
+                        if (throwable is CancellationException) throw throwable
+                        val message = throwable.toTasksErrorMessage()
+                        _errorMessage.value = message
+                        emit(TasksUiState(isLoading = false, errorMessage = message))
                     }
-                }
-        }
+                    // Limpa erro pendente APENAS em emissões vindas do
+                    // `flatMapLatest` (sucesso), não nas emitidas pelo
+                    // `catch` acima — identificadas pelo
+                    // `errorMessage == null`. Sem esse filtro, o `catch`
+                    // emitiria um estado com erro e o `onEach` seguinte
+                    // o resetaria para `null` imediatamente, "engolindo"
+                    // a falha. (E2.8)
+                    .onEach { state ->
+                        if (state.errorMessage == null) {
+                            _errorMessage.value = null
+                        }
+                    }
+            },
+        _errorMessage,
+    ) { ui, err ->
+        if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),

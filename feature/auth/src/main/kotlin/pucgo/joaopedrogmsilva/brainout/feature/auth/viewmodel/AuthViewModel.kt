@@ -5,12 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
@@ -21,6 +20,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MIN_PASSWORD_LENGTH
 
 /**
  * ViewModel único para os fluxos de Login e Cadastro (E1.6).
@@ -48,8 +48,8 @@ class AuthViewModel @Inject constructor(
     private val _state: MutableStateFlow<AuthUiState> = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
-    private val _events: MutableSharedFlow<AuthEvent> = MutableSharedFlow()
-    val events: SharedFlow<AuthEvent> = _events.asSharedFlow()
+    private val _events = Channel<AuthEvent>(capacity = Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     // --- Field updates --------------------------------------------------
 
@@ -98,15 +98,15 @@ class AuthViewModel @Inject constructor(
         val errors = validateLoginFields(current)
         if (errors != null) {
             val (emailErrorValue, passwordErrorValue) = splitLoginErrors(errors)
+            // `errorMessage` (banner) — o erro já aparece no campo.
+            // O banner fica reservado para erros de domínio não-campo.
             _state.update {
                 it.copy(
                     emailError = emailErrorValue,
                     passwordError = passwordErrorValue,
-                    errorMessage = errors.general,
                     isLoading = false,
                 )
             }
-            viewModelScope.launch { _events.emit(AuthEvent.FocusField(errors.firstInvalidField)) }
             return
         }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
@@ -122,10 +122,8 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         passwordError = INVALID_CREDENTIALS_MESSAGE,
-                        errorMessage = INVALID_CREDENTIALS_MESSAGE,
                     )
                 }
-                _events.emit(AuthEvent.FocusField(AuthField.Password))
             } catch (error: DomainException) {
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
@@ -157,17 +155,16 @@ class AuthViewModel @Inject constructor(
         val errors = validateRegisterFields(current)
         if (errors != null) {
             val split = splitRegisterErrors(errors)
+            // para o campo; o banner fica para erros de domínio não-campo.
             _state.update {
                 it.copy(
                     nameError = split.name,
                     emailError = split.email,
                     passwordError = split.password,
                     passwordConfirmationError = split.passwordConfirmation,
-                    errorMessage = errors.general,
                     isLoading = false,
                 )
             }
-            viewModelScope.launch { _events.emit(AuthEvent.FocusField(errors.firstInvalidField)) }
             return
         }
         // Marca `isLoading` sincronamente antes de despachar a coroutine
@@ -190,10 +187,8 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         emailError = DUPLICATE_EMAIL_MESSAGE,
-                        errorMessage = DUPLICATE_EMAIL_MESSAGE,
                     )
                 }
-                _events.emit(AuthEvent.FocusField(AuthField.Email))
             } catch (error: DomainException) {
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
@@ -223,7 +218,7 @@ class AuthViewModel @Inject constructor(
     private suspend fun persistSessionAndNavigate(user: User) {
         sessionStore.saveUserId(user.id)
         _state.update { it.copy(isLoading = false, success = true) }
-        _events.emit(AuthEvent.NavigateHome)
+        _events.send(AuthEvent.NavigateHome)
     }
 
     /**
@@ -307,7 +302,7 @@ class AuthViewModel @Inject constructor(
     @Suppress("ReturnCount")
     private fun validatePasswordLength(password: String): String? = when {
         password.isEmpty() -> EMPTY_PASSWORD_MESSAGE
-        password.length < AuthUiState.MIN_PASSWORD_LENGTH -> SHORT_PASSWORD_MESSAGE
+        password.length < MIN_PASSWORD_LENGTH -> SHORT_PASSWORD_MESSAGE
         else -> null
     }
 
@@ -351,7 +346,7 @@ class AuthViewModel @Inject constructor(
         const val INVALID_EMAIL_MESSAGE: String = "E-mail inválido."
         const val EMPTY_PASSWORD_MESSAGE: String = "Informe sua senha."
         const val SHORT_PASSWORD_MESSAGE: String =
-            "A senha deve ter pelo menos ${AuthUiState.MIN_PASSWORD_LENGTH} caracteres."
+            "A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres."
         const val INVALID_CREDENTIALS_MESSAGE: String =
             "E-mail ou senha incorretos."
         const val DUPLICATE_EMAIL_MESSAGE: String =
@@ -375,9 +370,6 @@ class AuthViewModel @Inject constructor(
 sealed interface AuthEvent {
     /** Dispara a navegação para a tela inicial. */
     data object NavigateHome : AuthEvent
-
-    /** Solicita que a UI mova o foco para o campo indicado. */
-    data class FocusField(val field: AuthField) : AuthEvent
 }
 
 /** Identifica um campo do formulário para focar / sinalizar erro. */

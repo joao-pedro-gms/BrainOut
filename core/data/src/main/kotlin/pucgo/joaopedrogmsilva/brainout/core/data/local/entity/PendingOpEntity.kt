@@ -150,9 +150,11 @@ data class TaskSyncPayload(
     val done: Boolean,
 )
 
-/** Payload de tag enviado em CREATE (POST — o servidor gera o id). */
+/** Payload de tag enviado em CREATE/UPDATE (POST — cliente-supplied id, R6). */
 @Serializable
 data class TagSyncPayload(
+    @kotlinx.serialization.SerialName("id")
+    val id: String,
     val name: String,
     val color: String,
 )
