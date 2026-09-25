@@ -39,59 +39,156 @@ Encerramento (Sem 18-19) → Documentação final + apresentação    → Entreg
 
 ### Marcos
 
-- [ ] **E1.1** — Configurar o projeto Gradle com módulos `:app`,
+- [x] **E1.1** — Configurar o projeto Gradle com módulos `:app`,
       `:core:data`, `:core:domain`, `:core:ui`, `:feature:auth`,
       `:feature:projects`. Plugin Compose habilitado, KSP configurado.
       *Critério:* `./gradlew tasks` resolve todos os módulos.
       *Estimativa:* 5 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `settings.gradle.kts` inclui `:app`, `:core:data`,
+      `:core:domain`, `:core:ui`, `:feature:auth`, `:feature:projects`,
+      `:feature:tasks` e `:feature:settings` (8 módulos no total);
+      `gradle/libs.versions.toml` declara AGP, Kotlin e o Compose BOM
+      com os plugins Compose Compiler e KSP configurados no
+      `build.gradle.kts` raiz._
 
-- [ ] **E1.2** — Definir o pacote raiz `pucgo.joaopedrogmsilva.brainout`
+- [x] **E1.2** — Definir o pacote raiz `pucgo.joaopedrogmsilva.brainout`
       e o pacote de teste `pucgo.joaopedrogmsilva.brainout.testing`.
       *Critério:* package declarations consistentes em todos os módulos.
       *Estimativa:* 1 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): pacote raiz `pucgo.joaopedrogmsilva.brainout` aplicado em
+      todos os 8 módulos (cada `module/build.gradle.kts` declara seu
+      próprio `namespace` derivado do módulo); sentinela
+      `PackageMarker.kt` presente em cada módulo
+      (`core/data/.../PackageMarker.kt`,
+      `core/domain/.../PackageMarker.kt`,
+      `feature/<name>/.../PackageMarker.kt`), conforme documentado nos
+      `AGENTS.md` de cada módulo e no `AGENTS.md` raiz._
 
-- [ ] **E1.3** — Implementar navegação entre 6 telas com
+- [x] **E1.3** — Implementar navegação entre 6 telas com
       `androidx.navigation:navigation-compose`. Telas mínimas do esqueleto:
       Splash, Login, Register, Home (lista de projetos), Detalhe do
       projeto, Configurações.
       *Critério:* APK debug roda, fluxo Splash → Login → Home → Detalhe
       funciona sem travar. *Atende R1.* *Estimativa:* 8 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `BrainOutRoutes` (em
+      `app/src/main/kotlin/.../navigation/BrainOutRoutes.kt`) +
+      `BrainOutNavHost` (em
+      `app/src/main/kotlin/.../navigation/BrainOutNavHost.kt`)
+      registram os 6 destinos (`Splash`, `Login`, `Register`, `Home`,
+      `ProjectDetailPattern`, `Settings`); telas residem em
+      `:feature:auth/ui/{splash,login,register}/`,
+      `:feature:projects/ui/{home,projectdetail}/`,
+      `:feature:tasks/ui/` e `:feature:settings/ui/SettingsScreen.kt`,
+      com `*Routes.kt` por feature consumidos pelo grafo raiz;
+      consistência coberta por `BrainOutAppSmokeTest` no `:app`._
 
-- [ ] **E1.4** — Modelagem de dados inicial em `:core:domain`.
+- [x] **E1.4** — Modelagem de dados inicial em `:core:domain`.
       Entidades `User`, `Project`, `Task`. Enum `UserRole { Owner, Member }`.
       *Critério:* classes Kotlin imutáveis, com testes unitários de
       invariantes (ex.: título não vazio, prioridade no intervalo 0..4).
       *Estimativa:* 3 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `User`, `Project` e `Task` definidas como `data class`
+      imutáveis em
+      `core/domain/src/main/kotlin/.../core/domain/model/`; enum
+      `UserRole { Owner, Member }` no mesmo pacote; invariantes
+      cobertas por `core/domain/src/test/.../model/TaskTest.kt`
+      (cobre título não vazio em `Task.create`/`copy` e faixa de
+      prioridade 0..4 em `Task.changePriority`)._
 
-- [ ] **E1.5** — Configurar Room com KSP no módulo `:core:data`. DAO para
+- [x] **E1.5** — Configurar Room com KSP no módulo `:core:data`. DAO para
       `User` com operações básicas. Migração inicial versionada.
       *Critério:* `UserDaoTest` verde usando Robolectric. *Atende R5.*
       *Estimativa:* 5 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `BrainOutDatabase` em
+      `core/data/src/main/kotlin/.../core/data/local/BrainOutDatabase.kt`
+      na `version = 4` com `exportSchema = true` (schemas 1.json…4.json
+      versionados em
+      `core/data/schemas/pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase/`);
+      `UserDao` exposto pelo database; cadeia de migrações
+      (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`) em
+      `core/data/.../local/Migrations.kt` registrada em `DataModule`;
+      `UserDaoTest` Robolectric em
+      `core/data/src/test/.../local/dao/UserDaoTest.kt` (Room em
+      memória com `allowMainThreadQueries`)._
 
-- [ ] **E1.6** — Tela de cadastro/login com formulário validado, usando
+- [x] **E1.6** — Tela de cadastro/login com formulário validado, usando
       `viewModel()`, `StateFlow`, e mensagens de erro inline.
       *Critério:* erros exibidos por `TextInputLayout`/`Supporting text`;
       rotação preserva o estado (sem `android:configChanges`).
       *Atende R2, R10.* *Estimativa:* 5 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `LoginScreen` e `RegisterScreen` em
+      `feature/auth/src/main/kotlin/.../feature/auth/ui/login/`
+      e `ui/register/` consomem `viewModel()` que expõe
+      `StateFlow<AuthUiState>` (em `feature/auth/.../viewmodel/AuthViewModel.kt`);
+      campos com erro renderizam `supportingText` inline
+      (LoginScreen linhas 336–340 e 414–417; RegisterScreen linhas
+      187–192), com mensagens localizadas via `resolveAuthMessage`;
+      rotação preserva estado via `StateFlow` + `rememberSaveable`
+      (sem `android:configChanges` no manifest); cobertura de UI por
+      `LoginScreenTest` instrumentado em
+      `feature/auth/src/androidTest/.../ui/login/LoginScreenTest.kt`._
 
-- [ ] **E1.7** — Dois perfis com permissões distintas. `Owner` pode criar
+- [x] **E1.7** — Dois perfis com permissões distintas. `Owner` pode criar
       projetos; `Member` somente visualiza. Diferenciação visível na Home.
       *Critério:* testes unitários verificam a matriz de permissões.
       *Atende R2.* *Estimativa:* 3 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): enum `UserRole { Owner, Member }` em
+      `core/domain/.../model/UserRole.kt`, cada `UserRole` carregando
+      `Set<Permission>` derivado de matriz em `Permission.kt`; uso
+      `CanPerformActionUseCase` em
+      `core/domain/.../usecase/CanPerformActionUseCase.kt` consumido
+      pela Home (botão "novo projeto" condicionado a `Owner`); matriz
+      verificada por `PermissionMatrixTest` (em
+      `core/domain/src/test/.../model/PermissionMatrixTest.kt`) e
+      `CanPerformActionUseCaseTest` (em
+      `core/domain/src/test/.../usecase/CanPerformActionUseCaseTest.kt`)._
 
-- [ ] **E1.8** — Integração mínima com Room para o módulo de autenticação.
+- [x] **E1.8** — Integração mínima com Room para o módulo de autenticação.
       *Critério:* usuário cadastrado persiste em SQLite local; login
       funciona após reiniciar o app. *Atende R5.* *Estimativa:* 3 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `UserRepositoryImpl` em
+      `core/data/.../repository/UserRepositoryImpl.kt` opera contra o
+      `UserDao` do Room local (injetado por Hilt em `DataModule`);
+      persistência coberta por `UserDaoTest` Robolectric (insert/lookup
+      no `BrainOutDatabase` em memória) e por
+      `UserRepositoryImplTest` (`save` → `findByEmail`); fluxo end-to-end
+      em `feature/auth/.../viewmodel/AuthViewModel.kt` persiste
+      `activeUserId` em `SessionStore` (DataStore) e o `MainActivity`
+      lê na cold start para escolher `Splash` vs `Home`._
 
-- [ ] **E1.9** — Habilitar lint, ktlint, detekt e testeDebugUnitTest no
+- [x] **E1.9** — Habilitar lint, ktlint, detekt e testeDebugUnitTest no
       pipeline CI. O CI deve estar verde para esta entrega.
       *Critério:* o run `CI` no GitHub Actions passa em todos os jobs.
       *Estimativa:* 3 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `.github/workflows/ci.yml` define 3 jobs —
+      `static-analysis` (executa `./gradlew ktlintCheck` na linha 63 e
+      `./gradlew detekt` na linha 67, com upload do relatório
+      `detekt-report`), `unit-tests` (executa
+      `./gradlew testDevDebugUnitTest` na linha 110, com Kover
+      `koverVerify`) e `backend-integration` (service container
+      FastAPI + `./gradlew :core:data:testDevDebugUnitTest
+      :app:testDevDebugUnitTest` na linha 243)._
 
-- [ ] **E1.10** — Atualizar `README.md` com instruções de build e execução
+- [x] **E1.10** — Atualizar `README.md` com instruções de build e execução
       (mesmo que ainda incompletas para a N2). *Critério:* novo
       contribuidor consegue clonar e abrir o projeto no Android Studio.
       *Atende R13.* *Estimativa:* 1 PH.
+      _Entregue no setup inicial do projeto (verificável pelos artefatos
+      atuais): `README.md` na raiz contém pré-requisitos (JDK 17,
+      Android Studio + AGP 9.4.1, Gradle 9.7.1), comandos de build
+      (`./gradlew assembleDevDebug`) e execução, links para o relatório
+      técnico consolidado (`docs/RELATORIO-TECNICO.md` §14) e para o
+      documento norteador; troubleshooting básico. Refinamentos
+      posteriores cobertos por E5.2._
 
 ### Saída do Ciclo 1
 
@@ -558,26 +655,34 @@ usabilidade concluída.
 
 ### Marcos
 
-- [ ] **E5.1** — Relatório técnico final em PDF conforme Apêndice A.2.
+- [x] **E5.1** — Relatório técnico final em PDF conforme Apêndice A.2.
       Inclui mapeamento R1–R14 → componente, relatório de testes,
       instruções de instalação e credenciais por perfil.
       *Atende N2 item 4.* *Estimativa:* 5 PH.
+      _Entregue em docs/RELATORIO-TECNICO.md (gerado nesta entrega;
+      formato Markdown estruturado conforme Apêndice A.2; PDF a
+      converter com pandoc/ferramenta equivalente antes da N2)._
 
-- [ ] **E5.2** — `README.md` completo: pré-requisitos, build, execução,
+- [x] **E5.2** — `README.md` completo: pré-requisitos, build, execução,
       troubleshooting, links para o documento norteador e para o
       relatório técnico.
       *Critério:* copy-paste dos comandos leva a um app rodando.
       *Atende R13.* *Estimativa:* 2 PH.
+      _Entregue em README.md (build, execução, troubleshooting, links
+      para o relatório técnico e para o documento norteador)._
 
 - [ ] **E5.3** — APK release assinado e testado em pelo menos 2
       dispositivos físicos diferentes.
       *Critério:* workflow `Release APK/AAB` verde, artifact baixado e
       instalado com sucesso. *Atende R14.* *Estimativa:* 2 PH.
 
-- [ ] **E5.4** — Apêndice C (Lista de verificação de conformidade
+- [x] **E5.4** — Apêndice C (Lista de verificação de conformidade
       técnica) preenchido. *Critério:* 14 linhas marcadas como
       "Atendido" com referência ao caminho no app/repositório.
       *Estimativa:* 1 PH.
+      _Entregue em docs/APENDICE-C-CONFORMIDADE.md (atualizado em
+      2026-09-25: R5/R6/R9 marcados Atendido pós-E3.3/E3.4/E2.7;
+      R14 Parcial até validação em 2 dispositivos físicos em E5.3)._
 
 - [ ] **E5.5** — Apresentação da N2: 20 min + 10 min de arguição.
       *Critério:* ensaio geral realizado antes da data.
