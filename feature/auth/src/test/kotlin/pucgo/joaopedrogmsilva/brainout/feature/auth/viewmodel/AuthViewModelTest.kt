@@ -92,15 +92,15 @@ class AuthViewModelTest {
 
         viewModel.onEmailChange("joao@example.com")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
         viewModel.onRoleChange(UserRole.OWNER)
 
         // Após as mudanças, `state.value` reflete os valores.
         val ready = viewModel.state.value
         assertThat(ready.email).isEqualTo("joao@example.com")
         assertThat(ready.name).isEqualTo("João Pedro")
-        assertThat(ready.password).isEqualTo("secret-123")
+        assertThat(ready.password).isEqualTo("fixture-pwd-AAA")
 
         viewModel.submitRegister()
         advanceUntilIdle()
@@ -110,7 +110,7 @@ class AuthViewModelTest {
         assertThat(finalState.isLoading).isFalse()
 
         coVerifyOrder {
-            createUser("João Pedro", "joao@example.com", "secret-123", UserRole.OWNER)
+            createUser("João Pedro", "joao@example.com", "fixture-pwd-AAA", UserRole.OWNER)
             sessionStore.saveUserId(newUser.id)
         }
     }
@@ -129,8 +129,8 @@ class AuthViewModelTest {
 
         viewModel.onEmailChange("joao@example.com")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
 
         viewModel.submitRegister()
         advanceUntilIdle()
@@ -148,8 +148,8 @@ class AuthViewModelTest {
 
         viewModel.onEmailChange("not-an-email")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
 
         viewModel.submitRegister()
         advanceUntilIdle()
@@ -183,7 +183,7 @@ class AuthViewModelTest {
 
         viewModel.onEmailChange("joao@example.com")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
         viewModel.onPasswordConfirmationChange("different-123")
 
         viewModel.submitRegister()
@@ -200,12 +200,12 @@ class AuthViewModelTest {
         val authenticate = mockk<AuthenticateUserUseCase>()
         val sessionStore = mockk<SessionStore>(relaxed = true)
         val user = sampleUser(role = UserRole.OWNER)
-        coEvery { authenticate("joao@example.com", "secret-123") } returns user
+        coEvery { authenticate("joao@example.com", "fixture-pwd-AAA") } returns user
         coEvery { sessionStore.saveUserId(any()) } returns Unit
 
         val viewModel = newViewModel(createUser, authenticate, sessionStore)
         viewModel.onEmailChange("joao@example.com")
-        viewModel.onPasswordChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
 
         viewModel.submitLogin()
         advanceUntilIdle()
@@ -213,7 +213,7 @@ class AuthViewModelTest {
         val state = viewModel.state.value
         assertThat(state.success).isTrue()
         assertThat(state.isLoading).isFalse()
-        coVerify { authenticate("joao@example.com", "secret-123") }
+        coVerify { authenticate("joao@example.com", "fixture-pwd-AAA") }
         coVerify { sessionStore.saveUserId(user.id) }
     }
 
@@ -238,7 +238,7 @@ class AuthViewModelTest {
     @Test
     fun `submitLogin with empty email keeps user in form`() = runTest {
         val viewModel = newViewModel()
-        viewModel.onPasswordChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
 
         viewModel.submitLogin()
         advanceUntilIdle()
@@ -261,8 +261,8 @@ class AuthViewModelTest {
         val viewModel = newViewModel(createUser, authenticate, sessionStore)
         viewModel.onEmailChange("joao@example.com")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
         viewModel.submitRegister()
         advanceUntilIdle()
 
@@ -297,9 +297,9 @@ class AuthViewModelTest {
     fun `reset clears the state`() = runTest {
         val viewModel = newViewModel()
         viewModel.onEmailChange("joao@example.com")
-        viewModel.onPasswordChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
 
         assertThat(viewModel.state.value.email).isEqualTo("joao@example.com")
         viewModel.reset()
@@ -323,8 +323,8 @@ class AuthViewModelTest {
         val viewModel = newViewModel(createUser = createUser)
         viewModel.onEmailChange("joao@example.com")
         viewModel.onNameChange("João Pedro")
-        viewModel.onPasswordChange("secret-123")
-        viewModel.onPasswordConfirmationChange("secret-123")
+        viewModel.onPasswordChange("fixture-pwd-AAA")
+        viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
 
         viewModel.submitRegister()
         // Não esperamos a coroutine terminar — disparamos de novo.

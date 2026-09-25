@@ -32,13 +32,13 @@ class AuthenticateUserUseCaseTest {
         val stored = User.create(
             name = "João",
             email = "joao@example.com",
-            passwordHash = "hashed::secret",
+            passwordHash = "hashed::plain-text-fixture-input",
             role = UserRole.MEMBER,
         )
         coEvery { repository.findByEmail("joao@example.com") } returns stored
-        coEvery { hasher.verify("secretlong", "hashed::secret") } returns true
+        coEvery { hasher.verify("plain-text-fixture-input", "hashed::plain-text-fixture-input") } returns true
 
-        val result = useCase("  joao@example.com  ", "secretlong")
+        val result = useCase("  joao@example.com  ", "plain-text-fixture-input")
 
         assertThat(result).isEqualTo(stored)
     }
@@ -60,14 +60,14 @@ class AuthenticateUserUseCaseTest {
         val stored = User.create(
             name = "João",
             email = "joao@example.com",
-            passwordHash = "hashed::secret",
+            passwordHash = "hashed::plain-text-fixture-input",
             role = UserRole.MEMBER,
         )
         coEvery { repository.findByEmail("joao@example.com") } returns stored
-        coEvery { hasher.verify("wrongpwd", "hashed::secret") } returns false
+        coEvery { hasher.verify("fixture-pwd-wrong-EEE", "hashed::plain-text-fixture-input") } returns false
 
         val ex = kotlin.runCatching {
-            useCase("joao@example.com", "wrongpwd")
+            useCase("joao@example.com", "fixture-pwd-wrong-EEE")
         }.exceptionOrNull()
 
         assertThat(ex).isInstanceOf(InvalidCredentialsException::class.java)
