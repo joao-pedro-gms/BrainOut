@@ -637,9 +637,23 @@ notificações ativas.
       no job `unit-tests` do `ci.yml`. Detalhes em `docs/CI-CD.md`
       (seção "Cobertura de testes").
 
-- [ ] **E4.8** — Congelamento de escopo em 27/11. A partir desta data,
+- [x] **E4.8** — Congelamento de escopo em 27/11. A partir desta data,
       apenas correções. Novas features migradas para backlog pós-N2.
       *Critério:* tag `v1.0.0-rc` criada. *Estimativa:* 1 PH.
+      _Entregue em 25/09/2026 (antecipação do congelamento para
+      liberação da entrega N2): tag anotada `v1.0.0-rc` pushada
+      para `origin` a partir de `main@ca7ef11`; release workflow
+      `Release AAB assinado` (run 36195461093) executou todos os
+      11 steps com sucesso — incluindo
+      `Validate signing secrets (P0-6)`, `Decode keystore`,
+      `bundleRelease assinado` (geração do `.aab` assinado),
+      `Verify .aab signature (P0-6)` (`jarsigner -verify`
+      confirmou assinatura válida) e `Upload do .aab assinado`
+      (artefato `brainout-release-aab-v1.0.0-rc`, 10.4 MB,
+      retenção 30 dias). Bug colateral do workflow
+      (verify step procurava `bundle/release/` em vez de
+      `bundle/<flavor>Release/`) corrigido em
+      `ca7ef11 fix(ci): corrige paths flavored do release-apk.yml`.
 
 ### Saída do Ciclo 4
 
