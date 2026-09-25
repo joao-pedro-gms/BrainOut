@@ -4,9 +4,14 @@
 > Desenvolvimento de Sistemas — PUC Goiás — 2026/2.
 >
 > Insumo direto do item **N2 item 4** do documento norteador
-> ([Documentos/Documento Norteador Projeto Integrador ADS 2026-2.pdf](../Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf)).
+> ([Documentos/Documento Norteador Projeto Integrador ADS 2026-2.pdf](../Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%2026-2.pdf)).
 > Consolida o mapeamento R1–R14 → componente, a cobertura de testes, o
 > pipeline de CI/CD, instruções de instalação e credenciais por perfil.
+>
+> Versão PDF renderizada a partir deste Markdown disponível em
+> [`docs/RELATORIO-TECNICO.pdf`](./RELATORIO-TECNICO.pdf) (26 páginas,
+> A4; gerado via Chromium headless em 2026-09-25 a partir deste
+> Markdown; título, tabelas, código e listas preservados).
 >
 > Marco do roadmap: **E5.1** (`docs/ROADMAP.md`).
 
