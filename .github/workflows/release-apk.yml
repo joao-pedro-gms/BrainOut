@@ -84,13 +84,16 @@ jobs:
         # Validação adicional: confirma que o .aab publicado é o assinado.
         # Se o fallback não-assinado tiver sido acionado, o job falha aqui
         # antes do upload.
+        # O caminho do .aab muda com flavors (`bundle/<flavor>Release/`);
+        # usamos find para localizar o .aab gerado em qualquer subdir.
         run: |
           set -e
-          AAB=$(ls app/build/outputs/bundle/release/app-release.aab | head -n1)
+          AAB=$(find app/build/outputs/bundle -maxdepth 3 -name '*.aab' -type f | head -n1)
           if [ -z "$AAB" ]; then
-            echo "::error::Nenhum .aab gerado em app/build/outputs/bundle/release/."
+            echo "::error::Nenhum .aab gerado em app/build/outputs/bundle/."
             exit 1
           fi
+          echo "Verificando assinatura de: $AAB"
           if ! jarsigner -verify "$AAB" >/dev/null 2>&1; then
             echo "::error::$AAB não passou em jarsigner -verify — provavelmente não-assinado."
             jarsigner -verify -verbose "$AAB" || true
@@ -102,6 +105,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: brainout-release-aab-${{ github.ref_name }}
-          path: app/build/outputs/bundle/release/
+          path: app/build/outputs/bundle/
           if-no-files-found: error
           retention-days: 30
