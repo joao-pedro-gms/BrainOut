@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainOut — Painel</title>
+  <meta name="description" content="Tela de painel (dashboard) do BrainOut." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone" aria-label="Tela de painel do BrainOut">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="phone__screen">
+      <header class="app-header">
+        <h1>Painel</h1>
+        <p>Visão consolidada dos seus projetos e tarefas.</p>
+      </header>
+
+      <section class="app-content">
+        <section class="dashboard-card">
+          <h2 class="dashboard-card__title">Projetos por estado</h2>
+          <div class="state-counters">
+            <div class="state-counter state-counter--active">
+              <span class="state-counter__value">3</span>
+              <span class="state-counter__label">Ativos</span>
+            </div>
+            <div class="state-counter state-counter--completed">
+              <span class="state-counter__value">1</span>
+              <span class="state-counter__label">Concluídos</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="dashboard-card">
+          <h2 class="dashboard-card__title">Tarefas por prioridade</h2>
+          <div
+            class="priority-bars"
+            role="img"
+            aria-label="Baixa: 2, Média: 4, Alta: 3, Urgente: 1, Crítica: 0"
+          >
+            <div class="priority-bar"><div class="priority-bar__fill priority-bar--low" style="height: 50%"></div></div>
+            <div class="priority-bar"><div class="priority-bar__fill priority-bar--medium" style="height: 100%"></div></div>
+            <div class="priority-bar"><div class="priority-bar__fill priority-bar--high" style="height: 75%"></div></div>
+            <div class="priority-bar"><div class="priority-bar__fill priority-bar--urgent" style="height: 25%"></div></div>
+            <div class="priority-bar"><div class="priority-bar__fill priority-bar--critical" style="height: 4px"></div></div>
+          </div>
+          <div class="priority-legend" aria-hidden="true">
+            <div class="priority-legend__item"><span class="priority-legend__value">2</span><span class="priority-legend__label">B</span></div>
+            <div class="priority-legend__item"><span class="priority-legend__value">4</span><span class="priority-legend__label">M</span></div>
+            <div class="priority-legend__item"><span class="priority-legend__value">3</span><span class="priority-legend__label">A</span></div>
+            <div class="priority-legend__item"><span class="priority-legend__value">1</span><span class="priority-legend__label">U</span></div>
+            <div class="priority-legend__item"><span class="priority-legend__value">0</span><span class="priority-legend__label">C</span></div>
+          </div>
+        </section>
+
+        <div class="rate-cards">
+          <div class="rate-card rate-card--weekly">
+            <span class="rate-card__value">40%</span>
+            <span class="rate-card__label">Taxa de conclusão semanal</span>
+          </div>
+          <div class="rate-card rate-card--overall">
+            <span class="rate-card__value">40%</span>
+            <span class="rate-card__label">Taxa de conclusão geral</span>
+          </div>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <nav class="tab-bar" aria-label="Navegação principal">
+          <a class="tab-bar__item" href="home.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
+            Projetos
+          </a>
+          <a class="tab-bar__item" href="tasks.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
+            Tarefas
+          </a>
+          <a class="tab-bar__item tab-bar__item--active" href="dashboard.html" aria-current="page">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+            Painel
+          </a>
+          <a class="tab-bar__item" href="settings.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+            Configurações
+          </a>
+        </nav>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

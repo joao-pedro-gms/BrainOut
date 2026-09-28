@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainOut — Tarefas</title>
+  <meta name="description" content="Tela global de tarefas do BrainOut." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone" aria-label="Tela global de tarefas do BrainOut">
+    <div class="phone__notch" aria-hidden="true"></div>
+    <div class="phone__screen">
+      <header class="app-header">
+        <h1>Tarefas</h1>
+        <p>Todas as suas tarefas, agrupadas por projeto.</p>
+      </header>
+
+      <section class="app-content">
+        <div class="task-list">
+          <article class="task-card">
+            <p class="task-card__title">Revisar relatório mensal</p>
+            <p class="task-card__project">Projeto Integrador</p>
+            <div class="task-card__chips">
+              <span class="chip chip--priority-high">Alta</span>
+              <span class="chip chip--status-doing">Em andamento</span>
+            </div>
+          </article>
+
+          <article class="task-card">
+            <p class="task-card__title">Atualizar wireframes</p>
+            <p class="task-card__project">BrainOut</p>
+            <div class="task-card__chips">
+              <span class="chip chip--priority-urgent">Urgente</span>
+              <span class="chip chip--status">A fazer</span>
+            </div>
+          </article>
+
+          <article class="task-card">
+            <p class="task-card__title">Subir release</p>
+            <p class="task-card__project">Projeto Integrador</p>
+            <div class="task-card__chips">
+              <span class="chip chip--priority-critical">Crítica</span>
+              <span class="chip chip--status-done">Concluída</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <nav class="tab-bar" aria-label="Navegação principal">
+          <a class="tab-bar__item" href="home.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
+            Projetos
+          </a>
+          <a class="tab-bar__item tab-bar__item--active" href="tasks.html" aria-current="page">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
+            Tarefas
+          </a>
+          <a class="tab-bar__item" href="dashboard.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+            Painel
+          </a>
+          <a class="tab-bar__item" href="settings.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+            Configurações
+          </a>
+        </nav>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

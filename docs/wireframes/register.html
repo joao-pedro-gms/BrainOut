@@ -17,7 +17,7 @@
       </header>
 
       <section class="app-content">
-        <form class="form" action="#" method="post" novalidate>
+        <div class="form" role="group" aria-label="Prévia de formulário">
           <div class="field">
             <label for="name">Nome</label>
             <input
@@ -26,7 +26,7 @@
               type="text"
               autocomplete="name"
               placeholder="Seu nome completo"
-              required
+              readonly
             />
           </div>
 
@@ -38,7 +38,7 @@
               type="email"
               autocomplete="email"
               placeholder="seu@email.com"
-              required
+              readonly
             />
           </div>
 
@@ -50,7 +50,7 @@
               type="password"
               autocomplete="new-password"
               placeholder="Crie uma senha"
-              required
+              readonly
             />
           </div>
 
@@ -62,30 +62,30 @@
               type="password"
               autocomplete="new-password"
               placeholder="Digite a senha novamente"
-              required
+              readonly
             />
           </div>
 
-          <fieldset class="field" style="border: 0; padding: 0; margin: 0;">
-            <legend style="font-size: 13px; font-weight: 600; color: #52606d; margin-bottom: 6px;">
-              Perfil
-            </legend>
-            <div style="display: flex; gap: 8px;">
-              <label class="btn btn--ghost" style="flex: 1;">
-                <input type="radio" name="role" value="owner" style="margin-right: 6px;" checked />
-                Owner
+          <fieldset class="field">
+            <legend>Perfil</legend>
+            <div class="btn-row">
+              <label class="role-option">
+                <input type="radio" name="role" value="owner" checked />
+                <span>Owner — Cria e gerencia projetos da equipe.</span>
               </label>
-              <label class="btn btn--ghost" style="flex: 1;">
-                <input type="radio" name="role" value="member" style="margin-right: 6px;" />
-                Member
+              <label class="role-option">
+                <input type="radio" name="role" value="member" />
+                <span>Member — Acompanha tarefas dos projetos.</span>
               </label>
             </div>
           </fieldset>
 
-          <button class="btn btn--primary" type="submit">Cadastrar</button>
-        </form>
+          <span class="btn btn--primary btn--sample">Cadastrar</span>
+        </div>
 
-        <a class="link" href="login.html">Já tenho conta</a>
+        <p class="preview-note">Prévia visual: sem autenticação.</p>
+
+        <a class="link" href="login.html">Voltar ao login</a>
       </section>
 
       <footer class="app-footer">

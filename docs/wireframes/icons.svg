@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+     Sprite local dos ícones da tab bar do protótipo web.
+     Nomes e formas espelham os ImageVector usados em HomeBottomBar.kt:
+     Icons.Outlined.Folder, Icons.AutoMirrored.Outlined.Assignment,
+     Icons.Outlined.BarChart e Icons.Outlined.Settings — mais
+     Icons.Outlined.Search (ícone da barra de busca da Home).
+     Consumido via <use href="icons.svg#...">; sem dependências externas. -->
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="folder" viewBox="0 0 24 24">
+      <path
+        d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linejoin="round"
+      />
+    </symbol>
+
+    <symbol id="search" viewBox="0 0 24 24">
+      <path
+        d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </symbol>
+
+    <symbol id="tasks" viewBox="0 0 24 24">
+      <path
+        d="M4 5h16M4 12h16M4 19h16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+      />
+      <path
+        d="M2.5 5.5l1.2 1.2 2-2.2M2.5 12.5l1.2 1.2 2-2.2M2.5 19.5l1.2 1.2 2-2.2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </symbol>
+
+    <symbol id="chart" viewBox="0 0 24 24">
+      <path
+        d="M4 20V10M10 20V4M16 20v-7M22 20H2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+      />
+    </symbol>
+
+    <symbol id="settings" viewBox="0 0 24 24">
+      <path
+        d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+      />
+      <path
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </symbol>
+  </defs>
+</svg>

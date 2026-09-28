@@ -15,67 +15,86 @@
         <div class="user-row">
           <span class="avatar" aria-hidden="true">JP</span>
           <div class="user-row__meta">
-            <span class="user-row__name">João Pedro</span>
+            <h1 class="user-row__name">Olá, João</h1>
             <span class="badge badge--owner" aria-label="Perfil Owner">Owner</span>
           </div>
         </div>
-        <p style="margin-top: 12px;">Seus projetos</p>
       </header>
 
-      <section class="app-content" style="padding-bottom: 96px;">
+      <section class="app-content app-content--fab">
+        <div class="search-field">
+          <span class="search-field__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><use href="icons.svg#search"></use></svg>
+          </span>
+          <input type="search" placeholder="Buscar projeto por nome…" aria-label="Buscar projeto (prévia)" readonly />
+        </div>
+
+        <div class="control-row" role="group" aria-label="Filtro por tag (prévia)">
+          <span class="chip chip--selected">Todas</span>
+          <span class="chip">Trabalho</span>
+        </div>
+
+        <h2 class="section-heading">Seus projetos</h2>
+
+        <div class="control-row" role="group" aria-label="Filtros de projetos (prévia)">
+          <span class="chip chip--selected">Ativos</span>
+          <span class="chip">Concluídos</span>
+          <span class="sort-value">Mais recentes</span>
+        </div>
+
         <div class="project-list">
           <a class="project-card" href="project-detail.html">
             <p class="project-card__title">Projeto Integrador</p>
-            <p class="project-card__meta">
-              <span>5 tarefas abertas</span>
-              <span>Vence 30/09</span>
+            <p class="project-card__description">
+              Aplicativo Android para gestão de projetos e tarefas, em Kotlin e
+              Jetpack Compose.
             </p>
+            <div class="project-card__tags">
+              <span class="tag-chip" style="--tag-color: #6750A4">Trabalho</span>
+            </div>
           </a>
 
           <a class="project-card" href="project-detail.html">
             <p class="project-card__title">Estudos ADS</p>
-            <p class="project-card__meta">
-              <span>3 tarefas abertas</span>
-              <span>Sem prazo</span>
+            <p class="project-card__description">
+              Matérias do curso, trabalhos e revisões para as provas.
             </p>
+            <div class="project-card__tags">
+              <span class="tag-chip" style="--tag-color: #7D5260">Pessoal</span>
+            </div>
           </a>
 
           <a class="project-card" href="project-detail.html">
             <p class="project-card__title">App pessoal</p>
-            <p class="project-card__meta">
-              <span>2 tarefas abertas</span>
-              <span>Vence 12/10</span>
-            </p>
+            <div class="project-card__tags">
+              <span class="tag-chip" style="--tag-color: #625B71">Ideias</span>
+            </div>
           </a>
         </div>
-
-        <a
-          class="fab"
-          href="project-detail.html"
-          aria-label="Criar novo projeto"
-          title="Novo projeto"
-        >
-          <span aria-hidden="true">+</span>
-        </a>
       </section>
+
+      <span class="fab fab--static" aria-hidden="true">
+        <span class="fab__icon">+</span>
+        Criar novo projeto
+      </span>
 
       <footer class="app-footer">
         <nav class="tab-bar" aria-label="Navegação principal">
-          <a class="tab-bar__item tab-bar__item--active" href="home.html">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
+          <a class="tab-bar__item tab-bar__item--active" href="home.html" aria-current="page">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
             Projetos
           </a>
-          <a class="tab-bar__item" href="#">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
+          <a class="tab-bar__item" href="tasks.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
             Tarefas
           </a>
-          <a class="tab-bar__item" href="#">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
-            Insights
+          <a class="tab-bar__item" href="dashboard.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+            Painel
           </a>
           <a class="tab-bar__item" href="settings.html">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
-            Ajustes
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+            Configurações
           </a>
         </nav>
       </footer>

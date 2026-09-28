@@ -3,759 +3,286 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BrainOut — Wireframe low-fi (esboço de fluxo)</title>
-  <meta name="description" content="Wireframe de baixa fidelidade do BrainOut: 6 telas em página única, com setas de fluxo e anotações de design." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    /* =========================================================
-       BrainOut — wireframe low-fi
-       Estilo "sketch à mão": papel creme, traços cinza, fonte
-       manuscrita (Kalam), setas SVG inline entre fileiras.
-       ========================================================= */
-
-    :root {
-      --paper: #fdfdfa;
-      --ink: #2a2a2a;
-      --ink-soft: #5b5b5b;
-      --ink-faint: #b0b0b0;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: 'Kalam', 'Comic Sans MS', cursive;
-      font-size: 16px;
-      line-height: 1.4;
-      overflow-wrap: anywhere;
-    }
-
-    /* --- Cabeçalho do documento (sem ser parte do sketch) --- */
-    .doc {
-      max-width: 1200px;
-      margin: 32px auto 8px;
-      padding: 0 24px;
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 14px;
-      color: var(--ink-soft);
-    }
-    .doc h1 {
-      font-family: 'Kalam', cursive;
-      font-weight: 700;
-      font-size: 28px;
-      color: var(--ink);
-      margin: 0 0 4px;
-    }
-    .doc p { margin: 4px 0; }
-
-    /* --- Board (área do sketch) --- */
-    .board {
-      max-width: 1200px;
-      margin: 24px auto 64px;
-      padding: 24px;
-      background: var(--paper);
-    }
-
-    /* Cada fileira: flex row com 3 cells + gaps */
-    .row {
-      display: flex;
-      gap: 32px;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 32px;
-      flex-wrap: nowrap;
-    }
-
-    /* Wrapper de cada tela — contém o phone + as anotações em volta */
-    .cell {
-      position: relative;
-      flex: 1 1 0;
-      min-width: 0;
-      max-width: 280px;
-    }
-
-    /* --- Phone (moldura de celular) --- */
-    .phone {
-      position: relative;
-      width: 100%;
-      padding: 28px 16px 16px;
-      border: 1.5px solid var(--ink);
-      border-radius: 24px;
-      background: var(--paper);
-      box-shadow: 2px 3px 0 rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-      min-height: 540px;
-    }
-    .phone::before {
-      /* notch */
-      content: '';
-      position: absolute;
-      top: 8px; left: 50%;
-      transform: translateX(-50%);
-      width: 70px; height: 5px;
-      background: var(--ink);
-      border-radius: 4px;
-    }
-    .phone__caption {
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-      text-align: center;
-      margin: 0 0 10px;
-    }
-    .phone__body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* --- Primitivos do sketch --- */
-    .line { width: 100%; height: 1.5px; background: var(--ink); border-radius: 1px; }
-    .line--short { width: 65%; }
-    .line--shorter { width: 40%; }
-    .line--thin { background: var(--ink-soft); height: 1px; }
-    .box {
-      border: 1.5px solid var(--ink);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 13px;
-    }
-    .box--filled {
-      background: var(--ink);
-      color: var(--paper);
-      font-weight: 700;
-      text-align: center;
-      padding: 8px;
-    }
-    .box--pilled {
-      display: inline-block;
-      align-self: flex-start;
-      border-radius: 999px;
-      padding: 3px 9px;
-    }
-    .label {
-      font-size: 11px;
-      color: var(--ink-soft);
-    }
-    .row-mini {
-      display: flex; align-items: center; gap: 6px;
-    }
-
-    /* --- Tab bar --- */
-    .tabbar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
-      padding: 8px 4px 4px;
-      border-top: 1.5px solid var(--ink);
-      margin-top: auto;
-    }
-    .tabbar__item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      font-size: 10px;
-      color: var(--ink);
-    }
-    .tabbar__item--active { font-weight: 700; }
-    .tabbar__item--active::before {
-      content: '';
-      width: 22px; height: 2px;
-      background: var(--ink);
-      margin-bottom: 1px;
-    }
-    .tabbar__icon {
-      width: 14px; height: 14px;
-      border: 1.5px solid var(--ink);
-      border-radius: 3px;
-    }
-
-    /* --- Anotações manuscritas --- */
-    /* Posicionadas relativas ao .cell; nunca sobrepostas ao phone */
-    .annot {
-      position: absolute;
-      max-width: 200px;
-      font-family: 'Kalam', cursive;
-      font-size: 13px;
-      line-height: 1.25;
-      color: var(--ink-soft);
-      pointer-events: none;
-    }
-    .annot--strong {
-      color: var(--ink);
-      font-weight: 700;
-    }
-    .annot--under {
-      border-bottom: 1.5px solid var(--ink);
-      padding-bottom: 1px;
-    }
-
-    /* --- Setas entre fileiras (SVG, ocupa 100% da largura) --- */
-    .arrows {
-      width: 100%;
-      height: 60px;
-      margin-bottom: 32px;
-    }
-    .arrows svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-
-    /* --- Splash (centralizado) --- */
-    .splash {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      flex: 1;
-    }
-    .splash__logo {
-      width: 56px; height: 56px;
-      border: 2px solid var(--ink);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; font-weight: 700;
-    }
-    .splash__title { font-size: 24px; font-weight: 700; margin: 0; }
-    .splash__sub {
-      font-size: 13px; color: var(--ink-soft);
-      text-align: center; max-width: 90%; margin: 0;
-    }
-    .splash__cta {
-      margin-top: 14px;
-      width: 70%;
-      padding: 8px;
-      border: 1.5px solid var(--ink);
-      border-radius: 999px;
-      text-align: center;
-      font-weight: 700;
-    }
-
-    /* --- Form --- */
-    .form { display: flex; flex-direction: column; gap: 10px; padding: 4px 2px; }
-    .form__field {
-      border: 1.5px solid var(--ink);
-      border-radius: 8px;
-      padding: 8px 10px;
-      min-height: 32px;
-    }
-    .form__btn {
-      border: 1.5px solid var(--ink);
-      border-radius: 999px;
-      padding: 8px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 14px;
-    }
-    .form__btn--primary {
-      background: var(--ink);
-      color: var(--paper);
-    }
-    .form__link {
-      text-align: center;
-      font-size: 12px;
-      color: var(--ink-soft);
-    }
-
-    /* --- Home --- */
-    .home__greeting {
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    .home__hi { font-size: 12px; color: var(--ink-soft); }
-    .home__title { font-size: 17px; font-weight: 700; }
-    .home__cards { display: flex; flex-direction: column; gap: 8px; }
-    .card {
-      border: 1.5px solid var(--ink);
-      border-radius: 8px;
-      padding: 8px 10px;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .card__name { font-weight: 700; font-size: 14px; }
-    .card__meta { font-size: 11px; color: var(--ink-soft); }
-    .card__bar {
-      height: 3px; background: var(--ink-faint);
-      border-radius: 2px; position: relative;
-    }
-    .card__bar::after {
-      content: '';
-      position: absolute; left: 0; top: 0; bottom: 0;
-      width: 65%;
-      background: var(--ink);
-      border-radius: 2px;
-    }
-    .fab {
-      position: absolute;
-      right: 14px;
-      bottom: 56px;
-      width: 38px; height: 38px;
-      border: 1.5px solid var(--ink);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 700;
-      background: var(--paper);
-      box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
-    }
-    .fab--off { opacity: 0.3; }
-
-    /* --- Detalhe --- */
-    .back {
-      font-size: 12px; color: var(--ink-soft);
-      display: inline-flex; align-items: center; gap: 2px;
-    }
-    .back::before { content: '←'; font-size: 14px; }
-    .ptitle { font-size: 18px; font-weight: 700; margin: 0; }
-    .pdesc { font-size: 12px; color: var(--ink-soft); }
-    .tasks { display: flex; flex-direction: column; gap: 6px; }
-    .task {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 8px;
-      border: 1.5px solid var(--ink);
-      border-radius: 6px;
-      font-size: 12px;
-    }
-    .task--done { opacity: 0.5; text-decoration: line-through; }
-    .task__pri {
-      width: 14px; height: 14px;
-      border: 1.5px solid var(--ink);
-      border-radius: 3px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px;
-    }
-
-    /* --- Insights --- */
-    .ititle { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
-    .stats {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-    }
-    .stat {
-      padding: 8px 10px;
-      border: 1.5px solid var(--ink);
-      border-radius: 8px;
-    }
-    .stat__v { font-size: 20px; font-weight: 700; }
-    .stat__l { font-size: 10px; color: var(--ink-soft); }
-    .chart {
-      border: 1.5px solid var(--ink);
-      border-radius: 8px;
-      padding: 10px 8px;
-      display: flex;
-      align-items: end;
-      gap: 6px;
-      height: 80px;
-    }
-    .chart__b {
-      flex: 1;
-      background: var(--ink);
-      border-radius: 3px 3px 0 0;
-    }
-
-    /* --- Settings --- */
-    .sec {
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    .sec__h {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-      padding-left: 4px;
-    }
-    .opt {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 10px;
-      border: 1.5px solid var(--ink);
-      border-radius: 6px;
-      font-size: 13px;
-    }
-    .opt strong { font-weight: 700; }
-    .opt--danger strong { color: var(--ink); }
-    .opt::after { content: '›'; font-size: 16px; color: var(--ink-soft); }
-
-    /* --- Banner offline --- */
-    .banner {
-      border: 1.5px solid var(--ink);
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      background:
-        repeating-linear-gradient(45deg, transparent 0 5px, var(--ink-faint) 5px 6px);
-    }
-    .banner strong { font-weight: 700; }
-
-    /* --- Modal --- */
-    .modal {
-      margin-top: auto;
-      border: 2px solid var(--ink);
-      border-radius: 12px;
-      padding: 12px;
-      display: flex; flex-direction: column; gap: 8px;
-      background: var(--paper);
-      box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
-    }
-    .modal__t { font-weight: 700; font-size: 14px; }
-
-    /* --- Legenda no rodapé --- */
-    .legend {
-      max-width: 1200px;
-      margin: 0 auto 48px;
-      padding: 16px 24px;
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      color: var(--ink-soft);
-    }
-    .legend strong { color: var(--ink); font-family: 'Kalam', cursive; font-weight: 700; font-size: 15px; }
-    .legend ul { padding-left: 20px; line-height: 1.7; margin: 6px 0; }
-
-    /* --- Responsivo --- */
-    @media (max-width: 1100px) {
-      .row { flex-wrap: wrap; justify-content: center; }
-      .cell { flex: 0 1 280px; }
-    }
-    @media (max-width: 640px) {
-      .cell { flex: 1 1 100%; max-width: 100%; }
-      .annot { display: none; }
-    }
-  </style>
+  <title>BrainOut — Visão geral do protótipo</title>
+  <meta
+    name="description"
+    content="Galeria das oito telas do protótipo web do BrainOut, com estados Member e offline."
+  />
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-
-  <header class="doc">
-    <h1>BrainOut — wireframe low-fi (esboço de fluxo)</h1>
-    <p><strong>Formato:</strong> protótipo de baixa fidelidade — uma única página, todas as 6 telas em sequência, com setas indicando o fluxo de navegação e anotações manuscritas registrando decisões de design.</p>
-    <p><strong>Estilo:</strong> traços cinza em papel, fonte manuscrita (Kalam), sem cores, sem ícones reais. O objetivo é validar a estrutura e o fluxo antes de codificar em Jetpack Compose.</p>
-    <p><strong>Origem:</strong> inspirado no exemplo low-fi fornecido pelo autor (esboço Juriscape com setas entre telas e anotações à mão).</p>
+<body class="overview-page">
+  <header class="overview-header">
+    <h1>BrainOut — Visão geral do protótipo</h1>
+    <p>
+      Galeria das oito telas do app em alta fidelidade, com a identidade
+      Material 3 atual (claro/escuro). Cada célula mostra a tela real em
+      miniatura; o link abre a página cheia.
+    </p>
+    <p>
+      <strong>Nota:</strong> este site é uma prévia visual. Autenticação,
+      sincronização offline e notificações <strong>não</strong> são executadas
+      aqui — os dados exibidos são de demonstração.
+    </p>
   </header>
 
-  <main class="board">
-
-    <!-- ============================================ -->
-    <!--  FILEIRA 1: Splash → Login → Home             -->
-    <!-- ============================================ -->
-    <section class="row">
-
-      <!-- TELA 1: SPLASH -->
-      <div class="cell">
-        <div class="annot annot--strong" style="top: -22px; left: 0;">Logo + título</div>
-        <div class="annot" style="bottom: -22px; left: 0;">CTA primário</div>
-        <div class="phone">
-          <p class="phone__caption">1. Splash</p>
-          <div class="phone__body">
-            <div class="splash">
-              <div class="splash__logo">B</div>
-              <h2 class="splash__title">BrainOut</h2>
-              <p class="splash__sub">Organize seus projetos e tarefas.</p>
-              <a class="splash__cta">Começar</a>
-            </div>
+  <main>
+    <section class="overview-section" aria-labelledby="telas-titulo">
+      <h2 id="telas-titulo">As oito telas</h2>
+      <div class="overview-grid">
+        <article class="overview-cell">
+          <h3>1. Splash</h3>
+          <p>Monograma, título e CTA «Começar».</p>
+          <a href="splash.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="splash.html"
+              title="Prévia da tela de Splash"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
           </div>
-        </div>
-      </div>
+        </article>
 
-      <!-- TELA 2: LOGIN -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">Validação inline</div>
-        <div class="annot" style="bottom: -22px; left: 0;">Link para cadastro</div>
-        <div class="phone">
-          <p class="phone__caption">2. Login</p>
-          <div class="phone__body">
-            <div class="form">
-              <span class="label">E-mail</span>
-              <div class="form__field"></div>
-              <span class="label">Senha</span>
-              <div class="form__field"></div>
-              <div class="form__btn form__btn--primary">Entrar</div>
-              <div class="form__link">Não tem conta? <strong>Criar conta</strong></div>
-            </div>
+        <article class="overview-cell">
+          <h3>2. Login</h3>
+          <p>Campos de e-mail e senha; prévia sem autenticação.</p>
+          <a href="login.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="login.html"
+              title="Prévia da tela de Login"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
           </div>
-        </div>
-      </div>
+        </article>
 
-      <!-- TELA 3: HOME -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">Badge do perfil</div>
-        <div class="annot" style="bottom: -22px; left: 0;">4 tabs (P/T/I/A)</div>
-        <div class="phone">
-          <p class="phone__caption">3. Home</p>
-          <div class="phone__body">
-            <div class="home__greeting">
-              <span class="home__hi">Olá, João</span>
-              <span class="home__title">Meus projetos</span>
-              <span class="box box--pilled">Owner</span>
-            </div>
-            <div class="home__cards">
-              <div class="card">
-                <span class="card__name">App Android — T1</span>
-                <div class="card__bar"></div>
-                <span class="card__meta">8 tarefas • prioridade alta</span>
-              </div>
-              <div class="card">
-                <span class="card__name">Estudos PUC</span>
-                <div class="card__bar"></div>
-                <span class="card__meta">3 tarefas • 70%</span>
-              </div>
-              <div class="card">
-                <span class="card__name">Casa</span>
-                <div class="card__bar"></div>
-                <span class="card__meta">12 tarefas • média</span>
-              </div>
-            </div>
-            <div class="fab">+</div>
-            <nav class="tabbar">
-              <div class="tabbar__item tabbar__item--active">
-                <span class="tabbar__icon"></span>Projetos
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Tarefas
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Insights
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Ajustes
-              </div>
-            </nav>
+        <article class="overview-cell">
+          <h3>3. Cadastro</h3>
+          <p>Dados, papel Owner/Member e envio de prévia.</p>
+          <a href="register.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="register.html"
+              title="Prévia da tela de Cadastro"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
           </div>
-        </div>
-      </div>
+        </article>
 
+        <article class="overview-cell">
+          <h3>4. Projetos</h3>
+          <p>Busca, tags, filtros, cards e FAB de novo projeto.</p>
+          <a href="home.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="home.html"
+              title="Prévia da tela de Projetos"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </div>
+        </article>
+
+        <article class="overview-cell">
+          <h3>5. Detalhe do projeto</h3>
+          <p>Cabeçalho do projeto e lista de tarefas com chips.</p>
+          <a href="project-detail.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="project-detail.html"
+              title="Prévia da tela de detalhe do projeto"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </div>
+        </article>
+
+        <article class="overview-cell">
+          <h3>6. Tarefas</h3>
+          <p>Lista global com projeto, prioridade e status.</p>
+          <a href="tasks.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="tasks.html"
+              title="Prévia da tela de Tarefas"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </div>
+        </article>
+
+        <article class="overview-cell">
+          <h3>7. Painel</h3>
+          <p>Projetos por estado, barras de prioridade e taxas.</p>
+          <a href="dashboard.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="dashboard.html"
+              title="Prévia da tela de Painel"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </div>
+        </article>
+
+        <article class="overview-cell">
+          <h3>8. Configurações</h3>
+          <p>Conta, aparência e sessão (Sair).</p>
+          <a href="settings.html">Abrir tela</a>
+          <div class="overview-frame">
+            <iframe
+              src="settings.html"
+              title="Prévia da tela de Configurações"
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <!-- SETAS entre fileira 1 → 2 -->
-    <div class="arrows">
-      <svg viewBox="0 0 1200 60" preserveAspectRatio="none">
-        <defs>
-          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2a2a2a" />
-          </marker>
-        </defs>
-        <path d="M 240 25 L 380 25" stroke="#2a2a2a" stroke-width="1.5" fill="none" marker-end="url(#arr)" />
-        <path d="M 620 25 L 760 25" stroke="#2a2a2a" stroke-width="1.5" fill="none" marker-end="url(#arr)" />
-      </svg>
-    </div>
-
-    <!-- ============================================ -->
-    <!--  FILEIRA 2: Detalhe → Insights → Ajustes      -->
-    <!-- ============================================ -->
-    <section class="row">
-
-      <!-- TELA 4: DETALHE DO PROJETO -->
-      <div class="cell">
-        <div class="annot" style="top: -36px; left: 0;">Voltar para Home</div>
-        <div class="annot" style="bottom: -22px; left: 0;">Tap → editar</div>
-        <div class="phone">
-          <p class="phone__caption">4. Detalhe</p>
-          <div class="phone__body">
-            <span class="back">voltar</span>
-            <h3 class="ptitle">App Android — T1</h3>
-            <span class="pdesc">8 tarefas • 3 concluídas</span>
-            <div class="line line--short"></div>
-            <div class="tasks">
-              <div class="task"><span class="task__pri">!</span><span>Implementar login</span></div>
-              <div class="task"><span class="task__pri">·</span><span>Modelar dados</span></div>
-              <div class="task"><span class="task__pri">·</span><span>Configurar CI</span></div>
-              <div class="task task--done"><span class="task__pri">✓</span><span>Setup Gradle</span></div>
-            </div>
-            <div class="box box--pilled" style="margin-top: auto; align-self: flex-start;">+ Nova tarefa</div>
-            <nav class="tabbar">
-              <div class="tabbar__item tabbar__item--active">
-                <span class="tabbar__icon"></span>Projetos
+    <section class="overview-section" aria-labelledby="estados-titulo">
+      <h2 id="estados-titulo">Estados ilustrativos</h2>
+      <div class="overview-states">
+        <article class="overview-state">
+          <h3>Home — Member</h3>
+          <div class="overview-device">
+            <header class="app-header">
+              <div class="user-row">
+                <span class="avatar" aria-hidden="true">JP</span>
+                <div class="user-row__meta">
+                  <span class="user-row__name">Olá, João</span>
+                  <span class="badge badge--member" aria-label="Perfil Member">Member</span>
+                </div>
               </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Tarefas
+            </header>
+            <section class="app-content">
+              <div class="project-list">
+                <div class="project-card">
+                  <p class="project-card__title">Projeto Integrador</p>
+                  <p class="project-card__description">
+                    Projeto compartilhado — visualização somente.
+                  </p>
+                </div>
               </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Insights
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Ajustes
-              </div>
+              <span class="fab fab--static" aria-hidden="true">
+                <span class="fab__icon">+</span>
+                Criar projeto (em breve)
+              </span>
+            </section>
+            <nav class="tab-bar" aria-label="Navegação da ficha Member">
+              <span class="tab-bar__item tab-bar__item--active">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
+                Projetos
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
+                Tarefas
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+                Painel
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+                Configurações
+              </span>
             </nav>
           </div>
-        </div>
-      </div>
+          <p>
+            O papel Member visualiza os projetos da equipe, mas não cria
+            novos: o FAB fica desabilitado e explica a restrição em um
+            diálogo.
+          </p>
+        </article>
 
-      <!-- TELA 5: INSIGHTS -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">Dashboard (R9)</div>
-        <div class="annot" style="bottom: -22px; left: 0;">Gráfico semanal</div>
-        <div class="phone">
-          <p class="phone__caption">5. Insights</p>
-          <div class="phone__body">
-            <h3 class="ititle">Visão geral</h3>
-            <div class="stats">
-              <div class="stat"><span class="stat__v">12</span><span class="stat__l">Projetos</span></div>
-              <div class="stat"><span class="stat__v">47</span><span class="stat__l">Tarefas</span></div>
-              <div class="stat"><span class="stat__v">62%</span><span class="stat__l">Conclusão</span></div>
-              <div class="stat"><span class="stat__v">5</span><span class="stat__l">Atrasadas</span></div>
-            </div>
-            <div class="chart">
-              <div class="chart__b" style="height: 30%;"></div>
-              <div class="chart__b" style="height: 55%;"></div>
-              <div class="chart__b" style="height: 80%;"></div>
-              <div class="chart__b" style="height: 65%;"></div>
-              <div class="chart__b" style="height: 90%;"></div>
-              <div class="chart__b" style="height: 70%;"></div>
-              <div class="chart__b" style="height: 85%;"></div>
-            </div>
-            <span class="label">Tarefas concluídas — 7 dias</span>
+        <article class="overview-state">
+          <h3>Estado offline</h3>
+          <div class="overview-device">
+            <header class="app-header">
+              <div class="user-row">
+                <span class="avatar" aria-hidden="true">JP</span>
+                <div class="user-row__meta">
+                  <span class="user-row__name">Olá, João</span>
+                  <span class="badge badge--owner" aria-label="Perfil Owner">Owner</span>
+                </div>
+              </div>
+            </header>
+            <section class="app-content">
+              <div class="banner banner--offline">
+                <div class="banner__text">
+                  <p class="banner__title">Sem conexão</p>
+                  <p class="banner__detail">3 alterações aguardando sincronização</p>
+                </div>
+              </div>
+              <div class="project-list">
+                <div class="project-card">
+                  <p class="project-card__title">Projeto Integrador</p>
+                  <p class="project-card__description">
+                    Editado offline — sincroniza quando a rede voltar.
+                  </p>
+                </div>
+              </div>
+            </section>
+            <nav class="tab-bar" aria-label="Navegação da ficha offline">
+              <span class="tab-bar__item tab-bar__item--active">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
+                Projetos
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
+                Tarefas
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+                Painel
+              </span>
+              <span class="tab-bar__item">
+                <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+                Configurações
+              </span>
+            </nav>
           </div>
-        </div>
+          <p>
+            Sem rede, o banner «Sem conexão» fica no topo e a fila de
+            alterações pendentes é visível até a reconciliação.
+          </p>
+        </article>
       </div>
-
-      <!-- TELA 6: CONFIGURAÇÕES -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">Sair volta p/ login</div>
-        <div class="annot" style="bottom: -22px; left: 0;">BrainOut v0.1.0</div>
-        <div class="phone">
-          <p class="phone__caption">6. Configurações</p>
-          <div class="phone__body">
-            <div class="sec">
-              <span class="sec__h">Perfil</span>
-              <div class="opt"><strong>João Pedro</strong></div>
-              <div class="opt"><strong>Notificações</strong></div>
-              <div class="opt"><strong>Tema (claro/escuro)</strong></div>
-            </div>
-            <div class="sec" style="margin-top: 10px;">
-              <span class="sec__h">Sessão</span>
-              <div class="opt opt--danger"><strong>Sair</strong></div>
-            </div>
-            <span class="label" style="margin-top: auto;">BrainOut v0.1.0 — PUC Goiás ADS</span>
-          </div>
-        </div>
-      </div>
-
     </section>
 
-    <!-- SETAS entre fileira 2 e fileira 3 (apenas curva "Sair" → Login, retornando ao topo) -->
-    <div class="arrows">
-      <svg viewBox="0 0 1200 60" preserveAspectRatio="none">
-        <defs>
-          <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2a2a2a" />
-          </marker>
-        </defs>
-        <!-- "Sair" → Login (curva tracejada da direita da fileira 2 até a esquerda da fileira 1) -->
-        <path d="M 1100 5 C 1100 55, 1100 55, 600 55 C 100 55, 100 55, 100 55"
-              stroke="#2a2a2a" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arr2)" />
-      </svg>
-    </div>
-
-    <!-- ============================================ -->
-    <!--  FILEIRA 3: Cenários de borda                  -->
-    <!-- ============================================ -->
-    <section class="row">
-
-      <!-- TELA 7: MEMBER — modal de restrição -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">FAB desabilitado</div>
-        <div class="annot" style="bottom: -22px; left: 0;">Modal explica a restrição</div>
-        <div class="phone">
-          <p class="phone__caption">3b. Home — Member</p>
-          <div class="phone__body">
-            <div class="home__greeting">
-              <span class="home__hi">Olá, Visitante</span>
-              <span class="home__title">Meus projetos</span>
-              <span class="box box--pilled">Member</span>
-            </div>
-            <div class="home__cards">
-              <div class="card">
-                <span class="card__name">Projeto compartilhado</span>
-                <div class="card__bar"></div>
-                <span class="card__meta">somente leitura</span>
-              </div>
-            </div>
-            <div class="modal">
-              <span class="modal__t">Ação restrita</span>
-              <span class="pdesc">Member não pode criar projetos.<br/>Peça ao Owner para promover.</span>
-              <div class="form__btn" style="margin-top: 4px;">Ok, entendi</div>
-            </div>
-            <nav class="tabbar">
-              <div class="tabbar__item tabbar__item--active">
-                <span class="tabbar__icon"></span>Projetos
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Tarefas
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Insights
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Ajustes
-              </div>
-            </nav>
-          </div>
-          <div class="fab fab--off" style="opacity: 0.25;">+</div>
-        </div>
-      </div>
-
-      <!-- TELA 8: OFFLINE -->
-      <div class="cell">
-        <div class="annot" style="top: -22px; left: 0;">Banner persistente (R10)</div>
-        <div class="annot" style="bottom: -22px; left: 0;">Fila de operações</div>
-        <div class="phone">
-          <p class="phone__caption">7. Estado offline</p>
-          <div class="phone__body">
-            <div class="banner">
-              <strong>●</strong> Você está offline. As alterações serão sincronizadas quando voltar à rede.
-            </div>
-            <div class="home__cards">
-              <div class="card">
-                <span class="card__name">Pendente: 3 alterações</span>
-                <span class="card__meta">aguardando reconexão</span>
-              </div>
-              <div class="card">
-                <span class="card__name">Última sinc.: 12 min</span>
-                <span class="card__meta">fila: 3 itens</span>
-              </div>
-            </div>
-            <span class="label" style="margin-top: auto;">Detalhes da fila em Configurações</span>
-            <nav class="tabbar">
-              <div class="tabbar__item tabbar__item--active">
-                <span class="tabbar__icon"></span>Projetos
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Tarefas
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Insights
-              </div>
-              <div class="tabbar__item">
-                <span class="tabbar__icon"></span>Ajustes
-              </div>
-            </nav>
-          </div>
-        </div>
-      </div>
-
+    <section class="overview-section" aria-labelledby="fluxo-titulo">
+      <h2 id="fluxo-titulo">Fluxo de navegação</h2>
+      <ol class="overview-flow">
+        <li><a href="splash.html">Splash</a> → <a href="login.html">Login</a> (botão «Começar»).</li>
+        <li><a href="login.html">Login</a> → <a href="register.html">Cadastro</a> (link «Criar conta»).</li>
+        <li><a href="register.html">Cadastro</a> → <a href="login.html">Login</a> (link «Voltar ao login»).</li>
+        <li><a href="login.html">Login</a> → <a href="home.html">Projetos</a> (link «Explorar projetos»).</li>
+        <li><a href="home.html">Projetos</a> → <a href="project-detail.html">Detalhe do projeto</a> (card).</li>
+        <li>
+          Barra inferior: <a href="home.html">Projetos</a> ·
+          <a href="tasks.html">Tarefas</a> ·
+          <a href="dashboard.html">Painel</a> ·
+          <a href="settings.html">Configurações</a>.
+        </li>
+        <li><a href="settings.html">Configurações</a> → <a href="login.html">Login</a> (linha «Sair»).</li>
+      </ol>
+      <p class="overview-note">
+        O protótipo apenas navega entre páginas: nenhuma senha é enviada, nenhum
+        dado é persistido e nenhuma requisição de rede é feita.
+      </p>
+      <p><a href="index.html">Voltar ao índice</a></p>
     </section>
-
   </main>
-
-  <aside class="legend">
-    <p><strong>Legenda do fluxo:</strong></p>
-    <ul>
-      <li><strong>Splash → Login:</strong> usuário toca em "Começar".</li>
-      <li><strong>Login → Home:</strong> credenciais válidas (autenticação local via Room).</li>
-      <li><strong>Home → Detalhe do projeto:</strong> tap em um card da lista.</li>
-      <li><strong>Home → Insights:</strong> tap na tab "Insights".</li>
-      <li><strong>Home → Configurações:</strong> tap na tab "Ajustes".</li>
-      <li><strong>Configurações → Login:</strong> tap em "Sair" (limpa DataStore).</li>
-      <li><strong>Home (Member) → modal de restrição:</strong> tap no FAB desabilitado.</li>
-      <li><strong>Estado offline → banner persistente:</strong> WorkManager detecta perda de rede.</li>
-    </ul>
-    <p style="margin-top: 12px;"><strong>Próximos passos:</strong> substituir este esboço pelas telas reais em Jetpack Compose (módulos <code>:feature:auth</code>, <code>:feature:projects</code>, <code>:feature:tasks</code>, <code>:feature:settings</code>) conforme E1.3 e E1.6 do roadmap evoluem.</p>
-  </aside>
-
 </body>
 </html>
