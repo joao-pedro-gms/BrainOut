@@ -6,8 +6,9 @@
 sdk.dir=/opt/android-sdk
 
 # URL base do serviço de retaguarda para builds de debug.
+# `BASE_URL` NÃO é lida daqui: o build resolve da env var `BASE_URL`
+# (prioridade, usada no CI) ou da chave `brainout.baseUrl.dev` abaixo.
 # No emulador padrão do Android Studio, 10.0.2.2 resolve para o host.
-BASE_URL=http://10.0.2.2:8000
 
 # Override opcional da URL base por flavor (E3.2). Se presente, é usado
 # no lugar do default do flavor `dev`; o flavor `prod` mantém o

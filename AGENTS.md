@@ -76,7 +76,7 @@ Sync (offline-first):
 
 ## Development Commands
 
-All Gradle commands from repo root. With only JDK 21 installed, export `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` (or use Temurin 17).
+All Gradle commands from repo root. The build is verified on JDK 21 (what `ci.yml` and `release-apk.yml` provision). With a standalone JDK 21+: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`; with no standalone JDK, the Android Studio JBR works too (`export JAVA_HOME=/opt/android-studio/jbr`). Gradle 9.7.1/AGP 9.4.1 accept a floor of 17; bytecode target stays Java 17.
 
 ```bash
 # Build
@@ -105,7 +105,7 @@ cd backend-stub && python -m venv .venv && source .venv/bin/activate \
   && python -m uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
-Override dev URL via `local.properties` (key `brainout.baseUrl.dev`). Emulator reaches host at `http://10.0.2.2:8000/`.
+Override dev URL via env var `BASE_URL` (precedence, used by CI) or `local.properties` (key `brainout.baseUrl.dev`). Emulator reaches host at `http://10.0.2.2:8000/`.
 
 ## Code Conventions & Common Patterns
 
@@ -113,8 +113,8 @@ Override dev URL via `local.properties` (key `brainout.baseUrl.dev`). Emulator r
 - **Packages** lowercase only; strings `snake_case` with screen/feature prefix (`login_`, `home_`, `task_`, `project_detail_`, `bottom_tab_`, `common_`). Detekt `PackageNaming` enforces.
 - **i18n gate** — `values/strings.xml` and `values-en/strings.xml` must stay in sync. `:app`, `:feature:auth`, `:feature:projects`, `:feature:settings` enforce `MissingTranslation = error` + `lint { abortOnError = true }`. `:feature:tasks` and `:core:data` are relaxed (pre-existing `NewApi` issues). Never suppress; translate instead.
 - **AGP 9 built-in Kotlin** — `kotlin-android` plugin is **removed** from the version catalog. Do not re-add. Remaining Kotlin plugins: `kotlin-jvm` (only `:core:domain`), `kotlin-compose`, `kotlin-serialization` (`:core:data`).
-- **Bytecode target** — Java 17 (JDK 21 acceptable locally via `JAVA_HOME`). Use `kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }` — `kotlinOptions` is gone in AGP 9.
-- **Flavors** — `dev` (BASE_URL `http://10.0.2.2:8000/`, overridable via `local.properties`) and `prod` (placeholder `https://TBD/`, decision E3.1). Only `:app` and `:core:data` declare flavors; every `:feature:*` fixes `missingDimensionStrategy("environment", "dev")`.
+- **Bytecode target** — Java 17; build JDK is 21 (CI + release provision Temurin 21; JBR via `JAVA_HOME` locally). Use `kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }` — `kotlinOptions` is gone in AGP 9.
+- **Flavors** — `dev` (BASE_URL `http://10.0.2.2:8000/`, overridable via env var `BASE_URL` — CI points it at the dockerized stub — or `local.properties`) and `prod` (placeholder `https://TBD/`, decision E3.1). Only `:app` and `:core:data` declare flavors; every `:feature:*` fixes `missingDimensionStrategy("environment", "dev")`.
 - **DI** — Hilt everywhere; ViewModels via `@HiltViewModel` + `@Inject` constructor. Domain layer may use `javax.inject.Inject` only. New `:core:data` bindings go in `DataModule`.
 - **State management** — immutable `data class XxxUiState(...)` (per-screen error slots as nullable fields, no sealed class); expose `val uiState: StateFlow<XxxUiState>` via `stateIn(viewModelScope, WhileSubscribed(5_000), initial)`. One-shot events via `Channel`/`SharedFlow` or `MutableStateFlow<String>` for errorMessage + retry pattern with `_retryToken` + `flatMapLatest`.
 - **Module marker** — every module has `PackageMarker.kt` exposing `internal const val <MODULE>_PACKAGE: String`. Kover exclusions list relies on these.
@@ -148,11 +148,44 @@ Override dev URL via `local.properties` (key `brainout.baseUrl.dev`). Emulator r
 
 ## Runtime / Tooling Preferences
 
-- **Android SDK**: `compileSdk 35`, `targetSdk 35`, `minSdk 24`. `coreLibraryDesugaring` only in `:app` (uses `desugar_jdk_libs 2.1.5` for `java.time.Instant#toEpochMilli` on 24/25).
-- **JDK**: target Java 17. CI uses Temurin 17 for the main jobs, Temurin 21 for the release workflow. Locally with only JDK 21: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` before `./gradlew`.
+- **Android SDK**: `compileSdk 37`, `targetSdk 37`, `minSdk 24`. `coreLibraryDesugaring` only in `:app` (uses `desugar_jdk_libs 2.1.5` for `java.time.Instant#toEpochMilli` on 24/25). The installed platform is `android-37.0` (Android 17, final — not a preview). `buildToolsVersion` is intentionally not declared; AGP 9.4.1 picks it.
+- **JDK**: bytecode target Java 17. CI (`ci.yml`) and release (`release-apk.yml`) both provision **Temurin 21** (Gradle 9.7.1 runs on JVM 17–27 and AGP 9.4.1's floor is 17 — 21 is the unified project standard). Locally: `export JAVA_HOME=/opt/android-studio/jbr` (Android Studio's bundled JBR 25) before `./gradlew`. `local.properties` must set `sdk.dir`.
 - **No package manager other than Gradle** for the Android side. **Python 3.12 + pip + venv** for the backend stub (also shipped as Docker image `python:3.12-slim` in `backend-stub/Dockerfile`).
 - **Android Studio / lint / ktlint / detekt** are the only static analysis tools. No Checkstyle, no Spotless, no Sonar.
 - **Kover 0.9.9** only on `:core:domain` and `:core:data`; everywhere else is exempt.
+
+## Delivery Workflow (commit / push / PR / merge)
+
+Standing rule — applies automatically at the end of every development task, without waiting to be asked.
+
+**Trigger.** After changing code or docs, once the relevant checks pass. Purely investigative work (reading, analysis, no edits) never produces a commit.
+
+**Steps, in order:**
+
+1. Create a branch off `main`: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>` — matching the Conventional Commit type of the work.
+2. Stage only files this task changed. `git add <paths>` explicitly; never `git add -A` / `git add .`.
+3. Commit with Conventional Commits + `Refs:` footer:
+   ```
+   <type>(<scope>): <subject>
+
+   <body if needed>
+
+   Refs: R#, E#
+   ```
+4. `git push -u origin <branch>`.
+5. Open the PR with `gh pr create` (fill the body per `.github/PULL_REQUEST_TEMPLATE.md`).
+6. Merge with `gh pr merge --merge` — **merge commit, not squash**, to match the repo's existing history (PRs #65–#69 all landed as merge commits). Delete the remote branch after merge.
+7. Return to `main` and `git pull`.
+
+**Hard gates — never violate:**
+
+- **Never commit or push when checks fail.** If `ktlintCheck`, `detekt`, `testDevDebugUnitTest`, or `koverVerify` fail, stop, report exactly what broke, and leave the work uncommitted. Do not commit "so we can fix it later" and do not push a red branch.
+- **Never stage gitignored files or secrets** — `local.properties`, `keystore.properties`, `*.jks`, `.env`, any credential. `git status --short` must be inspected before staging.
+- **Never commit changes under `Documentos/`, `.omo/`, or `docs/ATAS/`** (read-only by repo rule).
+- **Never commit changes to files this task did not author.** If the working tree already had unrelated modifications before the task started, leave them unstaged and say so.
+- **Never merge a PR whose CI is red.** If CI is still running, either wait for it or report the pending state — a pending check is not a green check.
+
+**Local check limitation.** `detekt` cannot run locally with the Android Studio JBR (25): detekt 1.23.7 derives `--jvm-target` from the Gradle JVM and rejects `25`. It runs fine in CI on Temurin 21, so a *local* detekt failure is not a red gate — run `ktlintCheck`, `testDevDebugUnitTest`, and `koverVerify`, which do work locally. Do not add per-module detekt workarounds to silence this.
 
 ## Testing & QA
 

@@ -43,7 +43,7 @@ persistência local com **Room** e sincronização com serviço de retaguarda
 
 | Ferramenta        | Versão mínima | Observação |
 |-------------------|---------------|------------|
-| JDK               | 17            | JDK 21 também funciona (bytecode permanece Java 17). Com só o 21 instalado, exporte `JAVA_HOME=/usr/lib/jvm/java-21-openjdk` antes do `./gradlew`. `gradle.properties` já tem `org.gradle.java.installations.auto-detect=true` e `auto-download=false`. |
+| JDK               | 21            | Padrão do projeto: `ci.yml` e `release-apk.yml` provisionam Temurin 21. Piso do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo é verificado em 21 — use 21+. O bytecode alvo continua **Java 17**. Sem JDK separado, o JBR do Android Studio serve: `export JAVA_HOME=/opt/android-studio/jbr` antes do `./gradlew`. `gradle.properties` já tem `org.gradle.java.installations.auto-detect=true` e `auto-download=false`. |
 | Android SDK      | compileSdk 35 | Instale pelo Android Studio (SDK Manager) ou `sdkmanager`. O caminho vai em `local.properties` (`sdk.dir`). |
 | Android Studio   | Hedgehog (2023.1.1)+ | Para emulador, editor e SDK Manager. |
 | Emulador ou dispositivo | API 24+ | Emulador de API 35 (imagem `system-images;android-35;google_apis;x86_64`) ou dispositivo físico com depuração USB. |
@@ -66,8 +66,9 @@ O projeto tem dois product flavors de ambiente (`dev` e `prod`) na
 dimensão `environment`:
 
 - **dev** — `BASE_URL` aponta para o backend stub em `http://10.0.2.2:8000/`
-  (host a partir do emulador padrão). Override por desenvolvedor:
-  `brainout.baseUrl.dev=<url>` em `local.properties`.
+  (host a partir do emulador padrão). Precedência: env var `BASE_URL`
+  (usada no CI, apontando para o stub dockerizado; barra final garantida) >
+  `brainout.baseUrl.dev=<url>` em `local.properties` > default do flavor.
 - **prod** — placeholder `https://TBD/` até a hospedagem definitiva
   (decisão E3.1: backend próprio FastAPI; ver `docs/ARQUITETURA.md`,
   Seção 9).

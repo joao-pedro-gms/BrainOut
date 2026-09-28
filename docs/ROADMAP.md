@@ -176,14 +176,14 @@ Encerramento (Sem 18-19) → Documentação final + apresentação    → Entreg
       `./gradlew testDevDebugUnitTest` na linha 110, com Kover
       `koverVerify`) e `backend-integration` (service container
       FastAPI + `./gradlew :core:data:testDevDebugUnitTest
-      :app:testDevDebugUnitTest` na linha 243)._
+      :app:testDevDebugUnitTest` na linha 257)._
 
 - [x] **E1.10** — Atualizar `README.md` com instruções de build e execução
       (mesmo que ainda incompletas para a N2). *Critério:* novo
       contribuidor consegue clonar e abrir o projeto no Android Studio.
       *Atende R13.* *Estimativa:* 1 PH.
       _Entregue no setup inicial do projeto (verificável pelos artefatos
-      atuais): `README.md` na raiz contém pré-requisitos (JDK 17,
+      atuais): `README.md` na raiz contém pré-requisitos (JDK 21,
       Android Studio + AGP 9.4.1, Gradle 9.7.1), comandos de build
       (`./gradlew assembleDevDebug`) e execução, links para o relatório
       técnico consolidado (`docs/RELATORIO-TECNICO.md` §14) e para o

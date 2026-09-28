@@ -933,8 +933,9 @@ base64 -w 0 brainout-release.jks > brainout-release.jks.b64
 cd backend-stub
 docker build -t brainout-stub .
 docker run -d --name brainout-stub -p 8000:8000 brainout-stub
-echo "BASE_URL=http://10.0.2.2:8000" >> ../local.properties
-# (10.0.2.2 é o host a partir do emulador padrão do Android Studio)
+echo "brainout.baseUrl.dev=http://10.0.2.2:8000" >> ../local.properties
+# (10.0.2.2 é o host a partir do emulador padrão do Android Studio.
+#  `BASE_URL` como env var tem precedência sobre esta chave e é o que o CI usa.)
 ```
 
 ### 13.6 Branch protection recomendada
@@ -957,7 +958,7 @@ echo "BASE_URL=http://10.0.2.2:8000" >> ../local.properties
 
 | Ferramenta | Versão mínima | Observação |
 |------------|---------------|------------|
-| JDK | 17 (JDK 21 também funciona; bytecode permanece Java 17) | `org.gradle.java.installations.auto-detect=true` + `auto-download=false` em `gradle.properties` |
+| JDK | 21 (Temurin no CI/release; JBR do Android Studio localmente) — piso do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo é verificado em 21; bytecode permanece Java 17 | `org.gradle.java.installations.auto-detect=true` + `auto-download=false` em `gradle.properties` |
 | Android SDK | `compileSdk = 35` | Instalar via Android Studio ou `sdkmanager` |
 | Android Studio | Hedgehog (2023.1.1)+ | Emulador, editor, SDK Manager |
 | Emulador ou dispositivo | API 24+ | Emulador API 35 (imagem `system-images;android-35;google_apis;x86_64`) ou dispositivo físico com depuração USB |
@@ -1061,7 +1062,7 @@ No Android Studio: **Build → Select Build Variant → `devDebug`** e
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
-| `Cannot find a Java installation matching languageVersion=17` | Só JDK 21 instalado | `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk` antes de `./gradlew` |
+| `Cannot find a Java installation matching languageVersion=17` | Só o JBR do Android Studio instalado | `export JAVA_HOME=/opt/android-studio/jbr` antes de `./gradlew` |
 | `error: unresolved reference` em classes `*_Impl`/`Hilt_*` | KSP não rodou (cache sujo após bump Kotlin/AGP) | `./gradlew clean` + rebuild; conferir `gradle/libs.versions.toml` (AGP 9 exige KGP ≥ 2.2.10) |
 | `MissingTranslation` falha o lint | Chave em `values/` sem par em `values-en/` | Traduzir a chave (E4.6 — gate ativo em `:app`) |
 | `OutOfMemoryError` | Heap insuficiente | `org.gradle.jvmargs=-Xmx4g` já em `gradle.properties`; `./gradlew --stop` |

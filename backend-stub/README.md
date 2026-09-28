@@ -21,8 +21,12 @@ Este stub existe por dois motivos:
 - `tests/test_contract.py` — suíte pytest cobrindo o contrato
   (upsert idempotente, delete idempotente, roundtrip de tags,
   cascade de tasks, validação de UUID, divergência id body/path).
-- `tests/smoke_e2e.py` — smoke ponta-a-ponta via HTTP (requer
-  servidor de pé em `127.0.0.1:8765`).
+- `tests/smoke_e2e.py` — smoke ponta-a-ponta via HTTP (curl), com
+  fluxo completo projeto→tag→task→delete e invariantes no fio
+  (`created_at` preservado, cascade órfão, divergência id → 400).
+  Host/port vem de `BASE_URL`; default `http://127.0.0.1:8765`
+  para uso local. No CI a mesma etapa roda com
+  `BASE_URL=http://localhost:8000` contra o container dockerizado.
 - `requirements.txt` — dependências de runtime + testes.
 - `Dockerfile` — imagem usada pelo `docker build` no CI.
 
@@ -74,12 +78,22 @@ pip install -r requirements.txt
 pytest -q              # 14 casos verdes
 ```
 
-Para o smoke ponta-a-ponta (servidor precisa estar de pé):
+Para o smoke ponta-a-ponta (servidor precisa estar de pé). Ele lê
+`BASE_URL` — sem ela, assume `http://127.0.0.1:8765` (default local):
 
 ```bash
+# Contexto local (avulso): porta 8765
 python -m uvicorn server:app --host 127.0.0.1 --port 8765 &
-python tests/smoke_e2e.py
+python tests/smoke_e2e.py                      # BASE_URL default 127.0.0.1:8765
+
+# Contexto CI (container dockerizado): porta 8000
+python3 tests/smoke_e2e.py                     # com BASE_URL=http://localhost:8000
 ```
+
+| Contexto              | Comando do servidor                                    | `BASE_URL`                    |
+|-----------------------|--------------------------------------------------------|-------------------------------|
+| Local (avulso)        | `python -m uvicorn server:app --port 8765`             | não definido (default 8765)   |
+| CI (`backend-integration`) | container `brainout-api` com `-p 8000:8000`       | `http://localhost:8000`       |
 
 ## Endpoints
 

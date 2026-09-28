@@ -37,14 +37,24 @@ val localProperties = Properties().apply {
 }
 val appEnv: String = localProperties.getProperty("APP_ENV", "dev")
 
+// URL base do flavor `dev` — mesma resolução de `:core:data`: a env var
+// `BASE_URL` (CI, apontando para o backend-stub dockerizado) tem prioridade
+// sobre `local.properties` (`brainout.baseUrl.dev`); sem env var, vale o
+// override local ou o default do flavor. Retrofit exige barra final na base.
+val devBaseUrlRaw: String =
+    System.getenv("BASE_URL")?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")
+val devBaseUrl: String =
+    if (devBaseUrlRaw.endsWith("/")) devBaseUrlRaw else "$devBaseUrlRaw/"
+
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "pucgo.joaopedrogmsilva.brainout"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "0.1.0-alpha01"
 
@@ -77,7 +87,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"${localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")}\"",
+                "\"$devBaseUrl\"",
             )
         }
         create("prod") {
