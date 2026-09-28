@@ -1,11 +1,17 @@
-"""Smoke test ponta-a-ponta via HTTP (curl) — validação do script da task."""
+# João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+"""Smoke test ponta-a-ponta via HTTP (curl).
+
+Target via `BASE_URL` (reutiliza a variável já usada pelo CI); default
+`http://127.0.0.1:8765` para uso local com uvicorn avulso.
+"""
 import json
+import os
 import subprocess
 import sys
 import uuid
 
 
-BASE = "http://127.0.0.1:8765"
+BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8765")
 
 
 def curl(method: str, path: str, body=None, want_status=None) -> tuple[int, dict | str]:
@@ -34,13 +40,13 @@ def main() -> int:
 
     step("POST /v1/projects com id do cliente")
     code, p1 = curl("POST", "/v1/projects", {"id": pid, "name": "x"})
-    assert code == 200, p1
+    assert code == 201, p1
     assert p1["id"] == pid, p1
     print(f"  id={p1['id']} name={p1['name']}")
 
     step("POST /v1/projects replay (mesmo id) — idempotente")
     code, p2 = curl("POST", "/v1/projects", {"id": pid, "name": "x"})
-    assert code == 200, p2
+    assert code == 201, p2
     assert p2["id"] == pid, p2
     assert p2["created_at"] == p1["created_at"], (p1["created_at"], p2["created_at"])
     print("  mesmo id, mesmo created_at — replay não duplica ✓")
@@ -67,10 +73,10 @@ def main() -> int:
     p2 = str(uuid.uuid4())
     curl("POST", "/v1/projects", {"id": p2, "name": "p2"})
     code, tag = curl("POST", "/v1/tags", {"name": "urgente", "color": "#ff0000"})
-    assert code == 200, tag
+    assert code == 201, tag
     print(f"  tag id={tag['id']}")
     code, _ = curl("POST", f"/v1/projects/{p2}/tags", {"tag_id": tag["id"]})
-    assert code == 200
+    assert code == 201
     code, listing = curl("GET", f"/v1/projects/{p2}/tags")
     assert any(t["id"] == tag["id"] for t in listing["items"]), listing
     print(f"  tags do projeto: {[t['name'] for t in listing['items']]} ✓")
@@ -83,7 +89,7 @@ def main() -> int:
         "title": "T1",
         "priority": 2,
     })
-    assert code == 200, task
+    assert code == 201, task
     assert task["id"] == tid
     print(f"  task id={task['id']} ✓")
 

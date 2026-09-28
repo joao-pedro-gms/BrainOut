@@ -12,7 +12,7 @@ plugins {
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout.feature.auth"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
     // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
