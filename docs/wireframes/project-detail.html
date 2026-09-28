@@ -12,9 +12,7 @@
     <div class="phone__notch" aria-hidden="true"></div>
     <div class="phone__screen">
       <header class="app-header">
-        <p class="muted" style="margin: 0 0 4px;">
-          <a href="home.html" style="color: #52606d; text-decoration: none;">← Projetos</a>
-        </p>
+        <a class="back-link" href="home.html">← Projetos</a>
         <h1>Projeto Integrador</h1>
         <p>
           Aplicativo Android para gestão de projetos e tarefas, em Kotlin e
@@ -22,55 +20,67 @@
         </p>
       </header>
 
-      <section class="app-content" style="padding-bottom: 96px;">
-        <h2 class="section-title">Tarefas</h2>
+      <section class="app-content app-content--fab">
+        <h2 class="section-heading">Tarefas</h2>
 
-        <ul class="task-list" style="list-style: none; padding: 0; margin: 0;">
+        <ul class="task-list">
           <li class="task">
-            <span class="task__check" aria-hidden="true"></span>
-            <span class="task__title">Modelar entidade Task</span>
-            <span class="task__priority priority--alta" aria-label="Prioridade alta">Alta</span>
+            <div class="task__header">
+              <span class="task__title">Modelar entidade Task</span>
+              <span class="task__menu" aria-hidden="true">⋮</span>
+            </div>
+            <div class="task__chips">
+              <span class="chip chip--status-doing">Em andamento</span>
+              <span class="chip chip--priority-high">Alta</span>
+            </div>
           </li>
           <li class="task">
-            <span class="task__check" aria-hidden="true"></span>
-            <span class="task__title">Configurar navegação Compose</span>
-            <span class="task__priority priority--alta" aria-label="Prioridade alta">Alta</span>
+            <div class="task__header">
+              <span class="task__title">Configurar navegação Compose</span>
+              <span class="task__menu" aria-hidden="true">⋮</span>
+            </div>
+            <div class="task__chips">
+              <span class="chip chip--status">A fazer</span>
+              <span class="chip chip--priority-urgent">Urgente</span>
+            </div>
           </li>
           <li class="task">
-            <span class="task__check" aria-hidden="true"></span>
-            <span class="task__title">Esboçar wireframes das telas</span>
-            <span class="task__priority priority--media" aria-label="Prioridade média">Média</span>
-          </li>
-          <li class="task">
-            <span class="task__check" aria-hidden="true"></span>
-            <span class="task__title">Definir paleta de cores</span>
-            <span class="task__priority priority--baixa" aria-label="Prioridade baixa">Baixa</span>
+            <div class="task__header">
+              <span class="task__title">Esboçar wireframes das telas</span>
+              <span class="task__menu" aria-hidden="true">⋮</span>
+            </div>
+            <div class="task__chips">
+              <span class="chip chip--status-done">Concluída</span>
+              <span class="chip">Média</span>
+            </div>
           </li>
         </ul>
 
-        <a class="btn btn--primary" style="margin-top: 20px;" href="#">
-          <span aria-hidden="true">+</span>
-          Nova tarefa
-        </a>
+        <span class="btn btn--primary btn--sample">+ Nova tarefa</span>
       </section>
+
+      <span class="fab fab--static" aria-hidden="true">
+        <span class="fab__icon">+</span>
+        Nova tarefa
+      </span>
 
       <footer class="app-footer">
         <nav class="tab-bar" aria-label="Navegação principal">
-          <a class="tab-bar__item tab-bar__item--active" href="home.html">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
+          <a class="tab-bar__item tab-bar__item--active" href="home.html" aria-current="page">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#folder"></use></svg></span>
             Projetos
           </a>
-          <a class="tab-bar__item" href="#">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
+          <a class="tab-bar__item" href="tasks.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#tasks"></use></svg></span>
             Tarefas
           </a>
-          <a class="tab-bar__item" href="#">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
-            Insights
+          <a class="tab-bar__item" href="dashboard.html">
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#chart"></use></svg></span>
+            Painel
           </a>
           <a class="tab-bar__item" href="settings.html">
-            <span class="tab-bar__icon" aria-hidden="true"></span>
-            Ajustes
+            <span class="tab-bar__icon"><svg aria-hidden="true"><use href="icons.svg#settings"></use></svg></span>
+            Configurações
           </a>
         </nav>
       </footer>

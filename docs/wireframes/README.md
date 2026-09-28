@@ -1,26 +1,38 @@
-# BrainOut — Wireframes HTML
+# BrainOut — Protótipo web (wireframes)
 
-Wireframes estáticos (HTML5 + CSS puro, sem JavaScript) das 6 telas base do
-aplicativo. Servem como referência visual para os marcos **E1.3** (navegação
-entre telas) e **E1.6** (login/cadastro) definidos em [`../ROADMAP.md`](../ROADMAP.md).
+Protótipo estático (HTML5 + CSS puro, sem JavaScript) das **oito telas** do
+aplicativo, em alta fidelidade com a identidade Material 3 atual do projeto
+(paleta e tipografia de `core/ui/.../theme/`, sem dynamic color). Serve como
+referência visual para os marcos **E1.3** (navegação entre telas) e **E1.6**
+(login/cadastro) definidos em [`../ROADMAP.md`](../ROADMAP.md).
 
-> Estes arquivos são apenas referência de fluxo e hierarquia visual.
-> A identidade visual definitiva (cores, tipografia, logotipo) será definida
-> em momento posterior do Ciclo 1.
+> **Prévia visual apenas.** O site não autentica, não persiste dados e não
+> faz requisições de rede. Os conteúdos (projetos, tarefas, percentuais)
+> são de demonstração.
 
 ## Telas incluídas
 
-| Arquivo                  | Tela                | Marco relacionado |
-|--------------------------|---------------------|-------------------|
-| `splash.html`            | Splash / Boas-vindas | E1.3             |
-| `login.html`             | Login                | E1.6             |
-| `register.html`          | Cadastro             | E1.6             |
-| `home.html`              | Home (Projetos)      | E1.3             |
-| `project-detail.html`    | Detalhe do projeto   | E1.3             |
-| `settings.html`          | Configurações        | E1.3             |
+| Arquivo               | Tela                | Marco relacionado |
+|-----------------------|---------------------|-------------------|
+| `splash.html`         | Splash / Boas-vindas | E1.3             |
+| `login.html`          | Login                | E1.6             |
+| `register.html`       | Cadastro             | E1.6             |
+| `home.html`           | Projetos (Home)      | E1.3 / E2.6      |
+| `project-detail.html` | Detalhe do projeto   | E1.3 / E2.4      |
+| `tasks.html`          | Tarefas              | E2.6             |
+| `dashboard.html`      | Painel               | E2.7             |
+| `settings.html`       | Configurações        | E1.3             |
 
-Há também `index.html`, um hub opcional que lista todas as telas para
-visualização rápida.
+Há também:
+
+- `index.html` — hub com as oito telas e o link para a galeria;
+- `lo-fi.html` — **«Visão geral do protótipo»**: galeria com iframes das oito
+  telas, fichas dos estados *Home — Member* e *Offline*, e a legenda do fluxo.
+  O nome do arquivo foi mantido para não quebrar links existentes;
+- `styles.css` — sistema visual compartilhado (paleta clara/escura, moldura
+  responsiva, componentes);
+- `icons.svg` — sprite local dos quatro ícones da barra inferior (mais o de
+  busca), referenciados via `<use href="icons.svg#…">`.
 
 ## Como abrir
 
@@ -42,21 +54,24 @@ python3 -m http.server 8000
 
 - **HTML5 semântico** (`<main>`, `<header>`, `<section>`, `<nav>`, `<ul>`,
   `<fieldset>`, `<legend>`).
-- **CSS compartilhado** em um único arquivo (`styles.css`); nenhum estilo
-  inline além de ajustes pontuais de layout nos mockups.
-- **Viewport alvo:** 360×800 px (mobile), com moldura de celular e *notch*
-  apenas para indicar onde o conteúdo começaria em um aparelho real.
-- **Acessibilidade mínima:** elementos visuais não textuais (FAB, ícones da
-  tab bar, avatares, badges) marcados com `aria-label` ou `aria-hidden`
-  conforme apropriado.
-- **Navegação entre páginas** via `<a href>` para testar o fluxo:
-  `splash → login → home → project-detail → settings`.
-- **Sem identidade visual final:** paleta neutra (cinza/branco) e sem fontes
-  externas; foco apenas em estrutura e hierarquia.
+- **CSS compartilhado** em um único arquivo (`styles.css`); os únicos estilos
+  inline são dados de demonstração (cor de tag, altura das barras do gráfico).
+- **Viewport:** de 320 px a desktop. Abaixo de 480 px a moldura vira
+  *full-bleed* (`100dvh`, sem *notch*); acima disso fica centralizada no
+  palco, com largura `min(100%, 400px)`.
+- **Tema claro/escuro** via `prefers-color-scheme`, espelhando `Color.kt`.
+- **Acessibilidade:** área mínima de 44×44 px nos controles, foco visível
+  (`:focus-visible`), `aria-current="page"` na aba ativa, elementos visuais
+  não textuais com `aria-hidden`, e chips informativos como texto (não
+  botões falsos).
+- **Navegação entre páginas** via `<a href>` (sem `href="#"`):
+  `splash → login → cadastro → login → projetos → detalhe → tarefas →
+  painel → configurações → login`.
+- **Sem dependências externas:** fonte do sistema, SVG local, zero CDN.
 
-## Próximos passos
+## Limitações
 
-- Substituir estes mockups pelas telas reais em Jetpack Compose (módulos
-  `:feature:auth` e `:feature:projects`) conforme o E1.3 e o E1.6 avançarem.
-- Atualizar `styles.css` para consumir tokens do Material 3 quando o tema for
-  definido no E1.7.
+- Autenticação, sincronização offline e notificações **não** rodam no site —
+  o protótipo apenas navega entre páginas.
+- Os estados *Member* e *Offline* são fichas ilustrativas na galeria, não
+  telas navegáveis.
