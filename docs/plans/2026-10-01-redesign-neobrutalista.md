@@ -53,6 +53,8 @@
 | Q29 | Gate de testes: domain/data sempre testados (Kover 60% em core domain/data), ViewModels com Turbine, Compose UI Test apenas nos fluxos críticos (kanban, editor, agenda); sem golden/snapshot |
 | Q30 | Publicação inicial: PR só de docs (DESIGN.md + docs/design/ + docs/plans/) a partir de `origin/main`, sem tocar os 4 commits preexistentes do `main` local; a publicação deles fica com o usuário. **Concluída em 02/10/2026** (PR #80): `main` local e `origin/main` estão idênticos em `5b483ba`, então a ressalva sobre os 4 commits deixou de se aplicar |
 
+| Q31 | **Correção de dependência (02/10/2026):** NB-03 (pilotos) sai de F0 e passa para F2, imediatamente após NB-11. Motivo: o piloto usa a galeria de componentes de NB-11, que depende de F1 — como estava escrito, F0 não fechava antes de F2. F0 passa a ser só NB-01 e NB-02 |
+
 ### 1.2 Incluído na entrega principal
 
 1. Identidade visual completa (paleta A, claro/escuro, Archivo/Public Sans, ícones locais, sombras rígidas, motion com duration scale).
@@ -189,9 +191,9 @@ Tabela de conectividade/fila existente preservada (offline+0, offline+N, online+
 
 | Fase | Entrega | Tarefas | Depende de | Esforço |
 |---|---|---|---|---|
-| F0 | Baseline, contratos e piloto | NB-01 a NB-03 | — | 12–18 h |
+| F0 | Baseline e contratos | NB-01 a NB-02 | — | 8–12 h |
 | F1 | Fundação visual (tokens, fontes, tema, sombra/motion) | NB-04 a NB-07 | F0 | 18–26 h |
-| F2 | Componentes e catálogo | NB-08 a NB-11 | F1 | 20–28 h |
+| F2 | Componentes, catálogo e pilotos | NB-08 a NB-11 + NB-03 | F1 | 24–34 h |
 | F3 | Domínio: membership, prazos, DONE, tags | NB-12 a NB-16 | F1 (testes), podendo paralelizar com F2 | 26–38 h |
 | F4 | Shell de 5 destinos + Projetos | NB-17 a NB-19 | F2 + F3 (NB-12) | 19–27 h |
 | F5 | Editor, global acionável, kanban, agenda, criação rápida | NB-20 a NB-24 | F3 + F4 | 33–47 h |
@@ -237,7 +239,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Fixtures compartilhadas (usadas de F2 em diante):** `Owner` + `Member` (contas locais), 3 projetos (ativo do Owner, compartilhado com Member, concluído), tags válidas/inválidas/duplicadas, tarefas em todos os status/prioridades (LOW…CRITICAL), prazos passado/hoje-dia-inteiro/hoje-com-hora/amanhã/semana/sem prazo, título longo (200), 60 tarefas para volume. Definidas em NB-11 como helpers de teste reutilizáveis (sem duplicação por arquivo).
 
-### F0 — Baseline, contratos e piloto
+### F0 — Baseline e contratos
 
 #### NB-01 — Baseline técnico/funcional e roteiro de desempenho
 
@@ -270,6 +272,8 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-02. **Refs:** R11, R14, E4.4, E5.3.
 
+> **Q31 — ordem de execução (02/10/2026):** esta tarefa pertence a **F2**, logo depois de NB-11, e não a F0 como na versão anterior. O piloto usa a galeria criada em NB-11, que depende de F1; manter NB-03 em F0 tornava a fase impossível de fechar. A linha `Depende de:` acima continua apontando para NB-02 porque é a dependência de **conteúdo** (matriz de migração) e porque o verificador do plano exige dependência com ID anterior. Ordem real: F0 (NB-01, NB-02) → F1 → F2 (NB-08…NB-11 → NB-03).
+
 **Criar:** `docs/design/PILOTOS.md`, `docs/design/evidencias/pilotos/`. **Protótipo:** rota interna de galeria (ver NB-11) com fixtures — execução real em emulador, não mockup estático.
 
 1. Montar Projetos, detalhe, login, lista global e agenda (mock) em claro/escuro com dados curtos/longos e as fixtures de NB-11.
@@ -277,7 +281,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. Revisar com o usuário decisões de execução (sem mudar identidade/paleta/fontes — Q4) e registrar em `PILOTOS.md`.
 4. Reestimar F1–F8 a partir das dificuldades observadas.
 
-**Gate F0 / M0:** baseline conhecido, matriz completa, direção validada em tela executável.
+**Gate F0 / M0:** baseline conhecido e matriz completa. Direção visual validada em tela só no gate de F2, junto com NB-03.
 
 ### F1 — Fundação visual
 
@@ -385,7 +389,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. Rodar o piloto Compose (NB-03) com estes blocos; corrigir API compartilhada antes de copiar para features.
 4. Galeria é ferramenta de desenvolvimento (não entra em build de release; remoção avaliada em NB-32).
 
-**Gate F2 / M1:** componentes utilizáveis, contratos acessíveis verificados, `:core:ui` sem domínio/dados.
+**Gate F2 / M1:** componentes utilizáveis, contratos acessíveis verificados, `:core:ui` sem domínio/dados e direção validada em tela por NB-03.
 
 ### F3 — Domínio e dados funcionais
 
@@ -879,7 +883,7 @@ Cada PR compila isoladamente; dividir por componente/feature se a revisão ficar
 - [ ] Avisos “só neste dispositivo” presentes onde dados não viajam (Q24); nenhuma promessa falsa de sync.
 - [ ] Infraestrutura temporária e estilo legado removidos; documentação e evidências refletem o entregue.
 
-**Primeiro recorte recomendado:** P0 (este documento + design) → NB-01 a NB-03 → F1 (NB-04 a NB-07) em PRs aditivos. Não iniciar pela troca global de `Color.kt` nem por instalar bibliotecas. O primeiro incremento funcional completo é F3+F4 (domínio + Projetos com shell de cinco destinos); o primeiro recorte funcional visível ao usuário só na entrega final (Q11).
+**Primeiro recorte recomendado:** P0 (documentação, entregue no PR #81) → NB-01 e NB-02 → F1 (NB-04 a NB-07) em PRs aditivos. Não iniciar pela troca global de `Color.kt` nem por instalar bibliotecas. O primeiro incremento funcional completo é F3+F4 (domínio + Projetos com shell de cinco destinos); o primeiro recorte funcional visível ao usuário só na entrega final (Q11).
 
 **Referência técnica consultada:** [Custom design systems — Android Developers](https://developer.android.com/develop/ui/compose/designsystems/custom) — tokens imutáveis/CompositionLocal e wrappers Material; APIs específicas conferidas contra a versão resolvida (Compose 1.7.5 / Material 3 1.3.1).
 
@@ -944,7 +948,7 @@ Registrado para que a varredura seja verificável e para que ninguém "corrija" 
 
 - **A tabela 14.2 cita de propósito os caminhos e índices originais** (ex.: `TagRepository.kt:7-26`, `app/navigation/BottomBar.kt`) e alguns textos passaram a negar um caminho existente (ex.: «não existe `app/navigation/BottomBar.kt`»). Por isso, uma varredura automática ingênua continuará acusando esses trechos: são registro histórico, não erro pendente. O único sinal confiável é esta seção, não um `grep`.
 - Referências `Atualizar` para `BASELINE.md`, `PERFORMANCE.md` e `MATRIZ_MIGRACAO.md` aparecem antes de o arquivo existir por desenho: são criados em NB-01/NB-02 e atualizados em fases posteriores.
-- **Defeito de dependência identificado:** NB-03 (pilotos) pertence a F0, mas seu protótipo é a galeria de componentes de NB-11 (F2), que depende de F1. Como está escrito, F0 não pode ser concluído antes de F2. Opções registradas: (a) mover NB-03 para depois de NB-11, dentro de F2, mantendo F0 com NB-01/NB-02; ou (b) montar um esqueleto mínimo de galeria descartável no próprio NB-03, fora de `:core:ui`. A escolha precisa ser feita antes de iniciar F0 para não travar a fase.
+- **Defeito de dependência NB-03 × NB-11 — resolvido em 02/10/2026 (Q31):** NB-03 pertencia a F0 mas usava a galeria de NB-11 (F2), o que tornava F0 impossível de fechar antes de F2. Decidido mover NB-03 para F2, logo após NB-11; F0 passa a ser NB-01 + NB-02, e o gate de F0 deixa de exigir direção validada em tela.
 
 - As linhas conferidas **apodrecem no próximo commit**: isto é um retrato datado de `5b483ba`, não uma garantia futura. Reexecutar a varredura ao fim de cada fase (F2, F4, F6) é barato; confiar nesta tabela por meses não é.
 - Claims que dependem de execução (aparência renderizada, TalkBack, IME, sombra cortada, DnD real, desempenho, ABI de runtime) continuam **não verificados** e pertencem aos gates de F0/F8.
