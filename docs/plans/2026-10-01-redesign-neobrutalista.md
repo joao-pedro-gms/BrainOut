@@ -53,7 +53,7 @@
 | Q29 | Gate de testes: domain/data sempre testados (Kover 60% em core domain/data), ViewModels com Turbine, Compose UI Test apenas nos fluxos críticos (kanban, editor, agenda); sem golden/snapshot |
 | Q30 | Publicação inicial: PR só de docs (DESIGN.md + docs/design/ + docs/plans/) a partir de `origin/main`, sem tocar os 4 commits preexistentes do `main` local; a publicação deles fica com o usuário. **Concluída em 02/10/2026** (PR #80): `main` local e `origin/main` estão idênticos em `5b483ba`, então a ressalva sobre os 4 commits deixou de se aplicar |
 
-| Q31 | **Correção de dependência (02/10/2026):** NB-03 (pilotos) sai de F0 e passa para F2, imediatamente após NB-11. Motivo: o piloto usa a galeria de componentes de NB-11, que depende de F1 — como estava escrito, F0 não fechava antes de F2. F0 passa a ser só NB-01 e NB-02 |
+| Q31 | **Correção de dependência (02/10/2026):** NB-03 (pilotos) sai de F0 e passa para F2, imediatamente após NB-11, porque o piloto usa a galeria de componentes de NB-11 — como estava escrito, F0 não fechava antes de F2. F0 passa a ser só NB-01 e NB-02. Consequência em cadeia: NB-04 deixa de depender de NB-03 e passa a depender de NB-02 (a fonte dos tokens é `DESIGN.md` + `tokens.json`, auditados em F0), senão F1 → NB-11 → NB-03 → F1 fecharia um ciclo |
 
 ### 1.2 Incluído na entrega principal
 
@@ -279,7 +279,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 1. Montar Projetos, detalhe, login, lista global e agenda (mock) em claro/escuro com dados curtos/longos e as fixtures de NB-11.
 2. Simular 320/600/840 dp, fonte 2.0, erro, teclado aberto; checar hierarquia, densidade e impacto visual (critério Q1).
 3. Revisar com o usuário decisões de execução (sem mudar identidade/paleta/fontes — Q4) e registrar em `PILOTOS.md`.
-4. Reestimar F1–F8 a partir das dificuldades observadas.
+4. Reestimar **F3–F8** a partir das dificuldades observadas (F1 e F2 já estarão executadas quando esta tarefa rodar — ver Q31).
 
 **Gate F0 / M0:** baseline conhecido e matriz completa. Direção visual validada em tela só no gate de F2, junto com NB-03.
 
@@ -287,7 +287,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 #### NB-04 — Tokens de cor e geometria
 
-**Depende de:** NB-03. **Refs:** R11, E4.4, E4.5.
+**Depende de:** NB-02. **Refs:** R11, E4.4, E4.5.
 
 **Criar:** `$UI/theme/NeoColor.kt`, `$UI/theme/NeoTokens.kt`, `$UI_TEST/theme/NeoContrastRatioTest.kt`, `$UI_TEST/theme/NeoTokenParityTest.kt`. **Ler:** `$UI/theme/Color.kt`, `$UI_TEST/theme/ContrastRatioTest.kt`, `docs/design/tokens.json`.
 
@@ -948,7 +948,7 @@ Registrado para que a varredura seja verificável e para que ninguém "corrija" 
 
 - **A tabela 14.2 cita de propósito os caminhos e índices originais** (ex.: `TagRepository.kt:7-26`, `app/navigation/BottomBar.kt`) e alguns textos passaram a negar um caminho existente (ex.: «não existe `app/navigation/BottomBar.kt`»). Por isso, uma varredura automática ingênua continuará acusando esses trechos: são registro histórico, não erro pendente. O único sinal confiável é esta seção, não um `grep`.
 - Referências `Atualizar` para `BASELINE.md`, `PERFORMANCE.md` e `MATRIZ_MIGRACAO.md` aparecem antes de o arquivo existir por desenho: são criados em NB-01/NB-02 e atualizados em fases posteriores.
-- **Defeito de dependência NB-03 × NB-11 — resolvido em 02/10/2026 (Q31):** NB-03 pertencia a F0 mas usava a galeria de NB-11 (F2), o que tornava F0 impossível de fechar antes de F2. Decidido mover NB-03 para F2, logo após NB-11; F0 passa a ser NB-01 + NB-02, e o gate de F0 deixa de exigir direção validada em tela.
+- **Defeito de dependência NB-03 × NB-11 — resolvido em 02/10/2026 (Q31):** NB-03 pertencia a F0 mas usava a galeria de NB-11 (F2), o que tornava F0 impossível de fechar antes de F2. Decidido mover NB-03 para F2, logo após NB-11; F0 passa a ser NB-01 + NB-02, e o gate de F0 deixa de exigir direção validada em tela. **Efeito de segunda ordem tratado junto:** NB-04 dependia de NB-03, o que criaria o ciclo F1 → NB-11 → NB-03 → F1; NB-04 passou a depender de NB-02, e NB-03 deixou de reestimar F1/F2 (já executadas). O verificador do plano não detecta esse tipo de ciclo — ele valida ordem de IDs e dependência com ID anterior, não o grafo completo.
 
 - As linhas conferidas **apodrecem no próximo commit**: isto é um retrato datado de `5b483ba`, não uma garantia futura. Reexecutar a varredura ao fim de cada fase (F2, F4, F6) é barato; confiar nesta tabela por meses não é.
 - Claims que dependem de execução (aparência renderizada, TalkBack, IME, sombra cortada, DnD real, desempenho, ABI de runtime) continuam **não verificados** e pertencem aos gates de F0/F8.
