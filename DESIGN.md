@@ -18,7 +18,7 @@
 
 ## 1. Produto e ponto de partida
 
-BrainOut organiza projetos pessoais e tarefas em Android nativo. Possui autenticação, papéis Owner/Member, tags, busca e ordenação de projetos, prazos, três estados de tarefa, cinco prioridades, painel de métricas, perfil, tema e lembretes. A gravação local e a fila de sincronização são parte central da experiência.
+BrainOut organiza projetos pessoais e tarefas em Android nativo. Possui autenticação, papéis Owner/Member, tags, busca e ordenação de projetos, prazos, três estados de tarefa, cinco prioridades e painel de métricas. **Perfil, escolha manual de tema (Sistema/Claro/Escuro) e lembretes não existem hoje** — são capacidade proposta, não observada (ver inventário abaixo). A gravação local e a fila de sincronização são parte central da experiência.
 
 **Hipótese de uso:** consultas rápidas entre atividades acadêmicas/profissionais, com interrupções e conexão variável. Isso orienta o design, mas não constitui pesquisa com o público do app. O projeto acadêmico não prova que todos os usuários são estudantes.
 
@@ -29,17 +29,20 @@ Os caminhos Kotlin abaixo são relativos a `src/main/kotlin/pucgo/joaopedrogmsil
 | Evidência local | Situação atual e impacto |
 |---|---|
 | `core/ui/.../core/ui/theme/{Color,Theme,Shape,Type}.kt` | Paleta Material roxa `#6750A4`, tema claro/escuro estático, fonte do sistema; raios 4/8/12/16/28dp. Boa centralização inicial |
-| `app/.../navigation/BrainOutNavHost.kt` | Shell com quatro destinos: Projetos, Tarefas, Painel e Configurações; estado das abas preservado |
+| `app/.../navigation/BrainOutNavHost.kt` | Host com seis rotas: `splash`, `login`, `register`, `home`, `settings` e `project/{projectId}`; Tarefas e Painel entram pelas rotas de `TasksRoutes` |
+| `feature/projects/.../ui/home/{HomeBottomBar,HomeTab,HomeScreen}.kt` | Barra inferior real, declarada **dentro da feature de projetos**: 4 abas (`Projects`, `Tasks`, `Dashboard`, `Settings`) em `HomeTab`, com o estado preservado por `rememberSaveable`. As abas `Tasks`/`Dashboard`/`Settings` disparam callbacks de navegação; só `Projects` tem conteúdo interno. **Não existe** `app/navigation/BottomBar.kt` |
 | `feature/projects/.../feature/projects/ui/home/HomeScreen.kt` | Busca, tags, ordenação, ativos/concluídos, criação de projeto e limitação por papel |
 | `feature/projects/.../feature/projects/ui/projectdetail/ProjectDetailScreen.kt` | Criação/edição, prioridade, status, exclusão, prazo e erros; alguns formulários fecham por evento de sucesso |
 | `feature/projects/.../feature/projects/ui/common/OfflineBanner.kt` | Offline e contagem de operações pendentes; atualmente offline usa cor de erro |
 | `feature/tasks/.../feature/tasks/ui/TasksScreen.kt` | Lista global informativa; chips em `Surface`, sem ação fictícia |
 | `feature/projects/.../feature/projects/ui/projectdetail/TaskRow.kt:219–259` | Chips informativos ainda são `AssistChip` com callback vazio; cores de status diferem da lista global |
 | `feature/tasks/.../feature/tasks/ui/DashboardScreen.kt` | Contagens de projetos, cinco barras de prioridade em Canvas, conclusão semanal/global |
-| `feature/settings/.../feature/settings/ui/{Profile,Theme,Notifications}Screen.kt` | Perfil com edição local, tema Sistema/Claro/Escuro, lembretes e permissão Android real |
+| `feature/settings/.../feature/settings/ui/{SettingsScreen,SettingsStructure}.kt` | **Todo** o UI do módulo: `SettingsScreen` é uma lista neutra que apenas despacha `SettingsActionType`, e o `NavHost` trata `Profile`, `Notifications` e `Theme` como placeholder vazio. **Não existem** `ProfileScreen`, `ThemeScreen`, `NotificationsScreen` nem `SettingsViewModel` |
 | `gradle/libs.versions.toml` | BOM Compose `2024.10.01`; POM oficial associa UI/Foundation/Animation `1.7.5`, Material 3 `1.3.1` |
 
-Existem raios, espaçamentos e transparências locais nas features; trocar somente `ColorScheme` não cria uma linguagem consistente. Alguns comentários/AGENTS e [acessibilidade atual](docs/ACESSIBILIDADE.md) estão defasados: código confirma quatro abas e SettingsViewModel. Esta proposta usa o código como evidência funcional.
+Existem raios, espaçamentos e transparências locais nas features; trocar somente `ColorScheme` não cria uma linguagem consistente. Alguns comentários/AGENTS e [acessibilidade atual](docs/ACESSIBILIDADE.md) estão defasados: o código confirma **quatro abas**, mas **não** confirma `SettingsViewModel` (a classe não existe). Esta proposta usa o código como evidência funcional.
+
+**Estado verificado em 02/10/2026** contra `5b483ba`: cada referência de arquivo/linha deste documento e das demais peças foi conferida linha a linha com o código. Resultado, divergências encontradas e correções aplicadas estão na **seção 14** do [plano de implementação](docs/plans/2026-10-01-redesign-neobrutalista.md).
 
 **Limite da inspeção:** não houve execução do app nem captura de telas. Não foram encontrados goldens/screenshot fixtures na busca por imagens, apenas ícones de launcher. A avaliação visual atual é inferida dos composables; não é uma auditoria visual em dispositivo.
 
@@ -147,7 +150,7 @@ Tags têm cor escolhida pelo usuário no modelo atual: exibi-la como swatch com 
 
 **Proposta:** Archivo para títulos/controles enfáticos e Public Sans para leitura. Ambas têm Latin/Latin-ext e licença SIL OFL 1.1 verificada no repositório Google Fonts. Archivo sustenta títulos compactos e robustos; Public Sans evita que a interface inteira tenha voz de cartaz. São escolhas de design, não garantias empíricas de maior usabilidade.
 
-Empacotar fontes locais em `core/ui/src/main/res/font/`, com OFL e origem registradas. O app deve funcionar offline na primeira abertura. Preferir arquivos estáticos oficiais dos pesos necessários; se usar instâncias geradas a partir dos eixos variáveis, documentar origem/geração e validar API 24/25. Não depender de suporte a fontes variáveis presente somente em Android mais novo. Fallback: `FontFamily.Default`; não usar negrito sintético como resultado final.
+Empacotar fontes locais em `core/ui/src/main/res/font/`, com OFL e origem registradas. O app deve funcionar offline na primeira abertura. O upstream oficial (`google/fonts`, diretórios `ofl/archivo` e `ofl/publicsans`) publica **apenas** instâncias variáveis (`Archivo[wdth,wght].ttf`, `PublicSans[wght].ttf`); não há arquivo estático por peso para baixar. Portanto: instanciar localmente os pesos usados, registrar ferramenta/versão/origem e validar API 24/25. Não depender de suporte a fontes variáveis presente somente em Android mais novo. Fallback: `FontFamily.Default`; não usar negrito sintético como resultado final.
 
 | Papel Material | Família | Tamanho / linha (sp) | Peso | Tracking (sp) |
 |---|---|---|---|---|
@@ -186,7 +189,7 @@ Projetar pela janela disponível, não pelo modelo do aparelho. [Fonte oficial](
 
 | Largura disponível | Composição |
 |---|---|
-| <600dp | 1 coluna; margens 16dp (24dp em auth se houver espaço); barra inferior com quatro destinos |
+| <600dp | 1 coluna; margens 16dp (24dp em auth se houver espaço); barra inferior com **quatro** destinos hoje e **cinco** no alvo deste redesign (Q13 acrescenta Agenda) |
 | 600–839dp | Rail; margens 24dp; cards de projeto em 2 colunas se cada coluna tiver ≥260dp; formulários até 480dp |
 | ≥840dp | Rail; margens 32dp; lista/detalhe lado a lado como evolução, sem inventar nova rota de tarefa |
 | ≥1200dp | Conteúdo de trabalho limitado a 1200dp; mais espaço não implica cartões gigantes |
