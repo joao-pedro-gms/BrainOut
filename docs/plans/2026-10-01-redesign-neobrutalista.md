@@ -70,6 +70,11 @@
 
 Paletas B/C selecionáveis; autenticação/remota e sync ampliado (deadline/TODO-DOING/tags/participants no servidor); captura sem projeto (“inbox”); recorrência de tarefas; fotos/avatares remotos; novos gráficos (Vico); painéis lista/detalhe simultâneos ≥ 840 dp; sync de preferências de visualização; import/refresh de dados remotos; Macrobenchmark (exceto se regressão); sessões de usabilidade formais.
 
+Dívida de gate identificada em NB-01 (02/10/2026), **fora do escopo do redesign**, mas que precisa ser paga antes que a CI possa proteger as fases seguintes:
+
+1. **Estabilizar `:feature:projects`** — 4 testes de `HomeViewModelTest` falham desde a refatoração `f846a02` (ordenação persistida, debounce, retry sem erro residual, primeira emissão com `isLoading = false`). Exige decidir, teste a teste, se o comportamento correto é o do teste ou o do código. Evidência em [BASELINE.md](../design/BASELINE.md).
+2. **Ligar os testes de unidade por feature na CI** (`:feature:projects|tasks|auth|settings:testDebugUnitTest`) — hoje nenhum workflow os executa, e foi assim que uma suíte que **não compilava** (`:feature:settings`, corrigida em 02/10/2026) e outra com 4 falhas passaram meses de CI verde. Só ligar **depois** do item 1, senão a CI fica vermelha para todos.
+
 ## 2. Contratos funcionais e de dados
 
 Capacidades novas exigem mudanças em `:core:domain`/`:core:data`. Cada uma vira tarefa funcional com testes próprios (F3). O contrato de rede **não** muda (Q8).
@@ -760,7 +765,7 @@ Esperado: contraste/paridade dos documentos de design e consistência deste road
 ./gradlew :app:testDevDebugUnitTest
 ```
 
-Features não têm flavor próprio (`testDebugUnitTest`); `:app`/`:core:data` usam variantes dev/prod. A CI lista os `testDebugUnitTest` por feature explicitamente porque `testDevDebugUnitTest` não os alcança — o gate completo da seção abaixo os inclui.
+Features não têm flavor próprio (`testDebugUnitTest`); `:app`/`:core:data` usam variantes dev/prod. **Auditoria de 02/10/2026:** a CI **não** lista os `testDebugUnitTest` por feature — `ci.yml` roda apenas `testDevDebugUnitTest` (que alcança `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain`) e, em outro job, `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Nenhum workflow cita `:feature:*`. Por isso, os comandos por feature abaixo são **gate local obrigatório** até a dívida do §1.3 ser paga; não presuma que a CI os cobre.
 
 ### Gates antes de publicar código e ao finalizar
 
