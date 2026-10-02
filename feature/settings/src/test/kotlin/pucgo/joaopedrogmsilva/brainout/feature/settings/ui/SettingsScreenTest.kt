@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -44,15 +45,22 @@ class SettingsScreenTest {
             }
         }
 
+        // O título está na `TopAppBar`, fora da coluna rolável: sem
+        // `performScrollTo`. O subtítulo e as opções vivem dentro da
+        // coluna com `verticalScroll` e ficam abaixo da dobra na janela
+        // do Robolectric, então cada asserção rola até o nó.
         composeRule.onNodeWithText("Configurações").assertIsDisplayed()
         composeRule.onNodeWithText("Preferências da sua conta e do aplicativo.")
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Conta").assertIsDisplayed()
-        composeRule.onNodeWithText("Aparência").assertIsDisplayed()
-        composeRule.onNodeWithText("Perfil").assertIsDisplayed()
-        composeRule.onNodeWithText("Notificações").assertIsDisplayed()
-        composeRule.onNodeWithText("Tema").assertIsDisplayed()
-        composeRule.onNodeWithText("Sair").assertIsDisplayed()
+            .performScrollTo().assertIsDisplayed()
+        // Os títulos de seção são renderizados em caixa alta pela própria
+        // tela (`stringResource(...).uppercase()`), então a asserção usa o
+        // texto como ele aparece para o usuário.
+        composeRule.onNodeWithText("CONTA").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("APARÊNCIA").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Perfil").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Notificações").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Tema").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Sair").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -66,10 +74,10 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag("settings_option_profile").performClick()
-        composeRule.onNodeWithTag("settings_option_notifications").performClick()
-        composeRule.onNodeWithTag("settings_option_theme").performClick()
-        composeRule.onNodeWithTag("settings_option_signout").performClick()
+        composeRule.onNodeWithTag("settings_option_profile").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_option_notifications").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_option_theme").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_option_signout").performScrollTo().performClick()
 
         assert(dispatched.size == 4)
         assert(dispatched[0] == SettingsActionType.Profile)
