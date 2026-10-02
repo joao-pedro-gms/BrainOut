@@ -7,6 +7,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Testes do critério E4.5 do ROADMAP.
@@ -32,6 +33,11 @@ import org.robolectric.RobolectricTestRunner
  * deterministicamente em JUnit, sem precisar montar Compose runtime.
  */
 @RunWith(RobolectricTestRunner::class)
+// `sdk = [34]` pela convenção do repositório (AGENTS.md). Sem o pin, o
+// Robolectric assume o `targetSdk` do projeto (37) e falha na inicialização
+// com `targetSdkVersion=37 > maxSdkVersion=35` — o que impedia
+// `:core:ui:testDebugUnitTest` de rodar por inteiro.
+@Config(sdk = [34])
 class ThemeSelectionTest {
 
     // ------------------------------------------------------------------
