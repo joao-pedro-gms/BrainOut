@@ -6,98 +6,105 @@ package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 import androidx.compose.ui.graphics.Color
 import java.io.File
 
+private val roleAccessors: Map<String, (NeoColors) -> Color> = mapOf(
+    "background" to { it.background },
+    "surface" to { it.surface },
+    "surface.alt" to { it.surfaceAlt },
+    "text.primary" to { it.textPrimary },
+    "text.muted" to { it.textMuted },
+    "border.default" to { it.borderDefault },
+    "border.onAccent" to { it.borderOnAccent },
+    "focus" to { it.focus },
+    "shadow" to { it.shadow },
+    "action.background" to { it.actionBackground },
+    "action.text" to { it.actionText },
+    "brand.background" to { it.brandBackground },
+    "brand.text" to { it.brandText },
+    "link" to { it.link },
+    "onLink" to { it.onLink },
+    "secondary" to { it.secondary },
+    "onSecondary" to { it.onSecondary },
+    "secondary.container" to { it.secondaryContainer },
+    "secondary.text" to { it.secondaryText },
+    "success" to { it.success },
+    "onSuccess" to { it.onSuccess },
+    "success.container" to { it.successContainer },
+    "success.text" to { it.successText },
+    "info" to { it.info },
+    "info.container" to { it.infoContainer },
+    "info.text" to { it.infoText },
+    "warning" to { it.warning },
+    "warning.container" to { it.warningContainer },
+    "warning.text" to { it.warningText },
+    "error" to { it.error },
+    "onError" to { it.onError },
+    "error.container" to { it.errorContainer },
+    "error.text" to { it.errorText },
+    "disabled.background" to { it.disabledBackground },
+    "disabled.text" to { it.disabledText },
+    "inverse.background" to { it.inverseBackground },
+    "inverse.text" to { it.inverseText },
+    "inverse.primary" to { it.inversePrimary },
+    "scrim" to { it.scrim },
+)
+
 /**
  * Resolve o nome de um papel semântico (`"text.primary"`, `"info.container"`)
  * para a cor efetiva de um tema.
  *
  * Existe para que os testes de contraste e de paridade leiam os papéis pelo
  * **nome usado na especificação**, e não pela propriedade Kotlin: assim um
- * renomeio no Kotlin quebra o teste, em vez de passar despercebido.
+ * renomeio no Kotlin quebra o teste, em vez de passar despercebido. O mapa
+ * evita um `when` de 39 ramos (que estoura o limite de complexidade do
+ * detekt sem trazer nenhum benefício aqui).
  */
-internal fun neoRole(colors: NeoColors, role: String): Color = when (role) {
-    "background" -> colors.background
-    "surface" -> colors.surface
-    "surface.alt" -> colors.surfaceAlt
-    "text.primary" -> colors.textPrimary
-    "text.muted" -> colors.textMuted
-    "border.default" -> colors.borderDefault
-    "border.onAccent" -> colors.borderOnAccent
-    "focus" -> colors.focus
-    "shadow" -> colors.shadow
-    "action.background" -> colors.actionBackground
-    "action.text" -> colors.actionText
-    "brand.background" -> colors.brandBackground
-    "brand.text" -> colors.brandText
-    "link" -> colors.link
-    "onLink" -> colors.onLink
-    "secondary" -> colors.secondary
-    "onSecondary" -> colors.onSecondary
-    "secondary.container" -> colors.secondaryContainer
-    "secondary.text" -> colors.secondaryText
-    "success" -> colors.success
-    "onSuccess" -> colors.onSuccess
-    "success.container" -> colors.successContainer
-    "success.text" -> colors.successText
-    "info" -> colors.info
-    "info.container" -> colors.infoContainer
-    "info.text" -> colors.infoText
-    "warning" -> colors.warning
-    "warning.container" -> colors.warningContainer
-    "warning.text" -> colors.warningText
-    "error" -> colors.error
-    "onError" -> colors.onError
-    "error.container" -> colors.errorContainer
-    "error.text" -> colors.errorText
-    "disabled.background" -> colors.disabledBackground
-    "disabled.text" -> colors.disabledText
-    "inverse.background" -> colors.inverseBackground
-    "inverse.text" -> colors.inverseText
-    "inverse.primary" -> colors.inversePrimary
-    "scrim" -> colors.scrim
-    else -> error("Papel semântico desconhecido no teste: '$role'")
-}
+internal fun neoRole(colors: NeoColors, role: String): Color =
+    roleAccessors[role]?.invoke(colors)
+        ?: error("Papel semântico desconhecido no teste: '$role'")
+
+private val primitives: Map<String, Color> = mapOf(
+    "ink" to NeoPrimitive.ink,
+    "paper" to NeoPrimitive.paper,
+    "white" to NeoPrimitive.white,
+    "neutral" to NeoPrimitive.neutral,
+    "muted" to NeoPrimitive.muted,
+    "yellow" to NeoPrimitive.yellow,
+    "violet" to NeoPrimitive.violet,
+    "mint" to NeoPrimitive.mint,
+    "blue" to NeoPrimitive.blue,
+    "orange" to NeoPrimitive.orange,
+    "night" to NeoPrimitive.night,
+    "charcoal" to NeoPrimitive.charcoal,
+    "graphite" to NeoPrimitive.graphite,
+    "mutedDark" to NeoPrimitive.mutedDark,
+    "shadowDark" to NeoPrimitive.shadowDark,
+    "ochre" to NeoPrimitive.ochre,
+    "purple" to NeoPrimitive.purple,
+    "purpleLight" to NeoPrimitive.purpleLight,
+    "purpleDeep" to NeoPrimitive.purpleDeep,
+    "purplePaper" to NeoPrimitive.purplePaper,
+    "green" to NeoPrimitive.green,
+    "greenPaper" to NeoPrimitive.greenPaper,
+    "greenDeep" to NeoPrimitive.greenDeep,
+    "greenLight" to NeoPrimitive.greenLight,
+    "blueInk" to NeoPrimitive.blueInk,
+    "bluePaper" to NeoPrimitive.bluePaper,
+    "blueDeep" to NeoPrimitive.blueDeep,
+    "amberInk" to NeoPrimitive.amberInk,
+    "amberPaper" to NeoPrimitive.amberPaper,
+    "amberDeep" to NeoPrimitive.amberDeep,
+    "amberLight" to NeoPrimitive.amberLight,
+    "red" to NeoPrimitive.red,
+    "redInk" to NeoPrimitive.redInk,
+    "redPaper" to NeoPrimitive.redPaper,
+    "redDeep" to NeoPrimitive.redDeep,
+    "redLight" to NeoPrimitive.redLight,
+    "black" to NeoPrimitive.black,
+)
 
 /** Resolve o nome de um primitivo (`"ink"`, `"redPaper"`) para a cor Kotlin. */
-internal fun neoPrimitive(name: String): Color = when (name) {
-    "ink" -> NeoPrimitive.ink
-    "paper" -> NeoPrimitive.paper
-    "white" -> NeoPrimitive.white
-    "neutral" -> NeoPrimitive.neutral
-    "muted" -> NeoPrimitive.muted
-    "yellow" -> NeoPrimitive.yellow
-    "violet" -> NeoPrimitive.violet
-    "mint" -> NeoPrimitive.mint
-    "blue" -> NeoPrimitive.blue
-    "orange" -> NeoPrimitive.orange
-    "night" -> NeoPrimitive.night
-    "charcoal" -> NeoPrimitive.charcoal
-    "graphite" -> NeoPrimitive.graphite
-    "mutedDark" -> NeoPrimitive.mutedDark
-    "shadowDark" -> NeoPrimitive.shadowDark
-    "ochre" -> NeoPrimitive.ochre
-    "purple" -> NeoPrimitive.purple
-    "purpleLight" -> NeoPrimitive.purpleLight
-    "purpleDeep" -> NeoPrimitive.purpleDeep
-    "purplePaper" -> NeoPrimitive.purplePaper
-    "green" -> NeoPrimitive.green
-    "greenPaper" -> NeoPrimitive.greenPaper
-    "greenDeep" -> NeoPrimitive.greenDeep
-    "greenLight" -> NeoPrimitive.greenLight
-    "blueInk" -> NeoPrimitive.blueInk
-    "bluePaper" -> NeoPrimitive.bluePaper
-    "blueDeep" -> NeoPrimitive.blueDeep
-    "amberInk" -> NeoPrimitive.amberInk
-    "amberPaper" -> NeoPrimitive.amberPaper
-    "amberDeep" -> NeoPrimitive.amberDeep
-    "amberLight" -> NeoPrimitive.amberLight
-    "red" -> NeoPrimitive.red
-    "redInk" -> NeoPrimitive.redInk
-    "redPaper" -> NeoPrimitive.redPaper
-    "redDeep" -> NeoPrimitive.redDeep
-    "redLight" -> NeoPrimitive.redLight
-    "black" -> NeoPrimitive.black
-    else -> error("Primitivo desconhecido no teste: '$name'")
-}
+internal fun neoPrimitive(name: String): Color =
+    primitives[name] ?: error("Primitivo desconhecido no teste: '$name'")
 
 /** Par de contraste declarado em `docs/design/tokens.json` (`contrastChecks`). */
 internal data class ContrastPair(val foreground: String, val background: String, val minimum: Double)
