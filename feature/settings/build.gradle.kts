@@ -56,6 +56,16 @@ android {
         error += "MissingTranslation"
         checkReleaseBuilds = false
     }
+
+    // E1.3 — `SettingsScreenTest` é um teste Compose rodando na JVM via
+    // Robolectric; sem `isIncludeAndroidResources` os recursos do tema e
+    // dos ícones não são resolvidos. Mesmo ajuste aplicado em
+    // `:feature:tasks`.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -84,6 +94,17 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+
+    // E1.3 — testes de UI Compose de `SettingsScreen` via Robolectric.
+    // As dependências faltavam desde a criação do teste, que por isso
+    // nunca compilou (`Unresolved reference 'test'`, `Config`,
+    // `createComposeRule`). Espelha o bloco equivalente de `:feature:tasks`.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.espresso.core)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 detekt {
