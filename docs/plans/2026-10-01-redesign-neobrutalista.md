@@ -13,7 +13,7 @@
 ## 1. Base, objetivo e decisões confirmadas
 
 - **Data:** 01/10/2026. **Status:** planejado; nenhuma tarefa de implementação concluída por este documento. Esta versão incorpora as decisões Q1–Q30 confirmadas pelo usuário (“confirmado”) e substitui as recomendações da versão anterior.
-- **Base inspecionada:** `4dcfa0a57fddd9d987b352914396bac1fd02c59c`.
+- **Base inspecionada:** `4dcfa0a57fddd9d987b352914396bac1fd02c59c`. **Auditada linha a linha em 02/10/2026** contra `5b483ba` (ver seção 14): as referências de arquivo/linha foram conferidas uma a uma e as divergências estão listadas lá.
 - **Especificação de referência:** [DESIGN.md](../../DESIGN.md), [componentes e fluxos](../design/ESPECIFICACAO.md), [pesquisa de bibliotecas](../design/PESQUISA.md) e [tokens](../design/tokens.json).
 - **Rastreabilidade acadêmica:** [roadmap existente](../ROADMAP.md). Este plano é uma iteração nova de redesign/ampliação; não reabre entregas marcadas como concluídas (inclusive E4.8 e `v1.0.0-rc`).
 - **Execução:** um desenvolvedor; entregas intermediárias ao usuário **não** são previstas (decisão Q11: entrega final única). PRs pequenos existem para revisão/CI, não para builds de demonstração. Estimativas são de esforço, não datas (Q3: sem prazo fixo).
@@ -51,7 +51,7 @@
 | Q27 | Desempenho: procedimento manual reproduzível (`am start -W` + `dumpsys gfxinfo`/`framestats`) documentado em `docs/`, mesmo build antes/depois (release sem assinatura local ou artefato CI); Macrobenchmark só se regressão for encontrada |
 | Q28 | Arte em splash/estados vazios/conclusão apenas, 1–2 elementos interativos, assets ≤ 1 MB comprimidos, fallback estático quando animações desativadas |
 | Q29 | Gate de testes: domain/data sempre testados (Kover 60% em core domain/data), ViewModels com Turbine, Compose UI Test apenas nos fluxos críticos (kanban, editor, agenda); sem golden/snapshot |
-| Q30 | Publicação inicial: PR só de docs (DESIGN.md + docs/design/ + docs/plans/) a partir de `origin/main`, sem tocar os 4 commits preexistentes do `main` local; a publicação deles fica com o usuário |
+| Q30 | Publicação inicial: PR só de docs (DESIGN.md + docs/design/ + docs/plans/) a partir de `origin/main`, sem tocar os 4 commits preexistentes do `main` local; a publicação deles fica com o usuário. **Concluída em 02/10/2026** (PR #80): `main` local e `origin/main` estão idênticos em `5b483ba`, então a ressalva sobre os 4 commits deixou de se aplicar |
 
 ### 1.2 Incluído na entrega principal
 
@@ -87,7 +87,7 @@ Capacidades novas exigem mudanças em `:core:domain`/`:core:data`. Cada uma vira
 - **Modelo:** `Task.dueDate: Instant?` permanece; nova coluna `deadline_all_day INTEGER NOT NULL DEFAULT 0` em `tasks` (`MIGRATION_4_5`) e campo `dueDateAllDay: Boolean` no domínio.
 - **Gravação:** dia inteiro → `dueDate` = 23:59:00 local do dia escolhido (fuso do dispositivo no momento da gravação), flag `1`; com hora → instante exato, flag `0`.
 - **Exibição:** dia inteiro mostra a data sem hora (“hoje/amanhã/23 mai”); com hora mostra data + hora. Fuso sempre o atual do dispositivo; trocar de fuso pode mudar o dia exibido (comportamento documentado, sem fuso congelado).
-- **Lembretes:** gatilho = `dueDate − 24h` (dia inteiro) ou `dueDate − 1h` (com hora), somente se futuro. Reconciliação executada em **toda** mutação de tarefa: `CreateTaskUseCase`, `UpdateTaskUseCase`, `ChangeTaskStatusUseCase` (corrige o gap atual de lembrete obsoleto) e exclusão cancela.
+- **Lembretes:** gatilho = `dueDate − 24h` (dia inteiro) ou `dueDate − 1h` (com hora), somente se futuro. Reconciliação executada em **toda** mutação de tarefa: `CreateTaskUseCase`, `UpdateTaskUseCase`, `ChangeTaskStatusUseCase` e exclusão cancela. **Auditoria 02/10/2026:** `ChangeTaskStatusUseCase` **já** chama `reconcileReminder` (l. 68 e 85) — não há gap atual de lembrete obsoleto a corrigir; o que falta é a revalidação do gatilho no `DeadlineWorker` e a semântica nova de dia inteiro.
 - **`DeadlineWorker`** passa a revalidar antes de publicar: tarefa inexistente/DONE/sem prazo/pref desligada/permissão negada/**gatilho não corresponde mais ao prazo atual** (auto-correção de agendamento obsoleto).
 - **Reclassificação legada (Q23):** normalização idempotente executada na primeira carga após upgrade: `dueDate` à meia-noite local → dia inteiro (23:59 + flag). Testes cobrem detecção de meia-noite no fuso do dispositivo.
 - **Aviso local (Q24):** editor de tarefa exibe “prazo visível só neste dispositivo”.
@@ -127,7 +127,7 @@ Capacidades novas exigem mudanças em `:core:domain`/`:core:data`. Cada uma vira
 
 - **Localização:** dentro do detalhe do projeto; controle segmentado `Lista | Kanban` persistido por usuário (chave de preferência de listagem).
 - **Colunas fixas:** TODO, DOING, DONE; cartões ordenados por `priorityCode` decrescente (CRITICAL → LOW) e depois `createdAt` crescente.
-- **Drag-and-drop:** implementação própria com `pointerInput` (Compose 1.7.5 não traz DnD de lazy list de primeira parte) entre colunas; drop válido chama `ChangeTaskStatusUseCase`; transição inválida mostra mensagem e devolve o cartão. Risco e fallback na seção 11.
+- **Drag-and-drop:** implementação própria com `pointerInput` entre colunas; drop válido chama `ChangeTaskStatusUseCase`; transição inválida mostra mensagem e devolve o cartão. Risco e fallback na seção 11. **Auditoria 02/10/2026:** a premissa «Compose 1.7.5 não traz DnD de lazy list» **não é decidível pelo POM** (que só publica versões); conferir a API resolvida no início de NB-22 e manter os comandos acessíveis como caminho garantido.
 - **Comandos acessíveis (obrigatórios, Q15):** menu por cartão “Mover para …” listando apenas transições válidas da matriz `TaskStatus`; operável por teclado/TalkBack/Switch Access.
 - **DONE:** sem mudança de prioridade no cartão; comando de reabrir = DONE → DOING. Conclusão de TODO via use case encadeia TODO → DOING → DONE (comportamento existente preservado).
 - **Chaves estáveis** por `task.id`; sem animação de lista inteira.
@@ -247,7 +247,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 1. Registrar SHA, JDK, SDK, variante, resolução real de dependências e dispositivos disponíveis.
 2. Rodar o gate da seção 9 (incluindo os `testDebugUnitTest` por feature — a CI os lista porque `testDevDebugUnitTest` não os alcança); registrar falhas preexistentes.
-3. Registrar o defeito do diálogo de criação (fecha antes do sucesso — `HomeScreen.kt:102-109`) como conhecido; a correção é NB-18, antes da migração visual da Home.
+3. Registrar o defeito do diálogo de criação (fecha antes do sucesso: `HomeScreen.kt` fecha em `onCreateProject`, no dispatch de `viewModel.createProject`, e não no evento de sucesso) como conhecido; a correção é NB-18, antes da migração visual da Home.
 4. Definir o roteiro reproduzível de desempenho (Q27): build de medição = `:app:assembleDevRelease` assinado com keystore local **não versionado** (variáveis `BRAINOUT_KEYSTORE_*`, gerado com `keytool` fora do repo) ou artefato CI; capturas de tela não são evidência de desempenho.
 5. Comandos do roteiro: `adb shell am force-stop <pkg>` + `am start -W -S -n <pkg>/.MainActivity` (startup frio ×3), cenário fixo Projetos → detalhe → voltar; `adb shell dumpsys gfxinfo <pkg> reset` → cenário → `dumpsys gfxinfo <pkg> framestats`; métricas: tempo total de startup, proporção de frames lentos, p95 por frame (referência 16,7 ms a 60 Hz / 8,3 ms a 120 Hz). Registrar dispositivo, taxa de atualização, 3 execuções e variação. Mesmo build/dispositivo antes (NB-01) e depois (NB-34).
 
@@ -257,12 +257,12 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-01. **Refs:** R1, R3, R11, E2.8, E4.4.
 
-**Criar:** `docs/design/MATRIZ_MIGRACAO.md`. **Ler:** rotas/telas dos quatro módulos de feature, `$APP/navigation/BottomBar.kt`, seção 2 deste plano.
+**Criar:** `docs/design/MATRIZ_MIGRACAO.md`. **Ler:** rotas/telas dos quatro módulos de feature, `$PROJECTS/ui/home/{HomeBottomBar,HomeTab,HomeScreen}.kt` (a barra inferior vive na feature de projetos; **não existe** `$APP/navigation/BottomBar.kt`), `$APP/navigation/BrainOutNavHost.kt`, seção 2 deste plano.
 
 1. Listar as onze rotas atuais + as novas (agenda, editor de tarefa, participantes, biblioteca de tags, kanban): componentes, callbacks, `TestTags`, insets.
 2. Registrar estados: loading, erro de leitura, erro de ação, vazio, filtro sem resultado, conteúdo, permissões; marcar rotas `legada/em migração/migrada/validada`.
 3. Tabela de capacidades: o que já existe (CRUD de tarefas, cascata, filas, preferências) × capacidade nova (seções 2.1–2.8) × o que é local-only (2.9).
-4. Registrar lacunas conhecidas: `CanPerformActionUseCase` sem uso de produção, Member sem visibilidade, detalhe sem gate de papel, `UpdateTaskUseCase` bloqueia qualquer update de DONE, lembrete obsoleto em `ChangeTaskStatusUseCase`, `selected_tag_id` órfão.
+4. Registrar lacunas conhecidas (**conferidas em 02/10/2026**): `CanPerformActionUseCase` sem uso de produção, Member sem visibilidade (`observeSearch(ownerId = …)` é owner-only), detalhe sem gate de papel, `UpdateTaskUseCase` bloqueia qualquer update de DONE, `selected_tag_id` órfão e — lacuna nova — `ProfileScreen`/`ThemeScreen`/`NotificationsScreen`/`SettingsViewModel` **inexistentes** (Perfil, Tema e Notificações são placeholders vazios no `NavHost`). `ChangeTaskStatusUseCase` **saiu** da lista: já reconcilia lembrete.
 
 **Aceite:** 100% das rotas/estados mapeados; nenhuma capacidade nova descrita como existente.
 
@@ -326,7 +326,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Criar:** `$UI/modifier/HardShadow.kt`, `$UI/motion/BrainOutMotionPolicy.kt`, `$UI/motion/BrainOutMotionTokens.kt`, `$UI_TEST/motion/BrainOutMotionPolicyTest.kt`. **Alterar:** `gradle/libs.versions.toml`, `core/ui/build.gradle.kts` só se dependência direta for necessária.
 
-1. Sombra deslocada sem blur, compatível com Compose 1.7.5 (desenho próprio; `dropShadow` exige upgrade — fora).
+1. Sombra deslocada sem blur, desenhada à mão porque `dropShadow` só aparece em Compose mais novo que a BOM atual (`2024.10.01` → UI `1.7.5`). **Auditoria 02/10/2026:** o POM confirma a versão, mas **não** decide a presença da API — conferir a API resolvida ao iniciar NB-07 e só então manter ou trocar a abordagem.
 2. Face se move no press (80 ms, +2 dp) e volta (120 ms); hitbox/layout estáveis; cobrir clipping e listas.
 3. Durações: estado 160 ms, navegação 220 ms (≤ 16 dp), modal/conclusão 240 ms (≤ 24 dp), ilustração ≤ 600 ms, um ciclo.
 4. `BrainOutMotionPolicy` central: duration scale 0 desativa motion customizado e seleciona poster estático (Q28); haptics opcional só em confirmação real.
@@ -408,7 +408,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Criar:** `DeadlineReminderReconciler`, `LegacyDeadlineNormalization`, coluna `deadline_all_day` (em `MIGRATION_4_5` ou migração complementar documentada). **Alterar:** `Task`/`TaskEntity` (`dueDateAllDay`), `CreateTaskUseCase.kt:65-74`, `UpdateTaskUseCase.kt:50-69`, `ChangeTaskStatusUseCase.kt:83-97`, `WorkManagerDeadlineScheduler.kt:41-59`, `DeadlineWorker.kt:54-78`, `InstantConverter`/`DeadlineField.kt:33-48`.
 
-1. Teste primeiro: dia inteiro grava 23:59 local; com hora grava instante exato; lembrete 24 h/1 h antes; recálculo em qualquer edição **inclusive mudança de status** (gap atual).
+1. Teste primeiro: dia inteiro grava 23:59 local; com hora grava instante exato; lembrete 24 h/1 h antes; recálculo em qualquer edição **inclusive mudança de status** (o `ChangeTaskStatusUseCase` **já** reconcilia hoje — o teste protege o comportamento existente e cobre a semântica nova de dia inteiro).
 2. Normalização idempotente de meia-noite local → dia inteiro na primeira carga; testes de fuso (inclui mudança de fuso).
 3. `DeadlineWorker` revalida gatilho × prazo atual antes de publicar.
 4. UI de prazo (em NB-09/NB-20) consome o novo contrato; semântica de feriado preservada.
@@ -431,7 +431,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-12 (papéis). **Refs:** R3, R4, E2.1, E2.6.
 
-**Criar:** `DuplicateTagNameException`, `TagWithUsage`. **Alterar:** `TagRepository.kt:7-26` (+create/update/observeTagsWithUsage), `TagRepositoryImpl.kt`, `TagDao.kt:34-67`, `ListingPreferencesRepositoryImpl.kt` (limpar `selected_tag_id` órfão), `HomeListingPipeline.kt:174-178`.
+**Criar:** `DuplicateTagNameException`, `TagWithUsage`. **Alterar:** `TagRepository.kt` (hoje 22 linhas, só leitura: `observeForOwner`/`observeByProjectIds`; `create`/`update`/`observeTagsWithUsage` ainda não existem), `TagRepositoryImpl.kt`, `TagDao.kt:34-67`, `ListingPreferencesRepositoryImpl.kt` (limpar `selected_tag_id` órfão), `HomeListingPipeline.kt:174-178`.
 
 1. Teste primeiro: criar tag independente; rename/recore persistem localmente; duplicata vira erro de domínio; exclusão limpa seleção órfã; `projectCount` correto.
 2. Implementar `create/update/observeTagsWithUsage` com regra de papel (Owner administra — Q20).
@@ -458,7 +458,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-11, NB-12. **Refs:** R1, R11, E4.4.
 
-**Criar:** `$APP/navigation/BrainOutNavigationShell.kt`, `$APP_TEST/navigation/BrainOutNavigationShellTest.kt`. **Alterar:** `$APP/navigation/BottomBar.kt:65-115`, `BrainOutNavHost.kt`, `$APP_TEST/navigation/BottomBarTest.kt`, `BrainOutRoutes` (rota `agenda`).
+**Criar:** `$APP/navigation/BrainOutNavigationShell.kt`, `$APP_TEST/navigation/BrainOutNavigationShellTest.kt`. **Alterar:** `$PROJECTS/ui/home/HomeBottomBar.kt` e `HomeTab.kt` (a barra inferior está na feature de projetos; `$APP/navigation/BottomBar.kt:65-115` e `$APP_TEST/navigation/BottomBarTest.kt` **não existem** — o teste é novo), `BrainOutNavHost.kt`, `BrainOutRoutes` (rota `agenda`).
 
 1. Cinco destinos (Projetos, Tarefas, Agenda, Dashboard, Configurações); tema novo no shell.
 2. < 600 dp bottom bar; ≥ 600 dp rail; margens 16/24/32; conteúdo ≤ 1200 dp; formulários ≤ 480 dp. **Contrato ≥ 840 dp:** mesmo grid de 2 colunas com margem 32 (painéis lista/detalhe ficam no backlog). Largura útil = janela − rail − margens − offset de sombra.
@@ -471,7 +471,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-11. **Refs:** R3, R5, E2.1, E2.8.
 
-**Alterar:** `$PROJECTS/ui/home/HomeActions.kt`, `HomeViewModel.kt`, `HomeUiModels.kt`, `HomeScreen.kt:102-109`, `HomeCreateProjectDialog.kt`; `$PROJECTS_TEST/ui/home/HomeViewModelTest.kt`. **Criar:** `$PROJECTS_TEST/ui/home/HomeCreateProjectDialogTest.kt`.
+**Alterar:** `$PROJECTS/ui/home/HomeActions.kt`, `HomeViewModel.kt`, `HomeUiModels.kt`, `HomeScreen.kt` (o índice `102-109` aponta para o FAB; o fechamento indevido está no bloco do `CreateProjectDialog`), `HomeCreateProjectDialog.kt`; `$PROJECTS_TEST/ui/home/HomeViewModelTest.kt`. **Criar:** `$PROJECTS_TEST/ui/home/HomeCreateProjectDialogTest.kt`.
 
 1. Teste primeiro (vermelho): hoje `HomeScreen` fecha o diálogo no dispatch, mesmo em falha.
 2. Estado explícito de criação + evento de sucesso local (Channel); impedir segunda submissão ativa; back durante submissão não cancela escrita iniciada silenciosamente (confirmar descarte).
@@ -484,7 +484,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-17, NB-18. **Refs:** R3, R5, R9, R10, R11, E2.1, E2.6, E3.4.
 
-**Alterar:** `$PROJECTS/ui/home/HomeScreen.kt`, `HomeTopBar.kt`, `HomeSearchBar.kt`, `HomeFilterRow.kt`, `HomeProjectCard.kt`, `HomeProjectsContent.kt:57-160`, `HomeFab.kt`, `HomeStates.kt`, `HomeEmptyStates.kt`, `HomeOfflineBanner.kt`, `HomeCreateProjectDialog.kt`; `$PROJECTS_TEST/ui/home/HomeEmptyStateTest.kt`. **Criar:** `$PROJECTS_TEST/ui/home/HomeScreenTest.kt`, `$PROJECTS/ui/tags/TagLibraryScreen.kt` + `TagLibraryViewModel` (entrada na área de Projetos), testes correspondentes.
+**Alterar:** `$PROJECTS/ui/home/HomeScreen.kt`, `HomeTopBar.kt`, `HomeSearchBar.kt`, `HomeFilterRow.kt`, `HomeProjectCard.kt`, `HomeProjectsContent.kt:57-160`, `HomeFab.kt`, `HomeStates.kt`, `HomeEmptyStates.kt`, `HomeOfflineBanner.kt`, `HomeCreateProjectDialog.kt`. **Criar:** `$PROJECTS_TEST/ui/home/HomeScreenTest.kt`, `$PROJECTS_TEST/ui/home/HomeEmptyStateTest.kt` (`HomeEmptyStateTest.kt` **não existe** hoje — a suíte de `:feature:projects` tem só três arquivos), `$PROJECTS/ui/tags/TagLibraryScreen.kt` + `TagLibraryViewModel` (entrada na área de Projetos), testes correspondentes.
 
 1. Componentes novos mantendo `TestTags` e callbacks; tags com swatch + label neutra (hex inválido → fallback sem alterar valor persistido).
 2. Grid: 1 coluna < 600 dp; 2 colunas ≥ 600 dp quando cada card ≥ 260 dp; keys estáveis; sombra sem corte.
@@ -512,7 +512,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-20, NB-16. **Refs:** R3, R4, R9, E2.2, E2.6.
 
-**Alterar:** `$TASKS/ui/TasksScreen.kt:65-269`, `TasksViewModel.kt:117-188`, `ListingPreferencesRepository` (chaves novas); `$TASKS_TEST/ui/TasksViewModelTest.kt`. **Criar:** `$TASKS/ui/TasksFilterBar.kt`, `$TASKS_TEST/ui/TasksScreenTest.kt`.
+**Alterar:** `$TASKS/ui/TasksScreen.kt:65-269`, `TasksViewModel.kt` (bloco de `uiState`), `ListingPreferencesRepository` (chaves novas); `$TASKS_TEST/ui/TasksViewModelTest.kt`. **Criar:** `$TASKS/ui/TasksFilterBar.kt`, `$TASKS_TEST/ui/TasksScreenTest.kt`.
 
 1. Linhas acionáveis: abrir projeto, abrir editor, menu de status (transições válidas), excluir (Owner, confirmação); prazo/badges com label redundante.
 2. Busca por título + filtros (projeto, status, prioridade, período) + ordenação (prazo, prioridade, criação, título) — contrato 2.6; persistência por usuário preservada no logout.
@@ -588,7 +588,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 
 **Depende de:** NB-25. **Refs:** R2, R8, R11, E4.5, E4.6, E3.6.
 
-**Alterar:** `$SETTINGS/ui/SettingsScreen.kt`, `SettingsStructure.kt`, `ProfileScreen.kt`, `ThemeScreen.kt`, `NotificationsScreen.kt`; `$SETTINGS_TEST/ui/SettingsScreenTest.kt`, `SettingsViewModelTest.kt`.
+**Alterar:** `$SETTINGS/ui/SettingsScreen.kt`, `SettingsStructure.kt`; `$SETTINGS_TEST/ui/SettingsScreenTest.kt`. **Criar:** `$SETTINGS/ui/ProfileScreen.kt`, `ThemeScreen.kt`, `NotificationsScreen.kt`, `$SETTINGS_TEST/ui/SettingsViewModelTest.kt` — **nenhum desses quatro arquivos existe hoje**: o módulo tem só `SettingsScreen`, `SettingsStructure` e `SettingsRoutes`, e o `NavHost` ignora `Profile`/`Notifications`/`Theme`. Tema persistido (System/Light/Dark) e preferência de lembretes também **não existem** e entram aqui, não como ajuste visual.
 
 1. Lista de preferências + perfil local (nome, avatar por iniciais); sem foto/upload/sync sugeridos.
 2. System/Light/Dark com radio semantics e confirmação do modo efetivo; persistência após reinício; sem paletas B/C.
@@ -709,7 +709,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 | Coil | Imagens remotas entrarem no escopo | Política offline/cache | Fora deste ciclo |
 | Compottie / Shimmer | Necessidade futura específica | Justificativa + custo de upgrade | Fora deste ciclo |
 
-Releases da pesquisa são snapshot de 01/10/2026. Antes de adotar: checar release/POM atual, versão no catálogo, resolver dependências, spike com relatório adotar/rejeitar. Sem Accompanist deprecated nem kits web. Upgrades de BOM/Compose são PRs próprios, anteriores ao uso de APIs novas.
+Releases da pesquisa são snapshot de 01/10/2026, **reverificados em 02/10/2026** (8/8 tags e datas conferem; nenhuma release nova entre as duas datas — detalhe na **seção 6** da [pesquisa](../design/PESQUISA.md)). Antes de adotar: checar release/POM atual, versão no catálogo, resolver dependências, spike com relatório adotar/rejeitar. Sem Accompanist deprecated nem kits web. Upgrades de BOM/Compose são PRs próprios, anteriores ao uso de APIs novas.
 
 **Drag-and-drop do kanban:** Compose 1.7.5 não oferece DnD de lazy list pronto; a implementação própria de NB-22 é o caminho principal e os comandos acessíveis são obrigatórios (Q15). Se o DnD próprio se mostrar instável nos testes/reais, o fallback é entregar colunas + comandos de movimentação completos e registrar o DnD como melhoria — nunca sacrificar a matriz de transições ou a acessibilidade.
 
@@ -844,7 +844,7 @@ Cada PR compila isoladamente; dividir por componente/feature se a revisão ficar
 
 **Rollback:** antes de NB-32, desativar/reverter a rota migrada mantendo dados e preferências. Depois, reverter o PR de ativação. Sem reset destrutivo; `MIGRATION_4_5` não tem migração reversa (dados novos são aditivos; app antigo ignora colunas novas — registrar em NB-12/NB-13).
 
-**Publicação inicial (Q30):** PR somente com `DESIGN.md`, `docs/design/` e `docs/plans/`, criado a partir de `origin/main` (não do `main` local, que está 4 commits à frente). Os 4 commits preexistentes e seus conteúdos não são tocados nem publicados por esta entrega; sua publicação fica com o usuário. Itens não-docs preexistentes (`.opencode/`, `specs/`, `gradle/gradle-daemon-jvm.properties`) fora do PR.
+**Publicação inicial (Q30) — concluída:** PR só de docs (`DESIGN.md`, `docs/design/`, `docs/plans/`) mergeado em 02/10/2026 como PR #80. `main` local e `origin/main` estão idênticos em `5b483ba`, sem commits pendentes de publicação; a ressalva original sobre «4 commits à frente» não se aplica mais. Artefatos não-docs preexistentes ficam fora dos PRs seguintes: hoje só `.rolebox/` está não rastreado (`specs/`, `.opencode/` e `gradle/gradle-daemon-jvm.properties` **não existem** nesta árvore).
 
 ## 12. Riscos e respostas
 
@@ -862,7 +862,7 @@ Cada PR compila isoladamente; dividir por componente/feature se a revisão ficar
 | Rails/grid reduzem área útil | NB-17/NB-31 | Breakpoints, card ≥ 260 dp, um dono de insets |
 | Migração de banco falha em dispositivos reais | NB-12/NB-13 | Testes de migração Room + QA nos 2 aparelhos |
 | Evidência de QA não corresponde ao artefato | NB-33/34/35 | Registrar SHA, variante, assinatura, aparelho, Hz e cenário |
-| Publicação mistura commits alheios | NB-P0/Q30 | PR docs a partir de `origin/main`; os 4 commits ficam intocados |
+| Publicação mistura commits alheios | NB-P0/Q30 | PR docs a partir de `origin/main`; publicação concluída no PR #80, sem commits pendentes (ver seção 11) |
 
 ## 13. Definição de pronto
 
@@ -882,3 +882,70 @@ Cada PR compila isoladamente; dividir por componente/feature se a revisão ficar
 **Primeiro recorte recomendado:** P0 (este documento + design) → NB-01 a NB-03 → F1 (NB-04 a NB-07) em PRs aditivos. Não iniciar pela troca global de `Color.kt` nem por instalar bibliotecas. O primeiro incremento funcional completo é F3+F4 (domínio + Projetos com shell de cinco destinos); o primeiro recorte funcional visível ao usuário só na entrega final (Q11).
 
 **Referência técnica consultada:** [Custom design systems — Android Developers](https://developer.android.com/develop/ui/compose/designsystems/custom) — tokens imutáveis/CompositionLocal e wrappers Material; APIs específicas conferidas contra a versão resolvida (Compose 1.7.5 / Material 3 1.3.1).
+
+## 14. Auditoria doc×código — 02/10/2026
+
+Segunda passagem exigida pelo usuário: os documentos desta proposta descreviam estado atual e estado futuro sem distinguir os dois, e a base inspecionada (`4dcfa0a`) já não era a árvore vigente. Esta seção é o registro da varredura. **Nenhum arquivo `.kt` foi alterado** — quando doc e código divergem, o doc descreve o código como ele é hoje; arquivo futuro fica no texto com marcador `a criar (NB-xx)`.
+
+### 14.1 Método e escopo
+
+- **Base:** `5b483ba` (idêntica a `origin/main`), JDK/SDK sem efeito nesta tarefa — só leitura de código, docs e fontes web.
+- **Escopo:** `DESIGN.md`, `docs/design/{ESPECIFICACAO,PESQUISA}.md`, `docs/design/tokens.json` + verificadores, este plano, `docs/ACESSIBILIDADE.md`, `docs/ARQUITETURA.md`, `docs/wireframes/README.md`, `AGENTS.md`, `README.md`.
+- **Fora do escopo:** `Documentos/` e `docs/ATAS/` (somente leitura), PDFs, e todo código Kotlin.
+- **Referências:** 301 citações de `Arquivo.ext[:linha]` extraídas dos documentos em escopo. 128 apontam para arquivos que o próprio plano manda **criar** — não são divergência. As demais foram conferidas uma a uma: existência do arquivo, faixa de linhas dentro do arquivo, conteúdo da linha citada e atribuição correta de `Criar`/`Alterar`/`Ler`/`Atualizar`.
+- **Claims externas:** toda a evidência web de `PESQUISA.md` foi reverificada em 02/10/2026 (releases via `gh api`, POM, licenças SPDX, READMEs, CSS upstream, documentação oficial). Resultado na **seção 6** da [pesquisa](../design/PESQUISA.md).
+- **Achados que exigem dispositivo:** nenhum foi declarado verificado. Este documento não substitui os gates das seções 9 e 10.
+
+### 14.2 Divergências encontradas e tratadas
+
+| Documento · linha original | Afirmação | Código real em `5b483ba` | Ação tomada | Decisão afetada |
+|---|---|---|---|---|
+| Plano NB-02 (`Ler`), NB-17 (`Alterar`) | `$APP/navigation/BottomBar.kt:65-115` e `$APP_TEST/navigation/BottomBarTest.kt` existem e serão alterados | Nenhum dos dois existe; a barra vive em `$PROJECTS/ui/home/HomeBottomBar.kt` + `HomeTab.kt`, com estado em `rememberSaveable` na `HomeScreen` | Referências corrigidas; teste passou a **criar** | NB-17 |
+| `docs/ACESSIBILIDADE.md` §2.2 | «Bottom bar com 3 destinos» | `HomeTab` tem **4**: `Projects`, `Tasks`, `Dashboard`, `Settings` | Corrigido para 4 com os nomes | — (doc de acessibilidade) |
+| `DESIGN.md` §1 (inventário) e §4 (layout) | Shell «com quatro destinos»; barra inferior com quatro | Idiomas corretos para hoje; o alvo deste redesign é **cinco** (Q13) | Texto passou a declarar 4 hoje **e** 5 como alvo | Q13 |
+| `DESIGN.md` §1 (inventário) | `feature/settings/.../ui/{Profile,Theme,Notifications}Screen.kt` — perfil, tema e lembretes reais | O módulo tem só `SettingsScreen`, `SettingsStructure`, `SettingsRoutes`; o `NavHost` trata `Profile`/`Notifications`/`Theme` como placeholder vazio | Inventário reescrito: telas **não existem** | NB-27, F6 |
+| `DESIGN.md` §1 (texto após o inventário) | «código confirma quatro abas e `SettingsViewModel`» | Quatro abas confere; `SettingsViewModel` **não existe** em módulo algum | Texto corrigido | NB-27 |
+| `DESIGN.md` §1 | «Possui … perfil, tema e lembretes» | Perfil, escolha manual de tema e preferência de lembretes não têm tela nem persistência | Frase reescrita como capacidade proposta | NB-06, NB-27 |
+| `ESPECIFICACAO.md` §2 (`:feature:settings`) | «Mudança instantânea de preferência já existe»; «o código atual possui orientação textual» (notificações) | `BrainOutTheme` só deriva `darkTheme` de `isSystemInDarkTheme()`; nenhuma preferência é persistida; não há tela de notificações | Bullets de Tema/Perfil/Notificações marcados como **trabalho novo** | NB-06, NB-27 |
+| `ESPECIFICACAO.md` §4 | «override de tema já existente» | Existe só o parâmetro `darkTheme`; modo persistido não existe | Reescrito | NB-06 |
+| `ESPECIFICACAO.md` §2 (detalhe) | «Edição de tags no projeto **não é suportada** pelo contrato atual» | `ProjectRepository.update(project, tagIds)` já aceita `tagIds`; o que falta é UI de edição e semântica de desassociação no sync | Reescrito: contrato aceita, UI e sync não cobrem | NB-15, NB-19 |
+| `DESIGN.md` §1 (linha de `TasksScreen`) | «chips em `Surface`, sem ação fictícia» | `TasksScreen.kt` usa `AssistChip` com `onClick = { /* chip é decorativo */ }` (l. 305 e 337) — mesma dívida que a linha do `TaskRow` descreve | Linha corrigida: a dívida vale para **as duas** telas | NB-21 |
+| Plano §2.2, NB-02 §4, NB-13 §1 | «corrige o gap atual de lembrete obsoleto»; lacuna «lembrete obsoleto em `ChangeTaskStatusUseCase`» | `ChangeTaskStatusUseCase` **já** chama `reconcileReminder` (l. 68 e 85); `UpdateTaskUseCase` também | Gap removido da lista; NB-13 passou a proteger o comportamento e cobrir só o que falta (revalidação no worker + dia inteiro) | NB-13 |
+| Plano NB-15 | `TagRepository.kt:7-26` | Arquivo tem **22 linhas** | Faixa removida; texto descreve o conteúdo real | NB-15 |
+| Plano NB-01, NB-18 | `HomeScreen.kt:102-109` é onde o diálogo fecha antes do sucesso | `102-109` é o bloco do FAB; o fechamento indevido está no `onCreateProject`, no dispatch de `viewModel.createProject` | Índices removidos; comportamento **confirmado** (o defeito existe) | NB-18 |
+| Plano NB-19 | `HomeEmptyStateTest.kt` em `Alterar` | Não existe; `:feature:projects/src/test` tem só 3 arquivos | Passou para `Criar` | NB-19 |
+| Plano NB-21 | `TasksViewModel.kt:117-188` | Linha 117 é vazia; o bloco citado (`uiState` + `combine`) é vizinho e plausível | Índice trocado por descrição do bloco | NB-21 |
+| Plano §11 (Q30) e §12 | «`main` local 4 commits à frente»; artefatos `specs/`, `.opencode/`, `gradle/gradle-daemon-jvm.properties`; PR docs pendente | PR #80 já mergeado; `main` == `origin/main`; nenhum desses três caminhos existe (só `.rolebox/` está não rastreado) | Publicação registrada como concluída; lista de artefatos corrigida | Q30 |
+| `DESIGN.md` §4, `PESQUISA.md` R06/R07 | «Preferir arquivos estáticos oficiais dos pesos necessários» | `google/fonts` publica **só** `Archivo[wdth,wght].ttf` e `PublicSans[wght].ttf` — não há estáticos por peso | Texto passou a exigir instanciação local documentada | NB-05 |
+| `PESQUISA.md` R02 | Link do Hype4 «título, autor, introdução acessíveis» | URL respondeu 404 na 1ª tentativa e 200 na 2ª, no mesmo dia | Nota de instabilidade adicionada, referência preservada | — |
+| `docs/ARQUITETURA.md` §1 (árvore) | `core/ui` = «tema, tokens, componentes»; `settings` = «preferências, perfil, tema»; `projects` = «…, dashboard» | `:core:ui` só tem `theme/`; `:feature:settings` só tem lista com placeholders; o painel está em `:feature:tasks` | Árvore corrigida | — |
+| Plano NB-07, NB-22 | `dropShadow` exige upgrade; Compose 1.7.5 não traz DnD de lazy list | O POM confirma UI `1.7.5`, mas **não** decide presença de API | Premissas marcadas como **reabertas**: conferir a API resolvida ao iniciar NB-07 e NB-22; comandos acessíveis seguem obrigatórios | NB-07, NB-22 (Q15) |
+| `docs/ACESSIBILIDADE.md` §1 | Referência quantitativa WCAG **2.1** AA | A proposta usa WCAG **2.2** (limiares idênticos para AA) | Registrado como diferença de referência, sem alteração de texto: os 24 testes seguem válidos | — |
+
+### 14.3 O que a auditoria confirmou (e portanto não mudou)
+
+Registrado para que a varredura seja verificável e para que ninguém "corrija" o que está certo:
+
+| Verificação | Resultado |
+|---|---|
+| Contraste da paleta A (27 pares declarados no DESIGN) | **27/27** batem com implementação independente da fórmula sRGB; maior desvio 0,0034. O par reprovado `#51368F`/`#B5A1F5` = 4,13:1 confere |
+| `tokens.json` × documentos | `verify_tokens.py` verde: 37 primitivos, 39 papéis/tema, 15 tipos, 108 pares; menor razão light 5,90:1, dark 7,68:1 |
+| Consistência interna do plano | `verify_roadmap.py` verde: 1978 verificações (links, IDs, dependências, estimativas) |
+| Evidência web de `PESQUISA.md` | 8/8 releases (tag **e** data), POM (`1.7.5` / M3 `1.3.1` / Adaptive `1.0.0`), 11 licenças, 5 regras de compatibilidade por README, CSS do ekmas (raio 5px, offset 4px, blur/spread 0), crash do Vico no Android 10, Accompanist removido, data do NN/g, 7 páginas HTTP 200, seção «neobrutalist shadows» na doc de sombras |
+| Paleta dos wireframes | 33 hex de `docs/wireframes/styles.css` **idênticos** aos 33 de `Color.kt` — a afirmação «identidade M3 atual» está correta; nenhum `<script>` nos HTML |
+| Abas e rotas | `HomeTab` com 4 valores; `BrainOutRoutes` com 6 rotas; `TasksRoutes` cobre lista e painel |
+| Matriz de status | Matriz do domínio idêntica à descrita na ESPECIFICACAO (`TODO→DOING`, `DOING→TODO/DONE`, `DONE→DOING`, `DONE→TODO` proibido) |
+| Lista global informativa | `TasksScreen` só recebe `onRetry`/`onDismissError` — sem abertura/edição/conclusão, como o doc afirma |
+| Lacunas várias do NB-02 | `CanPerformActionUseCase` sem uso de produção; `observeSearch(ownerId = …)` owner-only (Member sem visibilidade); detalhe sem gate de papel; `UpdateTaskUseCase` rejeita qualquer update de DONE; `selected_tag_id` órfão — **todas confirmadas** |
+| Números citados do app atual | 5 prioridades (`LOW…CRITICAL`), limite de 50 tarefas ativas, `cascadeCompleteTask`/`cascadeReopenTask`, `enqueueInTx`, `SyncWorker` com lote 50 e 4xx descartado / 5xx `Result.retry`, `deadline-<taskId>` com `REPLACE`, Room v4 com `MIGRATION_1_2…3_4`, raios `4/8/12/16/28`, `dynamicColor = false` por padrão, `ContrastRatioTest` com 24 testes |
+| Papéis no cadastro | `RegisterScreen` seleciona Owner/Member por `RadioButton` mapeado para `UserRole` |
+
+### 14.4 Limites desta auditoria
+
+- **A tabela 14.2 cita de propósito os caminhos e índices originais** (ex.: `TagRepository.kt:7-26`, `app/navigation/BottomBar.kt`) e alguns textos passaram a negar um caminho existente (ex.: «não existe `app/navigation/BottomBar.kt`»). Por isso, uma varredura automática ingênua continuará acusando esses trechos: são registro histórico, não erro pendente. O único sinal confiável é esta seção, não um `grep`.
+- Referências `Atualizar` para `BASELINE.md`, `PERFORMANCE.md` e `MATRIZ_MIGRACAO.md` aparecem antes de o arquivo existir por desenho: são criados em NB-01/NB-02 e atualizados em fases posteriores.
+- **Defeito de dependência identificado:** NB-03 (pilotos) pertence a F0, mas seu protótipo é a galeria de componentes de NB-11 (F2), que depende de F1. Como está escrito, F0 não pode ser concluído antes de F2. Opções registradas: (a) mover NB-03 para depois de NB-11, dentro de F2, mantendo F0 com NB-01/NB-02; ou (b) montar um esqueleto mínimo de galeria descartável no próprio NB-03, fora de `:core:ui`. A escolha precisa ser feita antes de iniciar F0 para não travar a fase.
+
+- As linhas conferidas **apodrecem no próximo commit**: isto é um retrato datado de `5b483ba`, não uma garantia futura. Reexecutar a varredura ao fim de cada fase (F2, F4, F6) é barato; confiar nesta tabela por meses não é.
+- Claims que dependem de execução (aparência renderizada, TalkBack, IME, sombra cortada, DnD real, desempenho, ABI de runtime) continuam **não verificados** e pertencem aos gates de F0/F8.
+- Nenhuma decisão Q1–Q30 foi reescrita. As duas premissas marcadas como reabertas (NB-07, NB-22) serão redecididas **na fase que já é dona do assunto**, como combinado.

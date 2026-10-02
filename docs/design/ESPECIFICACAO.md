@@ -30,7 +30,7 @@ Focus e press são independentes: pressionar não apaga foco; focus ring tem ár
 | `BrainOutProjectCard` | Nome 18sp/26, descrição 14sp/22, tags com swatch; padding 16dp; raio 8dp; borda 2dp; sombra small quando clicável; sem min-height rígida arbitrária. Não mostrar métricas sem dados disponíveis |
 | `BrainOutTaskRow` | Título 16sp/24 ou 18sp/26, duas receitas status/prioridade separadas, prazo se disponível, menu 48dp. Sem sombra por linha; contorno 1dp ou divisor; padding 16dp; metadados quebram linha |
 | Top app bar | Base neutra, título Archivo 22sp/28, Back nativo 48dp e menu; separação 2dp. Nome longo de projeto tem resumo/truncamento seguro e texto completo na área de conteúdo |
-| Navegação | Quatro destinos com ícone 24dp e label 14sp; selecionado amarelo/ink, check/indicador e selected semantics. Min-height proposta 80dp + inset inferior, cresce com fonte. No médio/expandido usar rail. Não repetir bottom bar no detalhe/subtelas |
+| Navegação | **Quatro** destinos hoje (`HomeTab` em `:feature:projects`); **cinco** no alvo deste redesign (Q13 acrescenta Agenda). Ícone 24dp e label 14sp; selecionado amarelo/ink, check/indicador e selected semantics. Min-height proposta 80dp + inset inferior, cresce com fonte. No médio/expandido usar rail. Não repetir bottom bar no detalhe/subtelas |
 | Menu | Superfície opaca, raio 8dp, contorno 2dp; linha ≥48dp e label ≥14sp. Separar ações destrutivas; retorno de foco ao acionador; respeitar Back/outside dismiss |
 | Dialog | Superfície opaca, raio 16dp, contorno 2dp; largura máxima 480dp; padding 24dp; título 22sp/28; ações empilham quando não couberem. Sem sombras gigantes; scrim preto 56%; foco modal e scroll interno |
 | Sheet de formulário | **Evolução proposta** para formulário longo em janela curta, não requisito de trocar todos os dialogs. Raio superior 16dp, contorno, handles não são única forma de fechar; IME e ações acessíveis. Usar componente modal nativo com Back |
@@ -94,7 +94,7 @@ Offline/sync global em Tarefas/Painel/Settings seria **evolução de estado**, n
 
 - Top bar com voltar/nome/menu, cabeçalho de dados do projeto, sync, lista de tarefas, FAB «Nova tarefa». Editar/excluir projeto continuam descobríveis em menu; não usar interação escondida por swipe como único caminho.
 - Nova tarefa preserva título, prioridade e prazo. Prioridade pode usar lista radio vertical ao invés de cinco chips espremidos. Prazo abre o DatePicker Material e mostra os hints já calculados pelo use case.
-- Renomear tarefa e editar nome/descrição do projeto preservam valores e fecham depois do evento de sucesso como nos fluxos atuais. Edição de tags no projeto **não é suportada** pelo contrato atual descrito no código; não desenhar ação de desassociar tag como entregue.
+- Renomear tarefa e editar nome/descrição do projeto preservam valores e fecham depois do evento de sucesso como nos fluxos atuais. Edição de tags no projeto **é aceita pelo repositório** (`ProjectRepository.update(project, tagIds)`) mas **não é exposta** na tela de detalhe; além disso a desassociação não viaja no sync (o dispatcher só enfileira associações). Não desenhar a ação como entregue.
 - Status continua no menu com transições válidas: `TODO→DOING`, `DOING→TODO/DONE`, `DONE→DOING`. **Não** oferecer checkbox binário que permita `TODO→DONE` direto. O ícone TODO vazado é informativo, não um checkbox funcional.
 - Prioridade de DONE é somente leitura; oferecer texto de motivo e caminho real de reabertura. Opções persistem nomes/IDs do domínio, não novos estados visuais como «Pausada».
 - Exclusão de projeto abre confirmação com consequência; exclusão de tarefa atual ocorre por menu. Acrescentar confirmação de tarefa/undo exige decisão comportamental explícita futura.
@@ -115,10 +115,10 @@ Offline/sync global em Tarefas/Painel/Settings seria **evolução de estado**, n
 
 ### Configurações, perfil, tema e notificações (`:feature:settings`)
 
-- Configurações: lista neutra com Perfil, Notificações, Tema e Sair; linhas ≥64dp. Sair distinto das opções de navegação, limpa sessão via fluxo existente. Não transformar perfil em vitrine de assinaturas.
-- Perfil: avatar de iniciais, nome/edit, e-mail e papel. Edição do nome é local; draft permanece se inválido, loading do usuário respeitado. Não incluir upload de foto/capa sem funcionalidade nova.
-- Tema: três opções reais Sistema/Claro/Escuro, radio group de linha inteira; preview estático de tokens claro/escuro. Mudança instantânea de preferência já existe; ausência de escolha usa sistema. Não acrescentar toggle de paletas B/C.
-- Notificações: estado da permissão Android separado de `remindersEnabled`; concedida/negada/bloqueada, e retorno dos Ajustes devem ser refletidos. Negar não bloqueia o gerenciador de tarefas. Caminho clicável para Ajustes quando necessário é melhoria futura; o código atual possui orientação textual.
+- Configurações: lista neutra com Perfil, Notificações, Tema e Sair, linhas ≥64dp. Hoje as três primeiras são apenas `SettingsActionType` despachados para o `NavHost`, que as ignora (placeholder) — não há tela de destino. Sair é a única ação real e distinto das opções de navegação, limpa sessão via fluxo existente. Não transformar perfil em vitrine de assinaturas.
+- Perfil: **tela inexistente hoje** (`ProfileScreen` não existe). Alvo: avatar de iniciais, nome/edit, e-mail e papel. Edição do nome é local; draft permanece se inválido, loading do usuário respeitado. Não incluir upload de foto/capa sem funcionalidade nova.
+- Tema: três opções Sistema/Claro/Escuro, radio group de linha inteira; preview estático de tokens claro/escuro. **Não existe hoje**: `BrainOutTheme` deriva `darkTheme` de `isSystemInDarkTheme()` e nenhuma preferência é persistida, então tela **e** persistência são trabalho novo (NB-06/NB-27). Não acrescentar toggle de paletas B/C.
+- Notificações: estado da permissão Android separado de `remindersEnabled`; concedida/negada/bloqueada, e retorno dos Ajustes devem ser refletidos. Negar não bloqueia o gerenciador de tarefas. **Não existe hoje**: não há tela de notificações nem preferência de lembretes; só o canal e o `DeadlineWorker` em `:app`. Orientação textual e atalho para Ajustes são trabalho novo.
 - **Estados:** usuário carregando/ausente, nome inválido, preferência sendo salva/erro se VM expuser, permissão negada/concedida, lembretes desligados. Não criar spinners de rede onde só há DataStore/Room local.
 
 ## 3. Motion e feedback
@@ -151,7 +151,7 @@ Haptics: leves e opcionais para confirmação efetiva, via APIs Android/Compose 
 | Local | Mudança planejada |
 |---|---|
 | `:core:ui/theme/Color.kt` | Primitivos e esquemas semânticos; exportar apenas papéis públicos |
-| `:core:ui/theme/Type.kt`, `Shape.kt`, `Theme.kt` | 15 tipos explícitos, shapes, ColorScheme completo, override de tema já existente; dynamicColor continua false por padrão |
+| `:core:ui/theme/Type.kt`, `Shape.kt`, `Theme.kt` | 15 tipos explícitos, shapes, ColorScheme completo. `Theme.kt` já expõe o parâmetro `darkTheme` e mantém `dynamicColor = false` por padrão, mas **não** existe modo persistido (System/Light/Dark) — entra em NB-06/NB-27 |
 | `:core:ui/theme/` (novos arquivos) | `BrainOutSpacing`, `BrainOutBorders`, `BrainOutShadows`, `BrainOutMotion`, status colors via tipos imutáveis/CompositionLocal |
 | `:core:ui/components/` | Wrappers Button/Field/Badge/StatePanel/Banner e drawing de sombra; APIs com Modifier/callback/content; strings de componentes compartilhados no módulo apropriado e traduzidas |
 | `:feature:*` | Screen conecta UiState/callbacks às novas peças; mantém regras/eventos no VM/use case; usa tokens, sem raw hex |

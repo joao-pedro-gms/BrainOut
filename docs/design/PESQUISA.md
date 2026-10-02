@@ -22,7 +22,7 @@ O texto distingue brutalismo cru/austero de antidesign disorientador e recomenda
 
 ### R02 — Michał Malewicz: Neubrutalism is taking over the web
 
-[Artigo Hype4/SquarePlanet](https://hype4.academy/articles/design/neubrutalism-is-taking-over-web). **Título, autor, introdução e imagem acessíveis; restante sob paywall.** Não foi verificada a data original.
+[Artigo Hype4/SquarePlanet](https://hype4.academy/articles/design/neubrutalism-is-taking-over-web). **Título, autor, introdução e imagem acessíveis; restante sob paywall.** Não foi verificada a data original. **Reverificação 02/10/2026:** a URL respondeu 404 na primeira tentativa e 200 na segunda, no mesmo dia — o link é instável, não morto; se voltar a falhar, tratar como indisponível sem descartar a referência já registrada.
 
 A introdução descreve combinação de visuais caóticos e boa tipografia, contraposta a arredondamentos/sombras suaves/gradientes. A frase sobre pessoas se cansarem após 6–7 anos é opinião do autor; não usar como justificativa empírica de redesign. A pesquisa não afirma ter lido a seção paga.
 
@@ -123,8 +123,8 @@ Todas as referências desta seção foram consultadas em **01/10/2026**; o comen
 
 | ID / título | URL e uso |
 |---|---|
-| R06 — Archivo metadata e licença | [METADATA](https://raw.githubusercontent.com/google/fonts/main/ofl/archivo/METADATA.pb), [OFL](https://raw.githubusercontent.com/google/fonts/main/ofl/archivo/OFL.txt). Latin/latin-ext, eixos weight 100–900 e width 62–125; licença OFL 1.1 lida |
-| R07 — Public Sans metadata e licença | [METADATA](https://raw.githubusercontent.com/google/fonts/main/ofl/publicsans/METADATA.pb), [OFL](https://raw.githubusercontent.com/google/fonts/main/ofl/publicsans/OFL.txt). Latin/latin-ext, weight 100–900; licença OFL 1.1 lida |
+| R06 — Archivo metadata e licença | [METADATA](https://raw.githubusercontent.com/google/fonts/main/ofl/archivo/METADATA.pb), [OFL](https://raw.githubusercontent.com/google/fonts/main/ofl/archivo/OFL.txt). Latin/latin-ext, eixos weight 100–900 e width 62–125; licença OFL 1.1 lida. **Reverificado 02/10/2026:** eixos `wdth 62–125` e `wght 100–900`, subsets latin/latin-ext/menu/vietnamese. O diretório `ofl/archivo` contém **só** `Archivo[wdth,wght].ttf` e a itálica — não há estáticos por peso, logo pesos fixos exigem instanciação local |
+| R07 — Public Sans metadata e licença | [METADATA](https://raw.githubusercontent.com/google/fonts/main/ofl/publicsans/METADATA.pb), [OFL](https://raw.githubusercontent.com/google/fonts/main/ofl/publicsans/OFL.txt). Latin/latin-ext, weight 100–900; licença OFL 1.1 lida. **Reverificado 02/10/2026:** `wght 100–900`, subsets latin/latin-ext; diretório publica **só** `PublicSans[wght].ttf` e a itálica |
 | R08 — Material Symbols / Material Icons | [Upstream Google](https://github.com/google/material-design-icons). Eixos, sets, distinção Icons/Symbols e Apache-2.0 declarados |
 | R09 — Lucide | [Upstream](https://github.com/lucide-icons/lucide). SVG, pacotes oficiais enumerados, licença ISC declarada; sem validação de wrapper Compose |
 | R10 — Quick guide to Animations in Compose | [Android Developers](https://developer.android.com/develop/ui/compose/animation/quick-guide). APIs, risco de alpha manter semântica, reinício de LaunchedEffect em lazy layouts e navegação; HTTP 200 via IPv4 + Context7 |
@@ -147,5 +147,24 @@ Tentativas descartadas como evidência: caminhos Figma `resource-library/neubrut
 Android Developers inicialmente teve timeout na ferramenta de fetch; nova consulta HTTPS via IPv4/extração de `article` confirmou páginas relevantes com HTTP 200. Não inferir indisponibilidade da documentação a partir da falha de rede local.
 
 **Confiança alta:** valores tokens propostos calculados, recursos observados no código, licenças de fontes, mecanismo de sombras, releases retornadas pela API. **Confiança média:** comparação qualitativa de libs e direção estética. **Não validado:** satisfação do público, esforço em horas, desempenho/compatibilidade do app com candidatos e aparência de sites no browser.
+
+## 6. Reverificação — 02/10/2026
+
+Segunda passagem sobre **toda** a evidência externa deste documento, exigida pela auditoria doc×código registrada na **seção 14** do [plano de implementação](../plans/2026-10-01-redesign-neobrutalista.md). Reproduzível com `gh api repos/{owner}/{repo}/releases/latest` e as URLs citadas.
+
+| Item reverificado | Resultado em 02/10/2026 |
+|---|---|
+| Releases dos 8 candidatos | **8/8 conferem** tag **e** data: Lottie `v6.7.1` (31/10/2025), Rive `11.13.0` (01/10/2026), Compottie `2.3.2` (27/09/2026), Compose Unstyled `2.10.0` (18/09/2026), Vico `v3.3.1` (28/08/2026), Calendar `2.10.1` (28/03/2026), Coil `3.6.3` (18/09/2026), Shimmer `v1.5.0` (09/07/2026); `prerelease=false` em todas |
+| POM da BOM `2024.10.01` (dl.google.com) | UI/Foundation/Animation `1.7.5`, Material 3 `1.3.1`, `material3-window-size-class 1.3.1` e `androidx.compose.material3.adaptive:adaptive 1.0.0` — confere com o declarado |
+| Licenças (SPDX via API) | Compose Unstyled MIT, Lottie Apache-2.0, Rive MIT, Compottie MIT, Vico Apache-2.0, Calendar MIT, Coil Apache-2.0, Shimmer Apache-2.0, neobrutalism-components MIT, Lucide ISC, material-design-icons Apache-2.0 — todas conferem. `ekmas/neobrutalism-components` **não publica releases** no GitHub: a ausência de cadência auditada segue correta |
+| Compatibilidade por README | Calendar `1.7.x ↔ 2.6.x` e `1.10.x/1.11.x ↔ 2.10.x`; Shimmer `1.5.0 ↔ CMP 1.11` e `1.3.2 ↔ 1.7.3`; Compottie linha `1.12` com `dot`/`network` exigindo desugaring abaixo de API 26; Rive `minSdk 21 / target 35` com 4 ABIs; Lottie `minSdk 21`, `compile/target 36` e `version.androidx.compose=2024.02.01` — todas conferem. Os READMEs vivem em `master` (não `main`) em Shimmer e Rive |
+| CSS do ekmas | `--border-radius: 5px`, `--box-shadow-x/y: 4px`, `--shadow: … 0px 0px` (blur e spread zero) — confere com o citado |
+| Vico v3.3.1 | Corpo da release confirma o crash de `LineCartesianLayer` no Android 10 (`IllegalStateException` em `Canvas.restore`) |
+| Accompanist | README lista Navigation-Animation, Navigation-Material e System UI Controller como «Deprecated & Removed»; release mais recente `v0.37.3` (28/04/2025) |
+| Documentação Android e W3C | `shadows`, `accessibility/api-defaults`, `layouts/adaptive/use-window-size-classes`, `animation/quick-guide`, `designsystems/custom`, WCAG 2.2 *Contrast (Minimum)* e *Non-text Contrast*: **HTTP 200** nas sete. A página de shadows traz seção «Create neobrutalist shadows» e 36 ocorrências de `dropShadow` |
+| NN/g (R01) | Data de publicação confirmada: 05/11/2017 |
+| Contraste da paleta A | 27 pares declarados no [DESIGN.md](../../DESIGN.md#6-acessibilidade-e-contraste-calculado) recalculados por implementação independente da fórmula sRGB: **27/27 batem** com o declarado (diferença máxima 0,0034), inclusive o par reprovado `#51368F`/`#B5A1F5` = 4,13:1 |
+
+**Não reverificado:** aparência renderizada dos sites de referência, empacotamento/ABI real dos runtimes, overhead de dependências e comportamento do app — todos exigem spike ou medição, conforme a seção 3 acima. Nenhuma release nova apareceu entre 01/10 e 02/10/2026, então nenhuma linha da matriz de bibliotecas muda de decisão por esse motivo.
 
 **verify:** `python3 docs/design/verify_tokens.py` (raiz). Para renovar o snapshot upstream, consultar `gh api repos/airbnb/lottie-android/releases/latest --jq '{tag: .tag_name, published: .published_at, prerelease: .prerelease}'` e repetir para os candidatos adotados. Atualizar data/evidência antes de fixar dependência.

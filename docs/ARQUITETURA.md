@@ -31,12 +31,12 @@ BrainOut/
 │   ├── domain/           → entidades, regras de domínio, use cases
 │   ├── data/             → Room, DataStore, repositórios, remote/ (E3.2)
 │   │   └── remote/       → DTOs remotos, BrainOutApi (Retrofit), RemoteDataSource
-│   └── ui/               → tema, tokens, componentes reutilizáveis
+│   └── ui/               → tema (Color/Shape/Theme/Type); tokens e componentes são proposta
 ├── feature/
-│   ├── auth/             → telas de login/cadastro
-│   ├── projects/         → lista, criação, edição, dashboard
-│   ├── tasks/            → CRUD de tarefas
-│   └── settings/         → preferências, perfil, tema
+│   ├── auth/             → splash, login e cadastro
+│   ├── projects/         → lista/busca/tags de projetos e detalhe com tarefas
+│   ├── tasks/            → lista global e painel
+│   └── settings/         → lista de preferências (Perfil/Tema/Notificações ainda placeholders)
 └── backend-stub/         → FastAPI mínimo usado pelo CI (R6)
 ```
 
