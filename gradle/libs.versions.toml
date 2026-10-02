@@ -9,27 +9,27 @@ agp = "9.4.1"
 # Kover. Sobe de 2.0.21 para integrar com o toolchain novo. 2.3.20 é o
 # último 2.3.x estável publicado; KSP 2.3.12 é loosely-coupled desde
 # KSP 2.3.0 (google/ksp#2660), então a versão não precisa bater.
-kotlin = "2.3.20"
+kotlin = "2.4.20"
 # KSP 2.3.12 — alinha com KGP; >= 2.3.5 elimina o ciclo kapt/ksp com built-in
 # Kotlin do AGP 9 (google/ksp#2743). Sobe de 2.0.21-1.0.27.
 ksp = "2.3.12"
 # Hilt 2.60.1 — mínimo 2.59 declarado pelo time do Hilt para AGP 9. Sobe de 2.52.
 hilt = "2.60.1"
 # Room 2.8.4 — versão estável que aceita KSP 2.3.12 (KSP1/KSP2 ok). Sobe de 2.6.1.
-room = "2.8.4"
-coreKtx = "1.13.1"
-appcompat = "1.7.0"
+room = "2.8.5"
+coreKtx = "1.19.1"
+appcompat = "1.8.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.10.01"
-navigationCompose = "2.8.4"
-hiltNavigationCompose = "1.2.0"
+navigationCompose = "2.10.2"
+hiltNavigationCompose = "1.4.0"
 datastore = "1.1.1"
 securityCrypto = "1.1.0"
-coroutines = "1.9.0"
+coroutines = "1.11.0"
 javaxInject = "1"
-workmanager = "2.9.1"
-hiltWork = "1.2.0"
+workmanager = "2.12.0"
+hiltWork = "1.4.0"
 # desugar_jdk_libs 2.1.5 — ativa `coreLibraryDesugaring` no :app para
 # permitir o uso de `java.time.Instant#toEpochMilli` (API 26) em
 # dispositivos com minSdk 24. Necessário desde o bump de toolchain
@@ -37,16 +37,16 @@ hiltWork = "1.2.0"
 desugarJdkLibs = "2.1.5"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
-kotlinxSerialization = "1.7.3"
+kotlinxSerialization = "1.11.0"
 junit = "4.13.2"
-junitExt = "1.2.1"
-espresso = "3.6.1"
-robolectric = "4.15.1"
-turbine = "1.2.0"
-mockk = "1.13.13"
-truth = "1.4.4"
+junitExt = "1.3.0"
+espresso = "3.7.0"
+robolectric = "4.17"
+turbine = "1.2.1"
+mockk = "1.14.11"
+truth = "1.4.5"
 composeUiTest = "1.7.5"
-detekt = "1.23.7"
+detekt = "1.23.8"
 # ktlint 14.2.0 — bump do 12.1.2; o plugin passa a usar uma engine ktlint
 # 1.x muito mais estrita. As violações remanescentes após `ktlintFormat`
 # são corrigidas no escopo deste card (commit separado). Ver docs/CI-CD.md.
@@ -58,7 +58,7 @@ kover = "0.9.9"
 # usado pelo PepperProvider do :core:data) durante o R8 minify do :app.
 # Sem ele, `:app:minifyDevReleaseWithR8` falha com "Missing class
 # com.google.errorprone.annotations.CanIgnoreReturnValue".
-errorprone = "2.28.0"
+errorprone = "2.50.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -101,7 +101,7 @@ desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", ver
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitExt" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
-androidx-test-core = { group = "androidx.test", name = "core", version = "1.6.1" }
+androidx-test-core = { group = "androidx.test", name = "core", version = "1.7.0" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workmanager" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
