@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Arte geométrica original do BrainOut (NB-05, Q28): estado vazio de
+     Projetos — pasta com etiqueta. Três cores da paleta A (ink, blue,
+     violet), traço uniforme de 6 unidades e um único offset de sombra.
+     Ilustração ≤120dp para BrainOutStatePanel (ESPECIFICACAO §1).
+     Proveniência e regras: docs/design/ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M32 44 H102 V98 H32 Z" />
+    <path
+        android:fillColor="#FFA5D8FF"
+        android:pathData="M24 36 H50 L58 46 H94 V90 H24 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FFB5A1F5"
+        android:pathData="M36 60 H66 V68 H36 Z" />
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M36 78 H66 V84 H36 Z" />
+</vector>

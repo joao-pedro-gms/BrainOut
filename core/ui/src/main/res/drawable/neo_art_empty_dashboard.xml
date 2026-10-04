@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Arte geométrica original do BrainOut (NB-05, Q28): estado vazio do
+     Painel — três barras com eixo. Três cores da paleta A (ink, blue,
+     yellow), traço uniforme de 6 unidades e um único offset de sombra.
+     Ilustração ≤120dp para BrainOutStatePanel (ESPECIFICACAO §1).
+     Proveniência e regras: docs/design/ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M32 28 H102 V106 H32 Z" />
+    <path
+        android:fillColor="#FFA5D8FF"
+        android:pathData="M24 54 H42 V98 H24 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FFA5D8FF"
+        android:pathData="M50 38 H68 V98 H50 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FFF9D94A"
+        android:pathData="M76 20 H94 V98 H76 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M18 98 H100 V103 H18 Z" />
+</vector>
