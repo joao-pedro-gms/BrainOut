@@ -74,6 +74,11 @@ Dívida de gate identificada em NB-01 (02/10/2026), **fora do escopo do redesign
 
 1. **Estabilizar `:feature:projects`** — 4 testes de `HomeViewModelTest` falham desde a refatoração `f846a02` (ordenação persistida, debounce, retry sem erro residual, primeira emissão com `isLoading = false`). Exige decidir, teste a teste, se o comportamento correto é o do teste ou o do código. Evidência em [BASELINE.md](../design/BASELINE.md).
 2. **Ligar os testes de unidade por feature na CI** (`:feature:projects|tasks|auth|settings:testDebugUnitTest`) — hoje nenhum workflow os executa, e foi assim que uma suíte que **não compilava** (`:feature:settings`, corrigida em 02/10/2026) e outra com 4 falhas passaram meses de CI verde. Só ligar **depois** do item 1, senão a CI fica vermelha para todos.
+   - **Pago — FIX-02 (issue #90):** o job `unit-tests` de `ci.yml` ganhou o
+     passo explícito `Run feature unit tests (explicit)` com as quatro
+     tarefas, **aditivo** aos gates existentes (nenhum removido);
+     `docs/CI-CD.md` alinhado. Sequência honrada: só depois do item 1
+     (FIX-01, PR #132).
 
 ## 2. Contratos funcionais e de dados
 
@@ -765,7 +770,7 @@ Esperado: contraste/paridade dos documentos de design e consistência deste road
 ./gradlew :app:testDevDebugUnitTest
 ```
 
-Features não têm flavor próprio (`testDebugUnitTest`); `:app`/`:core:data` usam variantes dev/prod. **Auditoria de 02/10/2026:** a CI **não** lista os `testDebugUnitTest` por feature — `ci.yml` roda apenas `testDevDebugUnitTest` (que alcança `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain`) e, em outro job, `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Nenhum workflow cita `:feature:*`. Por isso, os comandos por feature abaixo são **gate local obrigatório** até a dívida do §1.3 ser paga; não presuma que a CI os cobre.
+Features não têm flavor próprio (`testDebugUnitTest`); `:app`/`:core:data` usam variantes dev/prod. **Auditoria de 02/10/2026:** a CI **não** listava os `testDebugUnitTest` por feature — `ci.yml` roda apenas `testDevDebugUnitTest` (que alcança `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain`) e, em outro job, `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Nenhum workflow citava `:feature:*`. **Atualização (FIX-02, issue #90):** a dívida do §1.3 item 2 foi paga — o job `unit-tests` agora executa as quatro tarefas explicitamente no passo `Run feature unit tests (explicit)`, aditivo aos gates existentes. Os comandos por feature abaixo continuam válidos como feedback rápido local.
 
 ### Gates antes de publicar código e ao finalizar
 
