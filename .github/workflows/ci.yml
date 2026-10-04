@@ -109,6 +109,22 @@ jobs:
         # silenciosamente. Invocar a variante explícita cobre todos.
         run: ./gradlew testDevDebugUnitTest --no-daemon --console=plain
 
+      # FIX-02 (issue #90 / plano §1.3 item 2): as quatro suítes de feature
+      # são invocadas EXPLICITAMENTE. `testDevDebugUnitTest` alcança
+      # `:app`, `:core:data` e (pelo wire-up do `projectsEvaluated`)
+      # `:core:domain`, mas `:feature:*` não têm flavor próprio e ficam de
+      # fora — sem este passo, uma suíte que não compila passava verde em
+      # CI. Nenhum gate existente foi removido; este passo é aditivo.
+      - name: Run feature unit tests (explicit)
+        if: hashFiles('**/build.gradle*') != ''
+        run: >-
+          ./gradlew
+          :feature:projects:testDebugUnitTest
+          :feature:tasks:testDebugUnitTest
+          :feature:auth:testDebugUnitTest
+          :feature:settings:testDebugUnitTest
+          --no-daemon --console=plain
+
       # E4.7: cobertura mínima de 60% em :core:domain e :core:data.
       # koverVerify falha o job se o bound não for atendido.
       - name: Verify coverage (Kover >= 60%)

@@ -30,8 +30,13 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
 `java-version: '21'`.
 
 1. **`static-analysis`** — ktlint + detekt. Falha rápido.
-2. **`unit-tests`** — roda testes unitários (`testDevDebugUnitTest`),
-   `koverVerify`, o relatório HTML do Kover e o Android Lint
+2. **`unit-tests`** — roda testes unitários (`testDevDebugUnitTest`) e,
+   em passo explícito aditivo (FIX-02, issue #90), as quatro suítes de
+   feature
+   (`:feature:projects|tasks|auth|settings:testDebugUnitTest` — os
+   módulos `:feature:*` não têm flavor próprio e ficam fora do comando
+   agregador). Depois: `koverVerify`, o relatório HTML do Kover e o
+   Android Lint
    (`lintDevDebug` — a tarefa por variante é obrigatória para que `:app`
    e `:core:data` participem). Publica relatório como artifact.
 3. **`backend-integration`** — constrói a imagem de `backend-stub/`,
