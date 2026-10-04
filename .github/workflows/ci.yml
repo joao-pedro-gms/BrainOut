@@ -125,6 +125,15 @@ jobs:
           :feature:settings:testDebugUnitTest
           --no-daemon --console=plain
 
+      # NB-05 (issue #92): `:core:ui` também não tem flavor e por isso
+      # fica de fora de `testDevDebugUnitTest` — o mesmo motivo do FIX-02.
+      # Os contratos de token (NB-04), tipografia e asset (NB-05) moram
+      # nesse módulo; sem este passo eles rodariam só localmente.
+      # Aditivo: nenhum gate existente foi removido.
+      - name: Run core:ui unit tests (explicit)
+        if: hashFiles('**/build.gradle*') != ''
+        run: ./gradlew :core:ui:testDebugUnitTest --no-daemon --console=plain
+
       # E4.7: cobertura mínima de 60% em :core:domain e :core:data.
       # koverVerify falha o job se o bound não for atendido.
       - name: Verify coverage (Kover >= 60%)

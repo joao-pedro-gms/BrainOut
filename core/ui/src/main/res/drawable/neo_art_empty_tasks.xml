@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Arte geométrica original do BrainOut (NB-05, Q28): estado vazio de
+     Tarefas — ficha com três itens. Três cores da paleta A (ink, white,
+     violet), traço uniforme de 6 unidades e um único offset de sombra.
+     Ilustração ≤120dp para BrainOutStatePanel (ESPECIFICACAO §1).
+     Proveniência e regras: docs/design/ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M32 32 H96 V102 H32 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24 24 H88 V94 H24 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FFB5A1F5"
+        android:pathData="M33 39 H43 V49 H33 Z" />
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M50 41 H78 V47 H50 Z" />
+    <path
+        android:fillColor="#FFB5A1F5"
+        android:pathData="M33 56 H43 V66 H33 Z" />
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M50 58 H78 V64 H50 Z" />
+    <path
+        android:fillColor="#FFB5A1F5"
+        android:pathData="M33 73 H43 V83 H33 Z" />
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M50 75 H78 V81 H50 Z" />
+</vector>

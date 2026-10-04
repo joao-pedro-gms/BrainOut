@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Arte geométrica original do BrainOut (NB-05, Q28): «ficha no carimbo».
+     Três cores da paleta A (ink, yellow, violet), traço uniforme de 6
+     unidades e um único offset de sombra (+8,+8). É o poster estático:
+     não existe animação associada a este asset.
+     Proveniência e regras: docs/design/ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FF181818"
+        android:pathData="M32 26 H104 V98 H32 Z" />
+    <path
+        android:fillColor="#FFF9D94A"
+        android:pathData="M24 18 H96 V90 H24 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M44 54 L56 66 L76 42"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="6" />
+    <path
+        android:fillColor="#FFB5A1F5"
+        android:pathData="M32 76 H72 V84 H32 Z" />
+</vector>

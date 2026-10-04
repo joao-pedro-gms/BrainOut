@@ -35,7 +35,10 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
    feature
    (`:feature:projects|tasks|auth|settings:testDebugUnitTest` — os
    módulos `:feature:*` não têm flavor próprio e ficam fora do comando
-   agregador). Depois: `koverVerify`, o relatório HTML do Kover e o
+   agregador) e, aditivamente (NB-05, issue #92),
+   `:core:ui:testDebugUnitTest` (mesmo motivo: `:core:ui` também não tem
+   flavor; é onde moram os contratos de token, tipografia e asset).
+   Depois: `koverVerify`, o relatório HTML do Kover e o
    Android Lint
    (`lintDevDebug` — a tarefa por variante é obrigatória para que `:app`
    e `:core:data` participem). Publica relatório como artifact.

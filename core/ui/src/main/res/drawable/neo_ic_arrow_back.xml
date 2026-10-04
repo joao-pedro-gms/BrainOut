@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Material Symbols Outlined (arrow_back), peso visual 500, opção 24.
+     Origem: google/material-design-icons @ 737e3324305806514d7909874fa1818ae1808232 (Apache-2.0).
+     Vetor gerado a partir do SVG oficial; ver docs/design/ASSETS.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960"
+    android:autoMirrored="true">
+    <group android:translateY="960">
+        <path
+            android:pathData="m326.15-434.5 218.74 218.74L480-151.87 151.87-480 480-808.13l64.89 63.89L326.15-525.5h481.98v91H326.15Z"
+            android:fillColor="#FF000000" />
+    </group>
+</vector>
