@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
 import android.content.res.Configuration
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -26,6 +27,11 @@ import org.robolectric.annotation.Config
  *     é exatamente o bit `Configuration.UI_MODE_NIGHT_*` — quem chama
  *     o tema sem override confia na configuração do sistema.
  *  4. `BrainOutShapes` cobre os 5 slots documentados pelo Material 3.
+ *  5. **(NB-06)** O wrapper aditivo `BrainOutNeoTheme` amarra
+ *     `ColorScheme`, tipografia e shapes aos tokens neo — e só ele
+ *     passa a receber o modo já resolvido pelo app (a matriz de
+ *     precedência Light/Dark/System vive em `ThemeModeTest`, no
+ *     `:core:domain`, porque o modo persistido é domínio, não UI).
  *
  * Por que Robolectric e não Compose UI test: o módulo :core:ui ainda
  * não declara `androidx.compose.ui:ui-test-junit4`, e a regra E4.5
@@ -139,5 +145,74 @@ class ThemeSelectionTest {
         assertThat(s.medium).isNotNull()
         assertThat(s.large).isNotNull()
         assertThat(s.extraLarge).isNotNull()
+    }
+
+    // ------------------------------------------------------------------
+    // 5. NB-06 — wrapper aditivo BrainOutNeoTheme
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `wrapper neo escolhe a paleta neo conforme o modo resolvido`() {
+        // O wrapper não consulta o sistema: ele só recebe o booleano já
+        // resolvido pelo app (Light/Dark/System com precedência).
+        assertThat(resolveNeoColors(darkTheme = true)).isSameInstanceAs(NeoColors.Dark)
+        assertThat(resolveNeoColors(darkTheme = false)).isSameInstanceAs(NeoColors.Light)
+    }
+
+    @Test
+    fun `ColorScheme do wrapper neo carrega os papeis neo nos dois modos`() {
+        val light = NeoColors.Light.toMaterialColorScheme(dark = false)
+        val dark = NeoColors.Dark.toMaterialColorScheme(dark = true)
+
+        // Fundo/superfície vêm dos papéis neo, não dos defaults Material.
+        assertThat(light.background).isEqualTo(NeoColors.Light.background)
+        assertThat(light.surface).isEqualTo(NeoColors.Light.surface)
+        assertThat(light.onBackground).isEqualTo(NeoColors.Light.textPrimary)
+        assertThat(dark.background).isEqualTo(NeoColors.Dark.background)
+        assertThat(dark.surface).isEqualTo(NeoColors.Dark.surface)
+        assertThat(dark.onBackground).isEqualTo(NeoColors.Dark.textPrimary)
+
+        // `primary` é o link legível — nunca o amarelo da ação (DESIGN §3).
+        assertThat(light.primary).isEqualTo(NeoColors.Light.link)
+        assertThat(dark.primary).isEqualTo(NeoColors.Dark.link)
+        assertThat(light.primaryContainer).isEqualTo(NeoColors.Light.actionBackground)
+        assertThat(dark.primaryContainer).isEqualTo(NeoColors.Dark.actionBackground)
+    }
+
+    @Test
+    fun `tipografia do wrapper neo sao exatamente os quinze estilos do contrato`() {
+        val t = NeoMaterialTypography
+        val actual = mapOf(
+            "displayLarge" to t.displayLarge,
+            "displayMedium" to t.displayMedium,
+            "displaySmall" to t.displaySmall,
+            "headlineLarge" to t.headlineLarge,
+            "headlineMedium" to t.headlineMedium,
+            "headlineSmall" to t.headlineSmall,
+            "titleLarge" to t.titleLarge,
+            "titleMedium" to t.titleMedium,
+            "titleSmall" to t.titleSmall,
+            "bodyLarge" to t.bodyLarge,
+            "bodyMedium" to t.bodyMedium,
+            "bodySmall" to t.bodySmall,
+            "labelLarge" to t.labelLarge,
+            "labelMedium" to t.labelMedium,
+            "labelSmall" to t.labelSmall,
+        )
+
+        // Paridade total: se o wrapper deixar de usar um estilo neo e
+        // cair no default do Material, este mapa diverge e o teste cai.
+        assertThat(actual).isEqualTo(NeoTypography.styles)
+    }
+
+    @Test
+    fun `shapes do wrapper neo usam os raios 4 4 8 8 16 do DESIGN`() {
+        // DESIGN §5: extraSmall 4; small 4; medium 8; large 8; extraLarge 16.
+        val shapes = NeoMaterialShapes
+        assertThat(shapes.extraSmall).isEqualTo(RoundedCornerShape(NeoRadii.chip))
+        assertThat(shapes.small).isEqualTo(RoundedCornerShape(NeoRadii.chip))
+        assertThat(shapes.medium).isEqualTo(RoundedCornerShape(NeoRadii.button))
+        assertThat(shapes.large).isEqualTo(RoundedCornerShape(NeoRadii.card))
+        assertThat(shapes.extraLarge).isEqualTo(RoundedCornerShape(NeoRadii.modal))
     }
 }
