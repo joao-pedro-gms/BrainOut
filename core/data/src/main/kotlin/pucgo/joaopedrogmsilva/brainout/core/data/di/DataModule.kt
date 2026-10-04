@@ -23,6 +23,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ThemePreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.remote.HolidayRemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.HolidayRepositoryImpl
@@ -43,6 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ThemePreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
 /**
@@ -142,6 +144,18 @@ object DataModule {
     fun provideListingPreferencesRepository(
         dataStore: DataStore<Preferences>,
     ): ListingPreferencesRepository = ListingPreferencesRepositoryImpl(dataStore = dataStore)
+
+    /**
+     * Bind de [ThemePreferencesRepository] para a implementação
+     * DataStore (NB-06, E4.5 — escolha manual System/Light/Dark).
+     * Mesmo `DataStore` da sessão: a chave `theme_mode` é global e o
+     * `SessionStore.clear()` de logout não a remove.
+     */
+    @Provides
+    @Singleton
+    fun provideThemePreferencesRepository(
+        dataStore: DataStore<Preferences>,
+    ): ThemePreferencesRepository = ThemePreferencesRepositoryImpl(dataStore = dataStore)
 
     @Provides
     @Singleton
