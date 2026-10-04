@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -343,6 +344,41 @@ class HomeViewModelTest {
             assertThat(state.isLoading).isFalse()
             assertThat(state.errorMessage).isNull()
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * Regressão FIX-01 — causa raiz das quatro falhas. O contrato
+     * real de `TagRepositoryImpl.observeByProjectIds` para um
+     * conjunto vazio é um Flow que **nunca emite** (KDoc "Vazio →
+     * Flow vazio"; `combineInternal` de lista vazia faz bail-out e
+     * completa sem emitir). O pipeline da Home não pode deixar de
+     * emitir por causa dessa fonte: sem a emissão, o `stateIn`
+     * fica preso no `initialValue` e a tela jamais sai do
+     * loading (spinner eterno para quem ainda não tem projetos,
+     * lista congelada quando a busca devolve zero resultados).
+     *
+     * Aqui o mock reproduz fielmente esse contrato (`emptyFlow()`,
+     * sem emitir) e o `uiState` ainda precisa chegar a
+     * `isLoading = false` com a lista vazia — o estado vazio da
+     * Home depende disso.
+     */
+    @Test
+    fun `E2 8 pipeline emite estado vazio mesmo sem emissao das tags por projeto`() = runTest {
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flowOf(emptyList())
+        // Contrato real do repositório: completa sem emitir.
+        every { tagRepository.observeByProjectIds(any()) } returns emptyFlow()
+
+        val viewModel = newViewModel()
+
+        viewModel.uiState.test {
+            advanceUntilIdle()
+            val state = expectMostRecentItem()
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.projects).isEmpty()
             cancelAndIgnoreRemainingEvents()
         }
     }
