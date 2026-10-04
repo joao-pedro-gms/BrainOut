@@ -15,8 +15,8 @@ Inventário entregue em `core/ui/src/main/res/`:
 |---|---:|---:|---|
 | Fontes estáticas (`res/font/`) | 5 `.ttf` | 276 184 | SIL OFL 1.1 |
 | Ícones (`res/drawable/neo_ic_*.xml`) | 16 | 18 092 | Apache-2.0 |
-| Arte original (`res/drawable/neo_art_*.xml`) | 4 | 5 183 | obra do projeto |
-| **Total (teto Q28 = 1 MB)** | **25** | **299 459** | — |
+| Arte original (`res/drawable/neo_art_*.xml`) | 4 | 5 187 | obra do projeto |
+| **Total (teto Q28 = 1 MB)** | **25** | **299 463** | — |
 
 O teto é verificado por `NeoVectorAssetsTest` (`a soma de fontes e
 drawables cabe no teto de 1 MB`), que falha se o total passar de
@@ -216,10 +216,10 @@ terceiros):
 
 | Recurso | Uso previsto | Bytes |
 |---|---|---:|
-| `neo_art_splash_poster` | apresentação/splash — «ficha no carimbo» | 1 175 |
-| `neo_art_empty_projects` | estado vazio de Projetos (pasta) | 1 128 |
-| `neo_art_empty_tasks` | estado vazio de Tarefas (ficha) | 1 516 |
-| `neo_art_empty_dashboard` | estado vazio do Painel (barras) | 1 364 |
+| `neo_art_splash_poster` | apresentação/splash — «ficha no carimbo» | 1 176 |
+| `neo_art_empty_projects` | estado vazio de Projetos (pasta) | 1 129 |
+| `neo_art_empty_tasks` | estado vazio de Tarefas (ficha) | 1 517 |
+| `neo_art_empty_dashboard` | estado vazio do Painel (barras) | 1 365 |
 
 Regras aplicadas (todas verificadas por `NeoVectorAssetsTest`):
 
@@ -279,7 +279,7 @@ Casos de teste que sustentam as afirmações deste documento:
 | Teste | O que prova |
 |---|---|
 | `NeoFontAssetsTest` | cinco arquivos certos, instância estática sem `fvar`, peso real, cobertura pt-BR/EN, não-ASCII das `strings.xml` do app salvo as exceções documentadas, licenças OFL presentes |
-| `NeoVectorAssetsTest` | manifesto fechado de 16+4, viewport/`autoMirrored`/`pathData` literais, três cores, traço uniforme, teto de 1 MB, cabeçalho de autoria |
+| `NeoVectorAssetsTest` | manifesto fechado de 16+4, viewport/`autoMirrored`/`pathData` literais, três cores, traço de 6, sombra única +8,+8, ausência de texto/imagem/rede, teto de 1 MB, cabeçalho de autoria |
 | `NeoDrawableInflationTest` | os 20 vetores inflam com o `PathParser` real do Android (Robolectric) e as 5 fontes existem como recurso empacotado |
 | `NeoTypographyContractTest` | os 15 estilos batem com a tabela do `DESIGN.md` §4, tudo em `sp`, nenhuma família padrão, papéis de erro/ação/prazo ≥14sp, todo peso existe como arquivo |
 

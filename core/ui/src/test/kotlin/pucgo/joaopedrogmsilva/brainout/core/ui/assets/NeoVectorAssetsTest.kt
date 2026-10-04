@@ -7,6 +7,7 @@ import com.google.common.truth.Truth.assertThat
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Test
+import org.w3c.dom.Attr
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
@@ -20,7 +21,9 @@ import org.w3c.dom.Element
  *     viewBox `0 -960 960 960` do SVG é deslocado por um `group`), sem
  *     cor remota e com espelhamento idêntico ao `AutoMirrored` do código;
  *  3. a arte é geométrica, com no máximo três cores da paleta A, traço
- *     uniforme e um único offset de sombra (Q28: ≤ 1 MB comprimido).
+ *     literal de 6 unidades, um único offset de sombra de (+8,+8) e nada
+ *     que não seja vetor: sem texto rasterizado, sem imagem e sem rede
+ *     (Q28: ≤ 1 MB comprimido).
  *
  * O XML é lido do disco porque é exatamente o que o AGP empacota.
  */
@@ -100,7 +103,55 @@ class NeoVectorAssetsTest {
                 .map { it.attr("strokeWidth") }
                 .filter { it.isNotEmpty() }
                 .toSet()
-            assertThat(widths).hasSize(1)
+            assertThat(widths).containsExactly(ART_STROKE_WIDTH)
+        }
+    }
+
+    @Test
+    fun `a sombra da arte e um unico deslocamento de 8 8 sobre o traco`() {
+        expectedArtAssets.forEach { name ->
+            val paths = parseVector(drawableDir.resolve("$name.xml")).paths()
+            val figures = paths.filter { it.attr("strokeColor").isNotEmpty() }
+
+            // Traço e tinta andam juntos: largura sem cor não desenha nada.
+            paths.forEach { path ->
+                assertThat(path.attr("strokeWidth").isNotEmpty())
+                    .isEqualTo(path.attr("strokeColor").isNotEmpty())
+            }
+            assertThat(figures).isNotEmpty()
+
+            // A figura é o grupo com traço; o bbox dela é a base do offset.
+            val figure = figures
+                .map { pathBox(it.attr("pathData")) }
+                .reduce { a, b ->
+                    Box(
+                        minOf(a.left, b.left),
+                        minOf(a.top, b.top),
+                        maxOf(a.right, b.right),
+                        maxOf(a.bottom, b.bottom),
+                    )
+                }
+            val shadowBox = Box(
+                figure.left + SHADOW_OFFSET,
+                figure.top + SHADOW_OFFSET,
+                figure.right + SHADOW_OFFSET,
+                figure.bottom + SHADOW_OFFSET,
+            )
+            val shadows = paths.filter { pathBox(it.attr("pathData")) == shadowBox }
+
+            assertThat(shadows).hasSize(1)
+            val shadow = shadows.single()
+            assertThat(shadow.attr("strokeColor")).isEmpty()
+            assertThat(shadow.attr("strokeWidth")).isEmpty()
+            assertThat(shadow.attr("fillColor")).isEqualTo(ART_SHADOW_FILL)
+        }
+    }
+
+    @Test
+    fun `a arte nao tem texto rasterizado imagem ou rede`() {
+        expectedArtAssets.forEach { name ->
+            val file = drawableDir.resolve("$name.xml")
+            assertVectorMarkupOnly(file, parseVector(file))
         }
     }
 
@@ -135,6 +186,34 @@ class NeoVectorAssetsTest {
         factory.isNamespaceAware = true
         return factory.newDocumentBuilder().parse(file)
     }
+
+    /**
+     * Fecha as três partes da regra «sem texto rasterizado, sem imagem, sem
+     * rede» (`ASSETS.md` §3): vocabulário de elementos e atributos restrito
+     * ao vetor, nenhum texto fora de whitespace e nenhuma URL além do
+     * namespace que o próprio XML exige.
+     */
+    private fun assertVectorMarkupOnly(file: File, document: Document) {
+        val nodes = document.getElementsByTagName("*")
+        val elements = (0 until nodes.length).map { nodes.item(it) as Element }
+
+        assertThat(elements.map { it.tagName }.toSet() - ART_TAGS).isEmpty()
+        elements.flatMap { element ->
+            (0 until element.attributes.length).map {
+                element.attributes.item(it) as Attr
+            }
+        }.filterNot { it.name.startsWith(XMLNS_PREFIX) }.forEach { attribute ->
+            assertThat(attribute.namespaceURI).isEqualTo(ANDROID_NS)
+            assertThat(attribute.localName).isIn(ART_ATTRIBUTES)
+        }
+
+        // Vetor poligonal não tem texto: sobra só whitespace entre tags.
+        assertThat(document.documentElement.textContent.trim()).isEmpty()
+
+        // A única URL do arquivo é o namespace exigido pelo próprio XML.
+        val urls = URL_REGEX.findAll(file.readText()).map { it.value }.toSet()
+        assertThat(urls - setOf(ANDROID_NS)).isEmpty()
+    }
 }
 
 private const val ICON_VIEWPORT = "960"
@@ -144,6 +223,35 @@ private const val MAX_ART_COLORS = 3
 private const val HEX_COLOR = "#[0-9A-F]{8}"
 private const val AUTHOR_HEADER =
     "<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->"
+
+/** Traço da arte: `ASSETS.md` §3 manda 6 unidades em todo arquivo. */
+private const val ART_STROKE_WIDTH = "6"
+
+/** Offset único de sombra do NB-04/NB-05: rígido, `+8,+8`, sem blur. */
+private const val SHADOW_OFFSET = 8.0
+
+/** A sombra é a silhueta em `ink` deslocada — mesma cor do traço. */
+private const val ART_SHADOW_FILL = "#FF181818"
+
+/** Únicos elementos admitidos num asset: nada de texto, imagem ou filtro. */
+private val ART_TAGS: Set<String> = setOf("vector", "group", "path")
+
+/** Únicos atributos android: admitidos na arte (sem `src`, `blur`…). */
+private val ART_ATTRIBUTES: Set<String> = setOf(
+    "width",
+    "height",
+    "viewportWidth",
+    "viewportHeight",
+    "fillColor",
+    "pathData",
+    "strokeColor",
+    "strokeWidth",
+)
+
+private val URL_REGEX = Regex("""https?://[^\s"'<>]+""")
+
+/** Namespace das declarações `xmlns:*` — não é atributo `android:`. */
+private const val XMLNS_PREFIX = "xmlns"
 
 private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
 
@@ -171,3 +279,73 @@ private fun Document.groups(): List<Element> =
 
 private fun Document.groupAttr(index: Int, name: String): String =
     groups()[index].attr(name)
+
+/** Caixa envolvente de um `pathData` poligonal (`left, top, right, bottom`). */
+private data class Box(
+    val left: Double,
+    val top: Double,
+    val right: Double,
+    val bottom: Double,
+)
+
+private val PATH_TOKEN = Regex("""([MLHVZmlhvz])([^A-Za-z]*)""")
+private val PATH_NUMBER = Regex("""-?\d+(?:\.\d+)?""")
+
+/**
+ * Bounding box do `pathData`. Só os comandos poligonais usados pela arte
+ * (`M m L l H h V v Z z`); comando curvo (`Q`, `C`…) é erro alto, porque
+ * geometria arredondada não é a assinatura do NB-05.
+ */
+private fun pathBox(pathData: String): Box {
+    var x = 0.0
+    var y = 0.0
+    var startX = 0.0
+    var startY = 0.0
+    var left = Double.POSITIVE_INFINITY
+    var top = Double.POSITIVE_INFINITY
+    var right = Double.NEGATIVE_INFINITY
+    var bottom = Double.NEGATIVE_INFINITY
+
+    fun visit(nx: Double, ny: Double) {
+        x = nx
+        y = ny
+        left = minOf(left, x)
+        top = minOf(top, y)
+        right = maxOf(right, x)
+        bottom = maxOf(bottom, y)
+    }
+
+    PATH_TOKEN.findAll(pathData).forEach { match ->
+        val command = match.groupValues[1]
+        val relative = command.first().isLowerCase()
+        val numbers = PATH_NUMBER.findAll(match.groupValues[2])
+            .map { it.value.toDouble() }
+            .toList()
+
+        when (command.uppercase()) {
+            "M" -> numbers.chunked(2).forEach { pair ->
+                check(pair.size == 2) { "par x,y esperado em M: $pathData" }
+                visit(
+                    if (relative) x + pair[0] else pair[0],
+                    if (relative) y + pair[1] else pair[1],
+                )
+                startX = x
+                startY = y
+            }
+            "L" -> numbers.chunked(2).forEach { pair ->
+                check(pair.size == 2) { "par x,y esperado em L: $pathData" }
+                visit(
+                    if (relative) x + pair[0] else pair[0],
+                    if (relative) y + pair[1] else pair[1],
+                )
+            }
+            "H" -> numbers.forEach { visit(if (relative) x + it else it, y) }
+            "V" -> numbers.forEach { visit(x, if (relative) y + it else it) }
+            "Z" -> visit(startX, startY)
+            else -> error("comando não poligonal em pathData da arte: $command")
+        }
+    }
+
+    check(left.isFinite()) { "pathData sem coordenadas: $pathData" }
+    return Box(left, top, right, bottom)
+}
