@@ -282,6 +282,7 @@ Casos de teste que sustentam as afirmações deste documento:
 | `NeoVectorAssetsTest` | manifesto fechado de 16+4, viewport/`autoMirrored`/`pathData` literais, três cores, traço de 6, sombra única +8,+8, ausência de texto/imagem/rede, teto de 1 MB, cabeçalho de autoria |
 | `NeoDrawableInflationTest` | os 20 vetores inflam com o `PathParser` real do Android (Robolectric) e as 5 fontes existem como recurso empacotado |
 | `NeoTypographyContractTest` | os 15 estilos batem com a tabela do `DESIGN.md` §4, tudo em `sp`, nenhuma família padrão, papéis de erro/ação/prazo ≥14sp, todo peso existe como arquivo |
+| `NeoDocumentedAssetsTest` | os números publicados neste documento batem com o disco: contagens e bytes do inventário (§1), bytes e sha256 da §1.3 e os quatro tamanhos da §3 |
 
 Validação de dispositivo (pendência registrada na entrega): primeira
 abertura **offline** e escala de fonte 1.0/1.3/2.0 em API 24/25 exigem
