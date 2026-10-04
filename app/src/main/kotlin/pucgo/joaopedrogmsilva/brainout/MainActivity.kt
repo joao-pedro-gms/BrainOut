@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +36,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.ThemeMode
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ThemePreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutNavHost
 import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutRoutes
@@ -64,6 +68,14 @@ private const val TAG = "BrainOut:MainActivity"
  * a recomposições enquanto a Activity existir; cada destino individual
  * recebe callbacks `lambda` em vez de acessar o controller diretamente,
  * o que facilita testes isolados de cada tela.
+ *
+ * Tema (NB-06, E4.5): esta Activity é o **ponto único de resolução**
+ * do tema. Lê a preferência persistida
+ * ([ThemePreferencesRepository] — System/Light/Dark), consulta
+ * `isSystemInDarkTheme()` uma única vez e aplica a precedência
+ * ([ThemeMode.resolvesToDark]); o booleano resultante é repassado ao
+ * [BrainOutTheme], que o propaga para toda a árvore. Nenhum subtree
+ * recalcula por conta própria (plano §3.2.2).
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -73,27 +85,57 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var notificationPermissionStore: NotificationPermissionStore
 
+    @Inject
+    lateinit var themePreferencesRepository: ThemePreferencesRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: Inicializando MainActivity")
         enableEdgeToEdge()
         setContent {
-            BrainOutTheme {
+            // Preferência de tema reativa: `null` = ainda não lida.
+            val themeMode by
+                themePreferencesRepository.observe().collectAsState(initial = null)
+            val systemInDarkTheme = isSystemInDarkTheme()
+            val resolvedDarkTheme = (themeMode ?: ThemeMode.SYSTEM).resolvesToDark(systemInDarkTheme)
+
+            BrainOutTheme(darkTheme = resolvedDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
-                    MainRoot(
-                        navController = navController,
-                        activeUserProvider = activeUserProvider,
-                    )
-                    NotificationPermissionRequest(
-                        permissionStore = notificationPermissionStore,
-                    )
+                    if (themeMode == null) {
+                        // Enquanto a preferência não chega não componhamos o
+                        // app: evita o flash do tema errado na primeira abertura.
+                        LoadingIndicator()
+                    } else {
+                        MainRoot(
+                            navController = navController,
+                            activeUserProvider = activeUserProvider,
+                        )
+                        NotificationPermissionRequest(
+                            permissionStore = notificationPermissionStore,
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+/**
+ * Spinner de tela cheia usado pelos estados de carregamento da raiz
+ * (preferência de tema e rota inicial). Um componente para os dois —
+ * mesma cor, mesmo alinhamento.
+ */
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -178,13 +220,7 @@ private fun MainRoot(
     }
 
     when (val current = startDestination) {
-        null ->
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
+        null -> LoadingIndicator()
         else ->
             BrainOutNavHost(
                 navController = navController,
