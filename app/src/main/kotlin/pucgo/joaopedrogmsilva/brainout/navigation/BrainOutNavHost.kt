@@ -8,6 +8,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
@@ -29,6 +30,8 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.dashboardGraph
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.tasksGraph
 
+private const val TAG = "BrainOut:Nav"
+
 /**
  * Componente que registra todos os destinos do `BrainOutNavHost`.
  *
@@ -47,6 +50,7 @@ fun BrainOutNavHost(
     activeUserProvider: ActiveUserProvider,
     startDestination: String = BrainOutRoutes.Splash,
 ) {
+    Log.d(TAG, "Montando BrainOutNavHost com startDestination=$startDestination")
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -72,6 +76,7 @@ private fun androidx.navigation.NavGraphBuilder.addSplashRoute(
     composable(route = BrainOutRoutes.Splash) {
         SplashScreen(
             onStartClicked = {
+                Log.d(TAG, "Navegando: Splash -> Login")
                 navController.navigate(BrainOutRoutes.Login) {
                     popUpTo(BrainOutRoutes.Splash) { inclusive = true }
                 }
@@ -86,11 +91,13 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(
     composable(route = BrainOutRoutes.Login) {
         LoginScreen(
             onLoginSubmit = {
+                Log.d(TAG, "Navegando: Login -> Home")
                 navController.navigate(BrainOutRoutes.Home) {
                     popUpTo(BrainOutRoutes.Login) { inclusive = true }
                 }
             },
             onCreateAccountClicked = {
+                Log.d(TAG, "Navegando: Login -> Register")
                 navController.navigate(BrainOutRoutes.Register)
             }
         )
@@ -103,11 +110,13 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(
     composable(route = BrainOutRoutes.Register) {
         RegisterScreen(
             onRegisterSubmit = {
+                Log.d(TAG, "Navegando: Register -> Home")
                 navController.navigate(BrainOutRoutes.Home) {
                     popUpTo(BrainOutRoutes.Login) { inclusive = true }
                 }
             },
             onHaveAccountClicked = {
+                Log.d(TAG, "Navegando: Register -> PopBackStack")
                 navController.popBackStack()
             }
         )
@@ -120,15 +129,19 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
     composable(route = BrainOutRoutes.Home) {
         HomeScreen(
             onOpenProject = { projectId ->
+                Log.d(TAG, "Navegando: Home -> ProjectDetail($projectId)")
                 navController.navigate(BrainOutRoutes.projectDetail(projectId))
             },
             onOpenSettings = {
+                Log.d(TAG, "Navegando: Home -> Settings")
                 navController.navigate(BrainOutRoutes.Settings)
             },
             onOpenTasks = {
+                Log.d(TAG, "Navegando: Home -> Tasks")
                 navController.navigate(TasksRoutes.TASKS)
             },
             onOpenDashboard = {
+                Log.d(TAG, "Navegando: Home -> Dashboard")
                 navController.navigate(TasksRoutes.DASHBOARD)
             }
         )
@@ -151,7 +164,10 @@ private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(
             .orEmpty()
         ProjectDetailScreen(
             projectId = projectId,
-            onBackClicked = { navController.popBackStack() }
+            onBackClicked = {
+                Log.d(TAG, "Navegando: ProjectDetail -> PopBackStack")
+                navController.popBackStack()
+            }
         )
     }
 }
@@ -166,6 +182,7 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
             onOptionClicked = { action ->
                 when (action) {
                     SettingsActionType.SignOut -> {
+                        Log.d(TAG, "Navegando: Settings -> SignOut (Limpando sessão)")
                         // Limpa a sessão no DataStore (E1.8) num escopo que
                         // sobrevive à saída de Settings e navega apenas após
                         // a escrita concluir — evita sessão órfã no próximo

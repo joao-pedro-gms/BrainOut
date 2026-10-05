@@ -10,6 +10,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -136,6 +137,7 @@ class TasksViewModel @Inject constructor(
                     }
                     .catch { throwable ->
                         if (throwable is CancellationException) throw throwable
+                        Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
                         val message = throwable.toTasksErrorMessage()
                         _errorMessage.value = message
                         emit(TasksUiState(isLoading = false, errorMessage = message))
@@ -169,6 +171,7 @@ class TasksViewModel @Inject constructor(
      * `flatMapLatest` em [uiState] e descarta a coleta atual.
      */
     fun retry() {
+        Log.d(TAG, "retry acionado em TasksViewModel")
         _errorMessage.value = null
         _retryToken.value = _retryToken.value + 1
     }
@@ -187,6 +190,8 @@ class TasksViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "BrainOut:TasksVM"
+
         /** Texto exibido quando a tarefa referencia um projeto inexistente. */
         const val NO_PROJECT_LABEL: String = "(sem projeto)"
 

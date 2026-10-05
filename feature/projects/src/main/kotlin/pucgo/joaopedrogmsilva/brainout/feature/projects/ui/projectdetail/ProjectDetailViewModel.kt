@@ -5,6 +5,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -238,6 +239,7 @@ class ProjectDetailViewModel @Inject constructor(
             _errorMessage.update { ERROR_EMPTY_TITLE }
             return
         }
+        Log.d(TAG, "addTask: title=$trimmed, priority=$priority, projectId=$projectId")
         viewModelScope.launch {
             try {
                 createTask.invoke(
@@ -249,12 +251,15 @@ class ProjectDetailViewModel @Inject constructor(
             } catch (e: ProjectTaskLimitReachedException) {
                 @Suppress("SwallowedException")
                 val message = e.message ?: taskLimitMessage()
+                Log.w(TAG, "Limite de tarefas ativas atingido (RN01) no projeto $projectId")
                 _errorMessage.update { message }
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                Log.w(TAG, "Título de tarefa inválido: ${e.message}")
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                Log.e(TAG, "Erro ao adicionar tarefa: ${e.message}", e)
                 _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
@@ -272,14 +277,17 @@ class ProjectDetailViewModel @Inject constructor(
     /** Move a [task] para [target], respeitando a matriz de transições. */
 
     fun changeStatus(taskId: String, target: TaskStatus) {
+        Log.d(TAG, "changeStatus: taskId=$taskId, target=$target")
         viewModelScope.launch {
             try {
                 changeStatus.invoke(taskId, target)
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
+                Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
                 _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                Log.e(TAG, "Erro ao alterar status da tarefa $taskId: ${e.message}", e)
                 _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
@@ -301,9 +309,11 @@ class ProjectDetailViewModel @Inject constructor(
      * com a persistência em DONE (bypass via `copy`).
      */
     fun changeTaskPriority(task: Task, newPriority: TaskPriority) {
+        Log.d(TAG, "changeTaskPriority: taskId=${task.id}, newPriority=$newPriority")
         val updated = try {
             task.changePriority(newPriority)
         } catch (e: TaskPriorityChangeForbiddenException) {
+            Log.w(TAG, "RN02: alteração de prioridade bloqueada para taskId=${task.id} (tarefa DONE)")
             _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
             return
         } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
@@ -315,12 +325,14 @@ class ProjectDetailViewModel @Inject constructor(
                 updateTask.invoke(updated)
             } catch (e: TaskPriorityChangeForbiddenException) {
                 // Persistência indica DONE (bypass via copy).
+                Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
                 _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
             } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                 _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                Log.e(TAG, "Erro ao alterar prioridade da tarefa ${task.id}: ${e.message}", e)
                 _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
@@ -330,6 +342,7 @@ class ProjectDetailViewModel @Inject constructor(
     fun renameTask(task: Task, newTitle: String) {
         val trimmed = newTitle.trim()
         if (trimmed.isEmpty() || trimmed == task.title) return
+        Log.d(TAG, "renameTask: taskId=${task.id}, newTitle=$trimmed")
         viewModelScope.launch {
             try {
                 updateTask.invoke(task.rename(trimmed))
@@ -338,6 +351,7 @@ class ProjectDetailViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                Log.e(TAG, "Erro ao renomear tarefa ${task.id}: ${e.message}", e)
                 _errorMessage.update { e.toProjectDetailErrorMessage() }
             }
         }
@@ -345,6 +359,7 @@ class ProjectDetailViewModel @Inject constructor(
 
     /** Remove a [task] do projeto (ação do menu "Excluir" do item). */
     fun deleteTask(task: Task) {
+        Log.d(TAG, "deleteTask: taskId=${task.id}")
         viewModelScope.launch {
             try {
                 deleteTask.invoke(task.id)
@@ -389,6 +404,8 @@ class ProjectDetailViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "BrainOut:ProjectDetailVM"
+
         /** Nome do argumento da rota do Navigation Compose. */
         const val PROJECT_ID_ARG: String = "projectId"
 

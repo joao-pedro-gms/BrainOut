@@ -6,9 +6,12 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "BrainOut:SyncConnectivityWatcher"
 
 /**
  * Reconciliação automática ao voltar a conectividade (E3.4, item 3).
@@ -45,6 +48,7 @@ class SyncConnectivityWatcher @Inject constructor(
     @Synchronized
     fun start() {
         if (registered) return
+        Log.d(TAG, "Iniciando SyncConnectivityWatcher (registrando callback de rede)")
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -54,6 +58,7 @@ class SyncConnectivityWatcher @Inject constructor(
 
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                Log.d(TAG, "Rede restabelecida (onAvailable) -> Solicitando sincronização imediata")
                 // Drena imediatamente: reconcile a fila assim que a
                 // rede volta. KEEP deduplica com drenagens em curso.
                 syncScheduler.requestImmediateSync()

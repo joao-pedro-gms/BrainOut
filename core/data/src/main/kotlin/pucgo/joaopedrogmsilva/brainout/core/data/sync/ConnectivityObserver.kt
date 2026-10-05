@@ -13,6 +13,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+
+private const val TAG = "BrainOut:ConnectivityObserver"
 
 /**
  * Estado de conectividade exposto à UI (E3.4).
@@ -63,6 +66,7 @@ class AndroidConnectivityObserver @Inject constructor(
 
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                logDebug(TAG, "Rede disponível com internet (onAvailable)")
                 trySend(ConnectivityState(isOnline = true))
             }
 
@@ -72,7 +76,10 @@ class AndroidConnectivityObserver @Inject constructor(
                 // dados móveis — a perda de uma não é ficar offline).
                 val hasActiveNetwork = connectivityManager.activeNetwork != null
                 if (!hasActiveNetwork) {
+                    logDebug(TAG, "Nenhuma rede ativa remanescente (onLost -> OFFLINE)")
                     trySend(ConnectivityState(isOnline = false))
+                } else {
+                    logDebug(TAG, "Rede perdida (onLost), mas outra rede permanece ativa")
                 }
             }
         }
@@ -86,11 +93,13 @@ class AndroidConnectivityObserver @Inject constructor(
                 .getNetworkCapabilities(network)
                 ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         } ?: false
+        logDebug(TAG, "Estado inicial de conectividade: isOnline=$initialOnline")
         trySend(ConnectivityState(isOnline = initialOnline))
 
         connectivityManager.registerNetworkCallback(request, callback)
 
         awaitClose {
+            logDebug(TAG, "Unregistering ConnectivityManager callback")
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }.distinctUntilChanged()

@@ -13,6 +13,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
 import retrofit2.HttpException
 
 /**
@@ -42,16 +44,20 @@ import retrofit2.HttpException
 @Singleton
 class BrainOutSyncDispatcher @Inject constructor(
     private val remote: RemoteDataSource,
-    private val logError: (String) -> Unit = { message -> Log.e(TAG, message) },
+    private val logError: (String) -> Unit = { message -> runCatching { Log.e(TAG, message) } },
 ) : SyncDispatcher {
 
     override suspend fun send(op: PendingOpEntity): SyncOutcome = try {
+        logDebug(TAG, "Enviando op ${op.id}: ${op.entityType}/${op.entityId} ${op.opType}")
         route(op)
     } catch (e: IOException) {
-        SyncOutcome.Retriable("rede indisponível: ${e.message}")
+        val reason = "rede indisponível: ${e.message}"
+        logWarn(TAG, "Falha de rede ao despachar op ${op.id}: $reason")
+        SyncOutcome.Retriable(reason)
     } catch (e: HttpException) {
         val code = e.code()
         if (code in RETRIABLE_HTTP_RANGE) {
+            logWarn(TAG, "HTTP $code temporário ao despachar op ${op.id} (${op.entityType}/${op.entityId})")
             SyncOutcome.Retriable("HTTP $code: ${e.message}")
         } else {
             logError("sync: HTTP $code em ${op.entityType}/${op.entityId} (${op.opType})")
@@ -67,7 +73,7 @@ class BrainOutSyncDispatcher @Inject constructor(
         val opType = enumValueOfOrNull<SyncOpType>(op.opType)
             ?: return permanent(op, "opType desconhecido: ${op.opType}")
 
-        return when (entityType) {
+        val outcome = when (entityType) {
             SyncEntityType.PROJECT -> when (opType) {
                 SyncOpType.DELETE -> guard { remote.deleteProject(op.entityId) }
                 else -> {
@@ -110,6 +116,10 @@ class BrainOutSyncDispatcher @Inject constructor(
                 SyncOpType.UPDATE -> permanent(op, "UPDATE de tag não suportado pelo contrato")
             }
         }
+        if (outcome is SyncOutcome.Success) {
+            logDebug(TAG, "Op ${op.id} (${op.entityType}/${op.entityId} ${op.opType}) roteada e concluída com sucesso")
+        }
+        return outcome
     }
 
     /**
@@ -136,7 +146,7 @@ class BrainOutSyncDispatcher @Inject constructor(
         runCatching { enumValueOf<T>(name) }.getOrNull()
 
     companion object {
-        private const val TAG = "BrainOutSync"
+        private const val TAG = "BrainOut:SyncDispatcher"
 
         /** 500..599 são retriable; o resto (4xx) é permanente. */
         private val RETRIABLE_HTTP_RANGE = 500..599

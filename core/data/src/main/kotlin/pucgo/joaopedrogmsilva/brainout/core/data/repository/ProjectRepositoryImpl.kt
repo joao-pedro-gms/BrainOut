@@ -13,12 +13,15 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
+
+private const val TAG = "BrainOut:ProjectRepo"
 
 /**
  * Implementação Room de [ProjectRepository].
@@ -73,6 +76,7 @@ class ProjectRepositoryImpl @Inject constructor(
      * nem o projeto nem a op são gravados (rollback total).
      */
     override suspend fun create(project: Project, tagIds: List<String>): Project {
+        logDebug(TAG, "Criando projeto id=${project.id}, name=${project.name}, tags=${tagIds.size}")
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
                 entityType = SyncEntityType.PROJECT,
@@ -90,6 +94,7 @@ class ProjectRepositoryImpl @Inject constructor(
 
     /** Atualiza o projeto e enfileira a op UPDATE na mesma transação. */
     override suspend fun update(project: Project, tagIds: List<String>): Project {
+        logDebug(TAG, "Atualizando projeto id=${project.id}, name=${project.name}, tagsCount=${tagIds.size}")
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
                 entityType = SyncEntityType.PROJECT,
@@ -112,6 +117,7 @@ class ProjectRepositoryImpl @Inject constructor(
      * no stub.
      */
     override suspend fun delete(id: String) {
+        logDebug(TAG, "Deletando projeto id=$id")
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
                 entityType = SyncEntityType.PROJECT,

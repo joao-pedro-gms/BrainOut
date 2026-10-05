@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout
 
 import android.app.Application
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
@@ -39,13 +40,16 @@ class BrainOutApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "Inicializando BrainOutApplication...")
         WorkManagerDeadlineScheduler.ensureChannel(this)
         // Fila offline (E3.3): trabalho periódico único de 15 min.
         // KEEP garante idempotência entre boots; a constraint de rede
         // e o OneTimeWorkRequest de reconciliação ficam no scheduler.
+        Log.d(TAG, "Garantindo trabalho periódico de sincronização...")
         syncScheduler.ensurePeriodicSync()
         // Reconciliação automática ao voltar a conectividade (E3.4):
         // callback de rede enfileira o OneTimeWorkRequest em onAvailable.
+        Log.d(TAG, "Iniciando monitor de conectividade para sincronização...")
         syncConnectivityWatcher.start()
     }
 
@@ -53,4 +57,8 @@ class BrainOutApplication : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    companion object {
+        private const val TAG = "BrainOut:Application"
+    }
 }

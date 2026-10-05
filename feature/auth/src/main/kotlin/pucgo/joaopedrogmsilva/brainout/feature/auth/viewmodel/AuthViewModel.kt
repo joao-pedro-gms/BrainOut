@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,15 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MIN_PASSWORD_LENGTH
+
+private const val TAG = "BrainOut:AuthVM"
+
+/** Mascara e-mail para log: `jo***@exemplo.com` (evita PII no logcat). */
+private fun String.maskEmail(): String {
+    val at = indexOf('@')
+    if (at <= 0) return "***"
+    return take(2) + "***" + substring(at)
+}
 
 /**
  * ViewModel único para os fluxos de Login e Cadastro (E1.6).
@@ -95,8 +105,10 @@ class AuthViewModel @Inject constructor(
     fun submitLogin() {
         val current = _state.value
         if (current.isLoading) return
+        Log.d(TAG, "Submetendo login para e-mail: ${current.email.maskEmail()}")
         val errors = validateLoginFields(current)
         if (errors != null) {
+            Log.w(TAG, "Validação de login falhou: campo=${errors.firstInvalidField}")
             val (emailErrorValue, passwordErrorValue) = splitLoginErrors(errors)
             // `errorMessage` (banner) — o erro já aparece no campo.
             // O banner fica reservado para erros de domínio não-campo.
@@ -116,8 +128,10 @@ class AuthViewModel @Inject constructor(
                     email = current.email,
                     rawPassword = current.password,
                 )
+                Log.d(TAG, "Autenticação bem-sucedida para userId=${user.id}")
                 persistSessionAndNavigate(user)
             } catch (error: InvalidCredentialsException) {
+                Log.w(TAG, "Credenciais inválidas para o e-mail: ${current.email.maskEmail()}")
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -125,6 +139,7 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             } catch (error: DomainException) {
+                Log.w(TAG, "Exceção de domínio em submitLogin: ${error.message}")
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
                 // Exceções inesperadas (ex.: IOException, SQLite) não devem
@@ -132,8 +147,8 @@ class AuthViewModel @Inject constructor(
                 // logamos a stack trace para diagnóstico.
                 @Suppress("SwallowedException")
                 val swallowed = error
-                android.util.Log.e(
-                    "AuthViewModel",
+                Log.e(
+                    TAG,
                     "Falha inesperada em submitLogin",
                     swallowed,
                 )
@@ -152,8 +167,10 @@ class AuthViewModel @Inject constructor(
     fun submitRegister() {
         val current = _state.value
         if (current.isLoading) return
+        Log.d(TAG, "Submetendo cadastro com role=${current.selectedRole}, e-mail=${current.email.maskEmail()}")
         val errors = validateRegisterFields(current)
         if (errors != null) {
+            Log.w(TAG, "Validação de cadastro falhou: campo=${errors.firstInvalidField}")
             val split = splitRegisterErrors(errors)
             // para o campo; o banner fica para erros de domínio não-campo.
             _state.update {
@@ -181,8 +198,10 @@ class AuthViewModel @Inject constructor(
                     rawPassword = current.password,
                     role = current.selectedRole,
                 )
+                Log.d(TAG, "Cadastro bem-sucedido para userId=${user.id}")
                 persistSessionAndNavigate(user)
             } catch (error: DuplicateEmailException) {
+                Log.w(TAG, "E-mail duplicado ao cadastrar: ${current.email.maskEmail()}")
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -190,10 +209,11 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             } catch (error: DomainException) {
+                Log.w(TAG, "Exceção de domínio em submitRegister: ${error.message}")
                 _state.update { it.copy(isLoading = false, errorMessage = error.message) }
             } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
-                android.util.Log.e(
-                    "AuthViewModel",
+                Log.e(
+                    TAG,
                     "Falha inesperada em submitRegister",
                     error,
                 )

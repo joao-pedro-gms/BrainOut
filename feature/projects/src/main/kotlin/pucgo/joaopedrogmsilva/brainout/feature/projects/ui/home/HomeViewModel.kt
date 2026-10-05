@@ -7,6 +7,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -97,6 +98,7 @@ class HomeViewModel @Inject constructor(
     val projectFilter: StateFlow<HomeProjectFilter> = _projectFilter.asStateFlow()
 
     fun setProjectFilter(filter: HomeProjectFilter) {
+        Log.d(TAG, "Alterando filtro de projetos: $filter")
         _projectFilter.value = filter
     }
 
@@ -137,21 +139,25 @@ class HomeViewModel @Inject constructor(
 
     /** Cria projeto no nome do owner ativo. */
     fun createProject(name: String, description: String?, tagIds: List<String>) {
+        Log.d(TAG, "createProject acionado: name=$name, tagsCount=${tagIds.size}")
         runCreateProject(viewModelScope, createProject, activeUserProvider, name, description, tagIds, _errorMessage)
     }
 
     /** Atualiza projeto existente (campos + tags associadas). */
     fun updateProject(project: Project, tagIds: List<String>) {
+        Log.d(TAG, "updateProject acionado: id=${project.id}, name=${project.name}")
         runUpdateProject(viewModelScope, updateProject, project, tagIds, _errorMessage)
     }
 
     /** Remove projeto (tarefas e `project_tags` em cascata). */
     fun deleteProject(projectId: String) {
+        Log.d(TAG, "deleteProject acionado: id=$projectId")
         runDeleteProject(viewModelScope, deleteProject, projectId, _errorMessage)
     }
 
     /** Cria tag para o owner ativo. */
     fun createTag(name: String, color: String) {
+        Log.d(TAG, "createTag acionado: name=$name, color=$color")
         runCreateTag(viewModelScope, createTag, activeUserProvider, name, color, _errorMessage)
     }
 
@@ -163,16 +169,19 @@ class HomeViewModel @Inject constructor(
 
     /** Atualiza a tag selecionada como filtro (E2.6). */
     fun onTagFilterChange(tagId: String?) {
+        Log.d(TAG, "onTagFilterChange: tagId=$tagId")
         runOnTagFilterChange(viewModelScope, listingPreferences, activeUserProvider, tagId)
     }
 
     /** Atualiza a ordenação (E2.6). */
     fun onSortOrderChange(order: SortOrder) {
+        Log.d(TAG, "onSortOrderChange: order=$order")
         runOnSortOrderChange(viewModelScope, listingPreferences, activeUserProvider, order)
     }
 
     /** Re-assina o pipeline após falha (E2.8). */
     fun retry() {
+        Log.d(TAG, "retry acionado na Home")
         _errorMessage.value = null
         _retryToken.value = _retryToken.value + 1
     }
@@ -183,6 +192,8 @@ class HomeViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "BrainOut:HomeVM"
+
         // E2.8 — chaves canônicas que a UI resolve em `R.string.home_error_*`.
         const val ERROR_LOAD_FAILED: String = "Não foi possível carregar seus projetos"
         const val ERROR_ACTION_FAILED: String = "Não foi possível concluir a operação"

@@ -14,6 +14,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
@@ -22,6 +23,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskCompletionStats
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+
+private const val TAG = "BrainOut:TaskRepo"
 
 /**
  * Implementação Room de [TaskRepository] com **escrita dual**
@@ -74,6 +77,7 @@ class TaskRepositoryImpl @Inject constructor(
 
     /** Cria a tarefa e enfileira a op CREATE na mesma transação. */
     override suspend fun create(task: Task): Task {
+        logDebug(TAG, "Criando tarefa id=${task.id}, title=${task.title}, projectId=${task.projectId}")
         pendingOpDao.enqueueInTx(
             op = opFor(task.id, SyncOpType.CREATE, task),
         ) {
@@ -84,6 +88,7 @@ class TaskRepositoryImpl @Inject constructor(
 
     /** Atualiza a tarefa e enfileira a op UPDATE na mesma transação. */
     override suspend fun update(task: Task): Task {
+        logDebug(TAG, "Atualizando tarefa id=${task.id}, title=${task.title}, status=${task.status}")
         pendingOpDao.enqueueInTx(
             op = opFor(task.id, SyncOpType.UPDATE, task),
         ) {
@@ -98,6 +103,7 @@ class TaskRepositoryImpl @Inject constructor(
      * rejeitar a transição, nem o Room nem a fila mudam.
      */
     override suspend fun changeStatus(id: String, target: TaskStatus): Task {
+        logDebug(TAG, "Alterando status da tarefa id=$id para target=$target")
         val current = taskDao.findById(id)?.toDomain()
             ?: throw TaskNotFoundException(id)
         val updated = current.transitionTo(target)
@@ -118,8 +124,12 @@ class TaskRepositoryImpl @Inject constructor(
      * projeto concluído").
      */
     override suspend fun delete(id: String) {
+        logDebug(TAG, "Deletando tarefa id=$id")
         val current = taskDao.findById(id)
-            ?: return // idempotente: tarefa inexistente = nada a fazer
+            ?: run {
+                logDebug(TAG, "Deleção de tarefa id=$id ignorada: não encontrada no Room")
+                return
+            }
         val wasActive = current.status != TaskStatus.DONE.name
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
@@ -190,11 +200,13 @@ class TaskRepositoryImpl @Inject constructor(
      * permitida (estado inicial desconhecido, p.ex.).
      */
     override suspend fun completeAndCascade(taskId: String): Task {
+        logDebug(TAG, "Concluindo tarefa id=$taskId em cascata com projeto")
         val current = taskDao.findById(taskId)?.toDomain()
             ?: throw TaskNotFoundException(taskId)
         if (current.status == TaskStatus.DONE) {
             // Já está concluída — no-op. O projeto já deve estar
             // concluído pelo caminho original; nada a fazer.
+            logDebug(TAG, "completeAndCascade no-op: tarefa $taskId já em DONE")
             return current
         }
         // Encadeia a transição para respeitar a matriz do domínio
@@ -225,6 +237,7 @@ class TaskRepositoryImpl @Inject constructor(
      * transação da cascata.
      */
     override suspend fun reopenAndCascade(taskId: String, target: TaskStatus): Task {
+        logDebug(TAG, "Reabrindo tarefa id=$taskId para target=$target em cascata com projeto")
         require(target != TaskStatus.DONE) {
             "reopenAndCascade aceita apenas estados ativos; use completeAndCascade para DONE"
         }

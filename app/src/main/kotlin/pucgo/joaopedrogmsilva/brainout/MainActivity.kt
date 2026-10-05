@@ -5,6 +5,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,6 +38,8 @@ import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutRoutes
 import pucgo.joaopedrogmsilva.brainout.notifications.NotificationPermissionStore
 import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
+
+private const val TAG = "BrainOut:MainActivity"
 
 /**
  * Activity única do BrainOut.
@@ -72,6 +75,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate: Inicializando MainActivity")
         enableEdgeToEdge()
         setContent {
             BrainOutTheme {
@@ -112,6 +116,7 @@ private fun NotificationPermissionRequest(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
+        Log.d(TAG, "Resultado da permissão POST_NOTIFICATIONS: concedida=$granted")
         if (!granted) {
             Toast.makeText(
                 context,
@@ -129,10 +134,16 @@ private fun NotificationPermissionRequest(
             context,
             Manifest.permission.POST_NOTIFICATIONS,
         ) == PackageManager.PERMISSION_GRANTED
-        if (alreadyGranted) return@LaunchedEffect
+        if (alreadyGranted) {
+            Log.d(TAG, "Permissão POST_NOTIFICATIONS já concedida previamente")
+            return@LaunchedEffect
+        }
         val askedBefore = permissionStore.wasAsked()
         if (!askedBefore) {
+            Log.d(TAG, "Solicitando permissão POST_NOTIFICATIONS...")
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            Log.d(TAG, "Permissão POST_NOTIFICATIONS negada anteriormente; não solicitando novamente")
         }
     }
 }
@@ -153,11 +164,13 @@ private fun MainRoot(
         val hasActiveUser: Boolean = withContext(Dispatchers.IO) {
             activeUserProvider.currentActiveUser() != null
         }
-        startDestination = if (hasActiveUser) {
+        val destination = if (hasActiveUser) {
             BrainOutRoutes.Home
         } else {
             BrainOutRoutes.Splash
         }
+        Log.d(TAG, "Sessão ativa encontrada=$hasActiveUser -> Rota inicial: $destination")
+        startDestination = destination
     }
 
     when (val current = startDestination) {

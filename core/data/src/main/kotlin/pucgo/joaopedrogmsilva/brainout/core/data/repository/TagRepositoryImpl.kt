@@ -14,8 +14,11 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagSyncPayload
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+
+private const val TAG = "BrainOut:TagRepo"
 
 /**
  * Implementação Room de [TagRepository] com **escrita dual**
@@ -71,6 +74,7 @@ class TagRepositoryImpl @Inject constructor(
      * escritas — a fila nunca guarda op de tag que não existe.
      */
     override suspend fun create(tag: Tag): Tag {
+        logDebug(TAG, "Criando tag id=${tag.id}, name=${tag.name}, color=${tag.color}, ownerId=${tag.ownerId}")
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
                 entityType = SyncEntityType.TAG,
@@ -94,6 +98,7 @@ class TagRepositoryImpl @Inject constructor(
      * `ON DELETE CASCADE`.
      */
     override suspend fun delete(id: String) {
+        logDebug(TAG, "Deletando tag id=$id")
         pendingOpDao.enqueueInTx(
             op = PendingOpEntity.enqueue(
                 entityType = SyncEntityType.TAG,

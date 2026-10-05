@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -17,11 +18,11 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  *
  * Erros de rede/HTTP são logados e re-sinalizados como exceção para o
  * chamador decidir (fila offline do E3.4). O logger é injetável para
- * que os testes unitários não dependam de `android.util.Log`.
+ * que os testes unitários não dependerem de `android.util.Log`.
  */
 class RemoteDataSource(
     baseUrl: String,
-    private val logError: (String) -> Unit = { message -> Log.e(TAG, message) },
+    private val logError: (String) -> Unit = { message -> runCatching { Log.e(TAG, message) } },
     private val loggingEnabled: Boolean = true,
 ) {
 
@@ -50,7 +51,10 @@ class RemoteDataSource(
 
     /** Healthcheck do serviço (GET /v1/ping). */
     suspend fun ping(): Boolean = try {
-        api.ping().pong
+        logDebug(TAG, "Chamando ping (GET /v1/ping)")
+        val res = api.ping().pong
+        logDebug(TAG, "Ping executado com sucesso: pong=$res")
+        res
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -60,7 +64,10 @@ class RemoteDataSource(
 
     /** Lista todos os projetos (GET /v1/projects). */
     suspend fun listProjects(): List<ProjectDto> = try {
-        api.listProjects().items
+        logDebug(TAG, "Chamando listProjects (GET /v1/projects)")
+        val result = api.listProjects().items
+        logDebug(TAG, "listProjects retornou ${result.size} projetos")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -70,7 +77,10 @@ class RemoteDataSource(
 
     /** Busca um projeto por id (GET /v1/projects/{id}). */
     suspend fun getProject(projectId: String): ProjectDto = try {
-        api.getProject(projectId)
+        logDebug(TAG, "Chamando getProject (GET /v1/projects/$projectId)")
+        val result = api.getProject(projectId)
+        logDebug(TAG, "getProject($projectId) retornou sucesso")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -80,7 +90,10 @@ class RemoteDataSource(
 
     /** Cria um projeto (POST /v1/projects). */
     suspend fun createProject(name: String, description: String?): ProjectDto = try {
-        api.createProject(ProjectCreateDto(name = name, description = description))
+        logDebug(TAG, "Chamando createProject (POST /v1/projects) name=$name")
+        val result = api.createProject(ProjectCreateDto(name = name, description = description))
+        logDebug(TAG, "createProject retornou id=${result.id}")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -90,10 +103,13 @@ class RemoteDataSource(
 
     /** Atualiza um projeto (PUT /v1/projects/{id}). */
     suspend fun updateProject(projectId: String, name: String, description: String?): ProjectDto = try {
-        api.updateProject(
+        logDebug(TAG, "Chamando updateProject (PUT /v1/projects/$projectId)")
+        val result = api.updateProject(
             projectId,
             ProjectCreateDto(id = projectId, name = name, description = description),
         )
+        logDebug(TAG, "updateProject($projectId) executado com sucesso")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -103,7 +119,9 @@ class RemoteDataSource(
 
     /** Remove um projeto (DELETE /v1/projects/{id}). */
     suspend fun deleteProject(projectId: String) = try {
+        logDebug(TAG, "Chamando deleteProject (DELETE /v1/projects/$projectId)")
         api.deleteProject(projectId)
+        logDebug(TAG, "deleteProject($projectId) executado com sucesso")
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -113,7 +131,10 @@ class RemoteDataSource(
 
     /** Lista tarefas, opcionalmente filtradas por projeto (GET /v1/tasks). */
     suspend fun listTasks(projectId: String? = null): List<TaskDto> = try {
-        api.listTasks(projectId).items
+        logDebug(TAG, "Chamando listTasks (GET /v1/tasks?projectId=$projectId)")
+        val result = api.listTasks(projectId).items
+        logDebug(TAG, "listTasks retornou ${result.size} tarefas")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -128,7 +149,16 @@ class RemoteDataSource(
         priority: Int = 0,
         done: Boolean = false,
     ): TaskDto = try {
-        api.createTask(TaskCreateDto(projectId = projectId, title = title, priority = priority, done = done))
+        logDebug(TAG, "Chamando createTask (POST /v1/tasks) projectId=$projectId, title=$title")
+        val payload = TaskCreateDto(
+            projectId = projectId,
+            title = title,
+            priority = priority,
+            done = done,
+        )
+        val result = api.createTask(payload)
+        logDebug(TAG, "createTask retornou id=${result.id}")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -147,7 +177,8 @@ class RemoteDataSource(
         priority: Int,
         done: Boolean,
     ): TaskDto = try {
-        api.updateTask(
+        logDebug(TAG, "Chamando updateTask (PUT /v1/tasks/$taskId) done=$done")
+        val result = api.updateTask(
             taskId,
             TaskCreateDto(
                 id = taskId,
@@ -157,6 +188,8 @@ class RemoteDataSource(
                 done = done,
             ),
         )
+        logDebug(TAG, "updateTask($taskId) executado com sucesso")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -166,7 +199,9 @@ class RemoteDataSource(
 
     /** Remove uma tarefa (DELETE /v1/tasks/{id}) — 204 mesmo ausente. */
     suspend fun deleteTask(taskId: String) = try {
+        logDebug(TAG, "Chamando deleteTask (DELETE /v1/tasks/$taskId)")
         api.deleteTask(taskId)
+        logDebug(TAG, "deleteTask($taskId) executado com sucesso")
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -176,7 +211,10 @@ class RemoteDataSource(
 
     /** Lista tags (GET /v1/tags). */
     suspend fun listTags(): List<TagDto> = try {
-        api.listTags().items
+        logDebug(TAG, "Chamando listTags (GET /v1/tags)")
+        val result = api.listTags().items
+        logDebug(TAG, "listTags retornou ${result.size} tags")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -186,7 +224,10 @@ class RemoteDataSource(
 
     /** Cria tag (POST /v1/tags) — o servidor gera o id. */
     suspend fun createTag(name: String, color: String, id: String? = null): TagDto = try {
-        api.createTag(TagCreateDto(id = id, name = name, color = color))
+        logDebug(TAG, "Chamando createTag (POST /v1/tags) name=$name, color=$color")
+        val result = api.createTag(TagCreateDto(id = id, name = name, color = color))
+        logDebug(TAG, "createTag retornou id=${result.id}")
+        result
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -196,7 +237,9 @@ class RemoteDataSource(
 
     /** Remove tag (DELETE /v1/tags/{id}) — 204 mesmo ausente. */
     suspend fun deleteTag(tagId: String) = try {
+        logDebug(TAG, "Chamando deleteTag (DELETE /v1/tags/$tagId)")
         api.deleteTag(tagId)
+        logDebug(TAG, "deleteTag($tagId) executado com sucesso")
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -205,6 +248,6 @@ class RemoteDataSource(
     }
 
     companion object {
-        private const val TAG = "BrainOutRemote"
+        private const val TAG = "BrainOut:RemoteDataSource"
     }
 }

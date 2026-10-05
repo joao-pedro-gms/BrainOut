@@ -8,8 +8,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
+import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+
+private const val TAG = "BrainOut:ActiveUserProvider"
 
 /**
  * Combina [SessionStore] (DataStore) com [UserRepository] (Room) para
@@ -43,14 +48,17 @@ class ActiveUserProvider @Inject constructor(
     fun observeActiveUser(): Flow<User?> = sessionStore.observeUserId()
         .flatMapLatest { id ->
             if (id.isNullOrBlank()) {
+                logDebug(TAG, "Sessão ausente (id nulo ou vazio)")
                 flow { emit(null) }
             } else {
                 flow {
                     val user = userRepository.findById(id)
                     if (user == null) {
+                        logWarn(TAG, "Sessão órfã detectada para id=$id (usuário não existe no Room). Limpando sessão.")
                         sessionStore.clear()
                         emit(null)
                     } else {
+                        logDebug(TAG, "Usuário ativo reidratado: id=${user.id}, e-mail=${user.email.maskEmail()}")
                         emit(user)
                     }
                 }
@@ -78,11 +86,14 @@ class ActiveUserProvider @Inject constructor(
      */
     suspend fun currentActiveUser(): User? {
         val id = sessionStore.currentUserId() ?: return null
-        return userRepository.findById(id)
+        val user = userRepository.findById(id)
+        logDebug(TAG, "currentActiveUser: id=$id -> usuário=${user?.email?.maskEmail()}")
+        return user
     }
 
     /** Encerra a sessão atual (logout). */
     suspend fun signOut() {
+        logDebug(TAG, "Encerrando sessão via signOut()")
         sessionStore.clear()
     }
 }
