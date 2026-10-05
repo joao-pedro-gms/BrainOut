@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.notifications
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -11,6 +12,8 @@ import java.io.IOException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DomainException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
+
+private const val TAG = "BrainOut:CompleteTaskWorker"
 
 /**
  * Worker que conclui a tarefa quando o usuário toca em **"Concluir"**
@@ -36,18 +39,25 @@ class CompleteTaskWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val taskId = inputData.getString(KEY_TASK_ID)
-            ?: return Result.failure()
+        if (taskId == null) {
+            Log.e(TAG, "doWork falhou: KEY_TASK_ID ausente nos dados de entrada")
+            return Result.failure()
+        }
+        Log.d(TAG, "Concluindo tarefa $taskId via notificação")
         return try {
             changeTaskStatus(taskId, TaskStatus.DONE)
+            Log.d(TAG, "Tarefa $taskId marcada como DONE com sucesso")
             Result.success()
         } catch (e: DomainException) {
             // Tarefa inexistente (excluída em outro ponto) ou outra
             // violação de regra permanente — idempotente: encerra
             // com sucesso para que o WorkManager não reprocesse
+            Log.w(TAG, "Domínio rejeitou alteração de status da tarefa $taskId: ${e.message}. Finalizando idempotente.")
             Result.success()
         } catch (e: IOException) {
             // Falha transitória (Room indisponível, etc.) — backoff
             // exponencial do WorkManager.
+            Log.e(TAG, "Falha de I/O ao concluir tarefa $taskId: ${e.message}. Solicitando retry.")
             Result.retry()
         }
     }

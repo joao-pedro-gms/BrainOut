@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -20,6 +21,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+
+private const val TAG = "BrainOut:DeadlineWorker"
 
 /**
  * Worker que publica a notificação de lembrete de prazo (marco E3.6).
@@ -49,7 +52,11 @@ class DeadlineWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val taskId = inputData.getString(KEY_TASK_ID)
-            ?: return Result.failure()
+        if (taskId == null) {
+            Log.e(TAG, "doWork falhou: KEY_TASK_ID não informado")
+            return Result.failure()
+        }
+        Log.d(TAG, "Executando DeadlineWorker para taskId=$taskId")
         val outcome = publishReminder(taskId)
         return outcome ?: Result.success()
     }
@@ -60,13 +67,23 @@ class DeadlineWorker @AssistedInject constructor(
      * [Result.failure] quando o `Data` de entrada é inválido.
      */
     private suspend fun publishReminder(taskId: String): Result? {
-        val task: Task = taskRepository.findById(taskId) ?: return null
-        if (task.status == TaskStatus.DONE) return null
+        val task: Task? = taskRepository.findById(taskId)
+        if (task == null) {
+            Log.d(TAG, "Lembrete cancelado: tarefa $taskId não foi encontrada")
+            return null
+        }
+        if (task.status == TaskStatus.DONE) {
+            Log.d(TAG, "Lembrete cancelado: tarefa $taskId já está concluída")
+            return null
+        }
 
         val projectName = projectRepository.findById(task.projectId)?.name
             ?: applicationContext.getString(R.string.deadline_unknown_project)
 
-        if (!hasNotificationPermission(applicationContext)) return null
+        if (!hasNotificationPermission(applicationContext)) {
+            Log.w(TAG, "Lembrete não exibido: permissão POST_NOTIFICATIONS negada")
+            return null
+        }
 
         val contentIntent = PendingIntent.getActivity(
             applicationContext,
@@ -102,6 +119,7 @@ class DeadlineWorker @AssistedInject constructor(
         @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(applicationContext)
             .notify(task.id.hashCode(), notification)
+        Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
         return null
     }
 

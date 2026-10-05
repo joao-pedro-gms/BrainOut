@@ -35,6 +35,14 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            // ViewModels logam via android.util.Log; sem isso os testes
+            // JVM puros falham com "Method d in android.util.Log not mocked".
+            isReturnDefaultValues = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

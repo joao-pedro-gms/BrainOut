@@ -18,6 +18,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -135,6 +136,7 @@ class DashboardViewModel @Inject constructor(
                     }
                     .catch { throwable ->
                         if (throwable is CancellationException) throw throwable
+                        Log.e(TAG, "Erro ao carregar estatísticas do dashboard: ${throwable.message}", throwable)
                         val message = throwable.toDashboardErrorMessage()
                         _errorMessage.value = message
                         emit(DashboardUiState(isLoading = false, errorMessage = message))
@@ -160,6 +162,7 @@ class DashboardViewModel @Inject constructor(
      * [retryToken], o que dispara o `flatMapLatest` em [uiState].
      */
     fun retry() {
+        Log.d(TAG, "retry acionado no Dashboard")
         _errorMessage.value = null
         _retryToken.value = _retryToken.value + 1
     }
@@ -194,6 +197,8 @@ class DashboardViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "BrainOut:DashboardVM"
+
         /**
          * Mensagem canônica para falhas de carga (E2.8). A UI resolve
          * esta chave para o recurso localizado via

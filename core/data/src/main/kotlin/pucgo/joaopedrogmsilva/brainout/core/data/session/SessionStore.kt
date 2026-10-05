@@ -11,6 +11,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+
+private const val TAG = "BrainOut:SessionStore"
 
 /**
  * Persiste o id do [pucgo.joaopedrogmsilva.brainout.core.domain.model.User]
@@ -41,12 +44,15 @@ class SessionStore(
      * o `DataStore` estar pronto — é seguro cancelar normalmente.
      */
     suspend fun currentUserId(): String? {
-        return observeUserId().first()
+        val id = observeUserId().first()
+        logDebug(TAG, "Lendo userId atual do DataStore: $id")
+        return id
     }
 
     /** Persiste o [userId] como sessão ativa. */
     suspend fun saveUserId(userId: String) {
         require(userId.isNotBlank()) { "userId não pode ser vazio" }
+        logDebug(TAG, "Salvando userId no DataStore: $userId")
         dataStore.edit { prefs ->
             prefs[USER_ID_KEY] = userId
         }
@@ -54,6 +60,7 @@ class SessionStore(
 
     /** Limpa a sessão atual (logout). */
     suspend fun clear() {
+        logDebug(TAG, "Limpando sessão (logout) no DataStore")
         dataStore.edit { prefs ->
             prefs.remove(USER_ID_KEY)
             prefs.remove(NOTIFICATION_PERMISSION_ASKED_KEY)
@@ -71,6 +78,7 @@ class SessionStore(
 
     /** Registra que a permissão de notificações foi pedida (E3.6). */
     suspend fun markNotificationPermissionAsked() {
+        logDebug(TAG, "Marcando permissão POST_NOTIFICATIONS como pedida no DataStore")
         dataStore.edit { prefs ->
             prefs[NOTIFICATION_PERMISSION_ASKED_KEY] = true
         }

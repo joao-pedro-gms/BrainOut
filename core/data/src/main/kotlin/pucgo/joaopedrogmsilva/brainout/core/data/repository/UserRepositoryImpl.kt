@@ -7,9 +7,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logError
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
+import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+
+private const val TAG = "BrainOut:UserRepo"
 
 /**
  * Implementação Room de [UserRepository].
@@ -28,23 +34,33 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun findByEmail(email: String): User? {
         val normalized = email.trim()
-        return dao.findByEmail(normalized)?.toDomain()
+        logDebug(TAG, "Buscando usuário por e-mail: ${normalized.maskEmail()}")
+        val user = dao.findByEmail(normalized)?.toDomain()
+        logDebug(TAG, "Busca por e-mail: encontrado=${user != null}")
+        return user
     }
 
     override suspend fun save(user: User): User {
         val entity = UserEntity.fromDomain(user)
+        logDebug(TAG, "Salvando usuário id=${user.id}, e-mail=${user.email.maskEmail()}, role=${user.role}")
         try {
             dao.insert(entity)
+            logDebug(TAG, "Usuário id=${user.id} salvo com sucesso no Room")
         } catch (error: Throwable) {
             if (isUniqueEmailViolation(error)) {
+                logWarn(TAG, "Conflito de e-mail duplicado ao salvar usuário: ${user.email.maskEmail()}")
                 throw DuplicateEmailException(user.email)
             }
+            logError(TAG, "Erro inesperado ao salvar usuário id=${user.id}: ${error.message}", error)
             throw error
         }
         return user
     }
 
-    override suspend fun findById(id: String): User? = dao.findById(id)?.toDomain()
+    override suspend fun findById(id: String): User? {
+        logDebug(TAG, "Buscando usuário por id: $id")
+        return dao.findById(id)?.toDomain()
+    }
 
     // --- Reactive API (Flow) ---
 

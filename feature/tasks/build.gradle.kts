@@ -63,6 +63,9 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            // ViewModels logam via android.util.Log; sem isso os testes
+            // JVM puros falham com "Method d in android.util.Log not mocked".
+            isReturnDefaultValues = true
         }
     }
 }

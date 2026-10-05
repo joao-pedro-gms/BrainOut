@@ -4,6 +4,7 @@ package pucgo.joaopedrogmsilva.brainout.notifications
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -15,6 +16,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import pucgo.joaopedrogmsilva.brainout.R
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+
+private const val TAG = "BrainOut:DeadlineScheduler"
 
 /**
  * Implementação concreta de [DeadlineNotificationScheduler] sobre
@@ -43,9 +46,11 @@ class WorkManagerDeadlineScheduler @Inject constructor(
         if (delayMillis <= 0) {
             // Prazo já vencido no momento do agendamento — sem lembrete
             // retroativo (regra do domínio E3.6).
+            Log.d(TAG, "Agendamento ignorado: prazo já vencido para taskId=$taskId (triggerAt=$triggerAt)")
             cancel(taskId)
             return
         }
+        Log.d(TAG, "Agendando notificação de prazo para taskId=$taskId em $delayMillis ms (triggerAt=$triggerAt)")
         val request = OneTimeWorkRequestBuilder<DeadlineWorker>()
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(DeadlineWorker.KEY_TASK_ID to taskId))
@@ -56,6 +61,7 @@ class WorkManagerDeadlineScheduler @Inject constructor(
     }
 
     override fun cancel(taskId: String) {
+        Log.d(TAG, "Cancelando trabalho de notificação para taskId=$taskId")
         WorkManager.getInstance(appContext).cancelUniqueWork(uniqueWorkName(taskId))
     }
 
@@ -88,6 +94,7 @@ class WorkManagerDeadlineScheduler @Inject constructor(
          */
         fun ensureChannel(context: Context) {
             if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
+            Log.d(TAG, "Garantindo existência do canal de notificação '$CHANNEL_ID'")
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 context.getString(R.string.deadline_channel_name),
