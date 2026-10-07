@@ -25,7 +25,7 @@ assignees: ''
 - [ ] R3 — Manutenção de dados
 - [ ] R4 — Regras de negócio
 - [ ] R5 — Persistência local
-- [ ] R6 — Persistência remota / sincronização
+- R6 — Persistência remota / sincronização — **fora do escopo**: o app é totalmente local; a única transferência de dados é o arquivo de backup exportado/restaurado.
 - [ ] R7 — Integração externa
 - [ ] R8 — Recurso nativo
 - [ ] R9 — Consulta e apresentação de dados

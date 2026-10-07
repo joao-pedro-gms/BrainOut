@@ -1,9 +1,11 @@
 # BrainOut
 
 Gerenciador de projetos e tarefas para uso individual.
-Aplicativo Android nativo escrito em **Kotlin** com **Jetpack Compose**,
-persistência local com **Room** e sincronização com serviço de retaguarda
-(FastAPI, ver [Backend stub](#backend-stub)).
+Aplicativo Android nativo escrito em **Kotlin** com **Jetpack Compose** e
+persistência **totalmente local** em **Room**. Não há backend, API externa,
+conta remota nem sincronização: os dados ficam no próprio dispositivo, e a
+única forma de levá-los de uma instalação a outra é o arquivo de backup
+exportado e restaurado pelo app (ver [Dados e backup](#dados-e-backup)).
 
 > Projeto Integrador — Análise e Desenvolvimento de Sistemas — PUC Goiás — 2026/2.
 
@@ -34,7 +36,7 @@ persistência local com **Room** e sincronização com serviço de retaguarda
 
 - Kotlin 2.3 + AGP 9.4 + Jetpack Compose + Material 3
 - Room (persistência local) + DataStore (preferências)
-- Hilt (injeção de dependência) + WorkManager (sincronização)
+- Hilt (injeção de dependência) + WorkManager (lembretes locais de prazo)
 - KSP (processamento de anotações Room/Hilt)
 - ktlint + detekt + Android Lint + Kover (cobertura mínima 60%)
 - GitHub Actions (CI/CD)
@@ -47,7 +49,6 @@ persistência local com **Room** e sincronização com serviço de retaguarda
 | Android SDK      | compileSdk 35 | Instale pelo Android Studio (SDK Manager) ou `sdkmanager`. O caminho vai em `local.properties` (`sdk.dir`). |
 | Android Studio   | Hedgehog (2023.1.1)+ | Para emulador, editor e SDK Manager. |
 | Emulador ou dispositivo | API 24+ | Emulador de API 35 (imagem `system-images;android-35;google_apis;x86_64`) ou dispositivo físico com depuração USB. |
-| Python 3 + pip   | 3.10+         | Só para o backend stub local (seção Backend stub). |
 
 Clone e preparação mínima:
 
@@ -60,21 +61,15 @@ cp local.properties.example local.properties
 
 ## Build
 
-### APK de debug (flavors dev/prod)
+### APK de debug
 
-O projeto tem dois product flavors de ambiente (`dev` e `prod`) na
-dimensão `environment`:
-
-- **dev** — `BASE_URL` aponta para o backend stub em `http://10.0.2.2:8000/`
-  (host a partir do emulador padrão). Precedência: env var `BASE_URL`
-  (usada no CI, apontando para o stub dockerizado; barra final garantida) >
-  `brainout.baseUrl.dev=<url>` em `local.properties` > default do flavor.
-- **prod** — placeholder `https://TBD/` até a hospedagem definitiva
-  (decisão E3.1: backend próprio FastAPI; ver `docs/ARQUITETURA.md`,
-  Seção 9).
+O projeto declara dois flavors de ambiente (`dev` e `prod`) na dimensão
+`environment`; eles se diferenciam apenas por configuração de build, sem
+qualquer serviço associado. O app não faz requisições de rede em nenhuma
+variante.
 
 ```bash
-# Variante dev (usada no dia a dia e no CI de integração)
+# Variante dev (usada no dia a dia e no CI)
 ./gradlew :app:assembleDevDebug
 # APK: app/build/outputs/apk/dev/debug/app-dev-debug.apk
 
@@ -93,15 +88,14 @@ Builds verificados neste repositório: `:app:assembleDevDebug`,
 
 ```bash
 # Testes unitários (todos os módulos; inclui :core:domain via wire-up no root)
-./gradlew testDebugUnitTest
+./gradlew testDevDebugUnitTest
 
-# Relatórios: <modulo>/build/reports/tests/testDebugUnitTest/
+# Relatórios: <modulo>/build/reports/tests/testDevDebugUnitTest/
 # Android Lint
 ./gradlew :app:lintDevDebug
 
 # Testes instrumentados — requerem emulador/dispositivo conectado
 ./gradlew connectedDevDebugAndroidTest
-# (o CI usa ./gradlew connectedDebugAndroidTest no job backend-integration)
 ```
 
 ### Análise estática e cobertura
@@ -134,56 +128,18 @@ documentado em [docs/CI-CD.md](./docs/CI-CD.md). O keystore físico nunca
 entra no repositório (`keystore.properties.example` mostra o formato dos
 campos; `local.properties` e `keystore.properties` são ignorados pelo git).
 
-## Backend stub
+## Dados e backup
 
-O `backend-stub/` é o serviço de retaguarda usado em desenvolvimento e no
-CI: FastAPI com persistência em memória e contrato REST `/v1/projects`,
-`/v1/tasks` e `/v1/tags` (política cliente-supplied UUID, upsert
-idempotente — detalhes em [backend-stub/README.md](./backend-stub/README.md)).
+O BrainOut funciona **inteiramente no dispositivo**. Não existe servidor,
+serviço de retaguarda, API externa, conta remota, telemetria ou
+sincronização de dados. Projetos, tarefas, tags, contas locais e
+preferências ficam no banco Room do próprio aparelho; nenhuma informação sai
+do dispositivo por conta do app.
 
-### Subir o stub com venv
-
-```bash
-cd backend-stub
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn server:app --host 0.0.0.0 --port 8000
-# health: curl http://127.0.0.1:8000/health → {"status":"ok","env":"dev"}
-```
-
-### Alternativa com Docker
-
-```bash
-cd backend-stub
-docker build -t brainout-stub .
-docker run -d --name brainout-stub -p 8000:8000 brainout-stub
-```
-
-### Testes do stub
-
-```bash
-cd backend-stub
-pytest -q                     # 14 casos de contrato
-# smoke ponta-a-ponta (requer servidor de pé):
-python -m uvicorn server:app --host 127.0.0.1 --port 8765 &
-python tests/smoke_e2e.py
-```
-
-### Apontar o app (flavor dev) para o stub
-
-O flavor `dev` já aponta por padrão para `http://10.0.2.2:8000/` —
-endereço do host **a partir do emulador**. Se o emulador estiver com o
-stub de pé na porta 8000 do host, nada a configurar. Para override:
-
-```bash
-echo "brainout.baseUrl.dev=http://10.0.2.2:8000/" >> local.properties
-./gradlew :app:assembleDevDebug
-```
-
-Em dispositivo físico, troque pelo IP local do computador
-(`ip addr` / `hostname -I`), ex. `http://192.168.0.10:8000/`, e rode o
-stub com `--host 0.0.0.0`.
+A única transferência de dados prevista — entre instalações ou como cópia de
+segurança — é o **arquivo de backup**, exportado e restaurado pelo próprio
+app. Não há nenhum outro canal de entrada ou de saída de dados, e o app não
+depende de conectividade para funcionar.
 
 ### Executar o app no emulador
 
@@ -195,11 +151,11 @@ avdmanager create avd -n pixel8 -k "system-images;android-35;google_apis;x86_64"
 # subir emulador e instalar
 $ANDROID_HOME/emulator/emulator -avd pixel8 &
 adb install app/build/outputs/apk/dev/debug/app-dev-debug.apk
-# ou, pelo Android Studio: Run ▶ com variante devDebug selecionada
+# ou, pelo Android Studio: Run ▶ com a variante devDebug selecionada
 ```
 
 No Android Studio, a variante se escolhe em **Build → Select Build
-Variant** (`devDebug` para desenvolvimento com o stub).
+Variant**. O emulador pode ficar sem rede: o app não faz chamadas externas.
 
 ## Troubleshooting
 
@@ -239,19 +195,9 @@ Detalhes completos de workflows, secrets e branch protection em
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
-| `connectedDebugAndroidTest` falha no CI | Backend stub não respondeu a tempo | Verificar `docker logs`; conferir o health check do job `backend-integration` |
 | `release-apk.yml` falha em `Decode keystore` | Secrets `BRAINOUT_*` ausentes ou base64 corrompido | Cadastrar os 4 secrets; recodificar com `base64 -w 0 brainout-release.jks` |
 | `detekt` falha após um PR | Nova regra ou código fora do padrão | `./gradlew detekt --auto-correct` (com cuidado) ou ajustar |
 | Workflow não dispara no PR | Branch protection / permissões de Actions | Verificar Settings → Actions → General e as regras de proteção de `main` |
-
-### Backend stub e conectividade
-
-- `Connection refused` no app em emulador: o stub não está de pé ou está
-  em outra porta. O emulador alcança o host em `10.0.2.2`, não em
-  `localhost`.
-- Dispositivo físico: use o IP LAN do host e `--host 0.0.0.0` no uvicorn.
-- O stub reinicia com dados vazios (persistência em memória) — para reset
-  completo, reinicie o processo.
 
 ## Estrutura do repositório
 
@@ -259,14 +205,13 @@ Detalhes completos de workflows, secrets e branch protection em
 app/                  # :app — entry point (MainActivity, NavHost, Hilt)
 core/
   domain/             # regras de negócio puras (Kotlin JVM) — cobertura Kover
-  data/               # Room + DataStore + cliente HTTP — cobertura Kover
+  data/               # Room + DataStore — persistência local — cobertura Kover
   ui/                 # tema e componentes Compose compartilhados
 feature/
-  auth/               # autenticação (R2)
+  auth/               # autenticação local (R2)
   projects/           # CRUD de projetos (R3–R5)
   tasks/              # CRUD de tarefas e prazos (R7–R8)
   settings/           # configurações (R9)
-backend-stub/         # FastAPI de retaguarda (dev + CI, R6)
 config/detekt/        # detekt.yml centralizado
 docs/                 # roadmap, arquitetura, CI/CD, testes, atas
 Documentos/           # documento norteador do Projeto Integrador

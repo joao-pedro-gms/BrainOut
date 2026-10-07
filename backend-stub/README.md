@@ -1,5 +1,12 @@
 # BrainOut — Backend Stub
 
+> **Histórico — superado.** Documento do ciclo E3, quando o BrainOut previa
+> serviço de retaguarda. O escopo vigente é um **app Android totalmente
+> local**: sem backend, sem API externa, sem sincronização remota; a única
+> transferência de dados é o arquivo de backup exportado/restaurado. O
+> conteúdo abaixo é registro do que existiu e **não descreve** o produto
+> atual. A remoção ou o arquivamento deste diretório pertence ao cartão BO-02.
+
 Stub mínimo do serviço de retaguarda usado pelo CI e como contrato inicial
 para a integração do app (R6 — persistência remota / sincronização).
 
