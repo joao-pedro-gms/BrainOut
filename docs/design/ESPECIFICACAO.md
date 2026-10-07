@@ -43,7 +43,7 @@ Manter `MaterialTheme` em volta dos wrappers. Campos de senha preservam transfor
 |---|---|
 | `BrainOutStatePanel` | Título ≥18sp, descrição ≥14sp, ilustração opcional ≤120dp e CTA quando houver ação real; altura adaptável; alinhado ao início em listas, não obrigatoriamente centralizado |
 | `BrainOutErrorBanner` | `error.container/text`, contorno, explicação + «Tentar novamente» quando callback existir. Falha de leitura tem prioridade sobre «vazio»; erro de escrita não apaga dados carregados |
-| `BrainOutSyncBanner` | Offline = warning; pendente = info; contagem exata de operações, não «tarefas», pois fila contém outros recursos. Persistente enquanto condição real; sem spinner que afirme transferência sem estado de worker |
+| `BrainOutSyncBanner` | **Fora do escopo (BO-02).** Existia para representar a fila de operações offline de uma sincronização que não existe mais. Não projetar banner de conectividade, contagem de pendências nem estado de worker. |
 | Skeleton | Formas estáticas de surface.alt com contorno discreto; sem gradiente obrigatório; uma descrição de «Carregando» para o conjunto, não vários focos. Quando já há dados, preservar conteúdo em atualização |
 | Progresso | Loading indeterminado só durante operação real; nunca barra que cresce por tempo sem progresso mensurável. Pequeno indicador no botão mantém label; acesso sem animação continua claro |
 | Snackbar | Confirmação transitória/ação existente; texto legível, surface inversa + texto inverso, contraste validado. Não prometer «Desfazer» sem suporte de restauração no domínio/VM |
@@ -61,13 +61,21 @@ Manter `MaterialTheme` em volta dos wrappers. Campos de senha preservam transfor
 | Leitura falhou com conteúdo disponível | Preservar conteúdo + aviso de atualização | **Evolução proposta** se UiState passar a preservar snapshot; código atual de algumas listas substitui body por erro |
 | Nenhum item | Empty específico e próxima ação autorizada | Lista vazia legítima, não falha ou filtro |
 | Busca/filtro sem resultado | «Nenhum projeto encontrado» + limpar filtros | Não usar empty de primeiro uso |
-| Offline, fila 0 | «Sem conexão. Você pode continuar usando os dados locais.» | Conectividade já observada em Projetos/detalhe; não implica erro de Room |
-| Offline, fila >0 | «Sem conexão. N alterações aguardam sincronização.» | Singular/plural correto; salva localmente |
-| Online, fila >0 | «N alterações aguardam sincronização.» | Online não prova worker rodando. «Sincronizando» só com telemetria real futura |
-| Online, fila 0 | Sem banner persistente | Não celebrar «Tudo sincronizado» só pela contagem: 4xx pode descartar operações |
 | Escrita falhou | Mensagem localizada; draft e contexto permanecem | Não fechar formulário por mero clique; fechar após confirmação local |
 
-Offline/sync global em Tarefas/Painel/Settings seria **evolução de estado**, não um dado já conectado aos respectivos composables. Não fabricar conectividade a partir de lista vazia. Perfil é salvo localmente e não participa do sync de projetos/tarefas.
+> **Sem estado de conectividade ou de sincronização (2026-10-07).** O app é
+> totalmente local (AD-7): não há fila de operações nem transferência em segundo
+> plano. As antigas linhas de banner "Offline / fila 0 / fila >0 / Online"
+> descreviam uma fila remota que saiu do escopo (BO-02) e não têm mais
+> contraparte no produto. Nenhuma tela deve exibir aviso de conexão, contagem de
+> alterações pendentes ou "Tudo sincronizado".
+
+O único dado de estado global é a sessão local; a transferência de dados, quando
+existir, é uma ação explícita do usuário por meio do arquivo de backup (BO-06).
+
+Offline/sync global em Tarefas/Painel/Settings seria **evolução de estado
+inexistente e fora do escopo**: não há conectividade a observar. Não fabricar
+conectividade a partir de lista vazia. Perfil é salvo localmente.
 
 ### Splash / apresentação (`:feature:auth`)
 
@@ -84,21 +92,21 @@ Offline/sync global em Tarefas/Painel/Settings seria **evolução de estado**, n
 
 ### Projetos / Home (`:feature:projects`)
 
-- Hierarquia: título/identificação → busca → estado ativo/concluído → tags/ordenar → sync → lista → FAB. Papel usa badge informativo e label, não botão sem ação.
+- Hierarquia: título/identificação → busca → estado ativo/concluído → tags/ordenar → lista → FAB. Papel usa badge informativo e label, não botão sem ação.
 - Cards clicáveis com espaço para nome/descrição/tags; manter filtros/query ao retornar e durante alternância de tema. Cores escolhidas nas tags aparecem como swatch, não texto ilegível.
-- **Estados:** carga, erro com retry, vazio inicial, nenhum resultado, conteúdo, erro de criação/exclusão e aviso sync. Empty de Member não oferece criação executável; mantém a explicação de permissão do fluxo atual.
+- **Estados:** carga, erro com retry, vazio inicial, nenhum resultado, conteúdo e erro de criação/exclusão. Empty de Member não oferece criação executável; mantém a explicação de permissão do fluxo atual.
 - Criar projeto: nome obrigatório, descrição, tags existentes e rascunhos de novas tags/cor. Confirmação só fecha após gravação local; **ajuste funcional necessário** porque Home hoje fecha o dialog no dispatch de create. Não atribuir essa correção só ao tema.
 - Criar tag: nome, cor, validação, preview com texto em neutro, cancelamento mantém draft do projeto. Evitar modais empilhados inacessíveis; recuperar foco no campo/grupo de origem.
 
 ### Detalhe de projeto (`:feature:projects`)
 
-- Top bar com voltar/nome/menu, cabeçalho de dados do projeto, sync, lista de tarefas, FAB «Nova tarefa». Editar/excluir projeto continuam descobríveis em menu; não usar interação escondida por swipe como único caminho.
+- Top bar com voltar/nome/menu, cabeçalho de dados do projeto, lista de tarefas, FAB «Nova tarefa». Editar/excluir projeto continuam descobríveis em menu; não usar interação escondida por swipe como único caminho.
 - Nova tarefa preserva título, prioridade e prazo. Prioridade pode usar lista radio vertical ao invés de cinco chips espremidos. Prazo abre o DatePicker Material e mostra os hints já calculados pelo use case.
-- Renomear tarefa e editar nome/descrição do projeto preservam valores e fecham depois do evento de sucesso como nos fluxos atuais. Edição de tags no projeto **é aceita pelo repositório** (`ProjectRepository.update(project, tagIds)`) mas **não é exposta** na tela de detalhe; além disso a desassociação não viaja no sync (o dispatcher só enfileira associações). Não desenhar a ação como entregue.
+- Renomear tarefa e editar nome/descrição do projeto preservam valores e fecham depois do evento de sucesso como nos fluxos atuais. Edição de tags no projeto **é aceita pelo repositório** (`ProjectRepository.update(project, tagIds)`) mas **não é exposta** na tela de detalhe; a ação não deve ser desenhada como entregue.
 - Status continua no menu com transições válidas: `TODO→DOING`, `DOING→TODO/DONE`, `DONE→DOING`. **Não** oferecer checkbox binário que permita `TODO→DONE` direto. O ícone TODO vazado é informativo, não um checkbox funcional.
 - Prioridade de DONE é somente leitura; oferecer texto de motivo e caminho real de reabertura. Opções persistem nomes/IDs do domínio, não novos estados visuais como «Pausada».
 - Exclusão de projeto abre confirmação com consequência; exclusão de tarefa atual ocorre por menu. Acrescentar confirmação de tarefa/undo exige decisão comportamental explícita futura.
-- **Estados:** carga, erro, projeto ausente/removido, lista vazia, conteúdo, validação de escrita, prioridade bloqueada, sync. Ao concluir, feedback ocorre depois da confirmação local; não presumir confirmação remota.
+- **Estados:** carga, erro, projeto ausente/removido, lista vazia, conteúdo, validação de escrita e prioridade bloqueada. Ao concluir, o feedback ocorre depois da confirmação local.
 
 ### Tarefas global (`:feature:tasks`)
 
@@ -153,6 +161,7 @@ Haptics: leves e opcionais para confirmação efetiva, via APIs Android/Compose 
 | `:core:ui/theme/Color.kt` | Primitivos e esquemas semânticos; exportar apenas papéis públicos |
 | `:core:ui/theme/Type.kt`, `Shape.kt`, `Theme.kt` | 15 tipos explícitos, shapes, ColorScheme completo. `Theme.kt` já expõe o parâmetro `darkTheme` e mantém `dynamicColor = false` por padrão, mas **não** existe modo persistido (System/Light/Dark) — entra em NB-06/NB-27 |
 | `:core:ui/theme/` (novos arquivos) | `BrainOutSpacing`, `BrainOutBorders`, `BrainOutShadows`, `BrainOutMotion`, status colors via tipos imutáveis/CompositionLocal |
+| `:core:data/` | Remover a camada `remote/` e a fila de sincronização (`BO-02`); manter Room/DataStore e os repositórios locais |
 | `:core:ui/components/` | Wrappers Button/Field/Badge/StatePanel/Banner e drawing de sombra; APIs com Modifier/callback/content; strings de componentes compartilhados no módulo apropriado e traduzidas |
 | `:feature:*` | Screen conecta UiState/callbacks às novas peças; mantém regras/eventos no VM/use case; usa tokens, sem raw hex |
 | `:app/navigation/` | Shell responsivo, barra/rail, transitions e insets; sem importar uma feature de outra |
@@ -186,7 +195,7 @@ Validar pelo menos 320/360/412dp compacto, 600/840dp limites e 1024dp tablet; al
 - Texto completo onde corrige erro; títulos longos com caminho para leitura integral; chips/menus crescem; sem fontScale clamp.
 - Criar projeto Owner, restrição Member, draft tag e cancelamento; query/filtro sem resultados preserva contexto.
 - Criar tarefa, renomear, editar projeto, alterar prioridade, transições permitidas e proibidas; falha local mantém formulário e texto.
-- Offline cria/edita localmente; retorno de conexão mantém contagem coerente. Simular 4xx descarta fila e verificar que UI não declara sincronização confirmada indevidamente.
+- Offline cria/edita localmente; nenhum estado de rede é exibido (o app é local).
 - Perfil não promete sync; tema restaura após reiniciar; permissão negada não esconde tarefas; sair limpa sessão pelo contrato existente.
 - TalkBack completa os fluxos sem nós «botão» vazios, lê selecionado/checked, recebe foco no erro/modal e acessa dados dos gráficos.
 - Teclado/Switch Access acessam menus e seleção; foco visível atende ≥3:1 em fundos adjacentes.

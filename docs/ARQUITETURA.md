@@ -3,6 +3,16 @@
 > Documento de definição arquitetural. Atualizado ao fim de cada ciclo
 > (ver `ROADMAP.md`, marcos E3.1 e E5.1). Insumo direto para o item 2 da N1 e
 > item 2 da N2 do documento norteador.
+>
+> **Escopo vigente (revisado em 2026-10-07): aplicativo totalmente local.**
+> O BrainOut não possui backend, serviço de retaguarda, API externa, conta
+> remota, fila de sincronização nem colaboração entre dispositivos. Os dados
+> vivem exclusivamente no banco Room do próprio aparelho, e a **única**
+> transferência de dados prevista — cópia de segurança ou mudança de
+> instalação — é o **arquivo de backup exportável/restaurável** (contrato em
+> definição no cartão BO-06). As seções que descreviam o escopo anterior de
+> backend/sincronização/integração externa permanecem registradas como
+> **histórico/superseded** nas decisões (Seção 8) e na Seção 9.
 
 ## 1. Decisão de plataforma
 
@@ -29,15 +39,13 @@ BrainOut/
 ├── app/                  → entry point, Application, MainActivity
 ├── core/
 │   ├── domain/           → entidades, regras de domínio, use cases
-│   ├── data/             → Room, DataStore, repositórios, remote/ (E3.2)
-│   │   └── remote/       → DTOs remotos, BrainOutApi (Retrofit), RemoteDataSource
+│   ├── data/             → Room (persistência local), DataStore e repositórios
 │   └── ui/               → tema (Color/Shape/Theme/Type); tokens e componentes são proposta
 ├── feature/
 │   ├── auth/             → splash, login e cadastro
 │   ├── projects/         → lista/busca/tags de projetos e detalhe com tarefas
 │   ├── tasks/            → lista global e painel
 │   └── settings/         → lista de preferências (Perfil/Tema/Notificações ainda placeholders)
-└── backend-stub/         → FastAPI mínimo usado pelo CI (R6)
 ```
 
 Dependências só apontam para baixo:
@@ -49,10 +57,11 @@ app → feature → core/{ui,data} → core/domain
 `:core:domain` não depende de nenhum outro módulo, garantindo portabilidade
 e testabilidade (regra R12 do documento norteador).
 
-### 2.1 Camada remote (E3.2)
+### 2.1 Persistência local e fluxo de dados
 
-O subpacote `core/data/remote/` isola todo o acesso HTTP ao serviço de
-retaguarda (decisão E3.1: backend próprio FastAPI):
+O app não tem camada de rede: toda leitura e escrita de dados passa pelo
+Room, dentro de `:core:data`, atrás das portas de repositório declaradas em
+`:core:domain`:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -62,29 +71,28 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 ┌──────────────▼──────────────────────────────────────────────┐
 │ :core:data                                                  │
 │  ├── local/       Room (DAOs, entidades, migrations)        │
-│  ├── repository/  implementações das portas                 │
-│  └── remote/      BrainOutApi (Retrofit) ← RemoteDataSource │
-│         ↑ URL base injetada via BuildConfig.BASE_URL        │
-│           (flavor dev: http://10.0.2.2:8000/ — emulador;    │
-│            flavor prod: placeholder, ver decisão E3.1)      │
-└──────────────┬──────────────────────────────────────────────┘
-               │ HTTP/JSON (snake_case, contrato /v1/*)
-┌──────────────▼──────────────────────────────────────────────┐
-│ Backend FastAPI (backend-stub/ no CI; serviço próprio depois)│
+│  ├── datastore/   DataStore Preferences (sessão, listagem)  │
+│  └── repository/  implementações das portas                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **DTOs remotos** (`RemoteDtos.kt`): espelham o contrato do backend com
-  `@SerialName` snake_case; conversão para o domínio fica nos repositórios.
-- **`BrainOutApi`**: interface Retrofit (`/v1/ping`, `/v1/projects`,
-  `/v1/tasks`, `/v1/tags`) — nenhum host hard-coded; a URL vem do `BuildConfig`.
-- **`RemoteDataSource`**: envolve a API, loga erros e re-sinaliza a
-  exceção para o chamador (fila offline do E3.3 decide a estratégia).
-- **Política de IDs**: o app gera UUID localmente (Room) e envia no
-  body (`POST`) ou no path (`PUT`); o servidor respeita o ID recebido
-  e nunca o substitui. Veja detalhes em `backend-stub/README.md` e na
-  seção 5 (sincronização).
-- **Testes**: `MockWebServer` exercita parse e erros HTTP sem rede real.
+- **Fluxo observável:** as DAOs devolvem `Flow`; os repositórios mapeiam as
+  linhas para modelos de domínio; os ViewModels combinam os fluxos em um
+  `UiState` imutável exposto por
+  `stateIn(..., WhileSubscribed(5_000), ...)`.
+- **Mutações atômicas:** operações com efeito colateral são resolvidas em uma
+  única transação Room (`@Transaction` nos DAOs, ex. cascata de conclusão do
+  projeto). Não há escrita dupla local+fila.
+- **Sem I/O de rede:** nenhum fluxo da UI depende de conectividade. O app
+  abre, lê e grava em modo avião.
+
+### 2.2 Transferência de dados para fora do dispositivo
+
+A única saída de dados é o **arquivo de backup** gerado pelo próprio app e
+restaurado pelo próprio app. Não há servidor, endpoint, conta remota nem
+telemetria. O formato, a versão e as garantias de restauração (validação antes
+da escrita, atomicidade, rollback) constituem o escopo do cartão **BO-06**
+(contrato versionado) e dos cartões de implementação subsequentes.
 
 ## 3. Stack técnica
 
@@ -96,12 +104,14 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 | Estado                   | `ViewModel` + `StateFlow` + Hilt                             |
 | Injeção de dependência   | Hilt                                                         |
 | Persistência local       | Room (KSP) + DataStore Preferences                           |
-| Sincronização            | WorkManager + Ktor/Retrofit                                  |
-| Notificações             | NotificationCompat + AlarmManager (recursos nativos, R8)    |
-| Testes                   | JUnit4, Robolectric, Compose UI Test, MockWebServer, Turbine |
+| Agendamento local        | WorkManager (lembretes de prazo — AD-6)                       |
+| Notificações             | NotificationCompat + WorkManager (recursos nativos, R8)     |
+| Testes                   | JUnit4, Robolectric, Compose UI Test, Turbine                |
 | Qualidade                | ktlint, detekt, Android Lint                                 |
-| Build                    | Gradle 8.7, AGP 8.7, KSP                                     |
-| Backend (R6)             | FastAPI em container (CI) → definido formalmente no E3.1     |
+| Build                    | Gradle 9.7.1, AGP 9.4.1, KSP                                 |
+
+Não há linha de "Sincronização" nem de "Backend": ambos pertenciam ao escopo
+anterior de serviço de retaguarda, revogado (ver Seção 8, AD-3/AD-4).
 
 ## 4. Persistência
 
@@ -110,72 +120,34 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
   somente em debug. *Atende R5.*
 - **Preferências:** `DataStore Preferences` (substituindo o legado
   `SharedPreferences`).
-- **Remota:** cliente HTTP em `:core:data/remote/` (E3.2). Endpoints
-  declarados na interface `BrainOutApi` (Retrofit) e expostos pela
-  `RemoteDataSource` para isolar a implementação concreta. A URL base é
-  injetada por flavor via `BuildConfig.BASE_URL` (dev: `10.0.2.2:8000`,
-  prod: placeholder até a hospedagem definitiva — E3.1), com override
-  opcional por desenvolvedor em `local.properties`
-  (`brainout.baseUrl.dev`). *Atende R6.*
+- **Backup:** a exportação/restauração do arquivo de backup é o único
+  mecanismo de transferência de dados do app e não usa rede. *Substitui o
+  antigo requisito R6 de persistência remota*, que saiu do escopo.
 
-## 5. Sincronização e conectividade
+## 5. Conectividade e lembretes locais
 
-- Fila de operações offline persistida em Room (`pending_ops`) —
-  cada item guarda `entity_type`, `entity_id`, `op_type`
-  (`INSERT|UPDATE|DELETE`), payload JSON serializado, `created_at`
-  e contador de `attempts`.
-- `WorkManager` com `Constraints.NetworkType.CONNECTED` reconcilia
-  periodicamente (`enqueueUniquePeriodicWork`, 15 min) e imediatamente
-  após retorno de rede. Backoff exponencial entre tentativas.
-- Estratégia **last-writer-wins** com timestamp do cliente; conflitos
-  detectados são registrados em log local para revisão.
-- *Atende R5 e R6.*
-
-### 5.1 Contrato do backend para sincronização
-
-O stub em `backend-stub/` (e o backend FastAPI definitivo, AD-3)
-expõe o contrato abaixo. **Política de IDs: cliente-supplied UUID** —
-o app gera o UUID localmente e envia no `POST`/`PUT`; o servidor
-respeita o ID recebido, garantindo idempotência de replay e
-estabilidade das foreign keys (project_id ↔ tag, project_id ↔ task).
-
-| Método | Caminho                          | Função                                       |
-|--------|----------------------------------|----------------------------------------------|
-| GET    | `/v1/projects`                   | Lista projetos                               |
-| POST   | `/v1/projects`                   | Cria projeto (id do cliente opcional)        |
-| GET    | `/v1/projects/{id}`              | Busca projeto                                |
-| PUT    | `/v1/projects/{id}`              | **Upsert idempotente**                       |
-| DELETE | `/v1/projects/{id}`              | Remove projeto (cascade de tasks) — **204**  |
-| POST   | `/v1/projects/{id}/tags`         | Associa tag existente                        |
-| GET    | `/v1/projects/{id}/tags`         | Lista tags do projeto                        |
-| GET    | `/v1/tasks`                      | Lista tarefas (filtro `?project_id=`)        |
-| POST   | `/v1/tasks`                      | Cria tarefa (id do cliente opcional)         |
-| PUT    | `/v1/tasks/{id}`                 | **Upsert idempotente**                       |
-| DELETE | `/v1/tasks/{id}`                 | Remove tarefa — **204**                      |
-| GET    | `/v1/tags`                       | Lista tags                                   |
-| POST   | `/v1/tags`                       | Cria tag (id gerado no servidor)             |
-| DELETE | `/v1/tags/{id}`                  | Remove tag — **204**                         |
-
-Regras:
-
-- `POST` com `id` no corpo: se já existir registro com esse `id`, o
-  servidor devolve o registro existente (não duplica).
-- `PUT` é upsert: cria se ausente, substitui se presente; `created_at`
-  é fixado na primeira inserção e preservado em updates.
-- `DELETE` é intencionalmente idempotente (204 mesmo ausente) para
-  não travar o replay da fila offline.
-- IDs mal formados (não-UUID) → `400`. `id` do body divergente do
-  path no `PUT` → `400`.
-
-A suíte pytest em `backend-stub/tests/test_contract.py` cobre esses
-casos; o smoke HTTP roda no job `backend-integration` do CI.
+- **Conectividade:** o app não observa nem exige rede. Nenhuma tela exibe
+  banner de offline, fila de operações ou estado de sincronização, porque não
+  existe operação remota a reconciliar.
+- **Lembretes de prazo:** o único uso de trabalho em background é a
+  notificação local de prazo (`WorkManager`, Seção 10). Ela é agendada e
+  cancelada a partir de regras de domínio, sem qualquer dependência de rede.
+- **Registro histórico:** o escopo anterior previa uma fila de operações
+  offline (`pending_ops`) drenada por um `SyncWorker` contra um serviço
+  FastAPI, com reconciliação automática ao retorno da rede. Essa
+  infraestrutura saiu do escopo (cartão **BO-02**); o texto anterior permanece
+  como registro nas decisões revogadas da Seção 8.
 
 ## 6. Segurança
 
-- Tokens armazenados em `EncryptedSharedPreferences` (Tink) ou
-  `androidx.security:security-crypto`. **Nunca** em texto plano nem
-  versionados. *Atende R12.*
-- Tráfego de rede em produção: HTTPS obrigatório. *Atende R7.*
+- **Credenciais locais:** senhas de contas locais são persistidas apenas como
+  hash (`PasswordHasher`, com iterações persistidas por registro); nunca em
+  texto plano nem versionadas. *Atende R12.*
+- **Dados locais:** o banco Room e as preferências ficam no sandbox do app; o
+  arquivo de backup é o único artefato que pode sair do dispositivo, e seu
+  tratamento (integridade, escopo, credenciais) é escopo do cartão **BO-09**.
+- **Sem tráfego de rede:** como o app não faz requisições, não há TLS, token
+  ou host a proteger.
 - Permissões runtime solicitadas no momento do uso (Android 6+),
   justificando cada uma no `AndroidManifest.xml`.
 
@@ -192,61 +164,26 @@ casos; o smoke HTTP roda no job `backend-integration` do CI.
 |------|----------------------------------------------------------------------|------------|
 | AD-1 | Multi-módulo Gradle conforme Seção 2                                 | a definir  |
 | AD-2 | Stack conforme Seção 3                                               | a definir  |
-| AD-3 | Backend: FastAPI próprio (evolução do `backend-stub/`)                | 21/09/2026 |
-| AD-4 | Estratégia de sincronização: last-writer-wins + fila offline         | a definir  |
-| AD-5 | Criptografia de tokens com `androidx.security:security-crypto`       | a definir  |
-
-## 9. Serviço de retaguarda — decisão (E3.1)
-
-A definição da plataforma definitiva do serviço de retaguarda (R6)
-constitui o marco E3.1 do Ciclo 3. Três alternativas foram avaliadas:
-**Firebase** (BaaS da Google, modelo NoSQL em tempo real), **Supabase**
-(BaaS open source sobre PostgreSQL) e **backend próprio** (API REST
-dedicada, já representada neste repositório pelo stub FastAPI em
-`backend-stub/`, usado pelo pipeline de integração contínua). A tabela a
-seguir resume a comparação segundo os critérios relevantes ao projeto.
-
-### 9.1 Análise comparativa
-
-| Critério                        | Firebase                                                                 | Supabase                                                                 | Backend próprio (FastAPI)                                                       |
-|---------------------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| Custo                           | Camada gratuita limitada; cobrança por leituras/escritas pode escalar     | Camada gratuita generosa; cobrança por projeto ativo após o limite         | Zero — hospedado em VM própria na rede Tailscale                                  |
-| Controle de dados               | Baixo: dados residem em infraestrutura de terceiros, fora do domínio acadêmico | Médio: opção self-hosted existe, porém a configuração gerenciada é o caminho comum | Alto: esquema, retenção e cópias de segurança sob controle integral do autor     |
-| Esforço de integração           | Baixo: SDKs nativos, porém acoplam a camada de dados ao fornecedor        | Médio: cliente PostgreSQL/REST; modelagem distinta do contrato REST já definido | Baixo: contrato REST (`/v1/projects`, `/v1/tasks`) já implementado e exercitado no CI |
-| Curva de aprendizado            | Média: modelo de documentos e regras de segurança proprietárias           | Média: exige familiaridade com PostgreSQL e Row Level Security             | Baixa: Python + FastAPI com tipagem Pydantic, alinhados à formação do autor       |
-| Deploy e operação               | Gerenciado pelo fornecedor; sem controle de versão implantado             | Gerenciado (nuvem) ou manual (self-hosted via Docker)                      | Container Docker simples, já empacotado no CI; implantação em VM caseira via Tailscale |
-
-### 9.2 Decisão recomendada
-
-A alternativa recomendada é o **backend próprio com FastAPI**. A
-justificativa central é o controle de dados: a aplicação trata dados de
-autenticação e perfis com permissões distintas (R2), e manter esses
-dados em infraestrutura sob o próprio domínio elimina a dependência de
-fornecedores externos e o compartilhamento de informações de usuário com
-terceiros. O modelo de dados relacional já consolidado em Room
-(users/projects/tasks/tags) mapeia diretamente para um backend
-relacional, sem a tradução para documentos exigida pelo Firebase.
-
-O critério econômico corrobora a decisão: Firebase e Supabase implicam
-custos recorrentes à medida que o volume de sincronização cresce,
-enquanto um container FastAPI implantado em VM própria, acessível pela
-VPN Tailscale, opera a custo zero e mantém o tráfego fora da internet
-pública. Ademais, parte significativa do esforço de integração já foi
-realizada: o stub FastAPI em `backend-stub/` roda no CI com o contrato
-REST de projetos e tarefas, de modo que a evolução do stub para o
-serviço definitivo consiste em substituir a persistência em memória por
-PostgreSQL, preservando o contrato de endpoints consumido pelo cliente
-Android (E3.2).
-
-Por fim, a decisão preserva a testabilidade e a portabilidade exigidas
-pela arquitetura multi-módulo: o cliente HTTP permanece isolado em
-`:core:data/network/` atrás de `RemoteDataSource`, e o mesmo contrato
-REST é exercido localmente pelo stub no CI. Não há, portanto, perda de
-capacidade de teste em relação às alternativas gerenciadas — apenas a
-responsabilidade de operação, assumida conscientemente pelo autor como
-parte do escopo de aprendizado do projeto integrador.
-
+| AD-3 | ~~Backend: FastAPI próprio (evolução do `backend-stub/`)~~ — **revogada**: escopo local, sem backend | 21/09/2026 (revogada em 2026-10-07) |
+| AD-4 | ~~Estratégia de sincronização: last-writer-wins + fila offline~~ — **revogada**: sem sincronização | a definir (revogada em 2026-10-07) |
+| AD-5 | ~~Criptografia de tokens com `androidx.security:security-crypto`~~ — **revogada**: não há tokens nem rede | a definir (revogada em 2026-10-07) |
 | AD-6 | Lembretes de prazo via WorkManager (`OneTimeWorkRequest` + `setInitialDelay`), sem `SCHEDULE_EXACT_ALARM` (E3.6) | 21/09/2026 |
+| AD-7 | **Escopo totalmente local:** sem backend, API externa, conta remota ou sincronização; a única transferência de dados é o arquivo de backup exportável/restaurável | 2026-10-07 |
+
+AD-3, AD-4 e AD-5 descreviam um produto com serviço de retaguarda. Foram
+revogadas pela decisão AD-7; o registro permanece para rastrear a mudança de
+escopo.
+
+## 9. Serviço de retaguarda — decisão revogada (E3.1, histórico)
+
+**Histórico/superseded (2026-10-07).** O marco E3.1 do Ciclo 3 escolheu, entre
+Firebase, Supabase e um backend próprio, o **backend próprio em FastAPI**
+(evoluindo o stub `backend-stub/`), com a justificativa publicada em ata
+(`docs/ATAS/checkpoint2.md`). Essa decisão pressupunha um produto com
+sincronização remota. Com o escopo vigente de **aplicativo totalmente local**
+(AD-7), não há serviço de retaguarda: a decisão está revogada e o diretório
+`backend-stub/` saiu do escopo (cartão BO-02). A ata do Checkpoint 2 e este
+registro permanecem como documentação histórica, sem reescrita.
 
 ## 10. Notificações locais — lembretes de prazo (E3.6)
 
@@ -262,14 +199,13 @@ Duas alternativas foram avaliadas:
 | Alternativa | Prós | Contras |
 |-------------|------|---------|
 | `AlarmManager.setExactAndAllowWhileIdle` | Precisão de segundos | Exige `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` (restrita no Android 13+, revogável, exige intenção do usuário nas Configurações); `setExactAndAllowWhileIdle` não dispara em Doze sem permissão especial |
-| **WorkManager** (`OneTimeWorkRequest` + `setInitialDelay`) | Sem permissão adicional; sobrevive a reboot/process death; integrado com a estratégia de sincronização do E3.3; testável via `work-testing` | Janela de tolerância (disparo tipicamente dentro de poucos minutos do horário programado) |
+| **WorkManager** (`OneTimeWorkRequest` + `setInitialDelay`) | Sem permissão adicional; sobrevive a reboot/process death; reutiliza o executor já presente no app; testável via `work-testing` | Janela de tolerância (disparo tipicamente dentro de poucos minutos do horário programado) |
 
-A escolha foi **WorkManager**, pela consistência com o E3.3 (fila de
-sincronização no mesmo executor), pela ausência de permissões extras no
-Android 13+ e pela janela de tolerância aceitável para lembretes
-acadêmicos de prazo ("prazo em 1 hora" com deriva de minutos). A
-exatidão de segundo é desnecessária para o domínio. *Critério do marco
-atendido sem `SCHEDULE_EXACT_ALARM`.*
+A escolha foi **WorkManager**, pela ausência de permissões extras no Android
+13+, pela resiliência a reboot/process death e pela janela de tolerância
+aceitável para lembretes acadêmicos de prazo ("prazo em 1 hora" com deriva de
+minutos). A exatidão de segundo é desnecessária para o domínio. *Critério do
+marco atendido sem `SCHEDULE_EXACT_ALARM`.*
 
 ### 10.2 Componentes
 
@@ -297,54 +233,31 @@ atendido sem `SCHEDULE_EXACT_ALARM`.*
   explicativo e não é repetida (flag em DataStore).
 - Sem `SCHEDULE_EXACT_ALARM` no manifest — intencional (AD-6).
 
-## 11. Integração externa — feriados nacionais (E3.5)
+## 11. Regras de prazo — dias úteis e feriados
 
-### 11.1 Serviço escolhido
-
-API pública **BrasilAPI** (`https://brasilapi.com.br/api/feriados/v1/{year}`),
-sem autenticação nem limite duro de uso. Cada ano é uma chamada
-independente e o domínio só precisa de `{date, name, type}`. O tipo
-filtra feriados nacionais (descarta estaduais/municipais) na janela de
-aviso.
-
-### 11.2 Componentes
+O app sinaliza prazos que caem em fim de semana ou feriado nacional e sugere
+antecipação para o último dia útil anterior. A regra vive no domínio
+(`CheckDeadlineUseCase`, `DeadlineInfo`, `Holiday`) e é exibida pelo
+`DeadlineField` no diálogo de nova tarefa.
 
 | Componente | Módulo | Papel |
 | --- | --- | --- |
-| `HolidayApi` | `:core:data/remote/` | `Retrofit` com `@GET("api/feriados/v1/{year}")` |
-| `HolidayDto` | `:core:data/remote/` | DTO `date/name/type` (snake_case via kotlinx-serialization) |
-| `HolidayRemoteDataSource` | `:core:data/remote/` | Cache em memória (`Map<Int, List<Holiday>>`) por ano + mutex para chamadas concorrentes; 404 → lista vazia; demais erros propagam |
-| `HolidayRepositoryImpl` | `:core:data/repository/` | Bind para a porta `HolidayRepository` |
+| `Holiday` | `:core:domain/model/` | Modelo de domínio imutável (`date`, `name`, `type`) |
 | `HolidayRepository` | `:core:domain/repository/` | Porta de domínio: `suspend fun getHolidays(year)` |
-| `Holiday` | `:core:domain/model/` | Modelo de domínio imutável |
 | `CheckDeadlineUseCase` | `:core:domain/usecase/` | Janela `[prazo − 7d, prazo]`, inclusive; cruza dezembro/janeiro buscando os dois anos; retorna `DeadlineInfo(isBusinessDay, nextHoliday)` |
+| `HolidayRepositoryImpl` | `:core:data/repository/` | Implementação da porta; origem dos feriados definida pelo cartão **BO-03** |
 | `DeadlineField` | `:feature:projects` | Componente Compose extraído do `NewTaskDialog`: botão de prazo, picker Material 3, dica inline de feriado e aviso de "dia não útil" |
-| `DataModule.provideHolidayRemoteDataSource` | `:core:data/di/` | `baseUrl = BuildConfig.HOLIDAYS_BASE_URL` (injetado por flavor) |
 
-### 11.3 Fluxo de dados
+### 11.1 Origem dos dados de feriado — em revisão (BO-03)
 
-1. Usuário escolhe prazo no `DatePicker` (Material 3).
-2. `DeadlineField` dispara `LaunchedEffect(dueDate)` chamando
-   `CheckDeadlineUseCase(deadline)` via ViewModel.
-3. O caso de uso pede `HolidayRepository.getHolidays(year1[, year2])`.
-4. A implementação delega para `HolidayRemoteDataSource.listHolidays`,
-   que consulta o cache em memória (mutex); em cache miss, monta o
-   `Retrofit` (uma vez por instância) e chama `HolidayApi`.
-5. BrasilAPI devolve JSON → `HolidayDto` → `Holiday`.
-6. O caso de uso filtra `type == "national"`, calcula `isBusinessDay`
-   e o feriado mais próximo dentro da janela de 7 dias anteriores.
-7. `DeadlineField` mostra, no Compose, a dica inline
-   "⚠ Próximo feriado: …" ou o aviso "este prazo cai em dia não útil".
-8. Falha de rede/5xx é capturada pelo `LaunchedEffect` (sem
-   `CancellationException`) e renderiza o texto neutro
-   "Aviso de feriado indisponível" — o usuário consegue salvar
-   normalmente.
-
-### 11.4 Configuração por flavor
-
-`build.gradle.kts` de `:core:data` declara
-`buildConfigField("String", "HOLIDAYS_BASE_URL", …)` para `dev` e
-`prod` (default `https://brasilapi.com.br/`). A `DataModule` lê do
-`BuildConfig` — não há URL hard-coded no app.
+A implementação atual atende a porta `HolidayRepository` consultando a
+**BrasilAPI** (`https://brasilapi.com.br/api/feriados/v1/{year}`), um serviço
+externo. O escopo vigente não admite API externa, de modo que essa dependência
+precisa ser substituída por dados locais (base de feriados embarcada/derivada)
+ou a regra precisa ser redefinida — decisão do cartão **BO-03**. A regra de
+negócio (`CheckDeadlineUseCase`) e o componente de UI permanecem; o que muda é
+a fonte de dados. Enquanto a revisão não conclui, o comportamento atual degrada
+de forma segura: falha na consulta cai em `unavailable=true`, o `DeadlineField`
+omite a dica e o usuário salva o prazo normalmente.
 
 João Pedro G M Silva - PUC Goiás ADS - 20251012000740

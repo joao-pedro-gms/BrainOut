@@ -154,8 +154,8 @@ catálogo inteiro no APK.
 | `neo_ic_bar_chart` | `bar_chart` | `Icons.Outlined.BarChart` (aba Painel) | não |
 | `neo_ic_chevron_right` | `chevron_right` | `Icons.Outlined.ChevronRight` | não |
 | `neo_ic_close` | `close` | `Icons.Filled.Clear` (limpar busca) | não |
-| `neo_ic_cloud_off` | `cloud_off` | `Icons.Outlined.CloudOff` | não |
-| `neo_ic_cloud_sync` | `cloud_sync` | `Icons.Outlined.CloudSync` | não |
+| `neo_ic_cloud_off` | `cloud_off` | `Icons.Outlined.CloudOff` (banner de offline — **fora do escopo**, BO-02) | não |
+| `neo_ic_cloud_sync` | `cloud_sync` | `Icons.Outlined.CloudSync` (**fora do escopo** — não há sincronização, BO-02) | não |
 | `neo_ic_delete` | `delete` | `Icons.Outlined.Delete` | não |
 | `neo_ic_folder` | `folder` | `Icons.Outlined.Folder` (aba Projetos) | não |
 | `neo_ic_logout` | `logout` | `Icons.AutoMirrored.Outlined.Logout` | **sim** |

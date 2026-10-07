@@ -1,8 +1,10 @@
 # BrainOut — Roadmap de implementação
 
 > Aplicativo Android nativo (Kotlin + Jetpack Compose) para gestão de projetos
-> e tarefas. Persistência local com Room, sincronização com serviço de
-> retaguarda, executável em dispositivo físico.
+> e tarefas, **totalmente local**: os dados vivem no banco Room do próprio
+> aparelho, sem backend, API externa, conta remota ou sincronização. A única
+> transferência de dados é o arquivo de backup exportável/restaurável. O app é
+> executável em dispositivo físico.
 >
 > Documento norteador: [`Documentos/Documento Norteador Projeto Integrador ADS 2026-2.pdf`](../Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf).
 
@@ -25,10 +27,20 @@ a escala 1, 2, 3, 5, 8, 13.
 ```
 Ciclo 1 (Sem 7-8)  → Telas + autenticação + persistência local  → Entrega N1
 Ciclo 2 (Sem 11-12) → CRUDs + regras de negócio + visão consolidada
-Ciclo 3 (Sem 13-14) → Backend + sincronização + recurso nativo  → Checkpoint 2
+Ciclo 3 (Sem 13-14) → Recurso nativo local + regras de prazo     → Checkpoint 2
 Ciclo 4 (Sem 16-17) → Refinamento, acessibilidade, testes       → Congelamento
 Encerramento (Sem 18-19) → Documentação final + apresentação    → Entrega N2
 ```
+
+> **Escopo vigente (revisado em 2026-10-07):** o produto é um aplicativo
+> **totalmente local**. Saíram do escopo o backend/serviço de retaguarda e a
+> sincronização remota (marcos **E3.1–E3.4** do Ciclo 3), retirados pelo cartão
+> **BO-02**; e a integração com a API externa de feriados (**E3.5**) está em
+> revisão pelo cartão **BO-03**. Os marcos dessas entregas permanecem neste
+> documento como **histórico/superseded** — registram o que foi executado no
+> escopo anterior, sem prometer recursos remotos. A única transferência de
+> dados prevista é o **arquivo de backup** exportável/restaurável (cartões
+> BO-06 a BO-12).
 
 ---
 
@@ -174,9 +186,10 @@ Encerramento (Sem 18-19) → Documentação final + apresentação    → Entreg
       `./gradlew detekt` na linha 67, com upload do relatório
       `detekt-report`), `unit-tests` (executa
       `./gradlew testDevDebugUnitTest` na linha 110, com Kover
-      `koverVerify`) e `backend-integration` (service container
+      `koverVerify`) e, à época, `backend-integration` (service container
       FastAPI + `./gradlew :core:data:testDevDebugUnitTest
-      :app:testDevDebugUnitTest` na linha 257)._
+      :app:testDevDebugUnitTest`). O job `backend-integration` ainda roda e será
+      retirado do CI com a mudança de escopo (BO-02)._
 
 - [x] **E1.10** — Atualizar `README.md` com instruções de build e execução
       (mesmo que ainda incompletas para a N2). *Critério:* novo
@@ -375,14 +388,22 @@ dashboard consolidado.
 
 ---
 
-## Ciclo 3 — Sincronização, integração externa, recurso nativo
+## Ciclo 3 — Recurso nativo local e regras de prazo
 
 **Período:** 26/10 a 06/11/2026 (Semanas 13 e 14)
 **Marco:** Checkpoint 2 em 06/11 (demonstração da versão beta)
 
+> **Nota de escopo (2026-10-07).** Este ciclo foi planejado originalmente como
+> "Sincronização, integração externa, recurso nativo". Com o escopo vigente de
+> aplicativo **totalmente local**, os marcos de backend e sincronização
+> (**E3.1–E3.4**) saíram do produto (cartão BO-02) e a integração com API
+> externa (**E3.5**) está em revisão (cartão BO-03). Os registros abaixo são
+> mantidos como **histórico/superseded**; o que permanece no escopo atual é o
+> recurso nativo **local** (E3.6) e o procedimento de release (E3.7).
+
 ### Marcos
 
-- [x] **E3.1** — Decidir plataforma definitiva do serviço de retaguarda
+- [x] **E3.1** *(histórico/superseded — fora do escopo, BO-02)* — Decidir plataforma definitiva do serviço de retaguarda
       (Firebase, Supabase ou backend próprio) e documentar a justificativa
       em `docs/ARQUITETURA.md`. Comunicar a decisão no Checkpoint 2.
       *Critério:* decisão registrada em ata, validada pelo docente.
@@ -391,7 +412,7 @@ dashboard consolidado.
       `backend-stub/`. Justificativa em `docs/ARQUITETURA.md`, Seção 9;
       ata em `docs/ATAS/checkpoint2.md`._
 
-- [x] **E3.2** — Implementar cliente HTTP (Ktor ou Retrofit) configurado
+- [x] **E3.2** *(histórico/superseded — fora do escopo, BO-02)* — Implementar cliente HTTP (Ktor ou Retrofit) configurado
       por build flavor (`debug` aponta para o stub FastAPI em
       `backend-stub/`; `release` aponta para o serviço definitivo).
       *Critério:* `BASE_URL` injetada via `local.properties`; nenhum host
@@ -417,7 +438,7 @@ dashboard consolidado.
       estendidos depois em PR #52 (PUT/DELETE/tags, UUID
       cliente-supplied)._
 
-- [x] **E3.3** — Sincronização bidirecional Room ↔ backend. Estratégia:
+- [x] **E3.3** *(histórico/superseded — fora do escopo, BO-02)* — Sincronização bidirecional Room ↔ backend. Estratégia:
       `WorkManager` com `OneTimeWorkRequest` ao detectar conectividade;
       fila de operações offline persistida em Room.
       *Critério:* testes de integração (Compose + Robolectric + MockWebServer)
@@ -443,7 +464,7 @@ dashboard consolidado.
       `SyncWorker` → stub), evidenciado em
       `docs/SMOKE-TEST-CRUD.md` §11._
 
-- [x] **E3.4** — Tratamento de ausência de conectividade: banner
+- [x] **E3.4** *(histórico/superseded — fora do escopo, BO-02)* — Tratamento de ausência de conectividade: banner
       persistente "offline", fila visível ao usuário, reconciliação
       automática quando a rede retorna. *Critério:* teste manual em modo
       avião reproduz o fluxo. *Atende R5, R10.* *Estimativa:* 3 PH.
@@ -476,7 +497,7 @@ dashboard consolidado.
       — bug pré-existente de E2.1 (não coberto por E3.4); o ID e a
       descrição renderizados na tela pertencem ao projeto correto.
 
-- [x] **E3.5** — Consumir 1 serviço externo pertinente ao domínio.
+- [x] **E3.5** *(origem da API externa em revisão — BO-03)* — Consumir 1 serviço externo pertinente ao domínio.
       *Sugestões:* ICS feed para sincronizar prazos (iCal); API pública de
       feriados nacionais para alertas de data; serviço de geocoding para
       associar Task a um local.
@@ -552,9 +573,10 @@ dashboard consolidado.
 
 ### Saída do Ciclo 3
 
-Beta demonstrável no Checkpoint 2: app instalado em dispositivo físico,
-sincronização com backend funcional, integração externa coberta por testes,
-notificações ativas.
+Beta demonstrável no Checkpoint 2: app instalado em dispositivo físico, com
+CRUD completo sobre o Room local, regras de prazo (fonte de feriados em
+revisão — BO-03) e notificações locais ativas. Não há sincronização com
+backend nem qualquer recurso remoto no escopo vigente (BO-02).
 
 ---
 
@@ -567,15 +589,14 @@ notificações ativas.
 
 - [x] **E4.1** — Roteiro de testes funcionais cobrindo os fluxos
       principais (cadastro, login, criar projeto, criar tarefa,
-      sincronizar offline→online, receber notificação).
+      aplicar regras de prazo, receber notificação local).
       *Critério:* pelo menos 12 casos com resultado esperado/observado.
       *Atende N2 item 3.* *Estimativa:* 5 PH.
       *Status:* ✅ 14 casos publicados em `docs/ROTEIRO-TESTES.md`
       (TF-01..TF-14), cobrindo cadastro, login, projeto, tarefa com
-      RN01, sincronização offline↔online (E3.3/E3.4), notificações de
-      prazo (E3.6), tags e troca de perfil. Coluna "Resultado
-      observado" permanece em branco até a sessão manual; casos TF-09
-      e TF-10 dependem da conclusão de E3.3/E3.4.
+      RN01, notificações de prazo (E3.6), tags e troca de perfil. Os casos de
+      sincronização offline↔online (TF-09/TF-10) saíram do escopo com o BO-02;
+      a coluna "Resultado observado" permanece em branco até a sessão manual.
 
 - [x] **E4.2** — Sessões de teste de usabilidade com 5 usuários externos,
       perfil compatível com o público-alvo. *Critério:*
@@ -694,9 +715,9 @@ usabilidade concluída.
       técnica) preenchido. *Critério:* 14 linhas marcadas como
       "Atendido" com referência ao caminho no app/repositório.
       *Estimativa:* 1 PH.
-      _Entregue em docs/APENDICE-C-CONFORMIDADE.md (atualizado em
-      2026-09-25: R5/R6/R9 marcados Atendido pós-E3.3/E3.4/E2.7;
-      R14 Parcial até validação em 2 dispositivos físicos em E5.3)._
+      _Entregue em docs/APENDICE-C-CONFORMIDADE.md. Revisão de escopo: o R6
+      (persistência remota) saiu do escopo (BO-02) e o R7 está em revisão
+      (BO-03); a conferência final cabe ao cartão **BO-45**._
 
 - [ ] **E5.5** — Apresentação da N2: 20 min + 10 min de arguição.
       *Critério:* ensaio geral realizado antes da data.
@@ -708,33 +729,39 @@ usabilidade concluída.
 
 | Requisito | Onde é atendido                                              |
 |-----------|--------------------------------------------------------------|
-| R1        | E1.3, E1.6, E2.1, E2.2, E3.3                                 |
+| R1        | E1.3, E1.6, E2.1, E2.2                                       |
 | R2        | E1.6, E1.7, E1.8                                             |
 | R3        | E2.1, E2.2                                                   |
 | R4        | E2.3, E2.4, E2.5                                             |
-| R5        | E1.5, E1.8, E3.3, E3.4                                       |
-| R6        | E3.1, E3.2, E3.3, E3.4                                       |
-| R7        | E3.5                                                         |
+| R5        | E1.5, E1.8                                                   |
+| R6        | **fora do escopo** — sem persistência remota/sincronização (BO-02) |
+| R7        | E3.5 — **em revisão**: a fonte de feriados deixa de ser API externa (BO-03) |
 | R8        | E3.6                                                         |
 | R9        | E2.6, E2.7                                                   |
-| R10       | E1.6, E2.8, E3.4                                             |
+| R10       | E1.6, E2.8                                                   |
 | R11       | E4.4, E4.5                                                   |
-| R12       | E1.1, E3.2, E4.7                                             |
+| R12       | E1.1, E4.7                                                   |
 | R13       | E1.9, E1.10, E5.2                                            |
 | R14       | E3.7, E5.3                                                   |
+
+> **Revisão de escopo (2026-10-07).** R6 (persistência remota) saiu do escopo:
+> o app é totalmente local (BO-02). R7 (integração externa) está em revisão,
+> porque a fonte de feriados precisa deixar de ser uma API externa (BO-03). As
+> remissões aos marcos E3.1–E3.4 foram retiradas por serem entregas fora do
+> escopo atual; E3.6 (recurso nativo local) e E3.7 (release) permanecem.
 
 ## Riscos e mitigações
 
 | Risco                                                    | Probabilidade | Impacto | Mitigação                                                                  |
 |----------------------------------------------------------|---------------|---------|----------------------------------------------------------------------------|
 | Defasagem entre o cronograma e a execução individual     | Média         | Alto    | Checkpoint quinzenal pessoal com status por ciclo                          |
-| Backend escolhido muda de escopo no meio do semestre     | Média         | Alto    | Stub FastAPI em `backend-stub/` desacopla o app; contrato versionado       |
+| Riscos desta mudança de escopo (BO-02/BO-03)             | Média         | Alto    | Remover a infraestrutura remota sem quebrar CRUD/contas locais; revisar a fonte de feriados antes de retirar a API externa |
 | Keystore perdido antes da N2                             | Baixa         | Alto    | Keystore obrigatoriamente guardado em cofre pessoal (1Password/Proton)     |
 | Não-conformidade de acessibilidade identificada tardia  | Média         | Médio   | E4.4 começa com auditoria no fim do Ciclo 2, não no Ciclo 4                |
 | Dependabot quebrando builds por atualização major        | Baixa         | Médio   | Groups configurados para minor/patch apenas; majors viram Auto-PR manual   |
 | 2º dispositivo físico emprestado indisponível na data de E5.3 | Baixa    | Médio   | Mapeamento e checklist pré-aprovados em `docs/DISPOSITIVOS.md` (compatibilidade com `minSdk` 24 / `targetSdk` 35 verificada antes do teste) |
-| Smoke headless não exercita `ConnectivityObserver` em runtime real | Baixa | Médio   | Cobertura dupla: testes Robolectric (`ConnectivityObserverTest`, `HomeViewModelTest` E3.4, `ProjectDetailViewModelTest` E3.4) + smoke real em emulador API 35 com `cmd connectivity airplane-mode enable/disable`. Validação final do Ciclo 3 (22/09/2026) já produziu capturas de banner/contragem/reconciliação ponta a ponta. |
-| BrasilAPI feriados inacessível em emulador headless / sem rede de saída | Baixa | Baixo | `HolidayRepository` degrada para `emptyList()`; `CheckDeadlineUseCaseTest` cobre o cenário "erro no repositório". UI mostra `holidays unavailable` apenas se a chamada falhar explicitamente; em rede real (dispositivo físico E5.3 / TF-09 do roteiro) a dica de próximo feriado é exibida. |
+| Smoke headless não exercita conectividade em runtime real *(não se aplica ao escopo vigente — sem recurso de rede)* | Baixa | Baixo | O recurso de conectividade saiu do escopo (BO-02). Notificações e CRUD locais são exercitados por testes Robolectric e pelo roteiro funcional local. |
+| BrasilAPI feriados inacessível / sem rede de saída *(fonte externa em revisão)* | Baixa | Baixo | `HolidayRepository` degrada para `emptyList()`; `CheckDeadlineUseCaseTest` cobre o cenário "erro no repositório". A dependência de API externa será removida pelo BO-03. |
 | `adb shell date` para adiantar o relógio do sistema requer `root` em builds de produção | Baixa | Baixo | Smoke do E3.6 (notificação de prazo) não foi exercitado ponta-a-ponta no emulador headless — coberto por `WorkManagerDeadlineSchedulerTest` (verifica `WorkInfo` com `DEADLINE_TAG` no `tags`) e `CompleteTaskWorkerTest`. Disparo real registrado em TF-12 do `docs/ROTEIRO-TESTES.md` para o dispositivo físico do E5.3. |
 
 ## Acompanhamento

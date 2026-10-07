@@ -4,6 +4,11 @@
 
 Razão de existir: fixar o ponto de partida **real** do redesign — o que compila, o que passa, o que já falhava antes de qualquer mudança — para que o "antes/depois" de F8 (NB-34) compare builds equivalentes e para que ninguém credite ao redesign um defeito que já existia.
 
+> **Nota de escopo (2026-10-07).** Esta é uma medição datada (02/10/2026). Desde
+> então o produto passou a ser **totalmente local** (AD-7): as dependências de
+> rede (Retrofit/OkHttp) e a fila de sincronização saíram do escopo (BO-02).
+> Os valores abaixo permanecem como registro do que foi medido naquela data.
+
 ## 1. Ambiente verificado
 
 | Item | Valor real |
@@ -26,7 +31,7 @@ Razão de existir: fixar o ponto de partida **real** do redesign — o que compi
 
 ## 2. Versões do catálogo e resolução real
 
-Declaradas em `gradle/libs.versions.toml`: AGP 9.4.1, Kotlin 2.3.20, KSP 2.3.12, Hilt 2.60.1, Room 2.8.4, Compose BOM 2024.10.01, coroutines 1.9.0, Retrofit 2.11.0, OkHttp 4.12.0, JUnit 4.13.2, Robolectric 4.15.1, Turbine 1.2.0, MockK 1.13.13, Truth 1.4.4.
+Declaradas em `gradle/libs.versions.toml`: AGP 9.4.1, Kotlin 2.3.20, KSP 2.3.12, Hilt 2.60.1, Room 2.8.4, Compose BOM 2024.10.01, coroutines 1.9.0, JUnit 4.13.2, Robolectric 4.15.1, Turbine 1.2.0, MockK 1.13.13, Truth 1.4.4. À época desta medição o catálogo ainda declarava Retrofit 2.11.0 e OkHttp 4.12.0 — dependências de rede hoje **fora do escopo** (BO-02).
 
 Resolução medida com `./gradlew :app:dependencies --configuration devDebugRuntimeClasspath` (**163 artefatos distintos**):
 
@@ -36,8 +41,8 @@ Resolução medida com `./gradlew :app:dependencies --configuration devDebugRunt
 | `androidx.compose.material3:material3` | **1.3.1** |
 | `androidx.room:room-runtime` | 2.8.4 |
 | `androidx.lifecycle:lifecycle-viewmodel-compose` | 2.8.7 |
-| `com.squareup.retrofit2:retrofit` | 2.11.0 |
-| `com.squareup.okhttp3:okhttp` | 3.14.9 → **4.12.0** (upgrade no grafo) |
+| `com.squareup.retrofit2:retrofit` | 2.11.0 — *fora do escopo (BO-02)* |
+| `com.squareup.okhttp3:okhttp` | 3.14.9 → **4.12.0** (upgrade no grafo) — *fora do escopo (BO-02)* |
 | `org.jetbrains.kotlin:kotlin-stdlib` | 2.3.20 → **2.3.21** |
 
 Isso confirma no projeto real o que o POM da BOM declara (UI 1.7.5 / M3 1.3.1) — base sobre a qual NB-07 (sombra) e NB-22 (DnD) devem reavaliar suas premissas de API.
