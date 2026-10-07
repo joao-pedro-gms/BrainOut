@@ -2,7 +2,7 @@
 
 **Status: proposta para o futuro redesign, não identidade já implementada.** Pesquisa e especificação: **01/10/2026**. Base inspecionada: `4dcfa0a`. Autor do projeto: João Pedro G M Silva.
 
-**Razão de existir:** transformar referências visuais em decisões implementáveis para reformular toda a UI Android, preservando legibilidade, regras de negócio e comportamento offline-first.
+**Razão de existir:** transformar referências visuais em decisões implementáveis para reformular toda a UI Android, preservando legibilidade, regras de negócio e o funcionamento **totalmente local** do app (sem rede, sem conta remota, sem sincronização).
 
 ## Como usar esta especificação
 
@@ -18,7 +18,7 @@
 
 ## 1. Produto e ponto de partida
 
-BrainOut organiza projetos pessoais e tarefas em Android nativo. Possui autenticação, papéis Owner/Member, tags, busca e ordenação de projetos, prazos, três estados de tarefa, cinco prioridades e painel de métricas. **Perfil, escolha manual de tema (Sistema/Claro/Escuro) e lembretes não existem hoje** — são capacidade proposta, não observada (ver inventário abaixo). A gravação local e a fila de sincronização são parte central da experiência.
+BrainOut organiza projetos pessoais e tarefas em Android nativo. Possui autenticação local, papéis Owner/Member, tags, busca e ordenação de projetos, prazos, três estados de tarefa, cinco prioridades e painel de métricas. **Perfil, escolha manual de tema (Sistema/Claro/Escuro) e lembretes não existem hoje** — são capacidade proposta, não observada (ver inventário abaixo). A gravação local é parte central da experiência: os dados vivem somente no aparelho e só saem dele pelo arquivo de backup exportado.
 
 **Hipótese de uso:** consultas rápidas entre atividades acadêmicas/profissionais, com interrupções e conexão variável. Isso orienta o design, mas não constitui pesquisa com o público do app. O projeto acadêmico não prova que todos os usuários são estudantes.
 
@@ -59,13 +59,13 @@ Não atribuir exclusividade histórica à estética: a combinação é uma propo
 1. **Estrutura forte, conteúdo tranquilo.** Bordas 2dp e alinhamento estável; corpo de texto convencional e sem rotações.
 2. **Cor tem trabalho.** Amarelo identifica ação principal; violeta identifica marca/seleção; verde comunica conclusão; erro é reservado a falha ou destruição.
 3. **Volume indica interação.** Sombra rígida em ações e cartões de projeto clicáveis; listas densas usam contorno/divisor sem sombra por item.
-4. **Estado é visível e verdadeiro.** «Salvo neste dispositivo» não equivale a «Sincronizado». Fila vazia não prova ausência de rejeições remotas.
+4. **Estado é visível e verdadeiro.** «Salvo neste dispositivo» é literal: o dado existe só ali e sai do aparelho apenas pelo arquivo de backup. Não sugerir nuvem, conta remota ou colaboração que o app não oferece.
 5. **Android continua reconhecível.** Back, teclado, menus, permissões, seleção e leitura por TalkBack seguem convenções nativas.
 6. **Expressão é finita.** Uma ação principal por superfície; sem marquises, loop decorativo, confete repetitivo ou penalização por atraso.
 
 ### Composição proposta — primeiro viewport de Projetos
 
-Janela de 360dp: margens 16dp, título «Projetos» em Archivo 28/36, nome/papel em metadados secundários; busca abaixo, filtros de estado e tags em blocos distintos. Aviso de conectividade aparece antes da lista quando necessário. Cartões de projeto ocupam a largura útil, com nome, descrição e tags. FAB estendido «Novo projeto» fica acima da navegação com quatro rótulos. A sombra ocupa espaço reservado, nunca cobre o próximo item. Alturas crescem com texto; não cabe tudo obrigatoriamente no primeiro viewport.
+Janela de 360dp: margens 16dp, título «Projetos» em Archivo 28/36, nome/papel em metadados secundários; busca abaixo, filtros de estado e tags em blocos distintos. Cartões de projeto ocupam a largura útil, com nome, descrição e tags. FAB estendido «Novo projeto» fica acima da navegação com quatro rótulos. A sombra ocupa espaço reservado, nunca cobre o próximo item. Alturas crescem com texto; não cabe tudo obrigatoriamente no primeiro viewport.
 
 O Painel usa uma faixa de contagens e gráfico com valores rotulados; não uma coleção de caixas coloridas indistinguíveis. Configurações usa linhas de leitura e apenas um preview de marca/tema.
 
