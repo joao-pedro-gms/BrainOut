@@ -18,8 +18,15 @@ import org.junit.Test
  * Este teste assina o documento: lê o markdown do disco e compara com os
  * arquivos reais, um número de cada vez.
  *
- *  1. inventário da §1 — bytes e contagens das três categorias, o
- *     subtotal de arte e o total;
+ *  1. inventário da §1 — bytes e contagens das três categorias e o
+ *     subtotal de arte; o **total** é assinado contra a superfície do
+ *     `du -cb` da §5 (todo arquivo de `res/font` + `res/drawable`,
+ *     qualquer extensão, recursivo), não contra a soma das três
+ *     categorias: um `.png` em `drawable/` escapa ao manifesto do
+ *     `NeoVectorAssetsTest` — ele filtra `extension == "xml"` — e a
+ *     qualquer categoria daqui, mas muda o total que o documento
+ *     publica. Quando o total diverge, a falha lista os arquivos que
+ *     nenhuma das três categorias cobre;
  *  2. §1.3 — bytes e os cinco sha256 dos `.ttf`;
  *  3. §3 — os quatro tamanhos da arte.
  *
@@ -44,6 +51,12 @@ class NeoDocumentedAssetsTest {
     private val iconFiles: List<File> = filesWith(drawableDir, "neo_ic_", "xml")
     private val artFiles: List<File> = filesWith(drawableDir, "neo_art_", "xml")
 
+    /** As três categorias da §1: o que o documento cobre linha a linha. */
+    private val categorized: Set<File> = (fontFiles + iconFiles + artFiles).toSet()
+
+    /** Superfície do `du -cb` da §5: todo arquivo das duas pastas. */
+    private val duSurface: List<File> = filesUnder(fontDir) + filesUnder(drawableDir)
+
     @Test
     fun `a tabela do inventario da secao 1 bate com bytes e contagens do disco`() {
         val table = tables.table(INVENTORY) { header -> header.firstOrNull() == "Conjunto" }
@@ -53,10 +66,13 @@ class NeoDocumentedAssetsTest {
         val scopes = inventory()
         scopes.forEach { scope -> assertScope(table, scope, bytes, count) }
 
-        // O total precisa fechar com a soma das três categorias no disco,
-        // que é o que o `du -cb` do §5 imprime.
-        val everything = scopes.flatMap { it.files }
-        assertScope(table, AssetScope("Total", "Total", everything, RES_SOURCE), bytes, count)
+        // O total da §1 não é a soma das três categorias: é a superfície do
+        // `du -cb` da §5, todo arquivo de `res/font` + `res/drawable`, qualquer
+        // extensão. Um `.png` em `drawable/` escapa ao manifesto do
+        // `NeoVectorAssetsTest` (ele filtra `extension == "xml"`) e a qualquer
+        // categoria acima — mas muda o total que o documento publica.
+        val total = AssetScope("Total", "Total", duSurface, DU_SOURCE)
+        assertScope(table, total, bytes, count, undocumentedFiles())
     }
 
     @Test
@@ -136,7 +152,23 @@ class NeoDocumentedAssetsTest {
         AssetScope("`res/drawable/neo_art_*.xml`", "Arte", artFiles, DRAWABLE_SOURCE),
     )
 
-    private fun assertScope(table: MarkdownTable, scope: AssetScope, bytes: Int, count: Int) {
+    /**
+     * Arquivos das duas pastas que nenhuma das três categorias cobre, como
+     * caminho relativo a `res/`: é o «asset no disco sem estar documentado»
+     * que a introdução do `ASSETS.md` proíbe. Aparecem junto da falha do
+     * total, que é a única que eles derrubam.
+     */
+    private fun undocumentedFiles(): List<String> = duSurface
+        .filterNot { file -> file in categorized }
+        .map { file -> file.relativeTo(coreUiRes()).path }
+
+    private fun assertScope(
+        table: MarkdownTable,
+        scope: AssetScope,
+        bytes: Int,
+        count: Int,
+        undocumented: List<String> = emptyList(),
+    ) {
         val cells = table.rowContaining(INVENTORY, scope.key)
         val onDisk = scope.files.sumOf { it.length() }
 
@@ -147,6 +179,7 @@ class NeoDocumentedAssetsTest {
             cell = cells[count],
             disk = scope.files.size.toLong(),
             source = scope.source,
+            undocumented = undocumented,
         )
         assertDocumented(
             where = INVENTORY,
@@ -155,6 +188,7 @@ class NeoDocumentedAssetsTest {
             cell = cells[bytes],
             disk = onDisk,
             source = scope.source,
+            undocumented = undocumented,
         )
     }
 
@@ -166,7 +200,8 @@ class NeoDocumentedAssetsTest {
     /**
      * Compara um número publicado com o do disco. A falha mostra o texto
      * exato da célula, o valor lido do arquivo e onde ele está — é o caminho
-     * curto de `ASSETS.md` até `wc -c`.
+     * curto de `ASSETS.md` até `wc -c`. Quando passa [undocumented], também
+     * lista o que nenhuma categoria cobre.
      */
     private fun assertDocumented(
         where: String,
@@ -175,6 +210,7 @@ class NeoDocumentedAssetsTest {
         cell: String,
         disk: Long,
         source: String,
+        undocumented: List<String> = emptyList(),
     ) {
         val digits = NUMBER_IN_CELL.find(squeezeSpaces(cell))?.value.orEmpty()
             .filterNot { it.isWhitespace() }
@@ -187,14 +223,21 @@ class NeoDocumentedAssetsTest {
             )
         }
 
+        val orphans = if (undocumented.isEmpty()) {
+            ""
+        } else {
+            "; fora das 3 categorias = %s".format(undocumented)
+        }
+
         assertWithMessage(
-            "ASSETS.md %s, linha «%s», coluna %s: documento = %s, disco = %s (%s)",
+            "ASSETS.md %s, linha «%s», coluna %s: documento = %s, disco = %s (%s)%s",
             where,
             label,
             column,
             cell.trim(),
             formatGrouped(disk),
             source,
+            orphans,
         ).that(disk).isEqualTo(published.toLong())
     }
 }
@@ -219,7 +262,9 @@ private const val ART = "§3 (arte)"
 
 private const val FONT_SOURCE = "core/ui/src/main/res/font"
 private const val DRAWABLE_SOURCE = "core/ui/src/main/res/drawable"
-private const val RES_SOURCE = "core/ui/src/main/res"
+
+/** Superfície do total: os dois diretórios que o `du -cb` da §5 soma. */
+private const val DU_SOURCE = "core/ui/src/main/res/font + core/ui/src/main/res/drawable"
 
 /** Número de uma célula: dígitos com separador de milhar, opcionalmente em negrito. */
 private val NUMBER_IN_CELL = Regex("""\d[\d\s]*""")
@@ -326,6 +371,16 @@ private fun filesWith(dir: File, prefix: String, extension: String): List<File> 
     dir.listFiles { file -> file.name.startsWith(prefix) && file.extension == extension }
         .orEmpty()
         .sortedBy { file -> file.name }
+
+/**
+ * Todo arquivo de [dir], recursivo e de qualquer extensão — a superfície
+ * que `du -cb core/ui/src/main/res/{font,drawable}` soma, e não só o que
+ * as categorias da §1 sabem nomear.
+ */
+private fun filesUnder(dir: File): List<File> = dir.walkTopDown()
+    .filter { file -> file.isFile }
+    .sortedBy { file -> file.path }
+    .toList()
 
 /** `299463` -> `299 463`, o formato que o documento usa. */
 private fun formatGrouped(value: Long): String =
