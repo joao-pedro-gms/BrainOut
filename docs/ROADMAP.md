@@ -188,8 +188,8 @@ Encerramento (Sem 18-19) → Documentação final + apresentação    → Entreg
       `./gradlew testDevDebugUnitTest` na linha 110, com Kover
       `koverVerify`) e, à época, `backend-integration` (service container
       FastAPI + `./gradlew :core:data:testDevDebugUnitTest
-      :app:testDevDebugUnitTest`). O job `backend-integration` foi retirado do
-      CI com a mudança de escopo (BO-02)._
+      :app:testDevDebugUnitTest`). O job `backend-integration` ainda roda e será
+      retirado do CI com a mudança de escopo (BO-02)._
 
 - [x] **E1.10** — Atualizar `README.md` com instruções de build e execução
       (mesmo que ainda incompletas para a N2). *Critério:* novo
