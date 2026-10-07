@@ -39,7 +39,10 @@ adb install -r app/build/outputs/apk/dev/release/app-dev-release.apk
 # adb install -r <apk-baixado>.apk
 ```
 
-**Nunca** use a variante `prod` para simular integração: a `BASE_URL` dela é um placeholder (`https://TBD/`), decisão E3.1.
+Nenhuma das duas variantes (`dev`/`prod`) faz chamadas de rede: o app é
+totalmente local (AD-7). A variante `prod` existe apenas como configuração de
+build. Use sempre a variante `devRelease` para as medições, de modo que os dois
+lados da comparação usem o mesmo build.
 
 ## 3. Cenários fixos
 

@@ -75,13 +75,13 @@ Contrato de apresentação a preservar (ESPECIFICACAO §2): erro de leitura **su
 
 | Capacidade | Onde |
 |---|---|
-| CRUD de projeto e de tarefa, com transação Room + fila offline | `:core:data` (`enqueueInTx`) |
+| CRUD de projeto e de tarefa, em transação Room | `:core:data` (`@Transaction` nos DAOs) |
 | Matriz de status `TODO→DOING`, `DOING→TODO/DONE`, `DONE→DOING` (`DONE→TODO` proibido) | `core.domain.model.TaskStatus` |
 | Cascata conclusão/reabertura do projeto | `ProjectDao.cascadeCompleteTask/cascadeReopenTask` |
 | Limite de 50 tarefas ativas por projeto | `UseCaseConstants.MAX_ACTIVE_TASKS_PER_PROJECT` |
 | Prioridade bloqueada em tarefa DONE | `UpdateTaskUseCase` (`TaskPriorityChangeForbiddenException`) |
-| Reconciliação de lembrete em toda mutação (create/update/status) | `CreateTaskUseCase`, `UpdateTaskUseCase`, `ChangeTaskStatusUseCase` |
-| Drenagem de fila em lote de 50; 4xx descarta, 5xx/IO faz retry | `SyncWorker` |
+| Reconciliado com o lembrete local de prazo em toda mutação (create/update/status) | `CreateTaskUseCase`, `UpdateTaskUseCase`, `ChangeTaskStatusUseCase` |
+| Drenagem de fila em lote de 50; 4xx descarta, 5xx/IO faz retry | **fora do escopo** — a fila remota saiu do produto (BO-02) |
 | Preferências de listagem por usuário (busca, tag, ordenação) | `ListingPreferencesRepository` (DataStore) |
 | Papéis Owner/Member + `CanPerformActionUseCase` | `:core:domain` (**sem uso de produção** — ver §4) |
 
@@ -104,18 +104,20 @@ Contrato de apresentação a preservar (ESPECIFICACAO §2): erro de leitura **su
 
 Perfil, escolha manual de tema (System/Light/Dark), preferência de lembretes, telas `ProfileScreen`/`ThemeScreen`/`NotificationsScreen` e `SettingsViewModel`. O módulo `:feature:settings` tem **apenas** `SettingsScreen` (lista neutra), `SettingsStructure` (dados das linhas) e `SettingsRoutes`; o `NavHost` trata `Profile`, `Notifications` e `Theme` como placeholder vazio. `Theme.kt` aplica `isSystemInDarkTheme()` e `dynamicColor = false`, sem persistência de escolha.
 
-### 3.4 Local × sync (verdade dos dados)
+### 3.4 Dados e transferência (verdade dos dados)
 
-| Dado | Local | Viaja no sync | Aviso na UI (Q24) |
-|---|---|---|---|
-| Projeto/tarefa criar, editar, excluir, mudar status | sim | sim | — |
-| Tag criar/excluir | sim | sim | — |
-| Prazo (data/hora) | sim | **não** | «só neste dispositivo» |
-| Distinção TODO/DOING | sim | **não** (contrato usa booleano `done`) | «só neste dispositivo» |
-| Responsável (`assigneeId`) | sim | **não** | «só neste dispositivo» |
-| Tag renomear/recolorir | sim | **não** (UPDATE é descartado pelo dispatcher) | «só neste dispositivo» |
-| Desassociar tag ↔ projeto | sim | **não** (só associações são enfileiradas) | «só neste dispositivo» |
-| Participantes (membership) | sim | **não** (sem endpoint) | «só neste dispositivo» |
+O app é **totalmente local** (AD-7): todos os dados vivem no banco Room do
+aparelho e nenhum deles "viaja" para lugar algum em segundo plano. A única
+transferência de dados — cópia de segurança ou mudança de instalação — é o
+**arquivo de backup** exportável/restaurável (contrato em BO-06). Não há
+sincronização, conta remota ou colaboração, de modo que "o que viaja" deixa de
+ser uma tabela de exceções e passa a ser uma única operação explícita do
+usuário.
+
+| Dado | Local (Room) | Transferência |
+|---|---|---|
+| Projeto/tarefa criar, editar, excluir, mudar status | sim | somente pelo arquivo de backup |
+| Tag criar/excluir, prazo, distinção TODO/DOING, responsável, associação tag ↔ projeto, participantes | sim | somente pelo arquivo de backup |
 
 ## 4. Lacunas conhecidas (conferidas uma a uma)
 
