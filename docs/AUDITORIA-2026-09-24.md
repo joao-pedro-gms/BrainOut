@@ -4,20 +4,32 @@
 **Escopo:** 185 arquivos `.kt/.py/.yml`, 9 módulos Gradle + backend-stub + CI.
 Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melhorias.
 
+> **⚠️ Estado em 08/10/2026.** Esta página foi escrita em 24/09/2026 e
+> **o diagnóstico do arquivo continua válido**, mas o *status* de
+> execução mudou: **os 8 P0 (P0-1 a P0-8) já foram corrigidos e estão
+> em `main`**. A tabela abaixo de P0-7 a P0-8 foi reescrita para
+> refletir o estado real; a seção *Correções aplicadas* e a nova
+> § [Reverificação 2026-10-08](#reverificacao-2026-10-08) registram
+> a evidência (`arquivo:linha`) de cada correção. Onde um item de P1/P2
+> mudou de estado, ele está anotado no ponto em que aparece.
+
 ---
 
-## P0 — bugs críticos, corrigir imediatamente
+## P0 — bugs críticos — **TODOS CORRIGIDOS (verificado em 08/10/2026)**
 
-| # | Local | Problema | Fix |
+Status conferido um a um contra o código em `main`
+(`316ed41`), não apenas por confiança na seção *Correções aplicadas*.
+
+| # | Local | Problema | Status + evidência em `main` |
 |---|---|---|---|
-| **P0-1** | `app/.../navigation/BrainOutNavHost.kt:163-177` | `signOut()` em `scope = rememberCoroutineScope()` cancela quando Settings deixa composição → DataStore write interrompido → sessão persiste → próximo cold-start ainda loga. | Mover para `viewModelScope`/lifecycleScope e `await` antes do `navigate(Login) { popUpTo(0) }`. |
-| **P0-2** | `app/.../notifications/CompleteTaskWorker.kt:35-48` | `catch (Exception) → Result.retry()` quebra idempotência em task deletada: `IllegalArgumentException` re-retraya para sempre. Contradiz KDoc e nome do teste. | Distinguir `IllegalArgumentException`/`NoSuchElementException` (idempotente → `Result.success`) de `IOException`/`SQLiteException` (transient → `retry`). |
-| **P0-3** | `core/data/.../security/PepperProvider.kt:48-50` | Pepper derivado de `masterKey.toString()` ("MasterKey{keyAlias=…, isKeyStoreBacked=…}"). Como o alias default é constante pública `_androidx_security_master_key_`, pepper é **SHA-256 de string pública idêntica em todo dispositivo**. KDoc declara "pepper nunca deixa o hardware" — falso; material do Keystore **nunca** é lido. | Gerar salt aleatório uma vez; persistir via `EncryptedSharedPreferences` ou KeyStore-protegido. |
-| **P0-4** | `core/data/.../sync/BrainOutSyncDispatcher.kt:101-107` + `TagSyncPayload` + `TagCreateDto` | DELETE de tag nunca chega ao servidor: servidor gera id próprio no POST, cliente envia só `{name, color}` sem id, dispatcher descarta resposta. `DELETE /v1/tags/{localUUID}` → 404 → tag orfã no servidor. | Adicionar `id` client-supplied em `TagSyncPayload`/`TagCreateDto` (paridade com projetos/tasks via R6) **ou** capturar id do servidor. |
-| **P0-5** | `ci.yml:107,122,217` (`testDebugUnitTest`, `lintDebug`, `connectedDebugAndroidTest`) | Tarefas não-flavor não resolvem em `:app`/`:core:data` (variants são `testDevDebugUnitTest`, `lintDevDebug`, `connectedDevDebugAndroidTest`). CI roda pra outros módulos mas **silenciosamente pula** `:app` unit tests (`SyncWorkerTest`, `CompleteTaskWorkerTest`, `WorkManagerDeadlineSchedulerTest`) + **gate MissingTranslation de `:app` não dispara** + `:app` lint invisível. | Trocar para tasks flavor-qualified ou aggregate `check`. Validar com `./gradlew tasks --all`. |
-| **P0-6** | `release-apk.yml:52-56` + `app/build.gradle.kts:24-27,106-110` | Só `BRAINOUT_KEYSTORE_BASE64` é validado. Se os 3 secrets de senha faltarem, `hasReleaseSigning=false` → `bundleRelease` roda **sem assinatura** e sobe o `.aab` não-assinado como release verde. | Validar 4 secrets em `release-apk.yml` (`[ -z "...$VAR" ]`) + `jarsigner -verify` antes do upload. |
-| **P0-7** | `core/domain/.../error/TagNotFoundException.kt:4` | Estende `RuntimeException`, não `DomainException`. Quebra capturas agregadas de domínio → app não captura o erro estruturado. | `class TagNotFoundException(tagId: String) : DomainException(...)` + ajustar teste. |
-| **P0-8** | `core/domain/.../usecase/ChangeTaskStatusUseCase.kt:59` | `kotlin.error("Tarefa não encontrada: $taskId")` lança `IllegalStateException` cru. Exceção de fronteira não-mapeada (sem teste). | Criar `TaskNotFoundException(taskId)` em `error/` + teste. |
+| **P0-1** | `app/.../navigation/BrainOutNavHost.kt:163-177` | `signOut()` em `scope = rememberCoroutineScope()` cancela quando Settings deixa composição → DataStore write interrompido → sessão persiste → próximo cold-start ainda loga. | ✅ **RESOLVIDO** — `BrainOutNavHost.kt:180` obtém `val lifecycleOwner = LocalLifecycleOwner.current`; `:189-192` faz `lifecycleOwner.lifecycleScope.launch { activeUserProvider.signOut(); navigate(...) { popUpTo(0) { inclusive = true } } }`. Import `androidx.lifecycle.lifecycleScope` em `:20`. Não há mais `rememberCoroutineScope` no arquivo. |
+| **P0-2** | `app/.../notifications/CompleteTaskWorker.kt:35-48` | `catch (Exception) → Result.retry()` quebra idempotência em task deletada: `IllegalArgumentException` re-retraya para sempre. Contradiz KDoc e nome do teste. | ✅ **RESOLVIDO** — `CompleteTaskWorker.kt:50-62`: caminho feliz `Result.success()`; `catch (e: DomainException)` → `Result.success()` (`:51-56`, comentário "violação permanente — idempotente"); `catch (e: IOException)` → `Result.retry()` (`:57-61`). Import `DomainException` em `:12`. |
+| **P0-3** | `core/data/.../security/PepperProvider.kt:48-50` | Pepper derivado de `masterKey.toString()` — SHA-256 de string pública idêntica em todo dispositivo. | ✅ **RESOLVIDO** — `PepperProvider.kt:48-55` cria `EncryptedSharedPreferences` com `MasterKey` AES256_GCM; `:57-59` devolve o valor já persistido; `:60-68` gera `ByteArray(PEPPER_LENGTH_BYTES)` com `SecureRandom().nextBytes()` **uma vez por instalação** e grava em Base64. Não há mais `masterKey.toString()` nem `identityHashCode` no arquivo. |
+| **P0-4** | `core/data/.../sync/BrainOutSyncDispatcher.kt:101-107` + `TagSyncPayload` + `TagCreateDto` | DELETE de tag nunca chega ao servidor: cliente envia só `{name, color}`; `DELETE /v1/tags/{localUUID}` → 404 → tag orfã. | ✅ **RESOLVIDO** — `PendingOpEntity.kt:155-160`: `TagSyncPayload` tem `@SerialName("id") val id: String`; `RemoteDtos.kt:124-130`: `TagCreateDto(id: String? = null, ...)`; `RemoteDataSource.kt:226-228` `createTag(name, color, id = null)` repassa `id` ao DTO; `BrainOutSyncDispatcher.kt:111` TAG CREATE usa `id = payload.id` e `:113` DELETE usa `remote.deleteTag(op.entityId)`. |
+| **P0-5** | `ci.yml:107,122,217` (`testDebugUnitTest`, `lintDebug`, `connectedDebugAndroidTest`) | Tarefas não-flavor não resolvem em `:app`/`:core:data` → unit tests do `:app` e gate de `MissingTranslation` silenciosamente pulados. | ✅ **RESOLVIDO** — `ci.yml:110` `./gradlew testDevDebugUnitTest`; `:154` `./gradlew lintDevDebug`; `:282` `./gradlew :core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Passo `connectedDebugAndroidTest` **removido** do job `backend-integration` (sem emulador + flavor-mismatch). Passos explícitos adicionais: `:118-128` as 4 features (FIX-02) e `:133-135` `:core:ui:testDebugUnitTest` (NB-05). `continue-on-error` não aparece mais em `ci.yml`. |
+| **P0-6** | `release-apk.yml:52-56` + `app/build.gradle.kts:24-27,106-110` | Só `BRAINOUT_KEYSTORE_BASE64` é validado → se os 3 secrets de senha faltarem, `.aab` não-assinado sobe como release verde. | ✅ **RESOLVIDO** — `release-apk.yml:47-66` passo *Validate signing secrets (P0-6)* itera `BASE64 STORE_PWD ALIAS KEY_PWD` e faz `exit 1` se qualquer uma vier vazia; `:83-104` passo *Verify .aab signature (P0-6)* roda `jarsigner -verify` sobre o `.aab` gerado e falha o job antes do upload (`:105` `uses: actions/upload-artifact@v4`). |
+| **P0-7** | `core/domain/.../error/TagNotFoundException.kt:4` | Estende `RuntimeException`, não `DomainException`. | ✅ **RESOLVIDO** — arquivo reescrito: `class TagNotFoundException(tagId: String) : DomainException("Tag não encontrada: $tagId")`, com KDoc declarando que a extends de `DomainException` permite captura agregada. |
+| **P0-8** | `core/domain/.../usecase/ChangeTaskStatusUseCase.kt:59` | `kotlin.error("Tarefa não encontrada: $taskId")` lança `IllegalStateException` cru, fora do mapeamento de domínio. | ✅ **RESOLVIDO** — `ChangeTaskStatusUseCase.kt:66`: `repository.findById(taskId) ?: throw TaskNotFoundException(taskId)`. `TaskNotFoundException` é subclasse de `DomainException`. |
 
 ---
 
@@ -49,7 +61,7 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 
 - Redundância `DataModule.@Provides` para classes já `@Inject @Singleton`: `UserRepositoryImpl`, `ProjectRepositoryImpl`, `TaskRepositoryImpl`, `TagRepositoryImpl`, `HolidayRepositoryImpl`, `PasswordHasherImpl`, `AndroidConnectivityObserver`. Cortar.
 - `BrainOutDatabase.kt:70` `const val NAME = DATABASE_NAME` é alias morto.
-- Kover exclusion `*.remote.*` em `build.gradle.kts:87` mascara `RemoteDataSource` (error prop) e `HolidayRemoteDataSource` (cache+mutex) — não conta pra 60%.
+- Kover exclusion `*.remote.*` em `build.gradle.kts:87` mascara `RemoteDataSource` (error prop) e `HolidayRemoteDataSource` (cache+mutex) — não conta pra 60%. **AINDA VÁLIDO em 08/10/2026 e não corrigido** — o padrão `*.remote.*` continua na lista de exclusões (`build.gradle.kts:83`). Medido: em `:core:data`, `remote/` (6 arquivos, 593 linhas) + `di/` (1 arquivo, 213 linhas) = **806 de 3 944 linhas** de código de produção versionado em `main` (20,4%), fora do denominador. `RemoteDataSource.kt` tem 253 linhas e **26 blocos `catch`** e é exercitado por teste — a exclusão o retira da métrica. Registrado como **DEF-14** em `docs/DEFEITOS.md`, com a correção proposta (separar DTOs de lógica).
 - `RemoteDataSource.kt:48-53 vs :56-175` — `ping()` engole Exception; outros relançam. Inconsistente.
 - `RemoteDataSource.kt:31-33` — `HttpLoggingInterceptor.Level.BASIC` sempre on, inclusive release. Loga URL em prod.
 - `RemoteDataSource.kt:50-60` — `catch (Exception)` engole `CancellationException`. BrainOutSyncDispatcher já corrigiu; alinhar.
@@ -80,7 +92,7 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 - `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` em `:feature:auth` que **não existe**.
 - `AuthViewModel.reset()` morto (nunca invocado).
 - `LoginScreen.kt:78` `onLoginSubmit` (mesmo em RegisterScreen) deveria ser `onLoginSuccess` — nome mente.
-- `feature/auth/res` contém 4 strings `home_*` **duplicadas** em `feature/projects/res` — drift risk → eventual `Duplicate resources`.
+- `feature/auth/res` contém 4 strings `home_*` **duplicadas** em `feature/projects/res` — drift risk → eventual `Duplicate resources`. ✅ **RESOLVIDO** — `feature/auth/src/main/res/values/strings.xml` tem hoje **43 chaves, todas com prefixo `auth_`/`login_`/`register_`/`splash_` e zero `home_*`**; as 4 cópias (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) foram removidas.
 - Sem `RegisterScreenTest` + `SplashScreenTest`.
 
 ### feature/projects
@@ -91,7 +103,7 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 - `NewTaskDialog.onConfirm = { viewModel.addTask(...); showCreateDialog = false }` — dialog fecha antes da validação; erro perde-se.
 - `AddTagDialog` passa color raw; `Tag.requireValidColor` lança, catch em `_errorMessage` (não exibido).
 - `DeadlineField.kt:47` hardcoded `ofPattern("dd/MM/yyyy")`; `R.string.project_detail_new_task_due_date_format` (MM/dd/yyyy em EN) existe mas nunca referenciado. EN vê formato pt.
-- `R.string.home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info` são chaves mortas.
+- `R.string.home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info` são chaves mortas. ⚠️ **Estado real em 08/10/2026 (reverificado por grep em `.kt`/`.xml`):** das 5, **3 foram removidas** de `feature/projects/res` (correção registrada em *Correções aplicadas*, linha ~327) — `project_detail_task_priority_locked_info`, `project_detail_new_task_due_date_picker_title` não existem mais em nenhum `strings.xml`; `project_detail_new_task_due_date_format` foi **resgatada** e hoje é consumida por `DeadlineField.kt`. **2 continuam mortas e ainda existem**, mas em `:app` e não em `:feature:projects`: `app/src/main/res/values/strings.xml:43` + `values-en/strings.xml:43` (`home_fab_disabled_label`) e `values/strings.xml:55` + `values-en/strings.xml:55` (`project_detail_back`) — **zero referências** no código. A limpeza de 24/09 atingiu as cópias de `feature/projects`, deixando as cópias de `:app` intactas.
 - `HomeScreen.kt:843, 921` ícones errados (`Add` como checkmark, `Sort` como leading de search).
 - `ProjectDetailBody` usa `verticalScroll` + `forEach` em vez de `LazyColumn` — jank com muitas tasks.
 - `HomeScreen.kt` + `ProjectDetailScreen.kt` Pré-visualizações dependem de `hiltViewModel()` default, não compilam no preview sem Hilt.
@@ -121,7 +133,7 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 
 ### feature/settings
 
-- `app/src/main/res/values*/strings.xml:58-66` **duplica** as 9 chaves `settings_*` já em `feature/settings/res` — dual source of truth, eventual `Duplicate resources`. Deletar de `:app`.
+- `app/src/main/res/values*/strings.xml:58-66` **duplica** as 9 chaves `settings_*` já em `feature/settings/res` — dual source of truth, eventual `Duplicate resources`. Deletar de `:app`. ⚠️ **AINDA VÁLIDO em 08/10/2026, não corrigido** — as 9 chaves (`settings_title`, `settings_subtitle`, `settings_section_account`, `settings_section_appearance`, `settings_section_session`, `settings_option_profile`, `settings_option_notifications`, `settings_option_theme`, `settings_option_signout`) existem nos **dois** arquivos, em PT **e** EN. Verificado que `app` não consome nenhuma delas: os 9 `R.string.settings_*` do código estão todos em `feature/settings/` (`SettingsScreen.kt:62`, `SettingsStructure.kt` ×7). A remoção em `:app` é segura e puramente cosmética (risco de `Duplicate resources` permanece).
 - `SettingsRoutes.SettingsPattern` constante morta. NavHost usa `BrainOutRoutes.Settings`. Remover ou tornar `private`.
 - Build.gradle.kts tem `lifecycle-viewmodel-compose`, `hilt-android`, `hilt-navigation-compose`, KSP mas **não tem** `SettingsViewModel` — todas dead deps.
 - `SettingsScreen.kt:174-178` `@Preview` sem `BrainOutTheme { Surface { ... } }`.
@@ -141,10 +153,10 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 
 ### CI / Gradle / docs
 
-- `ci.yml:123, 218` `continue-on-error: true` esconde falhas reais (lint, instrumented).
-- `ci.yml:148-217` `backend-integration` sem emulator + sem `setup-java` → `connectedDebugAndroidTest` sempre morre, masked by `continue-on-error`.
-- **Versões de actions inválidas**: `upload-artifact@v7` (ci.yml:71,127,139,222), `configure-pages@v6` (pages.yml:39), `deploy-pages@v5`, `upload-pages-artifact@v5` — major atual é `@v4`. Vão quebrar upload.
-- `codeql.yml:41` `build-mode: none` para Java/Kotlin (compiladas) → análise vazia. `continue-on-error: true` (L26) mascara.
+- `ci.yml:123, 218` `continue-on-error: true` esconde falhas reais (lint, instrumented). ✅ **RESOLVIDO** — nenhuma ocorrência de `continue-on-error` restou em `ci.yml`.
+- `ci.yml:148-217` `backend-integration` sem emulator + sem `setup-java` → `connectedDebugAndroidTest` sempre morre, masked by `continue-on-error`. ✅ **PARCIALMENTE RESOLVIDO** — o job agora provisiona JDK 21 (`ci.yml:188-191`) e trocou o teste instrumentado por `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest` (`:282`); **permanece** a suíte instrumentada fora do CI (sem emulador no runner) — ver DEF-13 em `docs/DEFEITOS.md`.
+- **Versões de actions**: `upload-artifact` estava em `@v7` (inválido) em 24/09; ✅ **corrigido — todos os 5 usos de `actions/upload-artifact` estão em `@v4`** (`ci.yml:71,158,170,286`, `release-apk.yml:105`). Restam `@v6`/`@v5` **válidos** em `pages.yml`: `actions/configure-pages@v6:39`, `actions/upload-pages-artifact@v5:79`, `actions/deploy-pages@v5:94` — são actions do Pages com majors próprios, não inválidas. Os demais usos são `@v4` (`checkout`, `setup-java`, `cache`, `github/codeql-action/*`).
+- `codeql.yml:41` `build-mode: none` para Java/Kotlin (compiladas) → análise vazia. ✅ **PARCIALMENTE RESOLVIDO** — `build-mode` agora é `autobuild` (comentário explicativo no arquivo); `continue-on-error: true` **permanece** no job (linha 26), então a análise continua não-bloqueante.
 - JDK drift: CI 17 vs release 21 vs backend-integration sem JDK; cache key única compartilhada entre JDKs (cache pollution).
 - `core/data/build.gradle.kts:118-121` `abortOnError = false` esconde `MissingTranslation`/NewApi do data layer.
 - `feature/tasks/build.gradle.kts:57` `abortOnError = false` esconde lint da feature.
@@ -320,8 +332,13 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 
 ### Não corrigidos (P2+ / fora de escopo deste lote)
 
-- `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross).
-- `feature/auth/res` contém 4 chaves `home_*` duplicadas.
+> Snapshot **de 24/09/2026**. Itens marcados com ✅ foram
+> corrigidos depois e estão verificados no código (ver §
+> [Reverificação 2026-10-08](#reverificacao-2026-10-08)); os demais
+> foram reconferidos em 08/10/2026 e continuam abertos.
+
+- `feature/projects/res/values*/strings.xml` ainda duplica 9 chaves `settings_*` em `feature/settings/res/` (não tocou — é feature/cross). ⚠️ **AINDA VÁLIDO** — mas a duplicação real é entre `app/src/main/res/values*/strings.xml` e `feature/settings/res`, não em `feature/projects`.
+- `feature/auth/res` contém 4 chaves `home_*` duplicadas. ✅ **RESOLVIDO** — zero `home_*` restantes em `feature/auth/res`.
 - Auth: `resolveAuthMessage` em composable; `else -> message` vaza PT em EN.
 - Auth: `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` que não existe.
 - `feature/tasks` — read-only (zero CRUD), `PriorityBarsCanvas` raw px, UTC Monday hardcoded.
@@ -331,18 +348,105 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - `core/data`: `ProjectCreateDto.id: String? = null` em PUT pode omitir body → 400 stub.
 - `core/data`: TAG UPDATE rejeitado por design (aceitável, alinhado a R6).
 - `core/data`: `last-writer-wins via updated_at` ausente end-to-end (precisa migration v5 + stub compare + dispatch).
-- `core/data`: `ProjectRepositoryImpl` — exceções de domínio tipadas com teste, mas "bypass" via `Task.copy` não travado por teste (E14).
+- `core/data`: `ProjectRepositoryImpl` — exceções de domínio tipadas com teste, mas "bypass" via `Task.copy` não travado por teste (E14). ✅ **RESOLVIDO em 08/10** — `ChangeTaskStatusUseCase.invoke(Task)` agora recarrega o registro persistido e rejeita RN02 com `TaskPriorityChangeForbiddenException`.
 - `core/data`: `HomeScreenTest`/`ProjectDetailScreenTest` Compose ausentes (testTag infra pronta).
 - `backend-stub`: `TaskUpsert.project_id` sem UUID validator (404 em vez de 400); `_normalize_id` aceita hex-32 mas `_require_uuid` não (assimetria path/body).
-- CI: backend-integration sem `setup-java`.
+- CI: backend-integration sem `setup-java`. ✅ **RESOLVIDO** — `ci.yml:188-191` provisiona Temurin 21.
 - docs: README link para RELATORIO-TECNICO.md quebrado; ARQUITETURA stack table stale.
 
 Próxima rodada: workflow scripts + ADR directory + feature/tasks CRUD (ref. §Workflows).
 
 ### Verificação executada
 
+> Snapshot **de 24/09/2026**, quando o ambiente local não tinha Android
+> SDK. Substituído pela execução real de 08/10/2026 registrada em
+> § [Reverificação 2026-10-08](#reverificacao-2026-10-08) — os testes
+> unitários de `:core:data`, `:app` e `:feature:*` rodam e estão verdes
+> (618 testes), e `pytest` roda (16 casos).
+
 - `:core:domain` — `gradle :core:domain:test` BUILD SUCCESSFUL (118 testes passaram após correções).
 - `:core:domain` — `:core:domain:detekt` + `ktlintCheck` BUILD SUCCESSFUL.
 - `:core:data` / `:app` / `:feature:*` — não compila localmente (ambiente sem Android SDK); verificável em CI após merge.
 - `backend-stub/server.py` + `tests/test_contract.py` — `python3 -m py_compile` OK em ambos.
 - `pytest` — não executável (venv sem wheels de pydantic no ambiente); sintaxe OK.
+
+---
+
+<a id="reverificacao-2026-10-08"></a>
+
+## Reverificação 2026-10-08
+
+Esta seção substitui, para fins de rastreabilidade, a § *Verificação
+executada* acima — que descrevia um ambiente **sem Android SDK**, onde
+`:core:data`, `:app` e `:feature:*` não compilavam e o `pytest` não
+rodava. Em **08/10/2026** a auditoria foi refeita com **execução real**:
+suíte unitária completa, build release com R8 e emulador API 37.
+
+### Como verificar (comandos)
+
+```bash
+# 618 testes unitários, 0 falhas
+./gradlew testDevDebugUnitTest :feature:projects:testDebugUnitTest \
+  :feature:tasks:testDebugUnitTest :feature:auth:testDebugUnitTest \
+  :feature:settings:testDebugUnitTest :core:ui:testDebugUnitTest
+
+# cobertura: o gate de 60% passa
+./gradlew :core:domain:koverVerify :core:data:koverVerify
+
+# contagem a partir dos XML de resultado
+find . -path '*build/test-results/**/*.xml' | xargs grep -ho 'tests="[0-9]*"'
+```
+
+**Testes unitários: 561 → 618 (+57), 0 falhas.** Distribuição medida
+nos `build/test-results/`:
+
+| Módulo | Testes |
+|---|---|
+| `:app` | 24 |
+| `:core:data` | 302 |
+| `:core:domain` | 133 |
+| `:core:ui` | 88 |
+| `:feature:auth` | 15 |
+| `:feature:projects` | 35 |
+| `:feature:settings` | 3 |
+| `:feature:tasks` | 18 |
+| **Total** | **618** |
+
+**Cobertura (Kover 0.9.9, gate de 60% verde):** `:core:domain`
+84,9% linha / 77,4% branch / 73,9% classe; `:core:data` 84,1%
+linha / 73% branch / 80,7% classe — lido de
+`core/{domain,data}/build/reports/kover/html/index.html`.
+
+**Build release com R8** concluído. **Emulador API 37** usado para
+executar a suíte instrumentada (ver DEF-08/DEF-13 em
+`docs/DEFEITOS.md`).
+
+### Os 8 bugs corrigidos em 08/10/2026
+
+Todos em `main` (`316ed41`, 129 commits) ou na árvore de trabalho
+desta sessão. Bugs de produto, não estilo.
+
+| # | Bug | Arquivo |
+|---|---|---|
+| 1 | **`ChangeTaskStatusUseCase` não revalidava RN02 no overload `invoke(Task)`.** O `grep` mostrava zero chamadores de produção, mas, sendo a porta pública de atualização integral, um `Task.copy` burlava o bloqueio de prioridade em tarefa concluída. O overload agora recarrega o registro persistido e rejeita com `TaskPriorityChangeForbiddenException`. | `core/domain/.../usecase/ChangeTaskStatusUseCase.kt:105-107` |
+| 2 | **`BusinessRuleException` e `DomainException` eram raízes irmãs.** Nenhum `catch (DomainException)` capturava uma violação de RN — no `CompleteTaskWorker`, isso significava `ProjectTaskLimitReachedException` e `TaskPriorityChangeForbiddenException` escapando da captura idempotente e chegando a uma falha de worker. `BusinessRuleException` passou a estender `DomainException` (que já é `IllegalArgumentException`, preservando os contratos testados). | `core/domain/.../error/BusinessRuleException.kt:27-29` |
+| 3 | **Ordenação da Home quebrada — `SortOrder.toStorageKey()` emitia grafia errada.** Emitia `name.lowercase()` (`nameasc`), mas o `ORDER BY` dinâmico do `ProjectDao` compara `'name_asc'`, `'name_desc'`, `'created_asc'`, `'created_desc'`: nenhuma casa, todos os `CASE` devolvem `NULL` e o SQLite devolve as linhas na ordem natural do scan — a ordenação escolhida pelo usuário era silenciosamente ignorada. `toStorageKey()` passou a emitir as chaves canônicas. | `core/domain/.../repository/ListingPreferencesRepository.kt:59-65` (contraparte SQL: `core/data/.../local/dao/ProjectDao.kt:86-90`) |
+| 4 | **`PasswordHasherImpl.verify` ignorava `parsed.iterations`.** O custo do KDF vinha da constante, não do hash persistido: subir `PBKDF2_ITERATIONS` (ex.: 120 000 → 600 000, conforme OWASP) tornaria todo hash antigo verificável apenas contra o custo novo, quebrando silenciosamente todas as contas existentes. Agora deriva do hash e valida a faixa na leitura. | `core/data/.../security/PasswordHasherImpl.kt:81`, `:102`, `:153` (`MIN=1` / `MAX=2_000_000` em `:179,185`) |
+| 5 | **Suíte instrumentada de `:core:data` não compilava** — faltavam `truth` e `kotlinx-coroutines-test` em `androidTestImplementation`; ~40 erros `Unresolved reference`, e nenhuma migration do Room era testada em lugar nenhum. | `core/data/build.gradle.kts:181-182` |
+| 6 | **`MigrationTest` só cobria 1→2** (e nem compilava). Agora cobre 2→3 e 3→4, em SQLite real — `completed_at` e a fila `pending_ops` passam a ser validadas por `runMigrationsAndValidate`. | `core/data/src/androidTest/.../local/MigrationTest.kt` (`MIGRATION_2_3` em `:105-112`, `MIGRATION_3_4` em `:146-173`) |
+| 7 | **Gate de estilo do ktlint não inspecionava nada.** O plugin era aplicado só na raiz, embora o `build.gradle.kts:16` afirmasse o contrário: `ktlintCheck` cobria 2 arquivos de build e **zero dos 221 `.kt` versionados** (confirmado em disco — só havia `build/reports/ktlint/` na raiz). Aplicado agora nos 9 projetos; as ~180 violações cosméticas que apareceram ficam com `ignoreFailures = true` até uma reformatação dedicada (**DEF-09**/**DEF-10**). | `build.gradle.kts:112-129` |
+| 8 | **`UserDaoInstrumentedTest` auto-pulava sem Android runtime** (`assumeTrue`), masking a ausência de cobertura em vez de falhar alto. A instrumentação agora falha explicitamente quando não há runtime. | `core/data/src/androidTest/.../local/dao/UserDaoInstrumentedTest.kt` |
+
+### Testes que acompanham as correções
+
+`ProjectDaoSearchSortOrderTest` (9 casos, novo), `DomainExceptionHierarchyTest` (5, novo), `SortOrderStorageKeyTest` (7, novo), `NeoThemeActivationTest` (14, novo), `PasswordHasherImplTest` (12, ampliado), `ChangeTaskStatusUseCaseTest` (ampliado).
+
+### Pendências que permanecem (não corrigidas nesta sessão)
+
+Registradas em `docs/DEFEITOS.md` com severidade, origem e plano:
+
+- **DEF-10** — ~180 violações cosméticas do ktlint; `ignoreFailures = true` até a reformatação dedicada.
+- **DEF-11** — `.gitignore` não cobre `.venv`, e o README manda criar `backend-stub/.venv`. **Fora do escopo**: nenhum arquivo além destes dois documentos foi editado.
+- **DEF-12** — `requirements.txt` não instala em Python 3.14 (`pydantic-core 2.23.4` sem wheel; PyO3 máx. 3.13). Os 16 testes do stub rodam.
+- **DEF-13** — **aberto**: `LoginScreenTest` compila mas os 3 testes falham em runtime no emulador API 37 — `NoSuchMethodException: android.hardware.input.InputManager.getInstance` no `Espresso.onIdle`; Espresso 3.6.1 é incompatível com `compileSdk 37`.
+- **DEF-14** — o gate do Kover exclui `*.remote.*` e `*.di.*` do denominador: **806 das 3 944 linhas** de produção de `:core:data` (20,4%), incluindo `RemoteDataSource` (253 linhas, 26 `catch`) e `HolidayRemoteDataSource`. Influi a métrica; não foi corrigido.
