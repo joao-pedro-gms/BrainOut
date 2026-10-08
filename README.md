@@ -32,7 +32,7 @@ persistência local com **Room** e sincronização com serviço de retaguarda
 
 ## Pilha tecnológica
 
-- Kotlin 2.3 + AGP 9.4 + Jetpack Compose + Material 3
+- Kotlin 2.3 (KGP 2.3.20) + AGP 9.4 (9.4.1) + Jetpack Compose + Material 3
 - Room (persistência local) + DataStore (preferências)
 - Hilt (injeção de dependência) + WorkManager (sincronização)
 - KSP (processamento de anotações Room/Hilt)
@@ -43,11 +43,11 @@ persistência local com **Room** e sincronização com serviço de retaguarda
 
 | Ferramenta        | Versão mínima | Observação |
 |-------------------|---------------|------------|
-| JDK               | 21            | Padrão do projeto: `ci.yml` e `release-apk.yml` provisionam Temurin 21. Piso do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo é verificado em 21 — use 21+. O bytecode alvo continua **Java 17**. Sem JDK separado, o JBR do Android Studio serve: `export JAVA_HOME=/opt/android-studio/jbr` antes do `./gradlew`. `gradle.properties` já tem `org.gradle.java.installations.auto-detect=true` e `auto-download=false`. |
-| Android SDK      | compileSdk 35 | Instale pelo Android Studio (SDK Manager) ou `sdkmanager`. O caminho vai em `local.properties` (`sdk.dir`). |
+| JDK               | 21            | Padrão do projeto: `ci.yml` e `release-apk.yml` provisionam Temurin 21. Piso do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo é verificado em 21 — use 21+. O bytecode alvo continua **Java 17**. Sem JDK separado, o JBR do Android Studio serve para compilar e testar: `export JAVA_HOME=/opt/android-studio/jbr` antes do `./gradlew` — **exceto para o `detekt`**, que rejeita o JBR 25 (ver [Troubleshooting](#troubleshooting)). `gradle.properties` já tem `org.gradle.java.installations.auto-detect=true` e `auto-download=false`. |
+| Android SDK      | compileSdk 37 | Instale pelo Android Studio (SDK Manager) ou `sdkmanager`. O caminho vai em `local.properties` (`sdk.dir`). O `targetSdk` também é 37 e o `minSdk` é 24 (`app/build.gradle.kts` e `core/data/build.gradle.kts`). |
 | Android Studio   | Hedgehog (2023.1.1)+ | Para emulador, editor e SDK Manager. |
-| Emulador ou dispositivo | API 24+ | Emulador de API 35 (imagem `system-images;android-35;google_apis;x86_64`) ou dispositivo físico com depuração USB. |
-| Python 3 + pip   | 3.10+         | Só para o backend stub local (seção Backend stub). |
+| Emulador ou dispositivo | API 24+ | A plataforma instalada é `android-37.0` (Android 17). Imagem de emulador usada nesta máquina: `system-images;android-37.0;google_apis_playstore;x86_64` (AVD `Medium_Phone_API_37.0`). Em dispositivo físico basta API 24+ com depuração USB. |
+| Python 3 + pip   | 3.12+         | Só para o backend stub local (seção Backend stub). O `backend-stub/Dockerfile` usa `python:3.12-slim`. |
 
 Clone e preparação mínima:
 
@@ -91,18 +91,63 @@ Builds verificados neste repositório: `:app:assembleDevDebug`,
 
 ### Testes
 
-```bash
-# Testes unitários (todos os módulos; inclui :core:domain via wire-up no root)
-./gradlew testDebugUnitTest
+Estado medido na-branch: **618 testes unitários** (84 classes de teste),
+0 falhas e 0 erros.
 
-# Relatórios: <modulo>/build/reports/tests/testDebugUnitTest/
+```bash
+# Testes unitários — é a tarefa que o CI roda (ci.yml, job unit-tests).
+# A variante `Dev` é obrigatória: sem ela, a tarefa cruzada ignora
+# silenciosamente os módulos com flavor (:app e :core:data).
+# Inclui :core:domain pelo wire-up `gradle.projectsEvaluated` do root.
+./gradlew testDevDebugUnitTest
+
+# Módulos SEM flavor (:feature:* e :core:ui) não são alcançados por
+# `testDevDebugUnitTest`. O CI os invoca em passos explícitos
+# (ci.yml, "Run feature unit tests (explicit)" e "Run core:ui unit
+# tests (explicit)"); localmente, rode por módulo:
+./gradlew :feature:projects:testDebugUnitTest :feature:tasks:testDebugUnitTest \
+          :feature:auth:testDebugUnitTest :feature:settings:testDebugUnitTest
+./gradlew :core:ui:testDebugUnitTest
+
+# Módulo puro JVM (mais rápido de tudo)
+./gradlew :core:domain:test
+
+# Relatórios: <modulo>/build/reports/tests/testDevDebugUnitTest/
+
 # Android Lint
 ./gradlew :app:lintDevDebug
-
-# Testes instrumentados — requerem emulador/dispositivo conectado
-./gradlew connectedDevDebugAndroidTest
-# (o CI usa ./gradlew connectedDebugAndroidTest no job backend-integration)
 ```
+
+Distribuição atual dos 618 testes: `:core:data` 302, `:core:domain` 133,
+`:core:ui` 88, `:feature:projects` 35, `:app` 24, `:feature:tasks` 18,
+`:feature:auth` 15, `:feature:settings` 3.
+
+#### Testes instrumentados (exigem emulador)
+
+A suíte instrumentada vive em `src/androidTest` de `:core:data`
+(`MigrationTest`, `UserDaoInstrumentedTest`) e `:feature:auth`
+(`LoginScreenTest`). Ela **compila** — `core/data/build.gradle.kts`
+declara `androidTestImplementation(libs.truth)` e
+`androidTestImplementation(libs.kotlinx.coroutines.test)`, sem os quais
+o `compileDevDebugAndroidTestKotlin` falhava com ~40 erros
+`Unresolved reference`.
+
+```bash
+# Requer emulador ou dispositivo conectado (adb devices)
+./gradlew connectedDevDebugAndroidTest
+```
+
+Nesta máquina o AVD é `Medium_Phone_API_37.0`
+(`system-images;android-37.0;google_apis_playstore;x86_64`), compatível
+com o `compileSdk 37` do projeto.
+
+> **O CI NÃO roda teste instrumentado.** Não há runner com emulador no
+> plano gratuito do GitHub Actions, então o job `backend-integration`
+> substitui deliberadamente a instrumentação pela suíte JVM
+> Robolectric + MockWebServer (`ci.yml`, comentário do passo P0-5/R6).
+> Consequência honesta: as migrações Room (`MigrationTest`) só são
+> verificadas por quem roda emulador, manualmente. Ver
+> [docs/CI-CD.md](./docs/CI-CD.md).
 
 ### Análise estática e cobertura
 
@@ -110,7 +155,9 @@ Builds verificados neste repositório: `:app:assembleDevDebug`,
 # Formato + regras (mesma dupla do job static-analysis do CI)
 ./gradlew ktlintCheck detekt
 
-# Cobertura mínima de 60% de linhas em :core:domain e :core:data (E4.7)
+# Cobertura mínima de 60% de linhas em :core:domain e :core:data (E4.7).
+# Medido na-branch: :core:domain 84,9% (320/377 linhas), :core:data
+# 84,1% (596/709) — o gate de 60% passa com folga.
 ./gradlew :core:domain:koverVerify :core:data:koverVerify
 
 # Relatório HTML de cobertura
@@ -119,6 +166,27 @@ Builds verificados neste repositório: `:app:assembleDevDebug`,
 ./gradlew koverMergedHtmlReport
 # saída: <modulo>/build/reports/kover/html/index.html
 ```
+
+**Escopo do gate de ktlint.** O plugin é aplicado em todos os **9
+subprojetos** via `subprojects { }` no `build.gradle.kts` raiz, com
+`android = true`. Antes disso o plugin só era aplicado na raiz e
+`./gradlew ktlintCheck` inspecionava os 2 build scripts da raiz e
+**nenhum** dos 221 arquivos `.kt` versionados — o gate não existia de
+fato.
+
+Ele roda hoje com **`ignoreFailures = true`**: a engine 1.x do ktlint
+14.2.0 sinaliza **191 violações cosméticas de estilo em 17 arquivos**
+(indentação, quebra de chamada, vírgula final) já presentes no código.
+A flag fica em `true` até a reformatação dedicada, para que o gate
+passe a fiscalizar de verdade sem bloquear todo PR. **A reformatação
+está pendente** — quando for feita, `ignoreFailures` volta a `false`
+e o gate fecha de verdade.
+
+**Limitação local do detekt.** O `detekt` 1.23.7 deriva o `--jvm-target`
+do JVM do Gradle e **rejeita o JBR 25** do Android Studio. Ele roda no
+CI em Temurin 21. Localmente, uma falha de `detekt` não é um gate
+verdadeiro: rode `ktlintCheck`, `testDevDebugUnitTest` e `koverVerify`,
+que funcionam com o JBR.
 
 ### Release (.aab assinado) — resumo
 
@@ -164,7 +232,7 @@ docker run -d --name brainout-stub -p 8000:8000 brainout-stub
 
 ```bash
 cd backend-stub
-pytest -q                     # 14 casos de contrato
+pytest -q                     # 16 casos de contrato (tests/test_contract.py)
 # smoke ponta-a-ponta (requer servidor de pé):
 python -m uvicorn server:app --host 127.0.0.1 --port 8765 &
 python tests/smoke_e2e.py
@@ -189,14 +257,17 @@ stub com `--host 0.0.0.0`.
 
 ```bash
 # criar AVD uma vez (SDK cmdline-tools instalado):
-sdkmanager "system-images;android-35;google_apis;x86_64"
-avdmanager create avd -n pixel8 -k "system-images;android-35;google_apis;x86_64" -d pixel_8
+sdkmanager "system-images;android-37.0;google_apis_playstore;x86_64"
+avdmanager create avd -n pixel8 -k "system-images;android-37.0;google_apis_playstore;x86_64" -d pixel_8
 
 # subir emulador e instalar
 $ANDROID_HOME/emulator/emulator -avd pixel8 &
 adb install app/build/outputs/apk/dev/debug/app-dev-debug.apk
 # ou, pelo Android Studio: Run ▶ com variante devDebug selecionada
 ```
+
+Nesta máquina o AVD já existe com o nome `Medium_Phone_API_37.0`:
+`$ANDROID_HOME/emulator/emulator -avd Medium_Phone_API_37.0`.
 
 No Android Studio, a variante se escolhe em **Build → Select Build
 Variant** (`devDebug` para desenvolvimento com o stub).
@@ -239,10 +310,20 @@ Detalhes completos de workflows, secrets e branch protection em
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
-| `connectedDebugAndroidTest` falha no CI | Backend stub não respondeu a tempo | Verificar `docker logs`; conferir o health check do job `backend-integration` |
+| `connectedDevDebugAndroidTest` falha local | Nenhum dispositivo/emulador visível | `adb devices` vazio = suba o AVD antes; o build do APK instrumentado também é opcional (`assembleDevDebugAndroidTest`). **No CI isso não se aplica** — ver a nota abaixo |
+| `compileDevDebugAndroidTestKotlin` falha com `Unresolved reference` | Dependências de teste faltando no bloco `androidTest` | Em `:core:data`, `truth` e `kotlinx-coroutines-test` estão declaradas como `androidTestImplementation`; não mova essas libs só para `testImplementation` |
 | `release-apk.yml` falha em `Decode keystore` | Secrets `BRAINOUT_*` ausentes ou base64 corrompido | Cadastrar os 4 secrets; recodificar com `base64 -w 0 brainout-release.jks` |
-| `detekt` falha após um PR | Nova regra ou código fora do padrão | `./gradlew detekt --auto-correct` (com cuidado) ou ajustar |
+| `detekt` falha após um PR | Nova regra ou código fora do padrão | `./gradlew detekt --auto-correct` (com cuidado) ou ajustar. **Se a falha for local com o JBR 25**, ela não é um gate: o detekt não roda local no JBR — quem julga é o CI em Temurin 21 |
+| `ktlintCheck` acusa centenas de violações de estilo | Engine 1.x do ktlint 14, mais estrita que a 12.x |Esperado enquanto `ignoreFailures = true` estiver no `build.gradle.kts` raiz; a reformatação dedicada está pendente e é o que fecha o gate |
 | Workflow não dispara no PR | Branch protection / permissões de Actions | Verificar Settings → Actions → General e as regras de proteção de `main` |
+
+> **O job `backend-integration` NÃO executa `connectedDebugAndroidTest`.**
+> Não há runner com emulador no plano gratuito do GitHub Actions; o
+> passo foi deliberadamente substituído pela suíte JVM Robolectric +
+> MockWebServer (comentário P0-5/R6 em `ci.yml:273-277`). Se você
+> procurar esse comando no `ci.yml`, ele não está lá — e essa foi uma
+> divergência real entre o que a documentação prometia e o que o CI
+> fazia.
 
 ### Backend stub e conectividade
 
@@ -260,7 +341,7 @@ app/                  # :app — entry point (MainActivity, NavHost, Hilt)
 core/
   domain/             # regras de negócio puras (Kotlin JVM) — cobertura Kover
   data/               # Room + DataStore + cliente HTTP — cobertura Kover
-  ui/                 # tema e componentes Compose compartilhados
+  ui/                 # identidade Neo: tema, tokens e componentes Compose
 feature/
   auth/               # autenticação (R2)
   projects/           # CRUD de projetos (R3–R5)
@@ -271,6 +352,34 @@ config/detekt/        # detekt.yml centralizado
 docs/                 # roadmap, arquitetura, CI/CD, testes, atas
 Documentos/           # documento norteador do Projeto Integrador
 ```
+
+### Identidade Neo (`:core:ui`)
+
+`:core:ui` é o módulo que define a identidade visual do app. `MainActivity`
+continua chamando `BrainOutTheme { … }`, mas essa função entrega hoje a
+**identidade Neo** (neobrutalista) via `BrainOutNeoTheme.kt`:
+
+| Arquivo | Papel |
+|---------|-------|
+| `theme/BrainOutNeoTheme.kt` | Wrapper Compose Neo — `NeoThemeSpec`, os temas claro/escuro singletons e a injeção de `LocalNeoColors` |
+| `theme/NeoColor.kt` | `NeoColors` (paleta Neo) e o mapeamento para os slots do Material 3 (`toMaterialColorScheme`) |
+| `theme/NeoTokens.kt` | `NeoSpacing`, `NeoRadii`, `NeoBorders`, `NeoShadows`, `NeoSizes`, `NeoLayout`, `NeoScrim` |
+| `theme/NeoTypography.kt` | `NeoFonts`, `NeoTypography` e os quinze estilos tipográficos, sobre as cinco fontes de `res/font` |
+| `theme/Theme.kt` | Ponto de entrada `BrainOutTheme` (delega ao Neo) e a variante dinâmica preservada |
+| `theme/Shape.kt` | `NeoShapes` (4/4/8/8/16 dp), mais os shapes legados |
+| `theme/Color.kt`, `Type.kt` | Paleta e tipografia legadas, mantidas como registro |
+
+`dynamicColor` continua desligado por padrão: ligado em API 31+, ele
+substituiria a paleta Neo pela do sistema, quebrando a identidade
+determinística que os tokens garantem. A paleta legada
+(`BrainOutLightColors`/`BrainOutDarkColors`) ainda existe e é assinada
+pelos testes `ThemeSelectionTest` e `ContrastRatioTest`; sua remoção,
+junto com a revisão desses testes, é pendência conhecida.
+
+Os 88 testes unitários de `:core:ui` (contratos de token, contraste AA,
+tipografia e assets) ficam fora de `testDevDebugUnitTest` — o módulo não
+tem flavor. O CI os invoca no passo explícito **Run core:ui unit tests
+(explicit)**.
 
 ## Licença
 

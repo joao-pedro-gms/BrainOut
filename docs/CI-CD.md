@@ -30,6 +30,11 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
 `java-version: '21'`.
 
 1. **`static-analysis`** — ktlint + detekt. Falha rápido.
+   O `ktlintCheck` roda com o plugin aplicado aos **9 subprojetos**
+   (`subprojects { }` no `build.gradle.kts` raiz, `android = true`) e
+   com `ignoreFailures = true` — ver [Escopo do gate de
+   ktlint](#escopo-do-gate-de-ktlint). O `detekt` é o gate que reprova:
+   roda nos 8 módulos com `autoCorrect = false`.
 2. **`unit-tests`** — roda testes unitários (`testDevDebugUnitTest`) e,
    em passo explícito aditivo (FIX-02, issue #90), as quatro suítes de
    feature
@@ -42,17 +47,88 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
    Android Lint
    (`lintDevDebug` — a tarefa por variante é obrigatória para que `:app`
    e `:core:data` participem). Publica relatório como artifact.
+
+   Os dois passos explícitos existem porque `testDevDebugUnitTest` só
+   alcança `:app`, `:core:data` e (pelo wire-up do `projectsEvaluated`)
+   `:core:domain`. Sem eles, uma suíte de `:feature:*` ou `:core:ui`
+   que não compilasse passaria verde em CI. Estado atual: **618 testes
+   unitários, 84 classes, 0 falhas, 0 erros** (`:core:data` 302,
+   `:core:domain` 133, `:core:ui` 88, `:feature:projects` 35, `:app` 24,
+   `:feature:tasks` 18, `:feature:auth` 15, `:feature:settings` 3).
 3. **`backend-integration`** — constrói a imagem de `backend-stub/`,
    sobe o container e aguarda o `/health` (loop de 30 tentativas × 2 s),
    roda o smoke de endpoints (`curl`: PUT/DELETE/tags), a suíte pytest do
-   stub e o smoke E2E (`backend-stub/tests/smoke_e2e.py`) contra o
+   stub (**16 casos** em `tests/test_contract.py`) e o smoke E2E
+   (`backend-stub/tests/smoke_e2e.py`) contra o
    container. Por fim executa
    `./gradlew :core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`
    com `BASE_URL=http://localhost:8000`. A instrumentação Android
-   (`connectedDebugAndroidTest`) **não roda no CI** — exige emulador e foi
+   (`connectedDevDebugAndroidTest`) **não roda no CI** — exige emulador e foi
    substituída pela suíte Robolectric + MockWebServer (decisão P0-5/R6).
 
 Cache de Gradle configurado em todos os jobs (`actions/cache@v4`).
+
+### Testes instrumentados: compilam, mas não são gate
+
+A suíte instrumentada (`:core:data` → `MigrationTest`,
+`UserDaoInstrumentedTest`; `:feature:auth` → `LoginScreenTest`) **compila**
+e pode ser executada localmente:
+
+```bash
+# requer emulador/dispositivo (adb devices)
+./gradlew connectedDevDebugAndroidTest
+```
+
+Ela voltou a compilar porque `core/data/build.gradle.kts` passou a
+declarar `androidTestImplementation(libs.truth)` e
+`androidTestImplementation(libs.kotlinx.coroutines.test)` — `MigrationTest`
+e `UserDaoInstrumentedTest` importam Truth e coroutines-test, e sem essas
+duas linhas o `compileDevDebugAndroidTestKotlin` falhava com ~40 erros
+`Unresolved reference`. A suíte cobre as três migrações do
+`BrainOutDatabase` (v4): **1→2, 2→3 e 3→4**, além do encadeado 1→2→3→4,
+validando cada passo contra o schema exportado em `core/data/schemas/` e
+conferindo que os dados semeados sobrevivem.
+
+**O que isso não é: um gate do CI.** Não existe runner com emulador no
+plano gratuito do GitHub Actions, então nenhuma tarefa
+`connected*AndroidTest` é invocada em nenhum dos três jobs. O job
+`backend-integration` cobre o contrato HTTP pela suíte JVM. A
+consequência deve ser dita sem enfeite: **as migrações Room só são
+verificadas por quem roda emulador, manualmente.** Se a cobertura de
+migração virar requisito de entrega, é preciso um runner self-hosted com
+emulador ou uma política explícita de verificação manual.
+
+### Escopo do gate de ktlint
+
+O plugin ktlint **não** se propaga automaticamente para subprojetos.
+Aplicado apenas na raiz, `./gradlew ktlintCheck` inspecionava somente os
+2 arquivos de build da raiz e **nenhum** dos 221 arquivos `.kt`
+versionados — confirmado em disco: só existia
+`build/reports/ktlint/` na raiz. Hoje o `build.gradle.kts` raiz aplica o
+plugin a cada subprojeto:
+
+```kotlin
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        android.set(true)
+        ignoreFailures.set(true)
+    }
+}
+```
+
+`android = true` faz o analisador entender código Android/Compose.
+`ignoreFailures = true` é deliberado e **temporário**: a engine 1.x do
+ktlint 14.2.0 sinaliza **191 violações cosméticas de estilo em 17
+arquivos** já presentes no código (`standard:indent`,
+`multiline-expression-wrapping`, `function-signature`,
+`trailing-comma-on-call-site`, entre outras).
+Passar `ktlintCheck` a fiscalizar de verdade sem bloquear todo PR exige
+uma reformatação dedicada, que está **pendente**. Ela é o que fecha o
+gate: quando for feita, `ignoreFailures` volta a `false`.
+
+O passo **Run detekt** é o que reprova de fato no CI — não o ktlint,
+enquanto a flag estiver em `true`.
 
 ### `release-apk.yml` — Release assinado (E3.7)
 
@@ -83,6 +159,13 @@ A cobertura de código é medida pelo **Kover** (plugin
 `org.jetbrains.kotlinx.kover`, versão em `gradle/libs.versions.toml`)
 nos módulos **`:core:domain`** e **`:core:data`**, com um bound mínimo
 de **60% de cobertura de linhas** em cada camada.
+
+Medição atual, bem acima do bound:
+
+| Módulo       | Linhas         | Branches | Classes |
+|--------------|----------------|----------|---------|
+| `:core:domain` | 84,9% (320/377) | 77,4% | 73,9% |
+| `:core:data`   | 84,1% (596/709) | 73%   | 80,7% |
 
 ### Rodar localmente
 
@@ -216,8 +299,8 @@ ktlintCheck detekt :app:lintDevDebug` antes de subir PR.
 | Hilt                       | 2.60.1          | Mínimo 2.59 declarado pelo time do Hilt para AGP 9.         |
 | Room                       | 2.8.4           | Suporta KSP 2.3.x.                                          |
 | desugar_jdk_libs           | 2.1.5           | Habilita `coreLibraryDesugaring` no `:app` para `java.time.Instant` em minSdk 24. |
-| ktlint (plugin)            | 14.2.0          | Bump de 12.1.2; engine ktlint 1.x é estritamente mais rígida (chained-call, indentation). |
-| detekt                     | 1.23.7          | Sem mudança.                                                |
+| ktlint (plugin)            | 14.2.0          | Bump de 12.1.2; engine ktlint 1.x é estritamente mais rígida (chained-call, indentation). Aplicado aos 9 subprojetos com `ignoreFailures = true` — ver [Escopo do gate de ktlint](#escopo-do-gate-de-ktlint). |
+| detekt                     | 1.23.7          | Sem mudança. **Não roda localmente com o JBR 25** (rejeita `--jvm-target` derivado do JVM do Gradle); roda no CI em Temurin 21. |
 | Kover                      | 0.9.9           | Sem mudança.                                                |
 | Compose BOM                | 2024.10.01      | Sem mudança.                                                |
 | Robolectric                | 4.15.1          | Bump de 4.13 (4.14+ traz suporte a Android V/SDK 35; 4.15.1 mantém SDK 35 sem ainda suportar Baklava/SDK 36). |
@@ -282,12 +365,21 @@ Em **Settings → Branches → Branch protection rules → main**, ative:
 # (`export JAVA_HOME=/opt/android-studio/jbr`). O bytecode alvo continua
 # Java 17.
 
-# Validar formato antes de subir PR
-./gradlew ktlintCheck detekt
+# Validar formato antes de subir PR.
+# NOTA: o `detekt` NÃO roda com o JBR 25 do Android Studio (rejeita o
+# --jvm-target derivado do JVM do Gradle). Com JBR, valide só:
+./gradlew ktlintCheck
 
 # Rodar unit tests (mesma tarefa do CI: a variante `Dev` é obrigatória
-# para que `:app` e `:core:data` entrem — `testDebugUnitTest` os ignora)
-./gradlew testDevDebugUnitTest
+# para que `:app` e `:core:data` entrem — `testDebugUnitTest` os ignora).
+# NÃO inclui :feature/* nem :core:ui (sem flavor) — acrescente:
+./gradlew testDevDebugUnitTest \
+          :feature:projects:testDebugUnitTest :feature:tasks:testDebugUnitTest \
+          :feature:auth:testDebugUnitTest :feature:settings:testDebugUnitTest \
+          :core:ui:testDebugUnitTest
+
+# Testes INSTRUMENTADOS (exigem emulador; o CI NÃO os roda)
+./gradlew connectedDevDebugAndroidTest
 
 # Rodar lint Android (idem: `lintDebug` pula os módulos com flavor)
 ./gradlew lintDevDebug
@@ -309,7 +401,11 @@ echo "brainout.baseUrl.dev=http://10.0.2.2:8000/" >> ../local.properties
 
 | Sintoma                                       | Causa provável                                  | Ação                                                       |
 |-----------------------------------------------|-------------------------------------------------|------------------------------------------------------------|
-| `detekt` falha após um PR                     | Nova regra ou código não compatível             | Corrigir o código manualmente: a correção automática está desativada no projeto (`autoCorrect = false` nos 8 módulos e nenhuma regra com `autoCorrect: true` no `detekt.yml`) |
+| `detekt` falha **localmente** com o JBR do Android Studio | detekt 1.23.7 deriva `--jvm-target` do JVM do Gradle e rejeita `25` | Não é um gate local. Rode `ktlintCheck`, `testDevDebugUnitTest` e `koverVerify`, que funcionam com o JBR; quem julga o detekt é o CI em Temurin 21. Não|workaround por módulo |
+| `ktlintCheck` acusa centenas de violações de estilo | Engine 1.x do ktlint 14, mais estrita que a 12.x | Esperado enquanto `ignoreFailures = true` estiver no `build.gradle.kts` raiz. A reformatação dedicada está **pendente** — é ela que fecha o gate |
+| `compileDevDebugAndroidTestKotlin` falha com `Unresolved reference` | `MigrationTest`/`UserDaoInstrumentedTest` importam libs que estavam só em `testImplementation` | `core/data/build.gradle.kts` declara `androidTestImplementation(libs.truth)` e `androidTestImplementation(libs.kotlinx.coroutines.test)`; não remova essas linhas |
+| `connectedDevDebugAndroidTest` falha local     | Nenhum dispositivo/emulador visível              | `adb devices` vazio = suba o AVD (`Medium_Phone_API_37.0` nesta máquina). **O CI não executa esta tarefa** — não há runner com emulador no plano gratuito |
+| `detekt` falha no CI após um PR                | Nova regra ou código não compatível             | Corrigir o código manualmente: a correção automática está desativada no projeto (`autoCorrect = false` nos 8 módulos e nenhuma regra com `autoCorrect: true` no `detekt.yml`) |
 | Job `backend-integration` falha                 | Backend stub não respondeu a tempo no loop de `/health` (30 tentativas × 2 s) | Aumentar as tentativas do loop no step **Run backend stub container** do `ci.yml`; verificar `docker logs brainout-api` |
 | `release-apk.yml` falha em `Validate signing secrets (P0-6)` | Secrets `BRAINOUT_*` ausentes | Cadastrar os 4 secrets (ver seção E3.7) |
 | `release-apk.yml` falha em `Decode keystore` | `BRAINOUT_KEYSTORE_BASE64` corrompido/incompleto (base64 inválido) | Recodificar: `base64 -w 0 brainout-release.jks` |

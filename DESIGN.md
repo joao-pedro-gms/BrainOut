@@ -1,6 +1,23 @@
 # BrainOut — sistema de design neobrutalista
 
-**Status: proposta para o futuro redesign, não identidade já implementada.** Pesquisa e especificação: **01/10/2026**. Base inspecionada: `4dcfa0a`. Autor do projeto: João Pedro G M Silva.
+**Status: identidade Neo ATIVADA no tema do app; o redesenho das telas ainda não.** Pesquisa e especificação: **01/10/2026**. Verificado contra o código em **08/10/2026** (`316ed41`). Autor do projeto: João Pedro G M Silva.
+
+**O que mudou desde a redação original desta seção:** o documento nasceu como proposta («não identidade já implementada»). Isso deixou de ser verdade no que toca ao **tema**: `BrainOutTheme` passou a entregar a paleta A, os tokens Neo, a tipografia com as fontes empacotadas e os raios Neo. **Nenhuma tela foi redesenhada** — a ativação trocou o que `MaterialTheme` entrega, não a composição das telas.
+
+| Parte da identidade | Estado | Onde está |
+|---|---|---|
+| Paleta A (cores, papéis semânticos, `ColorScheme` do M3) | **Implementada e ativa** | `core/ui/.../theme/NeoColor.kt`, `BrainOutNeoTheme.kt` |
+| Tokens de geometria, sombra, borda, tamanho, scrim | **Implementados** | `core/ui/.../theme/NeoTokens.kt` |
+| Tipografia: 15 papéis Material preenchidos | **Implementada e ativa** | `theme/NeoTypography.kt`, `theme/Type.kt` (`NeoMaterialTypography`) |
+| 5 fontes empacotadas (276 184 bytes, OFL 1.1) | **Empacotadas e carregadas de verdade** via `R.font.*` | `core/ui/src/main/res/font/`, `theme/NeoFonts` |
+| Raios 4/4/8/8/16 dp nos 5 slots de `Shapes` | **Implementados e ativos** | `theme/Shape.kt` (`NeoShapes`) |
+| Contraste AA da paleta Neo | **Verificado por teste** (5 casos, `NeoContrastRatioTest`) | `core/ui/src/test/.../theme/NeoContrastRatioTest.kt` |
+| Ausência do roxo `#6750A4` do Material | **Verificada por teste** | `NeoThemeActivationTest` (14 casos) |
+| 20 drawables `neo_*` (16 ícones + 4 artes) | **Empacotados e verificados, mas NENHUMA tela os referencia** | `res/drawable/neo_*.xml`; testes `NeoDocumentedAssetsTest`/`NeoVectorAssetsTest` |
+| Componentes de tela da paleta A (cartões com borda 2dp e sombra rígida, chips, empty states) | **Não implementados** — item em aberto | — |
+| Escolha manual de tema, Perfil, lembretes na tela de Configurações | **Não implementados** — rotas são placeholders | — |
+
+**Nenhum asset foi adotado visualmente até aqui.** O `grep` por `R.drawable.neo_` em `app/`, `core/` e `feature/` não retorna nada: os 20 vetores viajam no APK e são testados, mas não são usados. A paleta legada (`BrainOutLightColors`/`BrainOutDarkColors`, `BrainOutShapes`, `BrainOutTypography`) permanece em `Theme.kt`/`Shape.kt`/`Type.kt` porque `ThemeSelectionTest` e `ContrastRatioTest` ainda a assinam — removê-la é tarefa declarada do NB-32.
 
 **Razão de existir:** transformar referências visuais em decisões implementáveis para reformular toda a UI Android, preservando legibilidade, regras de negócio e comportamento offline-first.
 
@@ -14,7 +31,7 @@
 | [Tokens estruturados](docs/design/tokens.json) | Valores canônicos da proposta; formato próprio do projeto, sem promessa de importação DTCG/Figma |
 | [Verificador](docs/design/verify_tokens.py) | Validação de referências, paridade light/dark e contraste dos pares especificados |
 
-**Observado** significa confirmado no código ou fonte consultada. **Proposto** significa decisão de design recomendada. **Hipótese** exige validação com usuários ou protótipo. Os valores deste documento são propostos. A pesquisa não adiciona dependências nem altera Kotlin.
+**Observado** significa confirmado no código ou fonte consultada. **Proposto** significa decisão de design recomendada. **Hipótese** exige validação com usuários ou protótipo. Salvo onde este documento diz explicitamente «Implementado», os valores aqui ainda são **propostos** — a ativação do tema cobre cor, tipografia e formas, não a composição das telas. A pesquisa não adiciona dependências nem altera Kotlin.
 
 ## 1. Produto e ponto de partida
 
@@ -28,7 +45,7 @@ Os caminhos Kotlin abaixo são relativos a `src/main/kotlin/pucgo/joaopedrogmsil
 
 | Evidência local | Situação atual e impacto |
 |---|---|
-| `core/ui/.../core/ui/theme/{Color,Theme,Shape,Type}.kt` | Paleta Material roxa `#6750A4`, tema claro/escuro estático, fonte do sistema; raios 4/8/12/16/28dp. Boa centralização inicial |
+| `core/ui/.../core/ui/theme/{Color,Theme,Shape,Type}.kt` | **Estado anterior à ativação** (base deste documento): paleta Material roxa `#6750A4`, tema claro/escuro estático, fonte do sistema; raios 4/8/12/16/28dp. **Hoje o app não renderiza mais esse conjunto** — `BrainOutTheme` entrega a identidade Neo (ver seção de status) e a paleta legada sobrevive só como registro assinado pelos testes |
 | `app/.../navigation/BrainOutNavHost.kt` | Host com seis rotas: `splash`, `login`, `register`, `home`, `settings` e `project/{projectId}`; Tarefas e Painel entram pelas rotas de `TasksRoutes` |
 | `feature/projects/.../ui/home/{HomeBottomBar,HomeTab,HomeScreen}.kt` | Barra inferior real, declarada **dentro da feature de projetos**: 4 abas (`Projects`, `Tasks`, `Dashboard`, `Settings`) em `HomeTab`, com o estado preservado por `rememberSaveable`. As abas `Tasks`/`Dashboard`/`Settings` disparam callbacks de navegação; só `Projects` tem conteúdo interno. **Não existe** `app/navigation/BottomBar.kt` |
 | `feature/projects/.../feature/projects/ui/home/HomeScreen.kt` | Busca, tags, ordenação, ativos/concluídos, criação de projeto e limitação por papel |
@@ -43,6 +60,8 @@ Os caminhos Kotlin abaixo são relativos a `src/main/kotlin/pucgo/joaopedrogmsil
 Existem raios, espaçamentos e transparências locais nas features; trocar somente `ColorScheme` não cria uma linguagem consistente. Alguns comentários/AGENTS e [acessibilidade atual](docs/ACESSIBILIDADE.md) estão defasados: o código confirma **quatro abas**, mas **não** confirma `SettingsViewModel` (a classe não existe). Esta proposta usa o código como evidência funcional.
 
 **Estado verificado em 02/10/2026** contra `5b483ba`: cada referência de arquivo/linha deste documento e das demais peças foi conferida linha a linha com o código. Resultado, divergências encontradas e correções aplicadas estão na **seção 14** do [plano de implementação](docs/plans/2026-10-01-redesign-neobrutalista.md).
+
+**Revisto em 08/10/2026** contra `316ed41`, depois da ativação do tema Neo: as seções de status (topo), 1 (inventário), 3 (paleta), 4 (tipografia) e 7 (próximos passos) foram atualizadas para refletir o que passou a ser implementado. As demais seções permanecem propostas.
 
 **Limite da inspeção:** não houve execução do app nem captura de telas. Não foram encontrados goldens/screenshot fixtures na busca por imagens, apenas ícones de launcher. A avaliação visual atual é inferida dos composables; não é uma auditoria visual em dispositivo.
 
@@ -125,6 +144,8 @@ Hex são sRGB opacos, exceto `scrim` definido separadamente. `text.muted` é per
 | `error.container` / `error.text` | `#FFE0E0` / `#741C1C` | `#4A2424` / `#FFB4B4` | Erro localizado, crítica |
 | `disabled.background` / `disabled.text` | `#E5E5DE` / `#54544C` | `#303030` / `#C6C6BE` | Desabilitado com texto legível, sem sombra |
 
+**Implementado:** cada linha desta tabela é um campo de `NeoColors` em `core/ui/.../theme/NeoColor.kt`, com `NeoColors.Light` e `NeoColors.Dark` como as duas instâncias, e `toMaterialColorScheme(dark)` fazendo o mapeamento para os slots do Material 3. `NeoThemeActivationTest` verifica que nenhum dos slots entrega a semente roxa `#6750A4` do default do Material e que o scheme Neo é visualmente distinto do legado nos dois modos; `NeoContrastRatioTest` confere os pares essenciais nos dois temas. A tabela é a fonte; o código é a implementação.
+
 **Atenção ao Material:** `primary = link`, `onPrimary = white` no claro e `ink` no escuro. `primaryContainer = action.background`, `onPrimaryContainer = action.text`. O botão BrainOut principal usa explicitamente os tokens de ação. Usar amarelo como `primary` no claro faria labels/links Material perderem contraste. O mapeamento dos demais papéis e níveis de superfície está em `materialMapping` no JSON.
 
 Não aceitar defaults roxos residuais: mapear explicitamente `surfaceTint`, inversos, containers de superfície e `outlineVariant`; elevação tonal de cartões e botões BrainOut é 0dp. Popups/sheets mantêm modalização nativa, com superfície opaca e scrim preto a 56%. Contraste de conteúdo é calculado dentro do popup, não contra o scrim.
@@ -148,9 +169,19 @@ Tags têm cor escolhida pelo usuário no modelo atual: exibi-la como swatch com 
 
 ## 4. Tipografia
 
-**Proposta:** Archivo para títulos/controles enfáticos e Public Sans para leitura. Ambas têm Latin/Latin-ext e licença SIL OFL 1.1 verificada no repositório Google Fonts. Archivo sustenta títulos compactos e robustos; Public Sans evita que a interface inteira tenha voz de cartaz. São escolhas de design, não garantias empíricas de maior usabilidade.
+**Implementado:** Archivo para títulos/controles enfáticos e Public Sans para leitura. Ambas têm Latin/Latin-ext e licença SIL OFL 1.1 verificada no repositório Google Fonts. Archivo sustenta títulos compactos e robustos; Public Sans evita que a interface inteira tenha voz de cartaz. São escolhas de design, não garantias empíricas de maior usabilidade.
 
-Empacotar fontes locais em `core/ui/src/main/res/font/`, com OFL e origem registradas. O app deve funcionar offline na primeira abertura. O upstream oficial (`google/fonts`, diretórios `ofl/archivo` e `ofl/publicsans`) publica **apenas** instâncias variáveis (`Archivo[wdth,wght].ttf`, `PublicSans[wght].ttf`); não há arquivo estático por peso para baixar. Portanto: instanciar localmente os pesos usados, registrar ferramenta/versão/origem e validar API 24/25. Não depender de suporte a fontes variáveis presente somente em Android mais novo. Fallback: `FontFamily.Default`; não usar negrito sintético como resultado final.
+**Entregue:** as cinco fontes estão empacotadas em `core/ui/src/main/res/font/` (276 184 bytes no total), com licenças OFL em `core/ui/licenses/` e proveniência, ferramenta, versão e checksums em `docs/design/ASSETS.md`. O app funciona offline na primeira abertura. O upstream oficial (`google/fonts`, diretórios `ofl/archivo` e `ofl/publicsans`) publica **apenas** instâncias variáveis (`Archivo[wdth,wght].ttf`, `PublicSans[wght].ttf`); não há arquivo estático por peso para baixar. Como o `minSdk 24` inclui API 24/25, onde suporte a fonte variável não existe, os pesos usados foram **instanciados localmente** como arquivos estáticos derivados das variantes variáveis. Cada `Font` declara seu peso (`NeoFonts` em `NeoTypography.kt`), então os pesos 400/600/700/800 são glifos reais — nada de negrito sintético. Glifos ausentes caem no fallback do sistema (`FontFamily.Default` é a rede de segurança do Android, não uma família declarada aqui).
+
+| Recurso empacotado | Família | Peso declarado |
+|---|---|---|
+| `archivo_semi_bold.ttf` | Archivo | 600 |
+| `archivo_bold.ttf` | Archivo | 700 |
+| `archivo_extra_bold.ttf` | Archivo | 800 |
+| `public_sans_regular.ttf` | Public Sans | 400 |
+| `public_sans_semi_bold.ttf` | Public Sans | 600 |
+
+Os quinze papéis abaixo estão em `NeoTypography.kt` e são injetados nos quinze slots do Material 3 por `NeoMaterialTypography` (`Type.kt`) — que é o que entra no `MaterialTheme`. Antes da ativação, `Type.kt` usava `FontFamily.Default` e nenhuma fonte era carregada.
 
 | Papel Material | Família | Tamanho / linha (sp) | Peso | Tracking (sp) |
 |---|---|---|---|---|
@@ -234,9 +265,9 @@ Pares fora das receitas precisam de cálculo próprio. Exemplo rejeitado na expl
 
 ## 7. Decisões e próximos passos
 
-**Recomendação de stack:** Compose Foundation/Animation + wrappers Material 3 em `:core:ui`, vetores locais e fontes locais. Avaliar Lottie Compose para uma ilustração original; Rive/Compose Unstyled somente se um protótipo demonstrar necessidade. Vico/Calendar/Coil têm gatilhos funcionais, não entram só para «deixar bonito».
+**Recomendação de stack:** Compose Foundation/Animation + wrappers Material 3 em `:core:ui`, vetores locais e fontes locais. **Já aplicado no tema:** `:core:ui` empacota as fontes e os vetores Neo e o `BrainOutTheme` consome `NeoMaterialTypography`/`NeoShapes`; falta o consumo nas telas. Avaliar Lottie Compose para uma ilustração original; Rive/Compose Unstyled somente se um protótipo demonstrar necessidade. Vico/Calendar/Coil têm gatilhos funcionais, não entram só para «deixar bonito».
 
-**Pendente para a fase de implementação:** validar visualmente paleta A e fontes em três telas piloto; confirmar hipótese de público; definir criação de assets e suporte desejado a panes em tablet. A recomendação é suficientemente especificada para prototipar, mas não representa aprovação estética do usuário nem testes de usabilidade realizados.
+**Pendente para a fase de implementação:** (1) adotar os 20 vetores `neo_*` nas telas que hoje usam ícones do catálogo Material e adicionar os empty states com as 4 artes; (2) migrar os componentes de tela (cards com borda 2dp e sombra rígida, chips neutros, banners) para `LocalNeoColors`; (3) validar visualmente paleta A e fontes em três telas piloto; (4) confirmar hipótese de público; (5) definir criação de assets e suporte desejado a panes em tablet. A recomendação é suficientemente especificada para prototipar, mas não representa aprovação estética do usuário nem testes de usabilidade realizados — **nem tela alguma foi redesenhada até agora**.
 
 **Primeiro recorte:** galeria de componentes + Projetos, detalhe de projeto e login em light/dark; depois demais fluxos. Seguir [migração e critérios de aceite](docs/design/ESPECIFICACAO.md#5-migração-incremental).
 

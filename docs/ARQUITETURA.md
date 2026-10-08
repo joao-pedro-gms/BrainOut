@@ -31,7 +31,7 @@ BrainOut/
 │   ├── domain/           → entidades, regras de domínio, use cases
 │   ├── data/             → Room, DataStore, repositórios, remote/ (E3.2)
 │   │   └── remote/       → DTOs remotos, BrainOutApi (Retrofit), RemoteDataSource
-│   └── ui/               → tema (Color/Shape/Theme/Type); tokens e componentes são proposta
+│   └── ui/               → tema Neo ativo (Color/Shape/Theme/Type + NeoColor/NeoTokens/NeoTypography), fontes locais e vetores; componentes de tela ainda não migrados
 ├── feature/
 │   ├── auth/             → splash, login e cadastro
 │   ├── projects/         → lista/busca/tags de projetos e detalhe com tarefas
@@ -49,10 +49,42 @@ app → feature → core/{ui,data} → core/domain
 `:core:domain` não depende de nenhum outro módulo, garantindo portabilidade
 e testabilidade (regra R12 do documento norteador).
 
-### 2.1 Camada remote (E3.2)
+### 2.1 Camada de UI — identidade Neo ativa
 
-O subpacote `core/data/remote/` isola todo o acesso HTTP ao serviço de
-retaguarda (decisão E3.1: backend próprio FastAPI):
+`:core:ui` é um módulo Compose sem Hilt, Room ou DataStore. Hoje ele
+contém mais do que a antiga tríade `Color`/`Shape`/`Type`:
+
+| Arquivo | Papel |
+|---|---|
+| `theme/NeoColor.kt` | Primitivos da paleta A e papéis semânticos (`NeoColors.Light`/`.Dark`), com `toMaterialColorScheme(dark)` e `LocalNeoColors` |
+| `theme/NeoTokens.kt` | Espaçamentos, raios, bordas, sombras rígidas, tamanhos mínimos, breakpoints de layout e scrim |
+| `theme/NeoTypography.kt` | `NeoFonts` (as duas famílias locais) e os quinze estilos tipográficos |
+| `theme/Type.kt` | `NeoMaterialTypography` — mapeia os quinze estilos para os quinze slots do Material 3 |
+| `theme/Shape.kt` | `NeoShapes` — 4/4/8/8/16 dp nos cinco slots do Material 3 |
+| `theme/BrainOutNeoTheme.kt` | `NeoThemeSpec`, `NeoLightTheme`/`NeoDarkTheme`, `resolveNeoThemeSpec` e o wrapper `BrainOutNeoTheme` |
+| `theme/Theme.kt` | `BrainOutTheme` — **mesmo nome e assinatura de antes**, agora entregando a identidade Neo; mantém o caminho de dynamic color isolado em `BrainOutDynamicTheme`, desligado por padrão |
+| `res/font/` | Cinco fontes estáticas empacotadas (276 184 bytes): Archivo 600/700/800 e Public Sans 400/600, todas SIL OFL 1.1 (licenças em `core/ui/licenses/`) |
+| `res/drawable/neo_*.xml` | 20 vetores: 16 ícones (`neo_ic_*`, Apache-2.0) e 4 artes (`neo_art_*`, obra do projeto) |
+
+**O que isso significa em produção:** desde a ativação do tema Neo,
+`MainActivity` e todas as telas recebem a paleta Neo, a tipografia com as
+fontes empacotadas e os raios Neo — a paleta roxa do Material (`#6750A4`)
+deixou de ser renderizada, e nenhum slot tipográfico cai em
+`FontFamily.Default`. `NeoThemeActivationTest` (14 casos) fixa esse
+contrato.
+
+**O que ainda NÃO foi migrado:** nenhuma tela foi redesenhada — só o
+tema mudou. Os 20 vetores `neo_*` estão empacotados e verificados por
+`NeoDocumentedAssetsTest`/`NeoVectorAssetsTest`, mas **nenhuma tela os
+referencia**; o uso de `LocalNeoColors` pelos componentes é item em
+aberto. A paleta legada (`BrainOutLightColors`/`BrainOutDarkColors`,
+`BrainOutShapes`, `BrainOutTypography`) permanece no código porque
+`ThemeSelectionTest` e `ContrastRatioTest` ainda a assinam.
+
+### 2.2 Camada remote (E3.2)
+
+O subpacote `core/data/.../remote/` isola todo o acesso HTTP ao serviço
+de retaguarda (decisão E3.1: backend próprio FastAPI):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -96,12 +128,20 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
 | Estado                   | `ViewModel` + `StateFlow` + Hilt                             |
 | Injeção de dependência   | Hilt                                                         |
 | Persistência local       | Room (KSP) + DataStore Preferences                           |
-| Sincronização            | WorkManager + Ktor/Retrofit                                  |
-| Notificações             | NotificationCompat + AlarmManager (recursos nativos, R8)    |
+| Sincronização            | WorkManager + Retrofit (OkHttp)                              |
+| Notificações             | NotificationCompat + WorkManager (sem AlarmManager — AD-6)    |
 | Testes                   | JUnit4, Robolectric, Compose UI Test, MockWebServer, Turbine |
-| Qualidade                | ktlint, detekt, Android Lint                                 |
-| Build                    | Gradle 8.7, AGP 8.7, KSP                                     |
+| Qualidade                | ktlint, detekt, Android Lint, Kover                          |
+| Build                    | Gradle 9.7.1, AGP 9.4.1, KGP 2.3.20, KSP 2.3.12             |
 | Backend (R6)             | FastAPI em container (CI) → definido formalmente no E3.1     |
+
+Versões canônicas: `gradle/libs.versions.toml` é a fonte da verdade de
+dependências (sem versões inline). Kotlin 2.3.20, KSP 2.3.12, Hilt 2.60.1,
+Room 2.8.4, WorkManager 2.9.1, Retrofit 2.11.0, OkHttp 4.12.0,
+DataStore 1.1.1, security-crypto 1.1.0, Compose BOM 2024.10.01,
+Navegação 2.8.4. SDK: `compileSdk`/`targetSdk` 37, `minSdk` 24 em todos os
+oito módulos; bytecode alvo Java 17 com JDK 21 provisionado no CI
+(Temurin 21 em `ci.yml` e `release-apk.yml`).
 
 ## 4. Persistência
 
@@ -110,51 +150,75 @@ retaguarda (decisão E3.1: backend próprio FastAPI):
   somente em debug. *Atende R5.*
 - **Preferências:** `DataStore Preferences` (substituindo o legado
   `SharedPreferences`).
-- **Remota:** cliente HTTP em `:core:data/remote/` (E3.2). Endpoints
-  declarados na interface `BrainOutApi` (Retrofit) e expostos pela
-  `RemoteDataSource` para isolar a implementação concreta. A URL base é
-  injetada por flavor via `BuildConfig.BASE_URL` (dev: `10.0.2.2:8000`,
-  prod: placeholder até a hospedagem definitiva — E3.1), com override
-  opcional por desenvolvedor em `local.properties`
+- **Remota:** cliente HTTP em `core/data/.../remote/` (E3.2). Endpoints
+  declarados na interface `BrainOutApi` (Retrofit 2.11.0 + OkHttp 4.12.0)
+  e expostos pela `RemoteDataSource` para isolar a implementação
+  concreta. A URL base é injetada por flavor via `BuildConfig.BASE_URL`
+  (dev: `10.0.2.2:8000`, prod: placeholder até a hospedagem definitiva —
+  E3.1), com override opcional por desenvolvedor em `local.properties`
   (`brainout.baseUrl.dev`). *Atende R6.*
 
 ## 5. Sincronização e conectividade
 
-- Fila de operações offline persistida em Room (`pending_ops`) —
-  cada item guarda `entity_type`, `entity_id`, `op_type`
-  (`INSERT|UPDATE|DELETE`), payload JSON serializado, `created_at`
-  e contador de `attempts`.
+- Fila de operações offline persistida em Room (`pending_ops`, criada
+  pela migração `MIGRATION_3_4`) — cada item guarda `entity_type`
+  (`PROJECT|TASK|TAG`), `entity_id`, `op_type` (`CREATE|UPDATE|DELETE`),
+  payload JSON serializado, `created_at` (instante de enfileiramento) e
+  contador de `attempts`. A tabela **não** tem FK para as entidades: a
+  fila sobrevive à remoção da entidade referenciada.
 - `WorkManager` com `Constraints.NetworkType.CONNECTED` reconcilia
   periodicamente (`enqueueUniquePeriodicWork`, 15 min) e imediatamente
   após retorno de rede. Backoff exponencial entre tentativas.
-- Estratégia **last-writer-wins** com timestamp do cliente; conflitos
-  detectados são registrados em log local para revisão.
+- **Não existe resolução de conflito por versão.** O que o código
+  implementa hoje é **PUT-upsert cego**: `BrainOutSyncDispatcher`
+  converte CREATE e UPDATE no mesmo `PUT /v1/{projects,tasks}/{id}` com o
+  `id` do cliente, e o servidor substitui o registro sem comparar
+  carimbo de tempo. Não há coluna `updated_at`/`updatedAt` em nenhum
+  arquivo `.kt` do cliente nem em `PendingOpEntity` (que guarda apenas
+  `id`, `entity_type`, `entity_id`, `op_type`, `payload`, `created_at` e
+  `attempts` — `created_at` é o instante de *enfileiramento*, não de
+  escrita da entidade). **Limitação declarada:** em uso com um segundo
+  cliente sobre os mesmos registros, a ordem de chegada dos PUT decide,
+  e não o relógio; não há detecção nem registro de conflito. A ordem
+  global de drenagem é preservada pelo `id` auto-incremental da fila, o
+  que dá last-writer-wins *por dispositivo* apenas no caso de um único
+  dispositivo por conjunto de dados.
 - *Atende R5 e R6.*
 
 ### 5.1 Contrato do backend para sincronização
 
-O stub em `backend-stub/` (e o backend FastAPI definitivo, AD-3)
-expõe o contrato abaixo. **Política de IDs: cliente-supplied UUID** —
-o app gera o UUID localmente e envia no `POST`/`PUT`; o servidor
-respeita o ID recebido, garantindo idempotência de replay e
-estabilidade das foreign keys (project_id ↔ tag, project_id ↔ task).
+O cliente implementa hoje (`BrainOutApi.kt`, todas as funções `suspend`):
+`/v1/ping`, CRUD de `/v1/projects`, `/v1/tasks` e `/v1/tags` global.
+**Política de IDs: cliente-supplied UUID** — o app gera o UUID localmente e
+envia no `POST`/`PUT`; o servidor respeita o ID recebido, garantindo
+idempotência de replay e estabilidade das foreign keys
+(project_id ↔ tag, project_id ↔ task).
 
 | Método | Caminho                          | Função                                       |
 |--------|----------------------------------|----------------------------------------------|
+| GET    | `/v1/ping`                       | Healthcheck                                  |
 | GET    | `/v1/projects`                   | Lista projetos                               |
 | POST   | `/v1/projects`                   | Cria projeto (id do cliente opcional)        |
 | GET    | `/v1/projects/{id}`              | Busca projeto                                |
 | PUT    | `/v1/projects/{id}`              | **Upsert idempotente**                       |
 | DELETE | `/v1/projects/{id}`              | Remove projeto (cascade de tasks) — **204**  |
-| POST   | `/v1/projects/{id}/tags`         | Associa tag existente                        |
-| GET    | `/v1/projects/{id}/tags`         | Lista tags do projeto                        |
 | GET    | `/v1/tasks`                      | Lista tarefas (filtro `?project_id=`)        |
 | POST   | `/v1/tasks`                      | Cria tarefa (id do cliente opcional)         |
+| GET    | `/v1/tasks/{id}`                 | Busca tarefa                                 |
 | PUT    | `/v1/tasks/{id}`                 | **Upsert idempotente**                       |
 | DELETE | `/v1/tasks/{id}`                 | Remove tarefa — **204**                      |
-| GET    | `/v1/tags`                       | Lista tags                                   |
-| POST   | `/v1/tags`                       | Cria tag (id gerado no servidor)             |
+| GET    | `/v1/tags`                       | Lista tags (global)                          |
+| POST   | `/v1/tags`                       | Cria tag (id do cliente no body)            |
 | DELETE | `/v1/tags/{id}`                  | Remove tag — **204**                         |
+
+**Divergência conhecida com o stub:** `backend-stub/server.py` também
+expõe `POST` e `GET /v1/projects/{id}/tags` (associação e listagem de
+tags do projeto), mas **o cliente Android não tem esses dois
+endpoints** — a interface `BrainOutApi` só tem `/v1/tags` global, e a
+víncula projeto↔tag é resolvida localmente por Room
+(`ProjectTagCrossRef`, tabela de junção criada na migração
+`MIGRATION_3_4`). O endpoint não é exercitado pelo app; está listado
+aqui por ser parte do contrato do backend.
 
 Regras:
 
@@ -172,29 +236,65 @@ casos; o smoke HTTP roda no job `backend-integration` do CI.
 
 ## 6. Segurança
 
-- Tokens armazenados em `EncryptedSharedPreferences` (Tink) ou
-  `androidx.security:security-crypto`. **Nunca** em texto plano nem
-  versionados. *Atende R12.*
-- Tráfego de rede em produção: HTTPS obrigatório. *Atende R7.*
+- **O app não emite nem armazena token de sessão.** A autenticação é
+  local: `SessionStore` (`:core:data`) persiste **apenas o `userId`**
+  em DataStore Preferences para reidratar a sessão, e o KDoc do próprio
+  `SessionStore` declara que nome, e-mail, papel e credenciais não ficam
+  ali. Senha nunca é gravada — `PasswordHasherImpl` deriva o hash com
+  PBKDF2 sobre um *pepper* concatenado, e o pepper é gerado por
+  instalação com `SecureRandom` e persistido em
+  `EncryptedSharedPreferences` (`androidx.security:security-crypto`
+  1.1.0), com chave AES-256 protegida por `MasterKey` do
+  AndroidKeystore (`PepperProvider`). Um dump do banco, com sal e hash,
+  não basta para verificação offline: falta o pepper. *Atende R12.*
+- A afirmação de "criptografia de tokens" que constava aqui antes não
+  corresponde ao código — não existe token. O que existe é o pepper
+  criptografado acima (AD-5).
+- Tráfego de rede em produção: HTTPS obrigatório; o flavor `prod` usa
+  hoje o placeholder `https://TBD/` até a hospedagem definitiva
+  (E3.1). *Atende R7.*
+- Credenciais de build nunca versionadas: `local.properties` e
+  `keystore.properties` estão no `.gitignore`, e a assinatura de release
+  lê quatro variáveis de ambiente
+  (`BRAINOUT_KEYSTORE_PATH/PASSWORD/KEY_ALIAS/KEY_PASSWORD`).
 - Permissões runtime solicitadas no momento do uso (Android 6+),
   justificando cada uma no `AndroidManifest.xml`.
 
 ## 7. Acessibilidade
 
-- `contentDescription` em todos os elementos visuais não textuais.
-- Áreas de toque ≥ 48dp.
-- Contraste AA verificado com Accessibility Scanner.
-- Suporte a TalkBack nos fluxos principais. *Atende R11.*
+- `contentDescription` nos elementos visuais não textuais acionáveis —
+  hoje 20 ocorrências em `:app` e `:feature:*`; ícones decorativos
+  recebem `null` explícito.
+- Áreas de toque ≥ 48dp: `Modifier.heightIn(min = 48.dp)` nos chips
+  interativos de `:feature:projects` (busca, filtros, cards) e
+  `:feature:tasks`, entre outros.
+- **Contraste AA verificado por teste automatizado, não por scanner
+  manual:** `ContrastRatioTest` (24 casos sobre a paleta legada) e
+  `NeoContrastRatioTest` (5 casos sobre a paleta Neo ativa), com o
+  mesmo cálculo WCAG 2.2 da seção 6 do `DESIGN.md` (≥ 4.5:1 texto,
+  ≥ 3:1 gráfico). A varredura com o Accessibility Scanner é um
+  procedimento manual descrito em `docs/ACESSIBILIDADE.md` §6, a
+  executar em dispositivo — não é evidência de build.
+- Alvos de toque, ordem de leitura e papéis anunciados estão
+  documentados em `docs/ACESSIBILIDADE.md`. *Atende R11.*
 
 ## 8. Decisões registradas
 
 | ID   | Decisão                                                              | Data       |
 |------|----------------------------------------------------------------------|------------|
-| AD-1 | Multi-módulo Gradle conforme Seção 2                                 | a definir  |
-| AD-2 | Stack conforme Seção 3                                               | a definir  |
+| AD-1 | Multi-módulo Gradle conforme Seção 2                                 | 18/09/2026 |
+| AD-2 | Stack conforme Seção 3                                               | 18/09/2026 |
 | AD-3 | Backend: FastAPI próprio (evolução do `backend-stub/`)                | 21/09/2026 |
-| AD-4 | Estratégia de sincronização: last-writer-wins + fila offline         | a definir  |
-| AD-5 | Criptografia de tokens com `androidx.security:security-crypto`       | a definir  |
+| AD-4 | Estratégia de sincronização: fila offline + PUT-upsert idempotente, sem resolução de conflito por versão (Seção 5) | 22/09/2026 |
+| AD-5 | Segredo de senha (pepper) em `EncryptedSharedPreferences` (`androidx.security:security-crypto` 1.1.0) + PBKDF2 | 24/09/2026 |
+| AD-6 | Lembretes de prazo via WorkManager (`OneTimeWorkRequest` + `setInitialDelay`), sem `SCHEDULE_EXACT_ALARM` (E3.6) | 21/09/2026 |
+
+Datas por `git log`: AD-1 e AD-2 no setup multi-módulo (PR #12,
+18/09/2026); AD-4 na entrega do dispatcher de sincronização (PR #66,
+22/09/2026); AD-5 na revisão técnica que trocou o pepper de
+`SharedPreferences` puro por `EncryptedSharedPreferences` com
+`MasterKey` AES256_GCM (24/09/2026). AD-3 e AD-6 datam do ciclo 3
+(21/09/2026) e estão detalhadas nas seções 9 e 10, respectivamente.
 
 ## 9. Serviço de retaguarda — decisão (E3.1)
 
@@ -240,13 +340,11 @@ Android (E3.2).
 
 Por fim, a decisão preserva a testabilidade e a portabilidade exigidas
 pela arquitetura multi-módulo: o cliente HTTP permanece isolado em
-`:core:data/network/` atrás de `RemoteDataSource`, e o mesmo contrato
+`core/data/.../remote/` atrás de `RemoteDataSource`, e o mesmo contrato
 REST é exercido localmente pelo stub no CI. Não há, portanto, perda de
 capacidade de teste em relação às alternativas gerenciadas — apenas a
 responsabilidade de operação, assumida conscientemente pelo autor como
 parte do escopo de aprendizado do projeto integrador.
-
-| AD-6 | Lembretes de prazo via WorkManager (`OneTimeWorkRequest` + `setInitialDelay`), sem `SCHEDULE_EXACT_ALARM` (E3.6) | 21/09/2026 |
 
 ## 10. Notificações locais — lembretes de prazo (E3.6)
 
