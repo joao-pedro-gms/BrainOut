@@ -6,38 +6,38 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-internal val BrainOutLightColors = lightColorScheme(
-
-    primary = BrainOutPrimary,
-    onPrimary = BrainOutOnPrimary,
-    primaryContainer = BrainOutPrimaryContainer,
-    onPrimaryContainer = BrainOutOnPrimaryContainer,
-    secondary = BrainOutSecondary,
-    onSecondary = BrainOutOnSecondary,
-    secondaryContainer = BrainOutSecondaryContainer,
-    onSecondaryContainer = BrainOutOnSecondaryContainer,
-    tertiary = BrainOutTertiary,
-    onTertiary = BrainOutOnTertiary,
-    tertiaryContainer = BrainOutTertiaryContainer,
-    onTertiaryContainer = BrainOutOnTertiaryContainer,
-    error = BrainOutError,
-    onError = BrainOutOnError,
-    errorContainer = BrainOutErrorContainer,
-    onErrorContainer = BrainOutOnErrorContainer,
-    background = BrainOutBackground,
-    onBackground = BrainOutOnBackground,
-    surface = BrainOutSurface,
-    onSurface = BrainOutOnSurface,
-    surfaceVariant = BrainOutSurfaceVariant,
-    onSurfaceVariant = BrainOutOnSurfaceVariant,
-    outline = BrainOutOutline
-)
+internal val BrainOutLightColors =
+    lightColorScheme(
+        primary = BrainOutPrimary,
+        onPrimary = BrainOutOnPrimary,
+        primaryContainer = BrainOutPrimaryContainer,
+        onPrimaryContainer = BrainOutOnPrimaryContainer,
+        secondary = BrainOutSecondary,
+        onSecondary = BrainOutOnSecondary,
+        secondaryContainer = BrainOutSecondaryContainer,
+        onSecondaryContainer = BrainOutOnSecondaryContainer,
+        tertiary = BrainOutTertiary,
+        onTertiary = BrainOutOnTertiary,
+        tertiaryContainer = BrainOutTertiaryContainer,
+        onTertiaryContainer = BrainOutOnTertiaryContainer,
+        error = BrainOutError,
+        onError = BrainOutOnError,
+        errorContainer = BrainOutErrorContainer,
+        onErrorContainer = BrainOutOnErrorContainer,
+        background = BrainOutBackground,
+        onBackground = BrainOutOnBackground,
+        surface = BrainOutSurface,
+        onSurface = BrainOutOnSurface,
+        surfaceVariant = BrainOutSurfaceVariant,
+        onSurfaceVariant = BrainOutOnSurfaceVariant,
+        outline = BrainOutOutline,
+    )
 
 /**
  * `BrainOutDarkColors` espelha os 25 pares de `BrainOutLightColors` (marco E4.4 —
@@ -48,32 +48,32 @@ internal val BrainOutLightColors = lightColorScheme(
  * Cada par `on*`/fundo é validado pelo `ContrastRatioTest` em
  * `core/ui/src/test/kotlin/...` (>= 4.5:1 texto / >= 3.0:1 gráfico).
  */
-internal val BrainOutDarkColors = darkColorScheme(
-    primary = BrainOutDarkPrimary,
-    onPrimary = BrainOutDarkOnPrimary,
-    primaryContainer = BrainOutDarkPrimaryContainer,
-    onPrimaryContainer = BrainOutDarkOnPrimaryContainer,
-    secondary = BrainOutDarkSecondary,
-    onSecondary = BrainOutDarkOnSecondary,
-    secondaryContainer = BrainOutDarkSecondaryContainer,
-    onSecondaryContainer = BrainOutDarkOnSecondaryContainer,
-    tertiary = BrainOutDarkTertiary,
-    onTertiary = BrainOutDarkOnTertiary,
-    tertiaryContainer = BrainOutDarkTertiaryContainer,
-    onTertiaryContainer = BrainOutDarkOnTertiaryContainer,
-    error = BrainOutDarkError,
-    onError = BrainOutDarkOnError,
-    errorContainer = BrainOutDarkErrorContainer,
-    onErrorContainer = BrainOutDarkOnErrorContainer,
-    background = BrainOutDarkBackground,
-    onBackground = BrainOutDarkOnBackground,
-    surface = BrainOutDarkSurface,
-    onSurface = BrainOutDarkOnSurface,
-    surfaceVariant = BrainOutDarkSurfaceVariant,
-    onSurfaceVariant = BrainOutDarkOnSurfaceVariant,
-    outline = BrainOutDarkOutline
-
-)
+internal val BrainOutDarkColors =
+    darkColorScheme(
+        primary = BrainOutDarkPrimary,
+        onPrimary = BrainOutDarkOnPrimary,
+        primaryContainer = BrainOutDarkPrimaryContainer,
+        onPrimaryContainer = BrainOutDarkOnPrimaryContainer,
+        secondary = BrainOutDarkSecondary,
+        onSecondary = BrainOutDarkOnSecondary,
+        secondaryContainer = BrainOutDarkSecondaryContainer,
+        onSecondaryContainer = BrainOutDarkOnSecondaryContainer,
+        tertiary = BrainOutDarkTertiary,
+        onTertiary = BrainOutDarkOnTertiary,
+        tertiaryContainer = BrainOutDarkTertiaryContainer,
+        onTertiaryContainer = BrainOutDarkOnTertiaryContainer,
+        error = BrainOutDarkError,
+        onError = BrainOutDarkOnError,
+        errorContainer = BrainOutDarkErrorContainer,
+        onErrorContainer = BrainOutDarkOnErrorContainer,
+        background = BrainOutDarkBackground,
+        onBackground = BrainOutDarkOnBackground,
+        surface = BrainOutDarkSurface,
+        onSurface = BrainOutDarkOnSurface,
+        surfaceVariant = BrainOutDarkSurfaceVariant,
+        onSurfaceVariant = BrainOutDarkOnSurfaceVariant,
+        outline = BrainOutDarkOutline,
+    )
 
 /**
  * Resolve o `ColorScheme` BrainOut estático (sem dynamic color).
@@ -84,44 +84,92 @@ internal val BrainOutDarkColors = darkColorScheme(
  * tree: o teste unitário (E4.5) afirma que o esquema claro/escuro é
  * o `BrainOutLightColors`/`BrainOutDarkColors` segundo a flag,
  * validando o critério "alternância segue a configuração do sistema".
+ *
+ * **Paleta legada.** Desde a ativação do tema Neo (NB-32) o app não
+ * renderiza mais estes dois esquemas: [BrainOutTheme] entrega o
+ * `ColorScheme` derivado de [NeoColors]. A função e os dois objetos ficam
+ * porque `ThemeSelectionTest` e `ContrastRatioTest` ainda os assinam como
+ * registro da identidade anterior — removê-los, com a revisão desses
+ * testes, é o item 2 da limpeza do NB-32.
  */
 fun resolveBrainOutStaticColorScheme(darkTheme: Boolean): ColorScheme =
     if (darkTheme) BrainOutDarkColors else BrainOutLightColors
 
 /**
- * Tema Compose raiz do BrainOut.
+ * Tema Compose raiz do BrainOut — **identidade Neo** (paleta A).
  *
- * Por padrão NÃO habilitamos `dynamicColor` (Material You) para garantir
- * identidade visual estável entre devices — a especificação E1.3 pede
- * tokens consistentes em PRs.
+ * Este é o ponto de entrada único do tema e não mudou de nome nem de
+ * assinatura: `MainActivity`, os testes de UI das features e as previews
+ * continuam chamando `BrainOutTheme { … }` e agora recebem a identidade
+ * neobrutalista. A promoção é o item 1 do NB-32 em
+ * `docs/plans/2026-10-01-redesign-neobrutalista.md` — antes dela o plano
+ * previa um `BrainOutNeoTheme` aditivo com lista de rotas migradas; como
+ * nenhuma tela foi redesenhada e o wrapper aditivo teria ficado sem
+ * chamada, promover a implementação direto no nome existente evita
+ * deixar dois temas em circulação.
  *
- * Para ligar dynamic color em builds internos, basta passar
- * `dynamicColor = true`.
+ * O que entra na árvore:
+ *  - `colorScheme` de [NeoColors] via `toMaterialColorScheme` (nenhum
+ *    resíduo do roxo `#6750A4` do Material), `LocalNeoColors` publicado
+ *    para os componentes Neo;
+ *  - `typography` = [NeoMaterialTypography], que carrega as cinco fontes
+ *    empacotadas em `res/font` (offline, primeira abertura);
+ *  - `shapes` = [NeoShapes] (4/4/8/8/16 dp).
  *
- * Alternância de tema (E4.5): segue a configuração do sistema via
- * `isSystemInDarkTheme()`; só aceita override explícito quando o
- * caller passa `darkTheme = ...` (ex.: previews, testes Compose).
- * Nenhum toggle manual é obrigatório — se uma versão futura
- * adicionar override em Configurações, deve persistir a escolha em
- * DataStore com default "seguir sistema".
+ * `dynamicColor` continua existindo e continua desligado por padrão: com
+ * `true` em API 31+, a paleta do sistema **substitui** a Neo, o que
+ * quebraria a identidade determinística que os tokens Neo garantem.
+ * Esse caminho é o mesmo de antes (dynamic no lugar do `ColorScheme`
+ * estático), só que isolado em [BrainOutDynamicTheme] e sem mais
+ * `return` dentro da função de tema.
+ *
+ * Alternância de tema (E4.5): continua seguindo a configuração do sistema
+ * via `isSystemInDarkTheme()`, e ainda aceita override explícito de
+ * `darkTheme` (previews, testes Compose). Nenhum toggle manual é
+ * obrigatório — quando existir, deve persistir a escolha em DataStore
+ * com default "seguir sistema" e passar a flag para cá.
  */
 @Composable
 fun BrainOutTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val context = LocalContext.current
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        resolveBrainOutStaticColorScheme(darkTheme)
+    if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        BrainOutDynamicTheme(darkTheme = darkTheme, content = content)
+        return
     }
 
+    BrainOutNeoTheme(darkTheme = darkTheme, content = content)
+}
+
+/**
+ * Variante com Material You (paleta do sistema), preservada para builds
+ * internos que quiserem comparar as duas identidades lado a lado.
+ *
+ * Não é o caminho padrão e não é exercitado pelo app: `dynamicColor` é
+ * `false` por padrão em [BrainOutTheme]. Mantida separada para que a
+ * recomendação de `DESIGN.md` — identidade estável entre dispositivos,
+ * tokens consistentes em PRs — não dependa de um parâmetro que alguém
+ * possa ligar por engano: ligar exige chamar esta função.
+ */
+@Composable
+private fun BrainOutDynamicTheme(
+    darkTheme: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    val dynamicScheme =
+        if (darkTheme) {
+            dynamicDarkColorScheme(context)
+        } else {
+            dynamicLightColorScheme(context)
+        }
+
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = BrainOutTypography,
-        shapes = BrainOutShapes,
-        content = content
+        colorScheme = dynamicScheme,
+        typography = NeoMaterialTypography,
+        shapes = NeoShapes,
+        content = content,
     )
 }
