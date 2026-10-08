@@ -196,7 +196,13 @@ class ProjectRepositoryImplTest {
         assertThat(search[0]).isEqualTo(ownerId)
         assertThat(search[1]).isEqualTo("query")
         assertThat(search[2]).isEqualTo("tag-1")
-        assertThat(search[3]).isEqualTo("nameasc")
+        // Grafia canônica `snake_case`: é exatamente a string que o
+        // `CASE WHEN` de `ProjectDao.searchProjects` compara. A grafia
+        // concatenada antiga ("nameasc") nunca casava com a SQL e fazia a
+        // ordenação configurada ser um no-op — a asserção existe para
+        // impedir a regressão. O comportamento do SQLite com a string
+        // real está em `ProjectDaoSearchSortOrderTest`.
+        assertThat(search[3]).isEqualTo("name_asc")
     }
 
     private fun newRepository(
