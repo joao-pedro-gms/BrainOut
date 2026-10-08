@@ -61,13 +61,28 @@ subprojects {
     if (path in setOf(":core:domain", ":core:data")) {
         apply(plugin = "org.jetbrains.kotlinx.kover")
 
-        // Classes geradas (Room/Hilt/KSP) e infra de wiring ficam fora do
-        // denominador da cobertura: não são lógica testável.
+        // Fora do denominador da cobertura fica só o que é realmente gerado
+        // por ferramenta ou não tem lógica — nunca uma classe de produção
+        // exercitada por teste (DEF-14).
+        //
         // - *_Impl / *_Impl$*: implementações geradas pelo Room
-        // - *_Factory / Hilt_* / dagger.hilt.*: artefatos do Hilt/Dagger
-        // - *.di.*: módulos de wiring DI
-        // - *.BuildConfig / *.PackageMarker: classes utilitárias sem lógica
-        // - *.remote.*: DTOs de rede (mapeamento puro, coberto via repositories)
+        // - *_Factory / Hilt_* / dagger.hilt.* / *_HiltModules: artefatos
+        //   do Hilt/Dagger
+        // - *Dto / *Dto$*: data classes de contrato (RemoteDtos.kt,
+        //   HolidayDto.kt). Sem lógica própria — só propriedades,
+        //   componentN/copy/equals/hashCode gerados e o serializador
+        //   `$$serializer` do kotlinx-serialization. O parsing de verdade é
+        //   exercitado em RemoteDataSource, que fica no denominador.
+        //   O padrão é `*Dto`, e NÃO `*.Dto`: o Kover converte `*` em `.*`
+        //   e escapa o resto, então `*.Dto` vira `.*\.Dto` e jamais casaria
+        //   com `...remote.ProjectDto` (o nome termina em `ProjectDto`, sem
+        //   ponto antes de `Dto`). O `$*` cobre `ProjectDto$Companion`.
+        // - *.di.*: wiring de DI (DataModule.kt tem 19 métodos @Provides que
+        //   só constroem e devolvem singletons/binds, zero lógica de
+        //   domínio). A exclusão é por "wiring, não lógica" — e não por
+        //   pacote: qualquer classe com comportamento que apareça depois em
+        //   `*.di.*` deve entrar no denominador.
+        // - *.BuildConfig / *.PackageMarker: constantes geradas
         val koverExclusions =
             listOf(
                 "*_Impl",
@@ -81,10 +96,11 @@ subprojects {
                 "*_HiltModules\$*",
                 "dagger.hilt.*",
                 "hilt_aggregated_deps.*",
+                "*Dto",
+                "*Dto\$*",
                 "*.di.*",
                 "*.BuildConfig",
                 "*.PackageMarker",
-                "*.remote.*",
             )
 
         the<kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension>().apply {
