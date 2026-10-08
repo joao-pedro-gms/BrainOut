@@ -75,7 +75,7 @@ python -m uvicorn server:app --host 0.0.0.0 --port 8000
 ```bash
 cd backend-stub
 pip install -r requirements.txt
-pytest -q              # 14 casos verdes
+pytest -q              # 16 casos verdes
 ```
 
 Para o smoke ponta-a-ponta (servidor precisa estar de pé). Ele lê

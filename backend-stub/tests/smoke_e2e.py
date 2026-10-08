@@ -115,7 +115,12 @@ def main() -> int:
     step("PUT com id do path != id do body → 400")
     a = str(uuid.uuid4())
     b = str(uuid.uuid4())
-    args = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "-X", "PUT",
+    # `-o /dev/null` só existe em Unix; o curl do Windows usa `NUL` e
+    # devolve erro 23 quando o path não existe. Descarta o corpo em ambos
+    # os casos — só interessa o status code (o CI roda em ubuntu, mas o
+    # README documenta rodar localmente em Windows também).
+    null_device = "NUL" if os.name == "nt" else "/dev/null"
+    args = ["curl", "-s", "-o", null_device, "-w", "%{http_code}", "-X", "PUT",
             f"{BASE}/v1/projects/{a}", "-d", json.dumps({"id": b, "name": "x"}),
             "-H", "Content-Type: application/json"]
     code = int(subprocess.check_output(args, text=True))
