@@ -1,9 +1,33 @@
 # João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+#
+# Faixas (e não pins exatos) — DEF-12.
+#
+# Motivo: pins exatos travavam o par `pydantic`/`pydantic-core` numa versão
+# sem wheel para Python 3.14; o pip caía no fallback sdist e tentava
+# compilar via Rust, falhando com
+#   "the configured Python interpreter version (3.14) is newer than
+#    PyO3's maximum supported version (3.13)"
+# ao gastar minutos de build por um erro que não era do projeto.
+# O alvo declarado é Python 3.12 (Dockerfile, README, AGENTS.md), mas o
+# piso de cada dependência abaixo é a PRIMEIRA release que declara
+# suporte a 3.14 — então o mesmo requirements.txt instala em 3.12, 3.13
+# e 3.14, sempre por wheel, sem toolchain.
+#
+# Piso (primeira release com classifier `Programming Language :: Python :: 3.14`):
+#   fastapi  0.118.3   uvicorn 0.38.0   pydantic 2.12.0   pytest 8.4.0
+# O teto `<1.0`/`<3`/`<10` só existe para barrar majors que ainda não
+# existem — não para segurar patchs/minors, que trazem correções.
+#
+# Ao sair uma nova versão do Python: suba os pisos até a primeira release
+# que a declare. Como o `pydantic-core` (binário, único com wheel) é
+# pinado pelo próprio `pydantic`, ele não precisa ser listado aqui.
+#
 # Runtime (imagem do CI).
-fastapi==0.115.0
-uvicorn==0.30.6
-pydantic==2.9.2
+fastapi>=0.118.3,<1.0
+uvicorn>=0.38.0,<1.0
+pydantic>=2.12,<3.0
 
 # Testes (pytest + TestClient do FastAPI requer httpx).
-pytest==8.3.3
-httpx==0.27.2
+# `httpx<1.0` acompanha o teto do próprio Starlette (`httpx<0.29`).
+pytest>=8.4,<10
+httpx>=0.28.1,<1.0
