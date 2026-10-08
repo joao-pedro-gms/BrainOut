@@ -1,0 +1,30 @@
+# ktlint — configuração do BrainOut
+#
+# O projeto usa ktlint 14.2.0 (engine 1.x). Duas decisões reais estão aqui:
+#
+# 1. `ktlint_code_style = ktlint_official` é o estilo que o código do
+#    projeto já segue de fato. O `android_studio` foi testado e rejeitado:
+#    ele altera as regras de `indent` e de quebra de assinatura e produz
+#    ~485 violações num código que, no estilo oficial, tem menos — ou seja,
+#    ele pediria reformatar o repositório inteiro para um estilo que o
+#    projeto nunca adotou.
+#
+# 2. `ktlint_function_naming_ignore_when_annotated_with = Composable`
+#    desliga `function-naming` para @Composable. É o MESMO conflito que o
+#    detekt já resolve em config/detekt/detekt.yml:82-88
+#    (`FunctionNaming.ignoreAnnotated: ['Composable']`): a convenção do
+#    Compose é PascalCase para funções anotadas, e a regra padrão exige
+#    camelCase. Sem esta linha, `BrainOutTheme`, `MainRoot`, `HomeBody` e
+#    ~200 outras funções Compose são marcadas como violação.
+#
+# Sem este arquivo o ktlint roda sem direção de estilo declarada, o que é
+# parte do motivo de o gate ter ficado invisível até a correção de DEF-09.
+
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+ktlint_function_naming_ignore_when_annotated_with = Composable
+max_line_length = 120
+insert_final_newline = true
+ij_kotlin_allow_trailing_comma = true

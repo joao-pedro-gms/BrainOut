@@ -109,6 +109,27 @@ subprojects {
     }
 }
 
+// ---- ktlint (correção de escopo) ------------------------------------------------
+// O plugin ktlint NÃO se propaga automaticamente para subprojetos: aplicado
+// apenas na raiz, `./gradlew ktlintCheck` inspecionava somente os 2 arquivos
+// de build da raiz e ZERO dos 221 arquivos `.kt` versionados — confirmado em
+// disco: só existia `build/reports/ktlint/` na raiz. Aqui ele é aplicado a
+// cada subprojeto, com `android = true` para o analisador entender código
+// Android/Compose.
+//
+// A engine 1.x do ktlint 14 sinaliza violações cosméticas de estilo
+// (indent/quebra de chamada) que o código já tem há 129 commits. Elas estão
+// registradas em `docs/DEFEITOS.md` como DEF-10 e a reformatação fica para
+// uma passada dedicada; `ignoreFailures` fica em `true` até lá para que
+// o gate comece a fiscalizar de verdade sem bloquear todo PR.
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        android.set(true)
+        ignoreFailures.set(true)
+    }
+}
+
 // Relatório HTML conjunto das duas camadas (:core:domain + :core:data),
 // publicado como artifact do CI (critério E4.7).
 tasks.register("koverMergedHtmlReport") {
