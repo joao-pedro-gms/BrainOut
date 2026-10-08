@@ -1,6 +1,8 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Módulo :core:data — Room, DataStore, fontes remotas e implementações de repositório.
 
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.library)
     // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
@@ -11,8 +13,6 @@ plugins {
     // Kover (E4.7): cobertura de código para a camada de dados.
     alias(libs.plugins.kover)
 }
-
-import java.util.Properties
 
 // Override opcional da URL base por flavor (E3.2): lê `local.properties`
 // (não versionado). Sem o arquivo, vale o default do flavor.
@@ -169,8 +169,17 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.okhttp.mockwebserver)
 
+    // Deps dos testes INSTRUMENTADOS. `MigrationTest` e
+    // `UserDaoInstrumentedTest` importam Truth e coroutines-test, mas
+    // ambos vivem no bloco `testImplementation` — sem estas duas linhas
+    // o `compileDevDebugAndroidTestKotlin` falhava com ~40 erros
+    // `Unresolved reference` e a suíte instrumentada nunca compilou
+    // (nem local, nem no CI, que também não invoca
+    // `connectedAndroidTest`).
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }
 
 detekt {
