@@ -61,6 +61,17 @@ dependencies {
     api(libs.androidx.compose.material3)
     debugApi(libs.androidx.compose.ui.tooling)
 
+    // D-05 — `androidx.window:window`. ÚNICA dependência nova da frente de
+    // responsividade, e ela fica **confinada a :core:ui** por escolha de
+    // escopo (`implementation`, não `api`): como `:core:ui` é consumido por
+    // todos os módulos, `api` vazaria `androidx.window.*` para o compile
+    // classpath de cada `feature/*` e tornaria a contenção uma convenção
+    // (que alguém quebra sem querer) em vez de uma impossibilidade
+    // estrutural. Nenhum módulo fora daqui enxerga `WindowLayoutInfo` nem
+    // `FoldingFeature` — a dobra é lida dentro de `:core:ui` e chega ao
+    // resto do app já classificada em `NeoWidth`/`NeoHeight`.
+    implementation(libs.androidx.window)
+
     // Testes unitários do tema (E4.4 — contraste WCAG AA via algoritmo
     // sRGB sobre os tokens em `Color.kt`).
     testImplementation(libs.junit)

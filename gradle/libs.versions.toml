@@ -22,6 +22,22 @@ appcompat = "1.7.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.10.01"
+# androidx.window 1.5.1 (D-05) — ÚNICA dependência nova da frente de
+# responsividade. Não é bump do Compose: o `compose-bom` já gerencia
+# material3-window-size-class, material3-adaptive-navigation-suite e o grupo
+# `material3.adaptive:*` (todos declarados sem `version.ref` abaixo), e o
+# BOM **não** gerencia o grupo `androidx.window` — sem esta linha, não há
+# como nomear `WindowLayoutInfo`/`FoldingFeature`.
+#
+# Por que 1.5.1 e não o 1.3.0 que o `adaptive:1.0.0` arrasta: o AAR do
+# `window-core-android:1.3.0` tem 7 classes e nenhuma delas é
+# `WindowLayoutInfo`/`FoldingFeature` — essas vivem em `androidx.window:window`.
+# O 1.5.1 tem a API idêntica, é a última **estável** (1.6.0-alpha* é alpha) e
+# exige `minCompileSdk=34`, que o projeto (compileSdk 37) já cumpre.
+#
+# Escopo: só `:core:ui`, e atrás de `NeoWindowInfo`. Nenhum `feature/*`
+# importa `androidx.window.*` — ver AC-0.5 do card RESP-0.
+androidxWindow = "1.5.1"
 navigationCompose = "2.8.4"
 hiltNavigationCompose = "1.2.0"
 datastore = "1.1.1"
@@ -80,6 +96,10 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+# D-05: o `compose-bom` NÃO gerencia o grupo androidx.window. Declarado aqui
+# porque o código de :core:ui precisa nomear `WindowLayoutInfo`/`FoldingFeature`,
+# que só existem neste artefato.
+androidx-window = { group = "androidx.window", name = "window", version.ref = "androidxWindow" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
