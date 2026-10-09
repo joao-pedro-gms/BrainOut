@@ -82,6 +82,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    // RESP-1 / D-02 — `NavigationSuiteScaffold` para a Home trocar a
+    // NavigationBar por NavigationRail em janelas largas. Sem
+    // `version.ref`: o BOM já gerencia (1.3.1), então não há bump aqui.
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

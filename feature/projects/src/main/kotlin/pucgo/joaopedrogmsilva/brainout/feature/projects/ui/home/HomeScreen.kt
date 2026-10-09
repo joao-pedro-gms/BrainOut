@@ -1,7 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Home orchestrator (E1.7/E2.1/E2.6): Scaffold + callback routing.
-// Seções vivem nos irmãos Home*.kt; aqui ficam `HomeScreen`,
-// `HomeTestTags` e o preview.
+// Home orchestrator (E1.7/E2.1/E2.6): casca de navegação adaptativa +
+// Scaffold + callback routing (RESP-1/D-02). Seções vivem nos irmãos
+// Home*.kt; aqui ficam `HomeScreen`, `HomeTestTags` e o preview.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -81,66 +81,69 @@ fun HomeScreen(
 
     val isOwner = homeUser.role == HomeUserRole.Owner
 
-    Scaffold(
+    HomeNavigationShell(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            HomeTopBar(user = homeUser)
+        currentTab = currentTab,
+        onSelectTab = { selected ->
+            when (selected) {
+                HomeTab.Settings -> onOpenSettings()
+                HomeTab.Tasks -> onOpenTasks()
+                HomeTab.Dashboard -> onOpenDashboard()
+                HomeTab.Projects -> currentTab = selected
+            }
         },
-        bottomBar = {
-            HomeBottomBar(
-                currentTab = currentTab,
-                onSelectTab = { selected ->
-                    when (selected) {
-                        HomeTab.Settings -> onOpenSettings()
-                        HomeTab.Tasks -> onOpenTasks()
-                        HomeTab.Dashboard -> onOpenDashboard()
-                        HomeTab.Projects -> currentTab = selected
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            HomeFloatingActionButton(
-                isOwner = isOwner,
-                onCreateProjectClicked = { showCreateDialog = true },
-                onMemberFabClicked = viewModel::onMemberFabClicked,
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        // RESP-1 (Fase 1.1) — `enableEdgeToEdge()` + `safeDrawing`:
-        // nada mais é desenhado sob status bar, barra de gestos ou
-        // cutout.
-        contentWindowInsets = WindowInsets.safeDrawing,
-    ) { innerPadding ->
-        // Apenas a aba "Projetos" tem conteúdo interno. As outras duas
-        // (Tarefas, Configurações) disparam navegação externa via
-        // callback — quando ela termina, a `HomeScreen` deixa de
-        // existir na pilha. Esta branch existe apenas para satisfazer
-        // a exaustividade do `when`.
-        when (currentTab) {
-            HomeTab.Projects ->
-                HomeProjectsContent(
-                    contentPadding = innerPadding,
-                    onOpenProject = onOpenProject,
-                    projects = listState.projects,
-                    isLoading = listState.isLoading,
-                    currentFilter = currentFilter,
-                    onSelectFilter = viewModel::setProjectFilter,
-                    errorMessage = actionError ?: listState.errorMessage,
-                    onRetry = viewModel::retry,
-                    onDismissError = viewModel::clearError,
-                    availableTags = listState.availableTags,
-                    searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
-                    onSearchQueryChange = viewModel::onSearchQueryChange,
-                    selectedTagId = listState.selectedTagId,
-                    onTagFilterChange = viewModel::onTagFilterChange,
-                    sortOrder = listState.sortOrder,
-                    onSortOrderChange = viewModel::onSortOrderChange,
-                    syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
+    ) {
+        Scaffold(
+            // O `NavigationSuiteScaffold` já reservou o espaço da barra
+            // (ou do rail) — ele não é um `Scaffold`, então o `topBar`,
+            // o `floatingActionButton` e o `innerPadding` continuam
+            // pesando aqui dentro.
+            topBar = {
+                HomeTopBar(user = homeUser)
+            },
+            floatingActionButton = {
+                HomeFloatingActionButton(
+                    isOwner = isOwner,
+                    onCreateProjectClicked = { showCreateDialog = true },
+                    onMemberFabClicked = viewModel::onMemberFabClicked,
                 )
-            HomeTab.Tasks -> Unit
-            HomeTab.Dashboard -> Unit
-            HomeTab.Settings -> Unit
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+            // RESP-1 (Fase 1.1) — `enableEdgeToEdge()` + `safeDrawing`:
+            // nada mais é desenhado sob status bar, barra de gestos ou
+            // cutout.
+            contentWindowInsets = WindowInsets.safeDrawing,
+        ) { innerPadding ->
+            // Apenas a aba "Projetos" tem conteúdo interno. As outras
+            // duas (Tarefas, Configurações) disparam navegação externa
+            // via callback — quando ela termina, a `HomeScreen` deixa
+            // de existir na pilha. Esta branch existe apenas para
+            // satisfazer a exaustividade do `when`.
+            when (currentTab) {
+                HomeTab.Projects ->
+                    HomeProjectsContent(
+                        contentPadding = innerPadding,
+                        onOpenProject = onOpenProject,
+                        projects = listState.projects,
+                        isLoading = listState.isLoading,
+                        currentFilter = currentFilter,
+                        onSelectFilter = viewModel::setProjectFilter,
+                        errorMessage = actionError ?: listState.errorMessage,
+                        onRetry = viewModel::retry,
+                        onDismissError = viewModel::clearError,
+                        availableTags = listState.availableTags,
+                        searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
+                        onSearchQueryChange = viewModel::onSearchQueryChange,
+                        selectedTagId = listState.selectedTagId,
+                        onTagFilterChange = viewModel::onTagFilterChange,
+                        sortOrder = listState.sortOrder,
+                        onSortOrderChange = viewModel::onSortOrderChange,
+                        syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
+                    )
+                HomeTab.Tasks -> Unit
+                HomeTab.Dashboard -> Unit
+                HomeTab.Settings -> Unit
+            }
         }
     }
 
@@ -192,6 +195,16 @@ object HomeTestTags {
     const val SORT_MENU_BUTTON: String = "home_sort_menu_button"
     const val SORT_MENU: String = "home_sort_menu"
     const val NO_MATCHES: String = "home_no_matches"
+
+    /**
+     * Prefixo dos destinos de navegação (D-02).
+     *
+     * Cada item da suíte é `<prefixo>_<aba>`, ex.
+     * `home_nav_tab_tasks`. O nome da aba vem de `HomeTab.testTag()`,
+     * que monta a string — a constante só marca o prefixo, para o teste
+     * poder varrer os 4 destinos sem conhecê-los um a um (AC-1.4).
+     */
+    const val NAV_SUITE_PREFIX: String = "home_nav_tab"
 
     /** Test tag para um chip de filtro por tag específico. */
     fun tagFilterChip(tagId: String): String = "home_tag_filter_chip_$tagId"
