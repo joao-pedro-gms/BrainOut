@@ -133,16 +133,23 @@ subprojects {
 // cada subprojeto, com `android = true` para o analisador entender código
 // Android/Compose.
 //
-// A engine 1.x do ktlint 14 sinaliza violações cosméticas de estilo
-// (indent/quebra de chamada) que o código já tem há 129 commits. Elas estão
-// registradas em `docs/DEFEITOS.md` como DEF-10 e a reformatação fica para
-// uma passada dedicada; `ignoreFailures` fica em `true` até lá para que
-// o gate comece a fiscalizar de verdade sem bloquear todo PR.
+// A engine 1.x do ktlint 14 sinalizava violações cosméticas de estilo
+// (indent/quebra de chamada) que o código carregava há 129 commits.
+// Elas estavam registradas em `docs/DEFEITOS.md` como DEF-10, com o
+// `ignoreFailures = true` como contorno deliberado para que o gate
+// passasse a produzir relatório sem bloquear todo PR.
+//
+// O DEF-10 foi fechado: `ktlintFormat` nos 9 subprojetos (commit
+// `b59318e`) mais o acerto das 9 violações não auto-corrigíveis
+// (commit `b6db6e0`) zeraram o contador. O `ignoreFailures` volta
+// para `false` — o gate agora bloqueia de verdade, que era o ponto
+// do DEF-09 ao alcançar os subprojetos. Violação nova quebra o PR,
+// que é o comportamento pretendido para um gate de estilo.
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         android.set(true)
-        ignoreFailures.set(true)
+        ignoreFailures.set(false)
     }
 }
 
