@@ -28,7 +28,6 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.assets.expectedFontAssets
  *     menor é `labelSmall` (12sp), reservado a metadados auxiliares.
  */
 class NeoTypographyContractTest {
-
     @Test
     fun `os quinze estilos batem com a tabela do DESIGN`() {
         contract.forEach { spec ->
@@ -56,37 +55,48 @@ class NeoTypographyContractTest {
             assertThat(spec.style.lineHeight.isSp).isTrue()
             assertThat(spec.style.letterSpacing.isSp).isTrue()
         }
-        assertThat(NeoTypography.styles.values.map { it.fontFamily }.toSet())
-            .containsExactly(NeoFonts.Archivo, NeoFonts.PublicSans)
+        assertThat(
+            NeoTypography.styles.values
+                .map { it.fontFamily }
+                .toSet(),
+        ).containsExactly(NeoFonts.Archivo, NeoFonts.PublicSans)
     }
 
     @Test
     fun `so metadata e texto secundario ficam abaixo de 14sp`() {
-        val belowMinimum = NeoTypography.styles
-            .filterValues { style -> style.fontSize.value < MIN_READABLE_SP }
-            .keys
+        val belowMinimum =
+            NeoTypography.styles
+                .filterValues { style -> style.fontSize.value < MIN_READABLE_SP }
+                .keys
 
         assertThat(belowMinimum).containsExactlyElementsIn(allowedBelowMinimum.keys)
         allowedBelowMinimum.forEach { (role, expected) ->
-            assertThat(NeoTypography.styles.getValue(role).fontSize.value)
-                .isEqualTo(expected)
+            assertThat(
+                NeoTypography.styles
+                    .getValue(role)
+                    .fontSize.value,
+            ).isEqualTo(expected)
         }
     }
 
     @Test
     fun `papeis de erro acao e prazo ficam todos com pelo menos 14sp`() {
         errorActionDeadlineRoles.forEach { role ->
-            assertThat(NeoTypography.styles.getValue(role).fontSize.value)
-                .isAtLeast(MIN_READABLE_SP)
+            assertThat(
+                NeoTypography.styles
+                    .getValue(role)
+                    .fontSize.value,
+            ).isAtLeast(MIN_READABLE_SP)
         }
     }
 
     @Test
     fun `todo peso usado no contrato existe como arquivo empacotado`() {
-        val used = NeoTypography.styles.values
-            .mapNotNull { style -> style.fontWeight }
-            .map { weight -> weight.weight }
-            .toSet()
+        val used =
+            NeoTypography.styles.values
+                .mapNotNull { style -> style.fontWeight }
+                .map { weight -> weight.weight }
+                .toSet()
         val shipped = expectedFontAssets.map { asset -> asset.expectedWeight }.toSet()
 
         assertThat(used).containsExactlyElementsIn(shipped)
@@ -101,22 +111,24 @@ private const val MIN_READABLE_SP = 14f
  * `labelSmall` é metadado auxiliar (12sp) e `bodySmall` é texto
  * secundário (13sp). Erro, ação e prazo não usam nenhum dos dois.
  */
-private val allowedBelowMinimum: Map<String, Float> = linkedMapOf(
-    "labelSmall" to 12f,
-    "bodySmall" to 13f,
-)
+private val allowedBelowMinimum: Map<String, Float> =
+    linkedMapOf(
+        "labelSmall" to 12f,
+        "bodySmall" to 13f,
+    )
 
 /**
  * Papéis que carregam erro, ação ou prazo na UI (supporting text de campo,
  * botão, rótulo de navegação, painel de estado): todos ≥14sp, conforme
  * `DESIGN.md` §4 e `ESPECIFICACAO.md` §1.
  */
-private val errorActionDeadlineRoles: List<String> = listOf(
-    "labelLarge",
-    "labelMedium",
-    "bodyMedium",
-    "bodyLarge",
-)
+private val errorActionDeadlineRoles: List<String> =
+    listOf(
+        "labelLarge",
+        "labelMedium",
+        "bodyMedium",
+        "bodyLarge",
+    )
 
 private data class StyleSpec(
     val role: String,
@@ -133,20 +145,21 @@ private data class StyleSpec(
  * deliberado: o teste falha com o valor **declarado na especificação**,
  * não com o que o Kotlin acha que declarou.
  */
-private val contract: List<StyleSpec> = listOf(
-    StyleSpec("displayLarge", NeoTypography.displayLarge, NeoFonts.Archivo, 800, 40f, 48f, -0.5f),
-    StyleSpec("displayMedium", NeoTypography.displayMedium, NeoFonts.Archivo, 800, 36f, 44f, -0.5f),
-    StyleSpec("displaySmall", NeoTypography.displaySmall, NeoFonts.Archivo, 800, 32f, 40f, -0.5f),
-    StyleSpec("headlineLarge", NeoTypography.headlineLarge, NeoFonts.Archivo, 700, 32f, 40f, 0f),
-    StyleSpec("headlineMedium", NeoTypography.headlineMedium, NeoFonts.Archivo, 700, 28f, 36f, 0f),
-    StyleSpec("headlineSmall", NeoTypography.headlineSmall, NeoFonts.Archivo, 700, 24f, 32f, 0f),
-    StyleSpec("titleLarge", NeoTypography.titleLarge, NeoFonts.Archivo, 700, 22f, 28f, 0f),
-    StyleSpec("titleMedium", NeoTypography.titleMedium, NeoFonts.Archivo, 600, 18f, 26f, 0f),
-    StyleSpec("titleSmall", NeoTypography.titleSmall, NeoFonts.Archivo, 600, 16f, 24f, 0f),
-    StyleSpec("bodyLarge", NeoTypography.bodyLarge, NeoFonts.PublicSans, 400, 16f, 24f, 0f),
-    StyleSpec("bodyMedium", NeoTypography.bodyMedium, NeoFonts.PublicSans, 400, 14f, 22f, 0f),
-    StyleSpec("bodySmall", NeoTypography.bodySmall, NeoFonts.PublicSans, 400, 13f, 20f, 0f),
-    StyleSpec("labelLarge", NeoTypography.labelLarge, NeoFonts.PublicSans, 600, 15f, 20f, 0.1f),
-    StyleSpec("labelMedium", NeoTypography.labelMedium, NeoFonts.PublicSans, 600, 14f, 20f, 0.1f),
-    StyleSpec("labelSmall", NeoTypography.labelSmall, NeoFonts.PublicSans, 600, 12f, 16f, 0.1f),
-)
+private val contract: List<StyleSpec> =
+    listOf(
+        StyleSpec("displayLarge", NeoTypography.displayLarge, NeoFonts.Archivo, 800, 40f, 48f, -0.5f),
+        StyleSpec("displayMedium", NeoTypography.displayMedium, NeoFonts.Archivo, 800, 36f, 44f, -0.5f),
+        StyleSpec("displaySmall", NeoTypography.displaySmall, NeoFonts.Archivo, 800, 32f, 40f, -0.5f),
+        StyleSpec("headlineLarge", NeoTypography.headlineLarge, NeoFonts.Archivo, 700, 32f, 40f, 0f),
+        StyleSpec("headlineMedium", NeoTypography.headlineMedium, NeoFonts.Archivo, 700, 28f, 36f, 0f),
+        StyleSpec("headlineSmall", NeoTypography.headlineSmall, NeoFonts.Archivo, 700, 24f, 32f, 0f),
+        StyleSpec("titleLarge", NeoTypography.titleLarge, NeoFonts.Archivo, 700, 22f, 28f, 0f),
+        StyleSpec("titleMedium", NeoTypography.titleMedium, NeoFonts.Archivo, 600, 18f, 26f, 0f),
+        StyleSpec("titleSmall", NeoTypography.titleSmall, NeoFonts.Archivo, 600, 16f, 24f, 0f),
+        StyleSpec("bodyLarge", NeoTypography.bodyLarge, NeoFonts.PublicSans, 400, 16f, 24f, 0f),
+        StyleSpec("bodyMedium", NeoTypography.bodyMedium, NeoFonts.PublicSans, 400, 14f, 22f, 0f),
+        StyleSpec("bodySmall", NeoTypography.bodySmall, NeoFonts.PublicSans, 400, 13f, 20f, 0f),
+        StyleSpec("labelLarge", NeoTypography.labelLarge, NeoFonts.PublicSans, 600, 15f, 20f, 0.1f),
+        StyleSpec("labelMedium", NeoTypography.labelMedium, NeoFonts.PublicSans, 600, 14f, 20f, 0.1f),
+        StyleSpec("labelSmall", NeoTypography.labelSmall, NeoFonts.PublicSans, 600, 12f, 16f, 0.1f),
+    )

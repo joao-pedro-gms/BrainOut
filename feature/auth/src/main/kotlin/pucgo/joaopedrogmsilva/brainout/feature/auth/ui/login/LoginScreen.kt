@@ -98,22 +98,24 @@ fun LoginScreen(
                         text = stringResource(id = R.string.login_title),
                         style = MaterialTheme.typography.titleLarge,
                     )
-                }
+                },
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         LoginBody(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
             uiState = uiState,
-            callbacks = LoginCallbacks(
-                onEmailChange = viewModel::onEmailChange,
-                onPasswordChange = viewModel::onPasswordChange,
-                onSubmit = { viewModel.submitLogin() },
-                onCreateAccountClicked = onCreateAccountClicked,
-            ),
+            callbacks =
+                LoginCallbacks(
+                    onEmailChange = viewModel::onEmailChange,
+                    onPasswordChange = viewModel::onPasswordChange,
+                    onSubmit = { viewModel.submitLogin() },
+                    onCreateAccountClicked = onCreateAccountClicked,
+                ),
         )
     }
 }
@@ -133,10 +135,11 @@ internal fun LoginBody(
     val passwordFocus = remember { FocusRequester() }
 
     Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-            .testTag(LoginTestTags.SCROLL),
+        modifier =
+            modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .testTag(LoginTestTags.SCROLL),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -161,16 +164,18 @@ internal fun LoginBody(
             focusRequester = passwordFocus,
             imeAction = ImeAction.Done,
             onDone = callbacks.onSubmit,
-            labels = PasswordFieldLabels(
-                labelId = R.string.login_pwd_label,
-                placeholderId = R.string.login_pwd_placeholder,
-                showToggleId = R.string.login_visibility_show,
-                hideToggleId = R.string.login_visibility_hide,
-            ),
-            tags = PasswordFieldTags(
-                field = LoginTestTags.PASSWORD_FIELD,
-                toggle = LoginTestTags.PASSWORD_TOGGLE,
-            ),
+            labels =
+                PasswordFieldLabels(
+                    labelId = R.string.login_pwd_label,
+                    placeholderId = R.string.login_pwd_placeholder,
+                    showToggleId = R.string.login_visibility_show,
+                    hideToggleId = R.string.login_visibility_hide,
+                ),
+            tags =
+                PasswordFieldTags(
+                    field = LoginTestTags.PASSWORD_FIELD,
+                    toggle = LoginTestTags.PASSWORD_TOGGLE,
+                ),
         )
 
         uiState.errorMessage?.let { message ->
@@ -179,10 +184,11 @@ internal fun LoginBody(
                 text = resolvedMessage,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(LoginTestTags.ERROR_BANNER)
-                    .semantics { contentDescription = resolvedMessage },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag(LoginTestTags.ERROR_BANNER)
+                        .semantics { contentDescription = resolvedMessage },
             )
         }
 
@@ -190,15 +196,17 @@ internal fun LoginBody(
         Button(
             onClick = callbacks.onSubmit,
             enabled = !uiState.isLoading,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(LoginTestTags.SUBMIT),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag(LoginTestTags.SUBMIT),
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .testTag(LoginTestTags.LOADING),
+                    modifier =
+                        Modifier
+                            .height(20.dp)
+                            .testTag(LoginTestTags.LOADING),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
@@ -212,9 +220,10 @@ internal fun LoginBody(
         TextButton(
             onClick = callbacks.onCreateAccountClicked,
             enabled = !uiState.isLoading,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(LoginTestTags.CREATE_ACCOUNT),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag(LoginTestTags.CREATE_ACCOUNT),
         ) {
             Text(
                 text = stringResource(id = R.string.login_create_account),
@@ -243,31 +252,32 @@ internal fun LoginBody(
  * `strings.xml`.
  */
 @Composable
-internal fun resolveAuthMessage(message: String): String = when (message) {
-    AuthViewModel.EMPTY_EMAIL_MESSAGE ->
-        stringResource(id = R.string.auth_error_empty_email)
-    AuthViewModel.INVALID_EMAIL_MESSAGE ->
-        stringResource(id = R.string.auth_error_invalid_email)
-    AuthViewModel.EMPTY_PASSWORD_MESSAGE ->
-        stringResource(id = R.string.auth_error_empty_pwd)
-    AuthViewModel.SHORT_PASSWORD_MESSAGE ->
-        stringResource(id = R.string.auth_error_short_pwd)
-    AuthViewModel.INVALID_CREDENTIALS_MESSAGE ->
-        stringResource(id = R.string.auth_error_invalid_credentials)
-    AuthViewModel.DUPLICATE_EMAIL_MESSAGE ->
-        stringResource(id = R.string.auth_error_duplicate_email)
-    AuthViewModel.EMPTY_NAME_MESSAGE ->
-        stringResource(id = R.string.auth_error_empty_name)
-    AuthViewModel.LONG_NAME_MESSAGE ->
-        stringResource(id = R.string.auth_error_long_name)
-    AuthViewModel.EMPTY_PASSWORD_CONFIRMATION_MESSAGE ->
-        stringResource(id = R.string.auth_error_empty_pwd_confirmation)
-    AuthViewModel.PASSWORD_MISMATCH_MESSAGE ->
-        stringResource(id = R.string.auth_error_pwd_mismatch)
-    AuthViewModel.UNEXPECTED_ERROR_MESSAGE ->
-        stringResource(id = R.string.auth_error_unexpected)
-    else -> message
-}
+internal fun resolveAuthMessage(message: String): String =
+    when (message) {
+        AuthViewModel.EMPTY_EMAIL_MESSAGE ->
+            stringResource(id = R.string.auth_error_empty_email)
+        AuthViewModel.INVALID_EMAIL_MESSAGE ->
+            stringResource(id = R.string.auth_error_invalid_email)
+        AuthViewModel.EMPTY_PASSWORD_MESSAGE ->
+            stringResource(id = R.string.auth_error_empty_pwd)
+        AuthViewModel.SHORT_PASSWORD_MESSAGE ->
+            stringResource(id = R.string.auth_error_short_pwd)
+        AuthViewModel.INVALID_CREDENTIALS_MESSAGE ->
+            stringResource(id = R.string.auth_error_invalid_credentials)
+        AuthViewModel.DUPLICATE_EMAIL_MESSAGE ->
+            stringResource(id = R.string.auth_error_duplicate_email)
+        AuthViewModel.EMPTY_NAME_MESSAGE ->
+            stringResource(id = R.string.auth_error_empty_name)
+        AuthViewModel.LONG_NAME_MESSAGE ->
+            stringResource(id = R.string.auth_error_long_name)
+        AuthViewModel.EMPTY_PASSWORD_CONFIRMATION_MESSAGE ->
+            stringResource(id = R.string.auth_error_empty_pwd_confirmation)
+        AuthViewModel.PASSWORD_MISMATCH_MESSAGE ->
+            stringResource(id = R.string.auth_error_pwd_mismatch)
+        AuthViewModel.UNEXPECTED_ERROR_MESSAGE ->
+            stringResource(id = R.string.auth_error_unexpected)
+        else -> message
+    }
 
 /** Identificadores usados por testes Compose. */
 object LoginTestTags {
@@ -313,55 +323,64 @@ internal fun PasswordField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .testTag(tags.field),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .testTag(tags.field),
         label = { Text(text = stringResource(id = labels.labelId)) },
         placeholder = { Text(text = stringResource(id = labels.placeholderId)) },
         singleLine = true,
-        visualTransformation = if (passwordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = imeAction,
-        ),
-        keyboardActions = KeyboardActions(
-            onDone = { onDone() },
-            onNext = { onDone() },
-            onGo = { onDone() },
-        ),
+        visualTransformation =
+            if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = imeAction,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onDone = { onDone() },
+                onNext = { onDone() },
+                onGo = { onDone() },
+            ),
         isError = errorMessage != null,
-        supportingText = errorMessage?.let { msg ->
-            { Text(text = resolveAuthMessage(msg)) }
-        },
+        supportingText =
+            errorMessage?.let { msg ->
+                { Text(text = resolveAuthMessage(msg)) }
+            },
         trailingIcon = {
             IconButton(
                 onClick = { passwordVisible = !passwordVisible },
-                modifier = Modifier
-                    .testTag(tags.toggle)
-                    .semantics {
-                        contentDescription = if (passwordVisible) {
+                modifier =
+                    Modifier
+                        .testTag(tags.toggle)
+                        .semantics {
+                            contentDescription =
+                                if (passwordVisible) {
+                                    hideDescription
+                                } else {
+                                    showDescription
+                                }
+                        },
+            ) {
+                Icon(
+                    imageVector =
+                        if (passwordVisible) {
+                            Icons.Filled.VisibilityOff
+                        } else {
+                            Icons.Filled.Visibility
+                        },
+                    contentDescription =
+                        if (passwordVisible) {
                             hideDescription
                         } else {
                             showDescription
-                        }
-                    },
-            ) {
-                Icon(
-                    imageVector = if (passwordVisible) {
-                        Icons.Filled.VisibilityOff
-                    } else {
-                        Icons.Filled.Visibility
-                    },
-                    contentDescription = if (passwordVisible) {
-                        hideDescription
-                    } else {
-                        showDescription
-                    },
+                        },
                 )
             }
         },
@@ -404,25 +423,29 @@ internal fun EmailField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .testTag(config.fieldTestTag),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .testTag(config.fieldTestTag),
         label = { Text(text = stringResource(id = config.labelId)) },
         placeholder = { Text(text = stringResource(id = config.placeholderId)) },
         singleLine = true,
         isError = errorMessage != null,
-        supportingText = errorMessage?.let { msg ->
-            { Text(text = resolveAuthMessage(msg)) }
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = imeAction,
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { onNext() },
-            onDone = { onNext() },
-        ),
+        supportingText =
+            errorMessage?.let { msg ->
+                { Text(text = resolveAuthMessage(msg)) }
+            },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = imeAction,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onNext = { onNext() },
+                onDone = { onNext() },
+            ),
     )
 }
 
@@ -433,11 +456,12 @@ internal data class EmailFieldConfig(
     val fieldTestTag: String,
 ) {
     companion object {
-        val DEFAULT_LOGIN: EmailFieldConfig = EmailFieldConfig(
-            labelId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_label,
-            placeholderId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_placeholder,
-            fieldTestTag = LoginTestTags.EMAIL_FIELD,
-        )
+        val DEFAULT_LOGIN: EmailFieldConfig =
+            EmailFieldConfig(
+                labelId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_label,
+                placeholderId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_placeholder,
+                fieldTestTag = LoginTestTags.EMAIL_FIELD,
+            )
     }
 }
 

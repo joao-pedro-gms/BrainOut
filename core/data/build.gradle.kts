@@ -1,6 +1,8 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Módulo :core:data — Room, DataStore, fontes remotas e implementações de repositório.
 
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.library)
     // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
@@ -12,16 +14,15 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-import java.util.Properties
-
 // Override opcional da URL base por flavor (E3.2): lê `local.properties`
 // (não versionado). Sem o arquivo, vale o default do flavor.
-val localProperties = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) {
-        f.inputStream().use { load(it) }
+val localProperties =
+    Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) {
+            f.inputStream().use { load(it) }
+        }
     }
-}
 
 // URL base do flavor `dev` com duas camadas de override (E3.2): a env var
 // `BASE_URL` (definida pelo job `backend-integration` do CI para apontar o
@@ -102,7 +103,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -169,8 +170,17 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.okhttp.mockwebserver)
 
+    // Deps dos testes INSTRUMENTADOS. `MigrationTest` e
+    // `UserDaoInstrumentedTest` importam Truth e coroutines-test, mas
+    // ambos vivem no bloco `testImplementation` — sem estas duas linhas
+    // o `compileDevDebugAndroidTestKotlin` falhava com ~40 erros
+    // `Unresolved reference` e a suíte instrumentada nunca compilou
+    // (nem local, nem no CI, que também não invoca
+    // `connectedAndroidTest`).
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }
 
 detekt {
@@ -178,4 +188,3 @@ detekt {
     buildUponDefaultConfig = true
     autoCorrect = false
 }
-

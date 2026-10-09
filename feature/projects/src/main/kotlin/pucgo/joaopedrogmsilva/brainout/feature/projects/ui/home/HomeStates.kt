@@ -35,8 +35,9 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 @Composable
 internal fun HomeLoadingState(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .heightIn(min = 240.dp),
+        modifier =
+            modifier
+                .heightIn(min = 240.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -74,9 +75,10 @@ internal fun HomeErrorBanner(
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -90,18 +92,20 @@ internal fun HomeErrorBanner(
             ) {
                 TextButton(
                     onClick = onRetry,
-                    modifier = Modifier
-                        .testTag(HomeTestTags.ERROR_RETRY)
-                        // E4.4: 48dp mínimo WCAG 2.5.5.
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(HomeTestTags.ERROR_RETRY)
+                            // E4.4: 48dp mínimo WCAG 2.5.5.
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.home_error_retry))
                 }
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .testTag(HomeTestTags.ERROR_DISMISS)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(HomeTestTags.ERROR_DISMISS)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.home_error_dismiss))
                 }
@@ -117,10 +121,11 @@ internal fun HomeErrorBanner(
  * expor stack traces para o usuário.
  */
 @Composable
-internal fun resolveHomeErrorMessage(message: String): String = when {
-    HomeViewModel.isLoadErrorMessage(message) ->
-        stringResource(id = R.string.home_error_load_failed)
-    message == HomeViewModel.ERROR_ACTION_FAILED ->
-        stringResource(id = R.string.home_error_action_failed)
-    else -> message
-}
+internal fun resolveHomeErrorMessage(message: String): String =
+    when {
+        HomeViewModel.isLoadErrorMessage(message) ->
+            stringResource(id = R.string.home_error_load_failed)
+        message == HomeViewModel.ERROR_ACTION_FAILED ->
+            stringResource(id = R.string.home_error_action_failed)
+        else -> message
+    }

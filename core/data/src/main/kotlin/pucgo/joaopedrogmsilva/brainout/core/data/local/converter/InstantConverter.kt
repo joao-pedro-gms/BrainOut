@@ -14,7 +14,6 @@ import java.time.Instant
  * nanossegundos em memória.
  */
 class InstantConverter {
-
     @TypeConverter
     fun fromEpochMillis(value: Long?): Instant? = value?.let(Instant::ofEpochMilli)
 

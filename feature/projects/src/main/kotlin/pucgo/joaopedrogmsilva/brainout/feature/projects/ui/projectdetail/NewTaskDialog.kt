@@ -48,7 +48,9 @@ internal fun NewTaskDialog(
     var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
     var priorityMenuExpanded by remember { mutableStateOf(false) }
     var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
-    val dueDate: Instant? = @Suppress("NewApi") dueDateMillis?.let(Instant::ofEpochMilli)
+    val dueDate: Instant? =
+        @Suppress("NewApi")
+        dueDateMillis?.let(Instant::ofEpochMilli)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -65,9 +67,10 @@ internal fun NewTaskDialog(
                         Text(text = stringResource(id = R.string.project_detail_new_task_title_placeholder))
                     },
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
                 )
                 Box {
                     OutlinedTextField(
@@ -79,10 +82,11 @@ internal fun NewTaskDialog(
                     )
                     // Overlay transparente para abrir o menu ao tocar.
                     Surface(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(4.dp))
-                            .testTag("project_detail_new_task_priority_field"),
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(4.dp))
+                                .testTag("project_detail_new_task_priority_field"),
                         color = Color.Transparent,
                         content = {},
                         onClick = { priorityMenuExpanded = true },
@@ -104,7 +108,11 @@ internal fun NewTaskDialog(
                 }
                 DeadlineField(
                     dueDate = dueDate,
-                    onDateChange = { dueDateMillis = @Suppress("NewApi") it?.toEpochMilli() },
+                    onDateChange = {
+                        dueDateMillis =
+                            @Suppress("NewApi")
+                            it?.toEpochMilli()
+                    },
                     evaluateDeadline = evaluateDeadline,
                 )
             }

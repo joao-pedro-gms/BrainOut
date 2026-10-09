@@ -56,4 +56,3 @@ tasks.jacocoTestReport {
     }
     sourceDirectories.setFrom(files("src/main/kotlin"))
 }
-

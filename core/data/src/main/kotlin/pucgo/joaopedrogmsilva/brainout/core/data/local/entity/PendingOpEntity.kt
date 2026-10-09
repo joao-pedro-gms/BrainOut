@@ -5,9 +5,9 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.time.Instant
 
 /**
  * Tipo de entidade referenciada por uma [PendingOpEntity].
@@ -76,7 +76,6 @@ data class PendingOpEntity(
     val attempts: Int = 0,
 ) {
     companion object {
-
         /**
          * Fábrica de operação pendente. Serializa [payloadObj] com o
          * [SYNC_JSON] quando informado; caso contrário grava `{}` (op
@@ -88,14 +87,16 @@ data class PendingOpEntity(
             opType: SyncOpType,
             payloadObj: Any? = null,
             now: Instant = Instant.now(),
-        ): PendingOpEntity = PendingOpEntity(
-            entityType = entityType.name,
-            entityId = entityId,
-            opType = opType.name,
-            payload = payloadObj?.let { obj -> SYNC_JSON.encodeToString(SyncPayloadSerializer(obj), obj) }
-                ?: "{}",
-            createdAt = now,
-        )
+        ): PendingOpEntity =
+            PendingOpEntity(
+                entityType = entityType.name,
+                entityId = entityId,
+                opType = opType.name,
+                payload =
+                    payloadObj?.let { obj -> SYNC_JSON.encodeToString(syncPayloadSerializer(obj), obj) }
+                        ?: "{}",
+                createdAt = now,
+            )
     }
 }
 
@@ -106,10 +107,11 @@ data class PendingOpEntity(
  * `priority`) sempre apareçam no corpo — o backend Pydantic aceita
  * tanto, mas enviar tudo simplifica o debug da fila.
  */
-val SYNC_JSON: Json = Json {
-    encodeDefaults = true
-    ignoreUnknownKeys = true
-}
+val SYNC_JSON: Json =
+    Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
 
 /**
  * Resolve o serializer polimórfico dos payloads de sync. Os payloads
@@ -118,7 +120,7 @@ val SYNC_JSON: Json = Json {
  * três formas de payload são conhecidas e fechadas.
  */
 @Suppress("FunctionNaming")
-private fun SyncPayloadSerializer(obj: Any): kotlinx.serialization.KSerializer<Any> =
+private fun syncPayloadSerializer(obj: Any): kotlinx.serialization.KSerializer<Any> =
     @Suppress("UNCHECKED_CAST")
     when (obj) {
         is ProjectSyncPayload -> ProjectSyncPayload.serializer()
@@ -127,7 +129,8 @@ private fun SyncPayloadSerializer(obj: Any): kotlinx.serialization.KSerializer<A
         else -> throw IllegalArgumentException(
             "Payload de sync não suportado: ${obj::class.simpleName}",
         )
-    } as kotlinx.serialization.KSerializer<Any>
+    }
+        as kotlinx.serialization.KSerializer<Any>
 
 /** Payload de projeto enviado em CREATE/UPDATE (PUT upsert). */
 @Serializable

@@ -47,7 +47,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -61,50 +60,54 @@ class TasksViewModelTest {
     }
 
     @Test
-    fun `estado vazio quando nao ha owner ativo`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf(null)
+    fun `estado vazio quando nao ha owner ativo`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf(null)
 
-        val viewModel = TasksViewModel(
-            taskRepository = mockk(relaxed = true),
-            projectRepository = mockk(relaxed = true),
-            activeUserProvider = activeUserProvider,
-        )
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = mockk(relaxed = true),
+                    projectRepository = mockk(relaxed = true),
+                    activeUserProvider = activeUserProvider,
+                )
 
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.rows).isEmpty()
-            assertThat(state.isLoading).isFalse()
-            cancelAndIgnoreRemainingEvents()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.rows).isEmpty()
+                assertThat(state.isLoading).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `estado carrega lista de tarefas quando owner existe`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+    fun `estado carrega lista de tarefas quando owner existe`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-        val taskRepository: TaskRepository = mockk()
-        coEvery { taskRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+            val taskRepository: TaskRepository = mockk()
+            coEvery { taskRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
 
-        val projectRepository: ProjectRepository = mockk()
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+            val projectRepository: ProjectRepository = mockk()
+            coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
 
-        val viewModel = TasksViewModel(
-            taskRepository = taskRepository,
-            projectRepository = projectRepository,
-            activeUserProvider = activeUserProvider,
-        )
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = taskRepository,
+                    projectRepository = projectRepository,
+                    activeUserProvider = activeUserProvider,
+                )
 
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.rows).isEmpty()
-            assertThat(state.isLoading).isFalse()
-            cancelAndIgnoreRemainingEvents()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.rows).isEmpty()
+                assertThat(state.isLoading).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     // === E2.8 — estados de erro e retry ==========================================
 
@@ -114,76 +117,82 @@ class TasksViewModelTest {
      * para `false` com a lista carregada.
      */
     @Test
-    fun `E2 8 uiState permanece em loading ate Flow de tasks emitir`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+    fun `E2 8 uiState permanece em loading ate Flow de tasks emitir`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-        val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
-        val taskRepository: TaskRepository = mockk()
-        coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
+            val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
+            val taskRepository: TaskRepository = mockk()
+            coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
 
-        val projectRepository: ProjectRepository = mockk()
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+            val projectRepository: ProjectRepository = mockk()
+            coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
 
-        val viewModel = TasksViewModel(
-            taskRepository = taskRepository,
-            projectRepository = projectRepository,
-            activeUserProvider = activeUserProvider,
-        )
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = taskRepository,
+                    projectRepository = projectRepository,
+                    activeUserProvider = activeUserProvider,
+                )
 
-        viewModel.uiState.test {
-            var state = awaitItem()
-            assertThat(state.isLoading).isTrue()
-            assertThat(state.rows).isEmpty()
+            viewModel.uiState.test {
+                var state = awaitItem()
+                assertThat(state.isLoading).isTrue()
+                assertThat(state.rows).isEmpty()
 
-            // Emite a primeira lista.
-            tasksFlow.value = listOf(
-                pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
-                    projectId = "p1",
-                    title = "T",
-                ),
-            )
-            advanceUntilIdle()
-            state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.rows).hasSize(1)
-            cancelAndIgnoreRemainingEvents()
+                // Emite a primeira lista.
+                tasksFlow.value =
+                    listOf(
+                        pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
+                            projectId = "p1",
+                            title = "T",
+                        ),
+                    )
+                advanceUntilIdle()
+                state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.rows).hasSize(1)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     /**
      * Falha do Room em `observeAllForOwner` é convertida em
      * `ERROR_LOAD_FAILED` + `isLoading = false`.
      */
     @Test
-    fun `E2 8 erro do Flow de tasks popula errorMessage de carga`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+    fun `E2 8 erro do Flow de tasks popula errorMessage de carga`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-        val taskRepository: TaskRepository = mockk()
-        coEvery { taskRepository.observeAllForOwner("u1") } returns flow {
-            throw IllegalStateException("disk full")
+            val taskRepository: TaskRepository = mockk()
+            coEvery { taskRepository.observeAllForOwner("u1") } returns
+                flow {
+                    throw IllegalStateException("disk full")
+                }
+
+            val projectRepository: ProjectRepository = mockk()
+            coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = taskRepository,
+                    projectRepository = projectRepository,
+                    activeUserProvider = activeUserProvider,
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.errorMessage).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.isLoading).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
         }
-
-        val projectRepository: ProjectRepository = mockk()
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
-
-        val viewModel = TasksViewModel(
-            taskRepository = taskRepository,
-            projectRepository = projectRepository,
-            activeUserProvider = activeUserProvider,
-        )
-
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.errorMessage).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
-            assertThat(state.isLoading).isFalse()
-            cancelAndIgnoreRemainingEvents()
-        }
-
-        assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
-    }
 
     /**
      * `retry()` re-assina o Flow após falha. Reconfiguramos o mock
@@ -196,69 +205,75 @@ class TasksViewModelTest {
      * nunca dispara).
      */
     @Test
-    fun `E2 8 retry re-assina Flow apos erro e limpa errorMessage`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+    fun `E2 8 retry re-assina Flow apos erro e limpa errorMessage`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-        val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
-        val taskRepository: TaskRepository = mockk()
-        coEvery { taskRepository.observeAllForOwner("u1") } returns flow {
-            throw IllegalStateException("boom")
+            val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
+            val taskRepository: TaskRepository = mockk()
+            coEvery { taskRepository.observeAllForOwner("u1") } returns
+                flow {
+                    throw IllegalStateException("boom")
+                }
+
+            val projectRepository: ProjectRepository = mockk()
+            coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = taskRepository,
+                    projectRepository = projectRepository,
+                    activeUserProvider = activeUserProvider,
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+
+                // Reconfigura o mock para emitir lista vazia.
+                coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
+
+                viewModel.retry()
+                advanceUntilIdle()
+
+                assertThat(viewModel.errorMessage.value).isNull()
+                val state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.errorMessage).isNull()
+
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        val projectRepository: ProjectRepository = mockk()
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
-
-        val viewModel = TasksViewModel(
-            taskRepository = taskRepository,
-            projectRepository = projectRepository,
-            activeUserProvider = activeUserProvider,
-        )
-
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
-
-            // Reconfigura o mock para emitir lista vazia.
-            coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
-
-            viewModel.retry()
-            advanceUntilIdle()
-
-            assertThat(viewModel.errorMessage.value).isNull()
-            val state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isNull()
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     @Test
-    fun `E2 8 clearError zera errorMessage`() = runTest(testDispatcher) {
-        val activeUserProvider: ActiveUserProvider = mockk()
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+    fun `E2 8 clearError zera errorMessage`() =
+        runTest(testDispatcher) {
+            val activeUserProvider: ActiveUserProvider = mockk()
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-        val taskRepository: TaskRepository = mockk()
-        coEvery { taskRepository.observeAllForOwner("u1") } returns flow {
-            throw IllegalStateException("boom")
+            val taskRepository: TaskRepository = mockk()
+            coEvery { taskRepository.observeAllForOwner("u1") } returns
+                flow {
+                    throw IllegalStateException("boom")
+                }
+            val projectRepository: ProjectRepository = mockk()
+            coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel =
+                TasksViewModel(
+                    taskRepository = taskRepository,
+                    projectRepository = projectRepository,
+                    activeUserProvider = activeUserProvider,
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+
+                viewModel.clearError()
+                assertThat(viewModel.errorMessage.value).isNull()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-        val projectRepository: ProjectRepository = mockk()
-        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
-
-        val viewModel = TasksViewModel(
-            taskRepository = taskRepository,
-            projectRepository = projectRepository,
-            activeUserProvider = activeUserProvider,
-        )
-
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
-
-            viewModel.clearError()
-            assertThat(viewModel.errorMessage.value).isNull()
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 }

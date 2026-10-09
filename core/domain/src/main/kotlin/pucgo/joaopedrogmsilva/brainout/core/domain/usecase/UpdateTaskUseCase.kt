@@ -1,13 +1,13 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import java.time.Instant
-import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import java.time.Instant
+import javax.inject.Inject
 
 /**
  * Caso de uso responsável por atualizar uma [Task] existente.
@@ -35,37 +35,39 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  * - Tarefa ativa sem prazo ou com prazo no passado → sem lembrete
  *   (cancela qualquer agendamento remanescente).
  */
-class UpdateTaskUseCase @Inject constructor(
-    private val repository: TaskRepository,
-    private val deadlineScheduler: DeadlineNotificationScheduler,
-) {
-    /** @param task Tarefa com os campos atualizados — `id` deve existir. */
-    suspend operator fun invoke(task: Task): Task {
-        // RN02 — defesa contra bypass via `copy`/objeto velho: se o
-        // estado persistido difere do input, recarregamos do banco e
-        // aplicamos RN02 contra o registro vigente. Se o registro
-        // vigente está em DONE, rejeitamos mesmo que o input tenha
-        // status ativo (ou tenha sido `copy` para uma prioridade
-        // diferente).
-        val persisted = repository.findById(task.id)
-        if (persisted != null && persisted.status == TaskStatus.DONE) {
-            throw TaskPriorityChangeForbiddenException(task.id)
+class UpdateTaskUseCase
+    @Inject
+    constructor(
+        private val repository: TaskRepository,
+        private val deadlineScheduler: DeadlineNotificationScheduler,
+    ) {
+        /** @param task Tarefa com os campos atualizados — `id` deve existir. */
+        suspend operator fun invoke(task: Task): Task {
+            // RN02 — defesa contra bypass via `copy`/objeto velho: se o
+            // estado persistido difere do input, recarregamos do banco e
+            // aplicamos RN02 contra o registro vigente. Se o registro
+            // vigente está em DONE, rejeitamos mesmo que o input tenha
+            // status ativo (ou tenha sido `copy` para uma prioridade
+            // diferente).
+            val persisted = repository.findById(task.id)
+            if (persisted != null && persisted.status == TaskStatus.DONE) {
+                throw TaskPriorityChangeForbiddenException(task.id)
+            }
+            val updated = repository.update(task)
+            reconcileReminder(updated)
+            return updated
         }
-        val updated = repository.update(task)
-        reconcileReminder(updated)
-        return updated
-    }
 
-    private fun reconcileReminder(task: Task) {
-        if (task.status == TaskStatus.DONE) {
-            deadlineScheduler.cancel(task.id)
-            return
-        }
-        val triggerAt = task.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
-        if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
-            deadlineScheduler.schedule(task.id, triggerAt)
-        } else {
-            deadlineScheduler.cancel(task.id)
+        private fun reconcileReminder(task: Task) {
+            if (task.status == TaskStatus.DONE) {
+                deadlineScheduler.cancel(task.id)
+                return
+            }
+            val triggerAt = task.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
+            if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
+                deadlineScheduler.schedule(task.id, triggerAt)
+            } else {
+                deadlineScheduler.cancel(task.id)
+            }
         }
     }
-}

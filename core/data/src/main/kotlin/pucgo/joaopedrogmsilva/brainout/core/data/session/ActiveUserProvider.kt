@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.session
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -13,6 +11,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
 import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val TAG = "BrainOut:ActiveUserProvider"
 
@@ -30,70 +30,79 @@ private const val TAG = "BrainOut:ActiveUserProvider"
  * - `MainActivity` para decidir a rota inicial (E1.8).
  */
 @Singleton
-class ActiveUserProvider @Inject constructor(
-    private val sessionStore: SessionStore,
-    private val userRepository: UserRepository,
-) {
-
-    /**
-     * [Flow] que emite o [User] ativo ou `null` se não houver sessão.
-     *
-     * Usa [flatMapLatest] para reagir a mudanças no id persistido:
-     * cada novo id dispara uma busca em [UserRepository.findById]
-     * automaticamente. Sessões órfãs (id presente mas `User` ausente)
-     * são limpas no [SessionStore] para que o próximo start do app
-     * leve o usuário de volta para a tela de Login.
-     */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeActiveUser(): Flow<User?> = sessionStore.observeUserId()
-        .flatMapLatest { id ->
-            if (id.isNullOrBlank()) {
-                logDebug(TAG, "Sessão ausente (id nulo ou vazio)")
-                flow { emit(null) }
-            } else {
-                flow {
-                    val user = userRepository.findById(id)
-                    if (user == null) {
-                        logWarn(TAG, "Sessão órfã detectada para id=$id (usuário não existe no Room). Limpando sessão.")
-                        sessionStore.clear()
-                        emit(null)
+class ActiveUserProvider
+    @Inject
+    constructor(
+        private val sessionStore: SessionStore,
+        private val userRepository: UserRepository,
+    ) {
+        /**
+         * [Flow] que emite o [User] ativo ou `null` se não houver sessão.
+         *
+         * Usa [flatMapLatest] para reagir a mudanças no id persistido:
+         * cada novo id dispara uma busca em [UserRepository.findById]
+         * automaticamente. Sessões órfãs (id presente mas `User` ausente)
+         * são limpas no [SessionStore] para que o próximo start do app
+         * leve o usuário de volta para a tela de Login.
+         */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        fun observeActiveUser(): Flow<User?> =
+            sessionStore
+                .observeUserId()
+                .flatMapLatest { id ->
+                    if (id.isNullOrBlank()) {
+                        logDebug(TAG, "Sessão ausente (id nulo ou vazio)")
+                        flow { emit(null) }
                     } else {
-                        logDebug(TAG, "Usuário ativo reidratado: id=${user.id}, e-mail=${user.email.maskEmail()}")
-                        emit(user)
+                        flow {
+                            val user = userRepository.findById(id)
+                            if (user == null) {
+                                logWarn(
+                                    TAG,
+                                    "Sessão órfã detectada para id=$id (usuário não existe no Room). Limpando sessão.",
+                                )
+                                sessionStore.clear()
+                                emit(null)
+                            } else {
+                                logDebug(
+                                    TAG,
+                                    "Usuário ativo reidratado: id=${user.id}, e-mail=${user.email.maskEmail()}",
+                                )
+                                emit(user)
+                            }
+                        }
                     }
                 }
-            }
+
+        /**
+         * [Flow] que emite o id ([User.id]) do usuário ativo, ou `null`
+         * se não houver sessão.
+         *
+         * Útil para consumidores que precisam apenas do id (ex.: filtros
+         * `observeXxxForOwner(ownerId)` nos repositórios), sem ter que
+         * materializar o [User] completo a cada emissão.
+         *
+         * Reage automaticamente a mudanças no id persistido em
+         * [SessionStore] (mesma cadeia `flatMapLatest` de
+         * [observeActiveUser]).
+         */
+        fun observeActiveUserId(): Flow<String?> = observeActiveUser().map { it?.id }
+
+        /**
+         * Versão suspensa que devolve o usuário ativo atual (ou `null`).
+         * Útil para pontos de inicialização onde só o valor pontual
+         * importa.
+         */
+        suspend fun currentActiveUser(): User? {
+            val id = sessionStore.currentUserId() ?: return null
+            val user = userRepository.findById(id)
+            logDebug(TAG, "currentActiveUser: id=$id -> usuário=${user?.email?.maskEmail()}")
+            return user
         }
 
-    /**
-     * [Flow] que emite o id ([User.id]) do usuário ativo, ou `null`
-     * se não houver sessão.
-     *
-     * Útil para consumidores que precisam apenas do id (ex.: filtros
-     * `observeXxxForOwner(ownerId)` nos repositórios), sem ter que
-     * materializar o [User] completo a cada emissão.
-     *
-     * Reage automaticamente a mudanças no id persistido em
-     * [SessionStore] (mesma cadeia `flatMapLatest` de
-     * [observeActiveUser]).
-     */
-    fun observeActiveUserId(): Flow<String?> = observeActiveUser().map { it?.id }
-
-    /**
-     * Versão suspensa que devolve o usuário ativo atual (ou `null`).
-     * Útil para pontos de inicialização onde só o valor pontual
-     * importa.
-     */
-    suspend fun currentActiveUser(): User? {
-        val id = sessionStore.currentUserId() ?: return null
-        val user = userRepository.findById(id)
-        logDebug(TAG, "currentActiveUser: id=$id -> usuário=${user?.email?.maskEmail()}")
-        return user
+        /** Encerra a sessão atual (logout). */
+        suspend fun signOut() {
+            logDebug(TAG, "Encerrando sessão via signOut()")
+            sessionStore.clear()
+        }
     }
-
-    /** Encerra a sessão atual (logout). */
-    suspend fun signOut() {
-        logDebug(TAG, "Encerrando sessão via signOut()")
-        sessionStore.clear()
-    }
-}

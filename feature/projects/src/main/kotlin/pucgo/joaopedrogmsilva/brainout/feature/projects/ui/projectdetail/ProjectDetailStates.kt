@@ -37,10 +37,11 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 @Composable
 internal fun ProjectDetailLoadingState() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 240.dp)
-            .testTag(ProjectDetailTestTags.LOADING),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 240.dp)
+                .testTag(ProjectDetailTestTags.LOADING),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -65,17 +66,19 @@ internal fun ProjectDetailErrorBanner(
     onDismiss: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 140.dp)
-            .testTag(ProjectDetailTestTags.ERROR_BANNER),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 140.dp)
+                .testTag(ProjectDetailTestTags.ERROR_BANNER),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -87,17 +90,19 @@ internal fun ProjectDetailErrorBanner(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     onClick = onRetry,
-                    modifier = Modifier
-                        .testTag(ProjectDetailTestTags.ERROR_RETRY)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(ProjectDetailTestTags.ERROR_RETRY)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.project_detail_error_retry))
                 }
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .testTag(ProjectDetailTestTags.ERROR_DISMISS)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(ProjectDetailTestTags.ERROR_DISMISS)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.project_detail_error_dismiss))
                 }
@@ -110,16 +115,18 @@ internal fun ProjectDetailErrorBanner(
 @Composable
 internal fun EmptyTasksCard() {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 180.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 180.dp),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

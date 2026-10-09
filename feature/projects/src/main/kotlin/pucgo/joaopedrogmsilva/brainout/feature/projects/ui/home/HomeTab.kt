@@ -25,11 +25,13 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.R
  *   relevância — a próxima vez que o usuário voltar para Home, ele
  *   reencontra o estado salvo via `rememberSaveable`.
  */
-enum class HomeTab(@StringRes val labelRes: Int) {
+enum class HomeTab(
+    @StringRes val labelRes: Int,
+) {
     Projects(R.string.bottom_tab_projects),
     Tasks(R.string.bottom_tab_tasks),
     Dashboard(R.string.bottom_tab_dashboard),
-    Settings(R.string.bottom_tab_settings)
+    Settings(R.string.bottom_tab_settings),
 }
 
 /**
@@ -42,7 +44,9 @@ enum class HomeTab(@StringRes val labelRes: Int) {
  * - [Completed] exibe projetos com `is_completed = true` — a aba
  *   dedicada pedida pelo ROADMAP E2.5.
  */
-enum class HomeProjectFilter(@StringRes val labelRes: Int) {
+enum class HomeProjectFilter(
+    @StringRes val labelRes: Int,
+) {
     Active(R.string.home_filter_active),
     Completed(R.string.home_filter_completed),
 }

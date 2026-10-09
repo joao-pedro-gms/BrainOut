@@ -77,17 +77,18 @@ data class Task(
             dueDate: Instant? = null,
             completedAt: Instant? = null,
             now: Instant = Instant.now(),
-        ): Task = Task(
-            id = UUID.randomUUID().toString(),
-            projectId = projectId,
-            title = title,
-            priority = priority,
-            status = status,
-            assigneeId = assigneeId,
-            dueDate = dueDate,
-            createdAt = now,
-            completedAt = completedAt,
-        )
+        ): Task =
+            Task(
+                id = UUID.randomUUID().toString(),
+                projectId = projectId,
+                title = title,
+                priority = priority,
+                status = status,
+                assigneeId = assigneeId,
+                dueDate = dueDate,
+                createdAt = now,
+                completedAt = completedAt,
+            )
 
         fun requireValidTitle(raw: String) {
             val trimmed = raw.trim()
@@ -126,14 +127,15 @@ data class Task(
                 "Transição de status inválida: ${status.name} -> ${target.name}",
             )
         }
-        val newCompletedAt = when {
-            // entrada em DONE (vindo de TODO/DOING) → carimba completedAt
-            target == TaskStatus.DONE && completedAt == null -> Instant.now()
-            // saída de DONE → limpa completedAt
-            status == TaskStatus.DONE && target != TaskStatus.DONE -> null
-            // outras transições preservam o valor (idempotente em ciclos)
-            else -> completedAt
-        }
+        val newCompletedAt =
+            when {
+                // entrada em DONE (vindo de TODO/DOING) → carimba completedAt
+                target == TaskStatus.DONE && completedAt == null -> Instant.now()
+                // saída de DONE → limpa completedAt
+                status == TaskStatus.DONE && target != TaskStatus.DONE -> null
+                // outras transições preservam o valor (idempotente em ciclos)
+                else -> completedAt
+            }
         return copy(status = target, completedAt = newCompletedAt)
     }
 

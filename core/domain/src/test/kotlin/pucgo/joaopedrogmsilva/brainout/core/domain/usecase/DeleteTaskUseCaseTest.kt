@@ -15,16 +15,16 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
  * a tarefa não tinha agendamento (cancel é no-op).
  */
 class DeleteTaskUseCaseTest {
-
     private val repository: TaskRepository = mockk(relaxed = true)
     private val deadlineScheduler: DeadlineNotificationScheduler = mockk(relaxed = true)
     private val useCase = DeleteTaskUseCase(repository, deadlineScheduler)
 
     @Test
-    fun `delete remove tarefa e cancela lembrete`() = runTest {
-        useCase("t1")
+    fun `delete remove tarefa e cancela lembrete`() =
+        runTest {
+            useCase("t1")
 
-        coVerify(exactly = 1) { repository.delete("t1") }
-        verify(exactly = 1) { deadlineScheduler.cancel("t1") }
-    }
+            coVerify(exactly = 1) { repository.delete("t1") }
+            verify(exactly = 1) { deadlineScheduler.cancel("t1") }
+        }
 }

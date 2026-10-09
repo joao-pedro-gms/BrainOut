@@ -9,7 +9,6 @@ import org.junit.Test
  * com as declaradas em `BrainOutRoutes` (no :app). Evita drift silencioso.
  */
 class AuthRoutesTest {
-
     @Test
     fun `splash route is the canonical name`() {
         assertThat(AuthRoutes.Splash).isEqualTo("splash")

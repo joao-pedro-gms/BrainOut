@@ -7,7 +7,6 @@ import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
 
 class TagInvariantTest {
-
     @Test
     fun `aceita limites do nome e cores hexadecimais`() {
         listOf("a", "a".repeat(Tag.MAX_NAME_LENGTH)).forEach { name ->

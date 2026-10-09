@@ -21,7 +21,6 @@ import kotlin.math.roundToInt
  * arredondamento para aprovação — 4,49:1 reprova, mesmo "parecendo" 4,5.
  */
 class NeoContrastRatioTest {
-
     private fun linearize(channel: Float): Double {
         val c = channel.toDouble()
         return if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
@@ -32,18 +31,25 @@ class NeoContrastRatioTest {
             0.7152 * linearize(color.green) +
             0.0722 * linearize(color.blue)
 
-    private fun contrast(foreground: Color, background: Color): Double {
+    private fun contrast(
+        foreground: Color,
+        background: Color,
+    ): Double {
         val a = luminance(foreground)
         val b = luminance(background)
         return (max(a, b) + 0.05) / (min(a, b) + 0.05)
     }
 
-    private fun assertPairs(colors: NeoColors, themeName: String) {
+    private fun assertPairs(
+        colors: NeoColors,
+        themeName: String,
+    ) {
         declaredContrastPairs.forEach { pair ->
-            val ratio = contrast(
-                foreground = neoRole(colors, pair.foreground),
-                background = neoRole(colors, pair.background),
-            )
+            val ratio =
+                contrast(
+                    foreground = neoRole(colors, pair.foreground),
+                    background = neoRole(colors, pair.background),
+                )
             assertThat(ratio).isAtLeast(pair.minimum)
             // Guarda também a razão em 2 casas para o relatório de falha ser
             // legível: o valor completo é o critério, o arredondado é leitura.

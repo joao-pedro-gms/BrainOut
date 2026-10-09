@@ -25,80 +25,81 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Não há migração destrutiva — uma instalação com `users` cadastrados
  * continua funcional após o upgrade; as novas tabelas começam vazias.
  */
-val MIGRATION_1_2: Migration = object : Migration(1, 2) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `projects` (
-                `id` TEXT NOT NULL,
-                `owner_id` TEXT NOT NULL,
-                `name` TEXT NOT NULL,
-                `description` TEXT,
-                `created_at` INTEGER NOT NULL,
-                `is_completed` INTEGER NOT NULL,
-                PRIMARY KEY(`id`)
+val MIGRATION_1_2: Migration =
+    object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `projects` (
+                    `id` TEXT NOT NULL,
+                    `owner_id` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `description` TEXT,
+                    `created_at` INTEGER NOT NULL,
+                    `is_completed` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent(),
             )
-            """.trimIndent(),
-        )
-        db.execSQL(
-            "CREATE INDEX IF NOT EXISTS `idx_projects_owner_id` ON `projects`(`owner_id`)",
-        )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `idx_projects_owner_id` ON `projects`(`owner_id`)",
+            )
 
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `tasks` (
-                `id` TEXT NOT NULL,
-                `project_id` TEXT NOT NULL,
-                `title` TEXT NOT NULL,
-                `priority_code` INTEGER NOT NULL,
-                `status` TEXT NOT NULL,
-                `assignee_id` TEXT,
-                `due_date` INTEGER,
-                `created_at` INTEGER NOT NULL,
-                PRIMARY KEY(`id`),
-                FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `tasks` (
+                    `id` TEXT NOT NULL,
+                    `project_id` TEXT NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `priority_code` INTEGER NOT NULL,
+                    `status` TEXT NOT NULL,
+                    `assignee_id` TEXT,
+                    `due_date` INTEGER,
+                    `created_at` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`),
+                    FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
             )
-            """.trimIndent(),
-        )
-        db.execSQL(
-            "CREATE INDEX IF NOT EXISTS `idx_tasks_project_id` ON `tasks`(`project_id`)",
-        )
-        db.execSQL(
-            "CREATE INDEX IF NOT EXISTS `idx_tasks_status` ON `tasks`(`status`)",
-        )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `idx_tasks_project_id` ON `tasks`(`project_id`)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `idx_tasks_status` ON `tasks`(`status`)",
+            )
 
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `tags` (
-                `id` TEXT NOT NULL,
-                `owner_id` TEXT NOT NULL,
-                `name` TEXT NOT NULL,
-                `color` TEXT NOT NULL,
-                `created_at` INTEGER NOT NULL,
-                PRIMARY KEY(`id`)
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `tags` (
+                    `id` TEXT NOT NULL,
+                    `owner_id` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `color` TEXT NOT NULL,
+                    `created_at` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent(),
             )
-            """.trimIndent(),
-        )
-        db.execSQL(
-            "CREATE UNIQUE INDEX IF NOT EXISTS `idx_tags_owner_name` ON `tags`(`owner_id`, `name`)",
-        )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `idx_tags_owner_name` ON `tags`(`owner_id`, `name`)",
+            )
 
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `project_tags` (
-                `project_id` TEXT NOT NULL,
-                `tag_id` TEXT NOT NULL,
-                PRIMARY KEY(`project_id`, `tag_id`),
-                FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
-                FOREIGN KEY(`tag_id`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `project_tags` (
+                    `project_id` TEXT NOT NULL,
+                    `tag_id` TEXT NOT NULL,
+                    PRIMARY KEY(`project_id`, `tag_id`),
+                    FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(`tag_id`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
             )
-            """.trimIndent(),
-        )
-        db.execSQL(
-            "CREATE INDEX IF NOT EXISTS `idx_project_tags_tag_id` ON `project_tags`(`tag_id`)",
-        )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `idx_project_tags_tag_id` ON `project_tags`(`tag_id`)",
+            )
+        }
     }
-}
 
 /**
  * Migração Room v2 → v3 (RN03 — E2.5).
@@ -125,11 +126,12 @@ val MIGRATION_1_2: Migration = object : Migration(1, 2) {
  * baterá com o do `schemas/.../3.json` por causa da forma textual
  * idêntica (backticks, INTEGER nulo, mesma posição da coluna).
  */
-val MIGRATION_2_3: Migration = object : Migration(2, 3) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER")
+val MIGRATION_2_3: Migration =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER")
+        }
     }
-}
 
 /**
  * Migração Room v3 → v4 (E3.3 — fila offline).
@@ -143,23 +145,24 @@ val MIGRATION_2_3: Migration = object : Migration(2, 3) {
  * autoincrement, índice `created_at`), então o `identityHash`
  * calculado durante o build bate com o esperado.
  */
-val MIGRATION_3_4: Migration = object : Migration(3, 4) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `pending_ops` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                `entity_type` TEXT NOT NULL,
-                `entity_id` TEXT NOT NULL,
-                `op_type` TEXT NOT NULL,
-                `payload` TEXT NOT NULL,
-                `created_at` INTEGER NOT NULL,
-                `attempts` INTEGER NOT NULL
+val MIGRATION_3_4: Migration =
+    object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `pending_ops` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `entity_type` TEXT NOT NULL,
+                    `entity_id` TEXT NOT NULL,
+                    `op_type` TEXT NOT NULL,
+                    `payload` TEXT NOT NULL,
+                    `created_at` INTEGER NOT NULL,
+                    `attempts` INTEGER NOT NULL
+                )
+                """.trimIndent(),
             )
-            """.trimIndent(),
-        )
-        db.execSQL(
-            "CREATE INDEX IF NOT EXISTS `idx_pending_ops_created_at` ON `pending_ops`(`created_at`)",
-        )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `idx_pending_ops_created_at` ON `pending_ops`(`created_at`)",
+            )
+        }
     }
-}

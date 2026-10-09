@@ -35,60 +35,60 @@ private const val TAG = "BrainOut:SyncWorker"
  * OneTimeWorkRequest com constraint `NetworkType.CONNECTED`.
  */
 @HiltWorker
-class SyncWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val pendingOpDao: PendingOpDao,
-    private val dispatcher: SyncDispatcher,
-) : CoroutineWorker(appContext, params) {
-
-    override suspend fun doWork(): Result {
-        Log.d(TAG, "Iniciando doWork para drenar fila de pendências")
-        var processedTotal = 0
-        while (true) {
-            val batch = pendingOpDao.nextBatch(BATCH_SIZE)
-            if (batch.isEmpty()) {
-                Log.d(TAG, "Nenhuma op pendente na fila. Drenagem concluída (total processado: $processedTotal)")
-                break
-            }
-            Log.d(TAG, "Lote recuperado: ${batch.size} ops pendentes")
-            for (op in batch) {
-                Log.d(TAG, "Enviando op ${op.id} (${op.entityType}/${op.entityId} opType=${op.opType})")
-                when (val outcome = dispatcher.send(op)) {
-                    is SyncOutcome.Success -> {
-                        Log.d(TAG, "Op ${op.id} enviada com sucesso. Removendo da fila local.")
-                        pendingOpDao.deleteById(op.id)
-                        processedTotal++
-                    }
-                    is SyncOutcome.Permanent -> {
-                        // Contrato violado: descarta a op — a alteração
-                        // local permanece, mas a fila anda. O motivo
-                        // (HTTP 4xx ou payload inválido) já foi logado
-                        // estruturado pelo dispatcher.
-                        val reason = "HTTP ${outcome.httpCode}: ${outcome.reason}"
-                        Log.w(TAG, "Op ${op.id} falhou permanentemente ($reason). Descartando op.")
-                        pendingOpDao.deleteById(op.id)
-                        processedTotal++
-                    }
-                    is SyncOutcome.Retriable -> {
-                        // Interrompe a drenagem preservando a ordem;
-                        // registra a tentativa e pede retry com backoff.
-                        Log.w(TAG, "Op ${op.id} falhou temporariamente (${outcome.reason}). Interrompendo lote.")
-                        pendingOpDao.markAttempt(op.id)
-                        return Result.retry()
+class SyncWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val pendingOpDao: PendingOpDao,
+        private val dispatcher: SyncDispatcher,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            Log.d(TAG, "Iniciando doWork para drenar fila de pendências")
+            var processedTotal = 0
+            while (true) {
+                val batch = pendingOpDao.nextBatch(BATCH_SIZE)
+                if (batch.isEmpty()) {
+                    Log.d(TAG, "Nenhuma op pendente na fila. Drenagem concluída (total processado: $processedTotal)")
+                    break
+                }
+                Log.d(TAG, "Lote recuperado: ${batch.size} ops pendentes")
+                for (op in batch) {
+                    Log.d(TAG, "Enviando op ${op.id} (${op.entityType}/${op.entityId} opType=${op.opType})")
+                    when (val outcome = dispatcher.send(op)) {
+                        is SyncOutcome.Success -> {
+                            Log.d(TAG, "Op ${op.id} enviada com sucesso. Removendo da fila local.")
+                            pendingOpDao.deleteById(op.id)
+                            processedTotal++
+                        }
+                        is SyncOutcome.Permanent -> {
+                            // Contrato violado: descarta a op — a alteração
+                            // local permanece, mas a fila anda. O motivo
+                            // (HTTP 4xx ou payload inválido) já foi logado
+                            // estruturado pelo dispatcher.
+                            val reason = "HTTP ${outcome.httpCode}: ${outcome.reason}"
+                            Log.w(TAG, "Op ${op.id} falhou permanentemente ($reason). Descartando op.")
+                            pendingOpDao.deleteById(op.id)
+                            processedTotal++
+                        }
+                        is SyncOutcome.Retriable -> {
+                            // Interrompe a drenagem preservando a ordem;
+                            // registra a tentativa e pede retry com backoff.
+                            Log.w(TAG, "Op ${op.id} falhou temporariamente (${outcome.reason}). Interrompendo lote.")
+                            pendingOpDao.markAttempt(op.id)
+                            return Result.retry()
+                        }
                     }
                 }
             }
+            return Result.success()
         }
-        return Result.success()
+
+        companion object {
+            /** Nome do trabalho periódico único (ver [SyncScheduler]). */
+            const val UNIQUE_PERIODIC_NAME: String = "brainout-sync"
+
+            /** Tamanho do lote de drenagem por consulta. */
+            const val BATCH_SIZE: Int = 50
+        }
     }
-
-    companion object {
-
-        /** Nome do trabalho periódico único (ver [SyncScheduler]). */
-        const val UNIQUE_PERIODIC_NAME: String = "brainout-sync"
-
-        /** Tamanho do lote de drenagem por consulta. */
-        const val BATCH_SIZE: Int = 50
-    }
-}

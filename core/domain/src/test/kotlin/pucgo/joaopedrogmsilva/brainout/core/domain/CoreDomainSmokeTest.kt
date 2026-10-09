@@ -13,7 +13,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
  * que o módulo continua íntegro após mudanças de empacotamento.
  */
 class CoreDomainSmokeTest {
-
     @Test
     fun `core domain package constant points to documented root`() {
         assertThat(CORE_DOMAIN_PACKAGE).isEqualTo("pucgo.joaopedrogmsilva.brainout.core.domain")

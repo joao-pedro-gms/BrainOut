@@ -31,7 +31,6 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "pt-rBR")
 class SettingsScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -50,8 +49,10 @@ class SettingsScreenTest {
         // coluna com `verticalScroll` e ficam abaixo da dobra na janela
         // do Robolectric, então cada asserção rola até o nó.
         composeRule.onNodeWithText("Configurações").assertIsDisplayed()
-        composeRule.onNodeWithText("Preferências da sua conta e do aplicativo.")
-            .performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Preferências da sua conta e do aplicativo.")
+            .performScrollTo()
+            .assertIsDisplayed()
         // Os títulos de seção são renderizados em caixa alta pela própria
         // tela (`stringResource(...).uppercase()`), então a asserção usa o
         // texto como ele aparece para o usuário.

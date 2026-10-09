@@ -40,7 +40,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role as SemanticsRole
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,6 +56,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.resolveAuthMessage
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
+import androidx.compose.ui.semantics.Role as SemanticsRole
 
 /**
  * Tela de cadastro — formulário funcional (E1.6).
@@ -95,25 +95,27 @@ fun RegisterScreen(
                         text = stringResource(id = R.string.register_title),
                         style = MaterialTheme.typography.titleLarge,
                     )
-                }
+                },
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         RegisterBody(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
             uiState = uiState,
-            callbacks = RegisterCallbacks(
-                onNameChange = viewModel::onNameChange,
-                onEmailChange = viewModel::onEmailChange,
-                onPasswordChange = viewModel::onPasswordChange,
-                onPasswordConfirmationChange = viewModel::onPasswordConfirmationChange,
-                onRoleChange = viewModel::onRoleChange,
-                onSubmit = { viewModel.submitRegister() },
-                onHaveAccountClicked = onHaveAccountClicked,
-            ),
+            callbacks =
+                RegisterCallbacks(
+                    onNameChange = viewModel::onNameChange,
+                    onEmailChange = viewModel::onEmailChange,
+                    onPasswordChange = viewModel::onPasswordChange,
+                    onPasswordConfirmationChange = viewModel::onPasswordConfirmationChange,
+                    onRoleChange = viewModel::onRoleChange,
+                    onSubmit = { viewModel.submitRegister() },
+                    onHaveAccountClicked = onHaveAccountClicked,
+                ),
         )
     }
 }
@@ -163,10 +165,11 @@ internal fun RegisterBody(
     val passwordConfirmFocus = remember { FocusRequester() }
 
     Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-            .testTag(RegisterTestTags.SCROLL),
+        modifier =
+            modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .testTag(RegisterTestTags.SCROLL),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -178,22 +181,25 @@ internal fun RegisterBody(
         OutlinedTextField(
             value = uiState.name,
             onValueChange = callbacks.onNameChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(nameFocus)
-                .testTag(RegisterTestTags.NAME_FIELD),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusRequester(nameFocus)
+                    .testTag(RegisterTestTags.NAME_FIELD),
             label = { Text(text = stringResource(id = R.string.register_name_label)) },
             placeholder = { Text(text = stringResource(id = R.string.register_name_placeholder)) },
             singleLine = true,
             isError = uiState.nameError != null,
-            supportingText = uiState.nameError?.let { msg ->
-                { Text(text = resolveAuthMessage(msg)) }
-            },
+            supportingText =
+                uiState.nameError?.let { msg ->
+                    { Text(text = resolveAuthMessage(msg)) }
+                },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { emailFocus.requestFocus() },
-                onDone = { emailFocus.requestFocus() },
-            ),
+            keyboardActions =
+                KeyboardActions(
+                    onNext = { emailFocus.requestFocus() },
+                    onDone = { emailFocus.requestFocus() },
+                ),
         )
 
         EmailField(
@@ -203,11 +209,12 @@ internal fun RegisterBody(
             focusRequester = emailFocus,
             imeAction = ImeAction.Next,
             onNext = { passwordFocus.requestFocus() },
-            config = EmailFieldConfig(
-                labelId = R.string.register_email_label,
-                placeholderId = R.string.register_email_placeholder,
-                fieldTestTag = RegisterTestTags.EMAIL_FIELD,
-            ),
+            config =
+                EmailFieldConfig(
+                    labelId = R.string.register_email_label,
+                    placeholderId = R.string.register_email_placeholder,
+                    fieldTestTag = RegisterTestTags.EMAIL_FIELD,
+                ),
         )
 
         PasswordField(
@@ -217,16 +224,18 @@ internal fun RegisterBody(
             focusRequester = passwordFocus,
             imeAction = ImeAction.Next,
             onDone = { passwordConfirmFocus.requestFocus() },
-            labels = PasswordFieldLabels(
-                labelId = R.string.register_pwd_label,
-                placeholderId = R.string.register_pwd_placeholder,
-                showToggleId = R.string.register_visibility_show,
-                hideToggleId = R.string.register_visibility_hide,
-            ),
-            tags = PasswordFieldTags(
-                field = RegisterTestTags.PASSWORD_FIELD,
-                toggle = RegisterTestTags.PASSWORD_TOGGLE,
-            ),
+            labels =
+                PasswordFieldLabels(
+                    labelId = R.string.register_pwd_label,
+                    placeholderId = R.string.register_pwd_placeholder,
+                    showToggleId = R.string.register_visibility_show,
+                    hideToggleId = R.string.register_visibility_hide,
+                ),
+            tags =
+                PasswordFieldTags(
+                    field = RegisterTestTags.PASSWORD_FIELD,
+                    toggle = RegisterTestTags.PASSWORD_TOGGLE,
+                ),
         )
 
         PasswordField(
@@ -236,16 +245,18 @@ internal fun RegisterBody(
             focusRequester = passwordConfirmFocus,
             imeAction = ImeAction.Done,
             onDone = callbacks.onSubmit,
-            labels = PasswordFieldLabels(
-                labelId = R.string.register_pwd_confirm_label,
-                placeholderId = R.string.register_pwd_confirm_placeholder,
-                showToggleId = R.string.register_visibility_show,
-                hideToggleId = R.string.register_visibility_hide,
-            ),
-            tags = PasswordFieldTags(
-                field = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
-                toggle = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
-            ),
+            labels =
+                PasswordFieldLabels(
+                    labelId = R.string.register_pwd_confirm_label,
+                    placeholderId = R.string.register_pwd_confirm_placeholder,
+                    showToggleId = R.string.register_visibility_show,
+                    hideToggleId = R.string.register_visibility_hide,
+                ),
+            tags =
+                PasswordFieldTags(
+                    field = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
+                    toggle = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
+                ),
         )
 
         RoleSelector(
@@ -259,9 +270,10 @@ internal fun RegisterBody(
                 text = resolvedMessage,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(RegisterTestTags.ERROR_BANNER),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag(RegisterTestTags.ERROR_BANNER),
             )
         }
 
@@ -269,15 +281,17 @@ internal fun RegisterBody(
         Button(
             onClick = callbacks.onSubmit,
             enabled = !uiState.isLoading,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(RegisterTestTags.SUBMIT),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag(RegisterTestTags.SUBMIT),
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .testTag(RegisterTestTags.LOADING),
+                    modifier =
+                        Modifier
+                            .height(20.dp)
+                            .testTag(RegisterTestTags.LOADING),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
@@ -291,9 +305,10 @@ internal fun RegisterBody(
         TextButton(
             onClick = callbacks.onHaveAccountClicked,
             enabled = !uiState.isLoading,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(RegisterTestTags.HAVE_ACCOUNT),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag(RegisterTestTags.HAVE_ACCOUNT),
         ) {
             Text(
                 text = stringResource(id = R.string.register_have_account),
@@ -354,15 +369,15 @@ private fun RoleRow(
     testTag: String,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(
-                selected = selected,
-                role = SemanticsRole.RadioButton,
-                onClick = onSelect,
-            )
-            .testTag(testTag)
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(
+                    selected = selected,
+                    role = SemanticsRole.RadioButton,
+                    onClick = onSelect,
+                ).testTag(testTag)
+                .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = null)

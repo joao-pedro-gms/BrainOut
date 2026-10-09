@@ -13,18 +13,18 @@ import java.time.Instant
  * caracteres, e-mail via regex, hash de senha obrigatório.
  */
 class UserTest {
-
     private val fixedInstant: Instant = Instant.parse("2026-09-18T12:00:00Z")
 
     @Test
     fun `create builds a valid user with trimmed email and trimmed name`() {
-        val user = User.create(
-            name = "  João Pedro  ",
-            email = "  joao@example.com  ",
-            passwordHash = "hashed",
-            role = UserRole.OWNER,
-            now = fixedInstant,
-        )
+        val user =
+            User.create(
+                name = "  João Pedro  ",
+                email = "  joao@example.com  ",
+                passwordHash = "hashed",
+                role = UserRole.OWNER,
+                now = fixedInstant,
+            )
 
         assertThat(user.id).isNotEmpty()
         assertThat(user.name).isEqualTo("  João Pedro  ")
@@ -36,18 +36,20 @@ class UserTest {
 
     @Test
     fun `name with empty content fails validation`() {
-        val ex = assertThrows<InvalidModelException> {
-            User.requireValidName("   ")
-        }
+        val ex =
+            assertThrows<InvalidModelException> {
+                User.requireValidName("   ")
+            }
         assertThat(ex).hasMessageThat().contains("Nome não pode ser vazio")
     }
 
     @Test
     fun `name longer than max length fails validation`() {
         val longName = "a".repeat(User.MAX_NAME_LENGTH + 1)
-        val ex = assertThrows<InvalidModelException> {
-            User.requireValidName(longName)
-        }
+        val ex =
+            assertThrows<InvalidModelException> {
+                User.requireValidName(longName)
+            }
         assertThat(ex).hasMessageThat().contains("no máximo ${User.MAX_NAME_LENGTH}")
     }
 
@@ -60,17 +62,19 @@ class UserTest {
 
     @Test
     fun `email without at sign fails validation`() {
-        val ex = assertThrows<InvalidModelException> {
-            User.requireValidEmail("not-an-email")
-        }
+        val ex =
+            assertThrows<InvalidModelException> {
+                User.requireValidEmail("not-an-email")
+            }
         assertThat(ex).hasMessageThat().contains("E-mail inválido")
     }
 
     @Test
     fun `email without domain dot fails validation`() {
-        val ex = assertThrows<InvalidModelException> {
-            User.requireValidEmail("user@domain")
-        }
+        val ex =
+            assertThrows<InvalidModelException> {
+                User.requireValidEmail("user@domain")
+            }
         assertThat(ex).hasMessageThat().contains("E-mail inválido")
     }
 
@@ -124,13 +128,14 @@ class UserTest {
 
     @Test
     fun `copy preserves immutability contract`() {
-        val original = User.create(
-            name = "João",
-            email = "joao@example.com",
-            passwordHash = "h",
-            role = UserRole.MEMBER,
-            now = fixedInstant,
-        )
+        val original =
+            User.create(
+                name = "João",
+                email = "joao@example.com",
+                passwordHash = "h",
+                role = UserRole.MEMBER,
+                now = fixedInstant,
+            )
         val renamed = original.copy(name = "Pedro")
 
         assertThat(renamed).isNotSameInstanceAs(original)

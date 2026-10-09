@@ -6,10 +6,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import java.time.Instant
 
 /**
  * Linha da tabela `tasks` no Room.
@@ -78,7 +78,6 @@ data class TaskEntity(
     @ColumnInfo(name = "completed_at", defaultValue = "NULL")
     val completedAt: Instant? = null,
 ) {
-
     /**
      * Converte a linha para o modelo imutável de domínio [Task].
      *
@@ -86,31 +85,32 @@ data class TaskEntity(
      * faixa válida (0..4) falhe explicitamente em vez de retornar null
      * — protege contra corrupção do banco.
      */
-    fun toDomain(): Task = Task(
-        id = id,
-        projectId = projectId,
-        title = title,
-        priority = TaskPriority.fromCodeOrThrow(priorityCode),
-        status = TaskStatus.valueOf(status),
-        assigneeId = assigneeId,
-        dueDate = dueDate,
-        createdAt = createdAt,
-        completedAt = completedAt,
-    )
+    fun toDomain(): Task =
+        Task(
+            id = id,
+            projectId = projectId,
+            title = title,
+            priority = TaskPriority.fromCodeOrThrow(priorityCode),
+            status = TaskStatus.valueOf(status),
+            assigneeId = assigneeId,
+            dueDate = dueDate,
+            createdAt = createdAt,
+            completedAt = completedAt,
+        )
 
     companion object {
-
         /** Constrói a entidade a partir de uma [Task] de domínio. */
-        fun fromDomain(task: Task): TaskEntity = TaskEntity(
-            id = task.id,
-            projectId = task.projectId,
-            title = task.title,
-            priorityCode = task.priority.priorityCode,
-            status = task.status.name,
-            assigneeId = task.assigneeId,
-            dueDate = task.dueDate,
-            createdAt = task.createdAt,
-            completedAt = task.completedAt,
-        )
+        fun fromDomain(task: Task): TaskEntity =
+            TaskEntity(
+                id = task.id,
+                projectId = task.projectId,
+                title = task.title,
+                priorityCode = task.priority.priorityCode,
+                status = task.status.name,
+                assigneeId = task.assigneeId,
+                dueDate = task.dueDate,
+                createdAt = task.createdAt,
+                completedAt = task.completedAt,
+            )
     }
 }

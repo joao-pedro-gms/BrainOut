@@ -26,8 +26,18 @@ interface ProjectRepository {
     ): Flow<List<Project>>
 
     suspend fun findById(id: String): Project?
+
     fun observeTagsFor(projectId: String): Flow<List<Tag>>
-    suspend fun create(project: Project, tagIds: List<String>): Project
-    suspend fun update(project: Project, tagIds: List<String>): Project
+
+    suspend fun create(
+        project: Project,
+        tagIds: List<String>,
+    ): Project
+
+    suspend fun update(
+        project: Project,
+        tagIds: List<String>,
+    ): Project
+
     suspend fun delete(id: String)
 }

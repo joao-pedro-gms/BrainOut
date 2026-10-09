@@ -15,10 +15,10 @@ android {
     compileSdk = 37
 
     defaultConfig {
-    // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
-    // módulos não têm flavors próprios; fixam a dimensão `environment`
-    // no `dev` para o match de variantes do Gradle.
-    missingDimensionStrategy("environment", "dev")
+        // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
+        // módulos não têm flavors próprios; fixam a dimensão `environment`
+        // no `dev` para o match de variantes do Gradle.
+        missingDimensionStrategy("environment", "dev")
 
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
@@ -30,7 +30,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -60,15 +60,17 @@ android {
 
     packaging {
         resources {
-            excludes += setOf(
-                "/META-INF/{AL2.0,LGPL2.1}",
-                "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md",
-            )
-            pickFirsts += setOf(
-                "META-INF/AL2.0",
-                "META-INF/LGPL2.1",
-            )
+            excludes +=
+                setOf(
+                    "/META-INF/{AL2.0,LGPL2.1}",
+                    "META-INF/LICENSE.md",
+                    "META-INF/LICENSE-notice.md",
+                )
+            pickFirsts +=
+                setOf(
+                    "META-INF/AL2.0",
+                    "META-INF/LGPL2.1",
+                )
         }
     }
 
@@ -123,4 +125,3 @@ detekt {
     buildUponDefaultConfig = true
     autoCorrect = false
 }
-

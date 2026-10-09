@@ -28,9 +28,10 @@ enum class TaskStatus {
      * - DOING -> TODO  ✓ | DONE ✓
      * - DONE  -> DOING ✓ | TODO ✗
      */
-    fun canTransitionTo(target: TaskStatus): Boolean = when (this) {
-        TODO -> target == DOING
-        DOING -> target == TODO || target == DONE
-        DONE -> target == DOING
-    }
+    fun canTransitionTo(target: TaskStatus): Boolean =
+        when (this) {
+            TODO -> target == DOING
+            DOING -> target == TODO || target == DONE
+            DONE -> target == DOING
+        }
 }

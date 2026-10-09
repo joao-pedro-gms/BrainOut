@@ -10,7 +10,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
  * `:core:domain` livre de dependências de Android, Room ou rede.
  */
 interface UserRepository {
-
     /** Busca um [User] pelo e-mail ou retorna null se não existir. */
     suspend fun findByEmail(email: String): User?
 

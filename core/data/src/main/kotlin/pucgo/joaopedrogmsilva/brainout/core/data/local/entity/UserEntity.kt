@@ -5,9 +5,9 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import java.time.Instant
 
 /**
  * Linha da tabela `users` no Room.
@@ -52,27 +52,27 @@ data class UserEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Instant,
 ) {
-
     /** Converte a linha para o modelo imutável de domínio [User]. */
-    fun toDomain(): User = User(
-        id = id,
-        name = name,
-        email = email,
-        passwordHash = passwordHash,
-        role = UserRole.valueOf(role),
-        createdAt = createdAt,
-    )
+    fun toDomain(): User =
+        User(
+            id = id,
+            name = name,
+            email = email,
+            passwordHash = passwordHash,
+            role = UserRole.valueOf(role),
+            createdAt = createdAt,
+        )
 
     companion object {
-
         /** Constrói a entidade a partir de um [User] de domínio. */
-        fun fromDomain(user: User): UserEntity = UserEntity(
-            id = user.id,
-            name = user.name,
-            email = user.email,
-            passwordHash = user.passwordHash,
-            role = user.role.name,
-            createdAt = user.createdAt,
-        )
+        fun fromDomain(user: User): UserEntity =
+            UserEntity(
+                id = user.id,
+                name = user.name,
+                email = user.email,
+                passwordHash = user.passwordHash,
+                role = user.role.name,
+                createdAt = user.createdAt,
+            )
     }
 }

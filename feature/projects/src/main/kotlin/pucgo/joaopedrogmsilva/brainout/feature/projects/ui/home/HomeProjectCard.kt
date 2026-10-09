@@ -44,18 +44,20 @@ internal fun ProjectCard(
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(HomeTestTags.PROJECT_CARD)
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(HomeTestTags.PROJECT_CARD)
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
@@ -84,7 +86,10 @@ internal fun ProjectCard(
 }
 
 @Composable
-internal fun TagChipView(chip: TagChip, selected: Boolean) {
+internal fun TagChipView(
+    chip: TagChip,
+    selected: Boolean,
+) {
     val container = remember(chip.color) { parseHexColor(chip.color) }
     AssistChip(
         onClick = { /* chips de visualização não disparam ação */ },
@@ -94,14 +99,23 @@ internal fun TagChipView(chip: TagChip, selected: Boolean) {
                 style = MaterialTheme.typography.labelSmall,
             )
         },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = if (selected) container.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-            labelColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        border = AssistChipDefaults.assistChipBorder(
-            enabled = true,
-            borderColor = container,
-        ),
+        colors =
+            AssistChipDefaults.assistChipColors(
+                containerColor =
+                    if (selected) {
+                        container.copy(
+                            alpha = 0.2f,
+                        )
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                labelColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        border =
+            AssistChipDefaults.assistChipBorder(
+                enabled = true,
+                borderColor = container,
+            ),
         // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
         modifier = Modifier.heightIn(min = 48.dp),
     )

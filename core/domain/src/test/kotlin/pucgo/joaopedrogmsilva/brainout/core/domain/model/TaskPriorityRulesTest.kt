@@ -23,22 +23,22 @@ import java.time.Instant
  *   que estava concluída não escapa da regra.
  */
 class TaskPriorityRulesTest {
-
     private val createdAt: Instant = Instant.parse("2026-09-21T10:00:00Z")
 
     private fun active(
         status: TaskStatus = TaskStatus.TODO,
         priority: TaskPriority = TaskPriority.MEDIUM,
-    ): Task = Task(
-        id = "t-${status.name.lowercase()}",
-        projectId = "p-1",
-        title = "Tarefa",
-        priority = priority,
-        status = status,
-        assigneeId = null,
-        dueDate = null,
-        createdAt = createdAt,
-    )
+    ): Task =
+        Task(
+            id = "t-${status.name.lowercase()}",
+            projectId = "p-1",
+            title = "Tarefa",
+            priority = priority,
+            status = status,
+            assigneeId = null,
+            dueDate = null,
+            createdAt = createdAt,
+        )
 
     @Test
     fun `every priority code from 0 to 4 is valid via fromCode`() {
@@ -66,9 +66,11 @@ class TaskPriorityRulesTest {
     @Test
     fun `change priority from DONE is blocked with TaskPriorityChangeForbiddenException`() {
         val task = active(status = TaskStatus.DONE, priority = TaskPriority.HIGH)
-        val ex = kotlin.runCatching {
-            task.changePriority(TaskPriority.LOW)
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    task.changePriority(TaskPriority.LOW)
+                }.exceptionOrNull()
 
         // RN02 — bloqueio específico para que a UI/VM possa distinguir
         // RN02 do RN01 (limite de tarefas) se necessário.
@@ -81,9 +83,11 @@ class TaskPriorityRulesTest {
     @Test
     fun `change priority to same value on DONE is still blocked (status check precedes no-op)`() {
         val task = active(status = TaskStatus.DONE, priority = TaskPriority.URGENT)
-        val ex = kotlin.runCatching {
-            task.changePriority(TaskPriority.URGENT)
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    task.changePriority(TaskPriority.URGENT)
+                }.exceptionOrNull()
         // A regra RN02 é absoluta: não importa se a prioridade é a
         // mesma — tarefa concluída não pode MEXER na prioridade, nem
         // para no-op.
@@ -107,18 +111,22 @@ class TaskPriorityRulesTest {
         // método público — todos os pontos de entrada (changePriority)
         // já aplicam RN02. Aqui então só simulamos a chamada
         // "legítima" de changePriority, que deve falhar.
-        val ex = kotlin.runCatching {
-            task.changePriority(TaskPriority.HIGH)
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    task.changePriority(TaskPriority.HIGH)
+                }.exceptionOrNull()
         assertThat(ex).isInstanceOf(TaskPriorityChangeForbiddenException::class.java)
     }
 
     @Test
     fun `requer valid priority throws for out of range`() {
         // Cobertura extra: o mesmo helper estático deve barrar 5 e -1.
-        val ex = kotlin.runCatching {
-            Task.requireValidPriority(TaskPriority.fromCode(4))
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    Task.requireValidPriority(TaskPriority.fromCode(4))
+                }.exceptionOrNull()
         assertThat(ex).isNull() // 4 é válido
 
         // -1 não existe como enum constant; usamos fromCode para o teste.
@@ -131,19 +139,21 @@ class TaskPriorityRulesTest {
     @Test
     fun `constructor completedAt em status ativo eh rejeitado`() {
         // RN03 — coerência: completedAt só faz sentido com DONE.
-        val ex = kotlin.runCatching {
-            Task(
-                id = "t-x",
-                projectId = "p-x",
-                title = "Inválido",
-                priority = TaskPriority.LOW,
-                status = TaskStatus.TODO,
-                assigneeId = null,
-                dueDate = null,
-                createdAt = createdAt,
-                completedAt = Instant.parse("2026-12-01T00:00:00Z"),
-            )
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    Task(
+                        id = "t-x",
+                        projectId = "p-x",
+                        title = "Inválido",
+                        priority = TaskPriority.LOW,
+                        status = TaskStatus.TODO,
+                        assigneeId = null,
+                        dueDate = null,
+                        createdAt = createdAt,
+                        completedAt = Instant.parse("2026-12-01T00:00:00Z"),
+                    )
+                }.exceptionOrNull()
         assertThat(ex).isInstanceOf(InvalidModelException::class.java)
     }
 }

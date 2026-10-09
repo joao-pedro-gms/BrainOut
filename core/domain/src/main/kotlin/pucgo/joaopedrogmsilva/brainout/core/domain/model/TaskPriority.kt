@@ -8,7 +8,9 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.model
  * Persistência e ordenação devem usar [priorityCode] para garantir
  * estabilidade.
  */
-enum class TaskPriority(val priorityCode: Int) {
+enum class TaskPriority(
+    val priorityCode: Int,
+) {
     LOW(0),
     MEDIUM(1),
     HIGH(2),
@@ -33,10 +35,11 @@ enum class TaskPriority(val priorityCode: Int) {
         const val CRITICAL_CODE: Int = 4
 
         /** Retorna o [TaskPriority] correspondente ao [code] (0..4). */
-        fun fromCode(code: Int): TaskPriority = entries.firstOrNull { it.priorityCode == code }
-            ?: throw IllegalArgumentException(
-                "Prioridade inválida: $code (esperado entre $LOW_CODE e $CRITICAL_CODE)",
-            )
+        fun fromCode(code: Int): TaskPriority =
+            entries.firstOrNull { it.priorityCode == code }
+                ?: throw IllegalArgumentException(
+                    "Prioridade inválida: $code (esperado entre $LOW_CODE e $CRITICAL_CODE)",
+                )
 
         /** Conversão estrita usada ao reconstruir tarefas da persistência. */
         fun fromCodeOrThrow(code: Int): TaskPriority = fromCode(code)

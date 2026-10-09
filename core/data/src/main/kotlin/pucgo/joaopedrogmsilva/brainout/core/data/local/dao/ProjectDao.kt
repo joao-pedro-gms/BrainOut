@@ -1,5 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 @file:Suppress("ConstructorParameterNaming")
+
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
 import androidx.room.Dao
@@ -26,7 +27,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
  */
 @Dao
 interface ProjectDao {
-
     // --- Reads ---
 
     /**
@@ -50,7 +50,8 @@ interface ProjectDao {
      * - [tagId]: quando `null`, ignora o filtro de tag; caso
      *   contrário, retorna apenas projetos que tenham a tag
      *   associada (via `project_tags`).
-     * - [sort]: chave livre com semântica:
+     * - [sort]: chave livre com semântica — os mesmos quatro
+     *   valores devolvidos por `SortOrder.toStorageKey()`:
      *   - `"name_asc"` — nome A→Z;
      *   - `"name_desc"` — nome Z→A;
      *   - `"created_desc"` (default) — mais recentes primeiro;
@@ -58,6 +59,14 @@ interface ProjectDao {
      *   - string vazia — equivalente a `"created_desc"` (mantém
      *     compat com o comportamento histórico de
      *     [observeAllForOwner]).
+     *
+     *   As grafias acima NÃO são negociáveis: qualquer outra
+     *   string (inclusive a concatenada, `nameasc`/`createddesc`)
+     *   não casa com nenhum `CASE WHEN` e devolve `NULL` em
+     *   todos — o que faz o SQLite devolver as linhas na ordem
+     *   natural do scan, ignorando a ordenação pedida. É por
+     *   isso que `SortOrder.toStorageKey()` emite exatamente
+     *   estas chaves.
      *
      * O `DISTINCT` evita duplicação quando um projeto tem múltiplas
      * tags casadas (projetos com ≥2 tags teriam N linhas por causa
@@ -145,7 +154,10 @@ interface ProjectDao {
      * intermediário com mistura de tags antigas e novas.
      */
     @Transaction
-    suspend fun replaceProjectTags(projectId: String, tagIds: List<String>) {
+    suspend fun replaceProjectTags(
+        projectId: String,
+        tagIds: List<String>,
+    ) {
         clearProjectTags(projectId)
         if (tagIds.isNotEmpty()) {
             insertProjectTags(
@@ -163,7 +175,10 @@ interface ProjectDao {
      * apenas as duas operações de cascata abaixo o consomem.
      */
     @Query("UPDATE projects SET is_completed = :isCompleted WHERE id = :id")
-    suspend fun updateIsCompleted(id: String, isCompleted: Boolean)
+    suspend fun updateIsCompleted(
+        id: String,
+        isCompleted: Boolean,
+    )
 
     /**
      * Executa a cascata de "concluir tarefa" (RN03 — E2.5) em uma

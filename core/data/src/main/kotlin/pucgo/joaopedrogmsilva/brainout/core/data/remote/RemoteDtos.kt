@@ -12,9 +12,11 @@ import kotlinx.serialization.Serializable
  *
  * Os DTOs são o contrato de transporte; a conversão para os modelos de
  * domínio fica a cargo do mapeamento em [RemoteDataSource] / repositórios.
+ *
+ * [ProjectListDto] é a resposta de listagem paginada por `items` usada
+ * pelos endpoints de listagem `/v1/...`.
  */
 
-/** Resposta de listagem paginada por `items` usada pelos endpoints de listagem `/v1/...`. */
 @Serializable
 data class ProjectListDto(
     val items: List<ProjectDto> = emptyList(),

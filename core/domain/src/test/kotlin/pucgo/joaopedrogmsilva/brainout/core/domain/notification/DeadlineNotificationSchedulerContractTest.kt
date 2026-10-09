@@ -14,7 +14,6 @@ import org.junit.Test
  * exigido na notificação ("prazo em 1 hora").
  */
 class DeadlineNotificationSchedulerContractTest {
-
     private val scheduler: DeadlineNotificationScheduler = mockk(relaxed = true)
 
     @Test

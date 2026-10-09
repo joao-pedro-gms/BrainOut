@@ -32,7 +32,6 @@ private const val TEXT_RATIO_MIN: Double = 4.5
 private const val GRAPHIC_RATIO_MIN: Double = 3.0
 
 class ContrastRatioTest {
-
     // --- Light theme ----------------------------------------------------
 
     @Test
@@ -289,7 +288,12 @@ class ContrastRatioTest {
      * luminância relativa vem do canal sRGB linearizado conforme
      * WCAG (`Color.luminance()` da Compose já implementa).
      */
-    private fun assertRatio(fg: Color, bg: Color, min: Double, label: String) {
+    private fun assertRatio(
+        fg: Color,
+        bg: Color,
+        min: Double,
+        label: String,
+    ) {
         val ratio = contrastRatio(fg, bg)
         try {
             assertThat(ratio).isAtLeast(min)
@@ -302,7 +306,10 @@ class ContrastRatioTest {
     }
 
     /** Implementação direta de `Color.contrastRatio` da Compose (privado). */
-    private fun contrastRatio(fg: Color, bg: Color): Double {
+    private fun contrastRatio(
+        fg: Color,
+        bg: Color,
+    ): Double {
         val fgL = fg.luminance()
         val bgL = bg.luminance()
         val lighter = maxOf(fgL, bgL)

@@ -15,17 +15,17 @@ import java.time.Instant
  * - conclusão/reativação via [markCompleted] e [markIncomplete].
  */
 class ProjectTest {
-
     private val fixedInstant: Instant = Instant.parse("2026-09-18T12:00:00Z")
 
     @Test
     fun `create builds a project with default not completed state`() {
-        val project = Project.create(
-            name = "BrainOut",
-            ownerId = "user-1",
-            description = "Projeto Integrador",
-            now = fixedInstant,
-        )
+        val project =
+            Project.create(
+                name = "BrainOut",
+                ownerId = "user-1",
+                description = "Projeto Integrador",
+                now = fixedInstant,
+            )
 
         assertThat(project.id).isNotEmpty()
         assertThat(project.name).isEqualTo("BrainOut")
@@ -37,9 +37,11 @@ class ProjectTest {
 
     @Test
     fun `name with only spaces fails validation`() {
-        val ex = kotlin.runCatching {
-            Project.requireValidName("   ")
-        }.exceptionOrNull()
+        val ex =
+            kotlin
+                .runCatching {
+                    Project.requireValidName("   ")
+                }.exceptionOrNull()
 
         assertThat(ex).isInstanceOf(InvalidModelException::class.java)
         assertThat(ex).hasMessageThat().contains("Nome do projeto")
@@ -72,43 +74,46 @@ class ProjectTest {
 
     @Test
     fun `constructor rejects empty owner id`() {
-        kotlin.runCatching {
-            Project(
-                id = "p1",
-                name = "BrainOut",
-                description = null,
-                ownerId = "",
-                createdAt = fixedInstant,
-                isCompleted = false,
-            )
-        }.also { result ->
-            assertThat(result.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
-        }
+        kotlin
+            .runCatching {
+                Project(
+                    id = "p1",
+                    name = "BrainOut",
+                    description = null,
+                    ownerId = "",
+                    createdAt = fixedInstant,
+                    isCompleted = false,
+                )
+            }.also { result ->
+                assertThat(result.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+            }
     }
 
     @Test
     fun `constructor rejects blank name`() {
-        kotlin.runCatching {
-            Project(
-                id = "p1",
-                name = " ",
-                description = null,
-                ownerId = "user-1",
-                createdAt = fixedInstant,
-                isCompleted = false,
-            )
-        }.also { result ->
-            assertThat(result.exceptionOrNull()).isInstanceOf(InvalidModelException::class.java)
-        }
+        kotlin
+            .runCatching {
+                Project(
+                    id = "p1",
+                    name = " ",
+                    description = null,
+                    ownerId = "user-1",
+                    createdAt = fixedInstant,
+                    isCompleted = false,
+                )
+            }.also { result ->
+                assertThat(result.exceptionOrNull()).isInstanceOf(InvalidModelException::class.java)
+            }
     }
 
     @Test
     fun `markCompleted sets flag and is idempotent`() {
-        val project = Project.create(
-            name = "BrainOut",
-            ownerId = "user-1",
-            now = fixedInstant,
-        )
+        val project =
+            Project.create(
+                name = "BrainOut",
+                ownerId = "user-1",
+                now = fixedInstant,
+            )
 
         val once = project.markCompleted()
         val twice = once.markCompleted()
@@ -122,11 +127,13 @@ class ProjectTest {
 
     @Test
     fun `markIncomplete unsets flag and is idempotent`() {
-        val completed = Project.create(
-            name = "BrainOut",
-            ownerId = "user-1",
-            now = fixedInstant,
-        ).markCompleted()
+        val completed =
+            Project
+                .create(
+                    name = "BrainOut",
+                    ownerId = "user-1",
+                    now = fixedInstant,
+                ).markCompleted()
 
         val reopened = completed.markIncomplete()
         val reopenedAgain = reopened.markIncomplete()
@@ -138,14 +145,15 @@ class ProjectTest {
 
     @Test
     fun `description can be null on construction`() {
-        val project = Project(
-            id = "p1",
-            name = "BrainOut",
-            description = null,
-            ownerId = "user-1",
-            createdAt = fixedInstant,
-            isCompleted = false,
-        )
+        val project =
+            Project(
+                id = "p1",
+                name = "BrainOut",
+                description = null,
+                ownerId = "user-1",
+                createdAt = fixedInstant,
+                isCompleted = false,
+            )
         assertThat(project.description).isNull()
     }
 }

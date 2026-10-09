@@ -12,20 +12,23 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 
 /** Mapeia [UserRole] (domínio) para a enumeração visual [HomeUserRole]. */
-internal fun UserRole.toHomeRole(): HomeUserRole = when (this) {
-    UserRole.OWNER -> HomeUserRole.Owner
-    UserRole.MEMBER -> HomeUserRole.Member
-}
+internal fun UserRole.toHomeRole(): HomeUserRole =
+    when (this) {
+        UserRole.OWNER -> HomeUserRole.Owner
+        UserRole.MEMBER -> HomeUserRole.Member
+    }
 
 /** Converte um [User] ativo em [HomeUserState] consumido pela UI. */
-internal fun User?.toHomeUserState(): HomeUserState = when (this) {
-    null -> HomeUserState.SignedOut
-    else -> HomeUserState.SignedIn(
-        displayName = name,
-        initials = computeInitials(name),
-        role = role.toHomeRole(),
-    )
-}
+internal fun User?.toHomeUserState(): HomeUserState =
+    when (this) {
+        null -> HomeUserState.SignedOut
+        else ->
+            HomeUserState.SignedIn(
+                displayName = name,
+                initials = computeInitials(name),
+                role = role.toHomeRole(),
+            )
+    }
 
 /** Converte uma [Tag] do domínio no [TagChip] usado pelo card. */
 internal fun Tag.toChip(): TagChip = TagChip(id = id, name = name, color = color)

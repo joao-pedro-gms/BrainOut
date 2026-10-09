@@ -13,7 +13,6 @@ import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutRoutes
  * Testes de UI/Compose virão nos marcos E1.6/E2.x.
  */
 class BrainOutAppSmokeTest {
-
     @Test
     fun `app package constant is the documented root package`() {
         // O suffixo `.debug` só existe na variante debug (applicationIdSuffix);
@@ -32,22 +31,24 @@ class BrainOutAppSmokeTest {
     fun `nav routes expose the expected top level destinations`() {
         // Garante que o conjunto de rotas exposto em BrainOutRoutes está
         // alinhado com as 6 telas exigidas pelo marco E1.3 do ROADMAP.
-        val actual = setOf(
-            BrainOutRoutes.Splash,
-            BrainOutRoutes.Login,
-            BrainOutRoutes.Register,
-            BrainOutRoutes.Home,
-            BrainOutRoutes.Settings,
-            BrainOutRoutes.ProjectDetailPattern
-        )
-        val expected = setOf(
-            BrainOutRoutes.Splash,
-            BrainOutRoutes.Login,
-            BrainOutRoutes.Register,
-            BrainOutRoutes.Home,
-            BrainOutRoutes.Settings,
-            BrainOutRoutes.ProjectDetailPattern
-        )
+        val actual =
+            setOf(
+                BrainOutRoutes.Splash,
+                BrainOutRoutes.Login,
+                BrainOutRoutes.Register,
+                BrainOutRoutes.Home,
+                BrainOutRoutes.Settings,
+                BrainOutRoutes.ProjectDetailPattern,
+            )
+        val expected =
+            setOf(
+                BrainOutRoutes.Splash,
+                BrainOutRoutes.Login,
+                BrainOutRoutes.Register,
+                BrainOutRoutes.Home,
+                BrainOutRoutes.Settings,
+                BrainOutRoutes.ProjectDetailPattern,
+            )
         assertThat(actual).isEqualTo(expected)
     }
 

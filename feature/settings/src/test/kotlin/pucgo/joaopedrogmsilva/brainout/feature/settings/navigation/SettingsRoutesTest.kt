@@ -5,7 +5,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class SettingsRoutesTest {
-
     @Test
     fun `settings route is the canonical name`() {
         assertThat(SettingsRoutes.Settings).isEqualTo("settings")

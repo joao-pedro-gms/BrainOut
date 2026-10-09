@@ -1,12 +1,12 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+import javax.inject.Inject
 
 /**
  * Regra de tamanho mínimo da senha.
@@ -35,42 +35,45 @@ const val MIN_PASSWORD_LENGTH: Int = 8
  *
  * Detalhes completos ficam em [invoke].
  */
-class CreateUserUseCase @Inject constructor(
-    private val userRepository: UserRepository,
-    private val passwordHasher: PasswordHasher,
-) {
-    /**
-     * @param name Nome completo (1..120 caracteres).
-     * @param email E-mail válido.
-     * @param rawPassword Senha em texto puro. Mínimo [MIN_PASSWORD_LENGTH]
-     *   caracteres (será hashed).
-     * @param role Papel inicial ([UserRole.OWNER] ou [UserRole.MEMBER]).
-     * @return O [User] criado e persistido.
-     */
-    suspend operator fun invoke(
-        name: String,
-        email: String,
-        rawPassword: String,
-        role: UserRole,
-    ): User {
-        User.requireValidName(name)
-        User.requireValidEmail(email)
-        require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
-            "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
-        }
+class CreateUserUseCase
+    @Inject
+    constructor(
+        private val userRepository: UserRepository,
+        private val passwordHasher: PasswordHasher,
+    ) {
+        /**
+         * @param name Nome completo (1..120 caracteres).
+         * @param email E-mail válido.
+         * @param rawPassword Senha em texto puro. Mínimo [MIN_PASSWORD_LENGTH]
+         *   caracteres (será hashed).
+         * @param role Papel inicial ([UserRole.OWNER] ou [UserRole.MEMBER]).
+         * @return O [User] criado e persistido.
+         */
+        suspend operator fun invoke(
+            name: String,
+            email: String,
+            rawPassword: String,
+            role: UserRole,
+        ): User {
+            User.requireValidName(name)
+            User.requireValidEmail(email)
+            require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
+                "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
+            }
 
-        val normalizedEmail = email.trim()
-        userRepository.findByEmail(normalizedEmail)?.let {
-            throw DuplicateEmailException(normalizedEmail)
-        }
+            val normalizedEmail = email.trim()
+            userRepository.findByEmail(normalizedEmail)?.let {
+                throw DuplicateEmailException(normalizedEmail)
+            }
 
-        val passwordHash = passwordHasher.hash(rawPassword)
-        val newUser = User.create(
-            name = name,
-            email = normalizedEmail,
-            passwordHash = passwordHash,
-            role = role,
-        )
-        return userRepository.save(newUser)
+            val passwordHash = passwordHasher.hash(rawPassword)
+            val newUser =
+                User.create(
+                    name = name,
+                    email = normalizedEmail,
+                    passwordHash = passwordHash,
+                    role = role,
+                )
+            return userRepository.save(newUser)
+        }
     }
-}

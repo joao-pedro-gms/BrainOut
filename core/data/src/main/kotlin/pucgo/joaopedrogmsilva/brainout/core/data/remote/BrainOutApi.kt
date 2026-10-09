@@ -19,7 +19,6 @@ import retrofit2.http.Query
  * aparece hard-coded aqui.
  */
 interface BrainOutApi {
-
     /** Healthcheck simples do serviço. */
     @GET("v1/ping")
     suspend fun ping(): PingDto
@@ -28,10 +27,14 @@ interface BrainOutApi {
     suspend fun listProjects(): ProjectListDto
 
     @GET("v1/projects/{project_id}")
-    suspend fun getProject(@Path("project_id") projectId: String): ProjectDto
+    suspend fun getProject(
+        @Path("project_id") projectId: String,
+    ): ProjectDto
 
     @POST("v1/projects")
-    suspend fun createProject(@Body body: ProjectCreateDto): ProjectDto
+    suspend fun createProject(
+        @Body body: ProjectCreateDto,
+    ): ProjectDto
 
     @PUT("v1/projects/{project_id}")
     suspend fun updateProject(
@@ -40,16 +43,24 @@ interface BrainOutApi {
     ): ProjectDto
 
     @DELETE("v1/projects/{project_id}")
-    suspend fun deleteProject(@Path("project_id") projectId: String)
+    suspend fun deleteProject(
+        @Path("project_id") projectId: String,
+    )
 
     @GET("v1/tasks")
-    suspend fun listTasks(@Query("project_id") projectId: String? = null): TaskListDto
+    suspend fun listTasks(
+        @Query("project_id") projectId: String? = null,
+    ): TaskListDto
 
     @GET("v1/tasks/{task_id}")
-    suspend fun getTask(@Path("task_id") taskId: String): TaskDto
+    suspend fun getTask(
+        @Path("task_id") taskId: String,
+    ): TaskDto
 
     @POST("v1/tasks")
-    suspend fun createTask(@Body body: TaskCreateDto): TaskDto
+    suspend fun createTask(
+        @Body body: TaskCreateDto,
+    ): TaskDto
 
     @PUT("v1/tasks/{task_id}")
     suspend fun updateTask(
@@ -58,14 +69,20 @@ interface BrainOutApi {
     ): TaskDto
 
     @DELETE("v1/tasks/{task_id}")
-    suspend fun deleteTask(@Path("task_id") taskId: String)
+    suspend fun deleteTask(
+        @Path("task_id") taskId: String,
+    )
 
     @GET("v1/tags")
     suspend fun listTags(): TagListDto
 
     @POST("v1/tags")
-    suspend fun createTag(@Body body: TagCreateDto): TagDto
+    suspend fun createTag(
+        @Body body: TagCreateDto,
+    ): TagDto
 
     @DELETE("v1/tags/{tag_id}")
-    suspend fun deleteTag(@Path("tag_id") tagId: String)
+    suspend fun deleteTag(
+        @Path("tag_id") tagId: String,
+    )
 }

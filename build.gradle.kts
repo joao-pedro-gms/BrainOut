@@ -61,13 +61,28 @@ subprojects {
     if (path in setOf(":core:domain", ":core:data")) {
         apply(plugin = "org.jetbrains.kotlinx.kover")
 
-        // Classes geradas (Room/Hilt/KSP) e infra de wiring ficam fora do
-        // denominador da cobertura: não são lógica testável.
+        // Fora do denominador da cobertura fica só o que é realmente gerado
+        // por ferramenta ou não tem lógica — nunca uma classe de produção
+        // exercitada por teste (DEF-14).
+        //
         // - *_Impl / *_Impl$*: implementações geradas pelo Room
-        // - *_Factory / Hilt_* / dagger.hilt.*: artefatos do Hilt/Dagger
-        // - *.di.*: módulos de wiring DI
-        // - *.BuildConfig / *.PackageMarker: classes utilitárias sem lógica
-        // - *.remote.*: DTOs de rede (mapeamento puro, coberto via repositories)
+        // - *_Factory / Hilt_* / dagger.hilt.* / *_HiltModules: artefatos
+        //   do Hilt/Dagger
+        // - *Dto / *Dto$*: data classes de contrato (RemoteDtos.kt,
+        //   HolidayDto.kt). Sem lógica própria — só propriedades,
+        //   componentN/copy/equals/hashCode gerados e o serializador
+        //   `$$serializer` do kotlinx-serialization. O parsing de verdade é
+        //   exercitado em RemoteDataSource, que fica no denominador.
+        //   O padrão é `*Dto`, e NÃO `*.Dto`: o Kover converte `*` em `.*`
+        //   e escapa o resto, então `*.Dto` vira `.*\.Dto` e jamais casaria
+        //   com `...remote.ProjectDto` (o nome termina em `ProjectDto`, sem
+        //   ponto antes de `Dto`). O `$*` cobre `ProjectDto$Companion`.
+        // - *.di.*: wiring de DI (DataModule.kt tem 19 métodos @Provides que
+        //   só constroem e devolvem singletons/binds, zero lógica de
+        //   domínio). A exclusão é por "wiring, não lógica" — e não por
+        //   pacote: qualquer classe com comportamento que apareça depois em
+        //   `*.di.*` deve entrar no denominador.
+        // - *.BuildConfig / *.PackageMarker: constantes geradas
         val koverExclusions =
             listOf(
                 "*_Impl",
@@ -81,10 +96,11 @@ subprojects {
                 "*_HiltModules\$*",
                 "dagger.hilt.*",
                 "hilt_aggregated_deps.*",
+                "*Dto",
+                "*Dto\$*",
                 "*.di.*",
                 "*.BuildConfig",
                 "*.PackageMarker",
-                "*.remote.*",
             )
 
         the<kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension>().apply {
@@ -106,6 +122,34 @@ subprojects {
         }
 
         logger.lifecycle("Kover aplicado em $path (bound 60% + filtros de classes geradas)")
+    }
+}
+
+// ---- ktlint (correção de escopo) ------------------------------------------------
+// O plugin ktlint NÃO se propaga automaticamente para subprojetos: aplicado
+// apenas na raiz, `./gradlew ktlintCheck` inspecionava somente os 2 arquivos
+// de build da raiz e ZERO dos 221 arquivos `.kt` versionados — confirmado em
+// disco: só existia `build/reports/ktlint/` na raiz. Aqui ele é aplicado a
+// cada subprojeto, com `android = true` para o analisador entender código
+// Android/Compose.
+//
+// A engine 1.x do ktlint 14 sinalizava violações cosméticas de estilo
+// (indent/quebra de chamada) que o código carregava há 129 commits.
+// Elas estavam registradas em `docs/DEFEITOS.md` como DEF-10, com o
+// `ignoreFailures = true` como contorno deliberado para que o gate
+// passasse a produzir relatório sem bloquear todo PR.
+//
+// O DEF-10 foi fechado: `ktlintFormat` nos 9 subprojetos (commit
+// `b59318e`) mais o acerto das 9 violações não auto-corrigíveis
+// (commit `b6db6e0`) zeraram o contador. O `ignoreFailures` volta
+// para `false` — o gate agora bloqueia de verdade, que era o ponto
+// do DEF-09 ao alcançar os subprojetos. Violação nova quebra o PR,
+// que é o comportamento pretendido para um gate de estilo.
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        android.set(true)
+        ignoreFailures.set(false)
     }
 }
 

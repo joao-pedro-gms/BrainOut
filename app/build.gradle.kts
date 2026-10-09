@@ -21,20 +21,22 @@ val brainoutStoreFile: String? = System.getenv("BRAINOUT_KEYSTORE_PATH")
 val brainoutStorePassword: String? = System.getenv("BRAINOUT_KEYSTORE_PASSWORD")
 val brainoutKeyAlias: String? = System.getenv("BRAINOUT_KEY_ALIAS")
 val brainoutKeyPassword: String? = System.getenv("BRAINOUT_KEY_PASSWORD")
-val hasReleaseSigning: Boolean = !brainoutStoreFile.isNullOrBlank() &&
-    !brainoutStorePassword.isNullOrBlank() &&
-    !brainoutKeyAlias.isNullOrBlank() &&
-    !brainoutKeyPassword.isNullOrBlank()
+val hasReleaseSigning: Boolean =
+    !brainoutStoreFile.isNullOrBlank() &&
+        !brainoutStorePassword.isNullOrBlank() &&
+        !brainoutKeyAlias.isNullOrBlank() &&
+        !brainoutKeyPassword.isNullOrBlank()
 
 // Carrega APP_ENV e a URL base por flavor do `local.properties` para expor
 // via BuildConfig. `local.properties` é ignorado pelo controle de versão
 // (ver .gitignore).
-val localProperties = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) {
-        f.inputStream().use { load(it) }
+val localProperties =
+    Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) {
+            f.inputStream().use { load(it) }
+        }
     }
-}
 val appEnv: String = localProperties.getProperty("APP_ENV", "dev")
 
 // URL base do flavor `dev` — mesma resolução de `:core:data`: a env var
@@ -111,7 +113,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
@@ -247,4 +249,3 @@ detekt {
     buildUponDefaultConfig = true
     autoCorrect = false
 }
-

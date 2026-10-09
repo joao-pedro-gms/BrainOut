@@ -2,7 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import com.google.common.truth.Truth.assertThat
-import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -18,6 +17,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import java.time.Instant
 
 /**
  * Testes diretos do [TagRepositoryImpl] (gap Kover 60% do módulo).
@@ -27,93 +27,99 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
  * introduzido no P2 de tags-por-projeto.
  */
 class TagRepositoryImplTest {
+    @Test
+    fun `findById mapeia entidade para dominio`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val tag = sampleTag()
+            tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
+            val repository = newRepository(tagDao)
+
+            assertThat(repository.findById(tag.id)).isEqualTo(tag)
+        }
 
     @Test
-    fun `findById mapeia entidade para dominio`() = runTest {
-        val tagDao = FakeTagDao()
-        val tag = sampleTag()
-        tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
-        val repository = newRepository(tagDao)
-
-        assertThat(repository.findById(tag.id)).isEqualTo(tag)
-    }
+    fun `findById retorna null quando ausente`() =
+        runTest {
+            assertThat(newRepository().findById("ausente")).isNull()
+        }
 
     @Test
-    fun `findById retorna null quando ausente`() = runTest {
-        assertThat(newRepository().findById("ausente")).isNull()
-    }
+    fun `findByIds mapeia entidades para dominio`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val t1 = sampleTag(id = "t1", name = "A")
+            val t2 = sampleTag(id = "t2", name = "B")
+            tagDao.tags[t1.id] = TagEntity.fromDomain(t1)
+            tagDao.tags[t2.id] = TagEntity.fromDomain(t2)
+            val repository = newRepository(tagDao)
+
+            assertThat(repository.findByIds(listOf("t1", "t2"))).containsExactly(t1, t2)
+        }
 
     @Test
-    fun `findByIds mapeia entidades para dominio`() = runTest {
-        val tagDao = FakeTagDao()
-        val t1 = sampleTag(id = "t1", name = "A")
-        val t2 = sampleTag(id = "t2", name = "B")
-        tagDao.tags[t1.id] = TagEntity.fromDomain(t1)
-        tagDao.tags[t2.id] = TagEntity.fromDomain(t2)
-        val repository = newRepository(tagDao)
+    fun `observeForOwner mapeia entidades para dominio`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val tag = sampleTag()
+            tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
+            val repository = newRepository(tagDao)
 
-        assertThat(repository.findByIds(listOf("t1", "t2"))).containsExactly(t1, t2)
-    }
-
-    @Test
-    fun `observeForOwner mapeia entidades para dominio`() = runTest {
-        val tagDao = FakeTagDao()
-        val tag = sampleTag()
-        tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
-        val repository = newRepository(tagDao)
-
-        assertThat(repository.observeForOwner("u1").first()).containsExactly(tag)
-    }
+            assertThat(repository.observeForOwner("u1").first()).containsExactly(tag)
+        }
 
     @Test
-    fun `observeByProjectIds mapeia projeto para suas tags`() = runTest {
-        val projectDao = FakeProjectDao()
-        val t1 = sampleTag(id = "t1", name = "Urgente")
-        val t2 = sampleTag(id = "t2", name = "Backlog")
-        projectDao.tagAssociations["p1"] = listOf(t1.id, t2.id)
-        projectDao.tagAssociations["p2"] = listOf(t1.id)
-        projectDao.tags[t1.id] = TagEntity.fromDomain(t1)
-        projectDao.tags[t2.id] = TagEntity.fromDomain(t2)
-        val repository = newRepository(projectDao = projectDao)
+    fun `observeByProjectIds mapeia projeto para suas tags`() =
+        runTest {
+            val projectDao = FakeProjectDao()
+            val t1 = sampleTag(id = "t1", name = "Urgente")
+            val t2 = sampleTag(id = "t2", name = "Backlog")
+            projectDao.tagAssociations["p1"] = listOf(t1.id, t2.id)
+            projectDao.tagAssociations["p2"] = listOf(t1.id)
+            projectDao.tags[t1.id] = TagEntity.fromDomain(t1)
+            projectDao.tags[t2.id] = TagEntity.fromDomain(t2)
+            val repository = newRepository(projectDao = projectDao)
 
-        val map = repository.observeByProjectIds(setOf("p1", "p2")).first()
+            val map = repository.observeByProjectIds(setOf("p1", "p2")).first()
 
-        assertThat(map.keys).containsExactly("p1", "p2")
-        assertThat(map["p1"]).containsExactly(t1, t2)
-        assertThat(map["p2"]).containsExactly(t1)
-    }
-
-    @Test
-    fun `create persiste tag e enfileira op CREATE com id cliente-supplied`() = runTest {
-        val tagDao = FakeTagDao()
-        val pendingOpDao = FakePendingOpDao()
-        val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
-        val tag = sampleTag()
-
-        repository.create(tag)
-
-        assertThat(tagDao.tags[tag.id]?.toDomain()).isEqualTo(tag)
-        val op = pendingOpDao.enqueued.single()
-        assertThat(op.opType).isEqualTo("CREATE")
-        assertThat(op.entityType).isEqualTo("TAG")
-        assertThat(op.entityId).isEqualTo(tag.id)
-        // P0-4 (R6): o payload de CREATE carrega o id do cliente.
-        assertThat(op.payload).contains("\"id\":\"${tag.id}\"")
-    }
+            assertThat(map.keys).containsExactly("p1", "p2")
+            assertThat(map["p1"]).containsExactly(t1, t2)
+            assertThat(map["p2"]).containsExactly(t1)
+        }
 
     @Test
-    fun `delete remove tag e enfileira op DELETE`() = runTest {
-        val tagDao = FakeTagDao()
-        val pendingOpDao = FakePendingOpDao()
-        val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
-        val tag = sampleTag()
-        tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
+    fun `create persiste tag e enfileira op CREATE com id cliente-supplied`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val pendingOpDao = FakePendingOpDao()
+            val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
+            val tag = sampleTag()
 
-        repository.delete(tag.id)
+            repository.create(tag)
 
-        assertThat(tagDao.tags).doesNotContainKey(tag.id)
-        assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("DELETE")
-    }
+            assertThat(tagDao.tags[tag.id]?.toDomain()).isEqualTo(tag)
+            val op = pendingOpDao.enqueued.single()
+            assertThat(op.opType).isEqualTo("CREATE")
+            assertThat(op.entityType).isEqualTo("TAG")
+            assertThat(op.entityId).isEqualTo(tag.id)
+            // P0-4 (R6): o payload de CREATE carrega o id do cliente.
+            assertThat(op.payload).contains("\"id\":\"${tag.id}\"")
+        }
+
+    @Test
+    fun `delete remove tag e enfileira op DELETE`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val pendingOpDao = FakePendingOpDao()
+            val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
+            val tag = sampleTag()
+            tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
+
+            repository.delete(tag.id)
+
+            assertThat(tagDao.tags).doesNotContainKey(tag.id)
+            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("DELETE")
+        }
 
     private fun newRepository(
         tagDao: TagDao = FakeTagDao(),
@@ -125,13 +131,14 @@ class TagRepositoryImplTest {
         id: String = "t1",
         ownerId: String = "u1",
         name: String = "Urgente",
-    ): Tag = Tag(
-        id = id,
-        ownerId = ownerId,
-        name = name,
-        color = "#6750A4",
-        createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-    )
+    ): Tag =
+        Tag(
+            id = id,
+            ownerId = ownerId,
+            name = name,
+            color = "#6750A4",
+            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
+        )
 
     /** Fake mínimo de [TagDao]. */
     private class FakeTagDao : TagDao {
@@ -142,8 +149,7 @@ class TagRepositoryImplTest {
 
         override suspend fun findById(id: String): TagEntity? = tags[id]
 
-        override suspend fun findByIds(ids: List<String>): List<TagEntity> =
-            ids.mapNotNull { tags[it] }
+        override suspend fun findByIds(ids: List<String>): List<TagEntity> = ids.mapNotNull { tags[it] }
 
         override suspend fun insert(tag: TagEntity): Long {
             tags[tag.id] = tag
@@ -163,8 +169,7 @@ class TagRepositoryImplTest {
         val tags: MutableMap<String, TagEntity> = mutableMapOf()
         val tagAssociations: MutableMap<String, List<String>> = mutableMapOf()
 
-        override fun observeAllForOwner(ownerId: String): Flow<List<ProjectEntity>> =
-            MutableStateFlow(emptyList())
+        override fun observeAllForOwner(ownerId: String): Flow<List<ProjectEntity>> = MutableStateFlow(emptyList())
 
         override fun searchProjects(
             ownerId: String,
@@ -188,9 +193,15 @@ class TagRepositoryImplTest {
 
         override suspend fun clearProjectTags(projectId: String) = Unit
 
-        override suspend fun replaceProjectTags(projectId: String, tagIds: List<String>) = Unit
+        override suspend fun replaceProjectTags(
+            projectId: String,
+            tagIds: List<String>,
+        ) = Unit
 
-        override suspend fun updateIsCompleted(id: String, isCompleted: Boolean) = Unit
+        override suspend fun updateIsCompleted(
+            id: String,
+            isCompleted: Boolean,
+        ) = Unit
 
         override suspend fun cascadeCompleteTask(
             taskDao: TaskDao,
@@ -220,8 +231,7 @@ class TagRepositoryImplTest {
         val enqueued: MutableList<PendingOpEntity> = mutableListOf()
         private var nextId = 1L
 
-        override suspend fun nextBatch(limit: Int): List<PendingOpEntity> =
-            enqueued.take(limit)
+        override suspend fun nextBatch(limit: Int): List<PendingOpEntity> = enqueued.take(limit)
 
         override suspend fun count(): Int = enqueued.size
 
@@ -242,7 +252,10 @@ class TagRepositoryImplTest {
             enqueued.removeAll { it.id == id }
         }
 
-        override suspend fun deleteForEntity(entityType: String, entityId: String) {
+        override suspend fun deleteForEntity(
+            entityType: String,
+            entityId: String,
+        ) {
             enqueued.removeAll { it.entityType == entityType && it.entityId == entityId }
         }
 
@@ -253,10 +266,12 @@ class TagRepositoryImplTest {
             }
         }
 
-        override suspend fun findById(id: Long): PendingOpEntity? =
-            enqueued.firstOrNull { it.id == id }
+        override suspend fun findById(id: Long): PendingOpEntity? = enqueued.firstOrNull { it.id == id }
 
-        override suspend fun enqueueInTx(op: PendingOpEntity, write: suspend () -> Unit) {
+        override suspend fun enqueueInTx(
+            op: PendingOpEntity,
+            write: suspend () -> Unit,
+        ) {
             write()
             insert(op)
         }

@@ -54,10 +54,11 @@ internal fun HomeProjectsContent(
     syncState: HomeSyncState,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // E3.4 — banner persistente de conectividade + contagem da
@@ -83,11 +84,12 @@ internal fun HomeProjectsContent(
             onSelect = onTagFilterChange,
         )
         Text(
-            text = when (currentFilter) {
-                HomeProjectFilter.Active -> stringResource(id = R.string.home_section_title)
-                HomeProjectFilter.Completed ->
-                    stringResource(id = R.string.home_section_completed_title)
-            },
+            text =
+                when (currentFilter) {
+                    HomeProjectFilter.Active -> stringResource(id = R.string.home_section_title)
+                    HomeProjectFilter.Completed ->
+                        stringResource(id = R.string.home_section_completed_title)
+                },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -110,9 +112,10 @@ internal fun HomeProjectsContent(
                 message = errorMessage,
                 onRetry = onRetry,
                 onDismiss = onDismissError,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp),
             )
         } else if (projects.isEmpty() && isLoading) {
             // E2.8 — loader enquanto o Flow do Room não emite a
@@ -128,21 +131,24 @@ internal fun HomeProjectsContent(
             if (searchQuery.isNotBlank() || selectedTagId != null) {
                 HomeNoMatchesState(
                     query = searchQuery,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(360.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(360.dp),
                 )
             } else if (currentFilter == HomeProjectFilter.Completed) {
                 HomeCompletedEmptyState(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(360.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(360.dp),
                 )
             } else {
                 HomeEmptyState(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(360.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(360.dp),
                 )
             }
         } else {

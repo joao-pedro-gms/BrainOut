@@ -17,7 +17,6 @@ import java.time.Instant
  * - imutabilidade (copy e métodos retornam novas instâncias).
  */
 class TaskTest {
-
     private val fixedInstant: Instant = Instant.parse("2026-09-18T12:00:00Z")
     private val due: Instant = Instant.parse("2026-12-31T23:59:59Z")
 
@@ -27,16 +26,17 @@ class TaskTest {
         status: TaskStatus = TaskStatus.TODO,
         assigneeId: String? = null,
         dueDate: Instant? = null,
-    ): Task = Task(
-        id = "task-1",
-        projectId = "project-1",
-        title = title,
-        priority = priority,
-        status = status,
-        assigneeId = assigneeId,
-        dueDate = dueDate,
-        createdAt = fixedInstant,
-    )
+    ): Task =
+        Task(
+            id = "task-1",
+            projectId = "project-1",
+            title = title,
+            priority = priority,
+            status = status,
+            assigneeId = assigneeId,
+            dueDate = dueDate,
+            createdAt = fixedInstant,
+        )
 
     @Test
     fun `priority codes cover full 0 to 4 range`() {
@@ -88,11 +88,12 @@ class TaskTest {
 
     @Test
     fun `task constructor rejects blank projectId`() {
-        kotlin.runCatching {
-            sample().copy(projectId = " ")
-        }.also {
-            assertThat(it.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
-        }
+        kotlin
+            .runCatching {
+                sample().copy(projectId = " ")
+            }.also {
+                assertThat(it.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
+            }
     }
 
     @Test
@@ -214,15 +215,16 @@ class TaskTest {
 
     @Test
     fun `Task create factory assigns UUID and defaults`() {
-        val task = Task.create(
-            projectId = "project-1",
-            title = "Compras",
-            priority = TaskPriority.HIGH,
-            status = TaskStatus.DOING,
-            assigneeId = "user-1",
-            dueDate = due,
-            now = fixedInstant,
-        )
+        val task =
+            Task.create(
+                projectId = "project-1",
+                title = "Compras",
+                priority = TaskPriority.HIGH,
+                status = TaskStatus.DOING,
+                assigneeId = "user-1",
+                dueDate = due,
+                now = fixedInstant,
+            )
 
         assertThat(task.id).isNotEmpty()
         assertThat(task.projectId).isEqualTo("project-1")

@@ -32,19 +32,22 @@ internal fun ProjectStateCard(
     completedProjects: Int,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(DashboardTestTags.PROJECT_STATE_CARD),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(DashboardTestTags.PROJECT_STATE_CARD),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
@@ -61,18 +64,20 @@ internal fun ProjectStateCard(
                     count = activeProjects,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag(DashboardTestTags.PROJECT_ACTIVE_COUNT),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .testTag(DashboardTestTags.PROJECT_ACTIVE_COUNT),
                 )
                 StateCounter(
                     label = stringResource(id = R.string.dashboard_projects_completed),
                     count = completedProjects,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag(DashboardTestTags.PROJECT_COMPLETED_COUNT),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .testTag(DashboardTestTags.PROJECT_COMPLETED_COUNT),
                 )
             }
         }
@@ -88,16 +93,18 @@ private fun StateCounter(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier
-            // E4.4: área de toque/percepção mínima de 48dp.
-            .heightIn(min = 72.dp),
+        modifier =
+            modifier
+                // E4.4: área de toque/percepção mínima de 48dp.
+                .heightIn(min = 72.dp),
         shape = RoundedCornerShape(12.dp),
         color = containerColor,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

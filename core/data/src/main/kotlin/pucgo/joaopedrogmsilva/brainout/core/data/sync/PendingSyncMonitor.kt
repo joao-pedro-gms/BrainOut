@@ -1,9 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.sync
 
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Fachada da fila de sincronização para a camada de apresentação
@@ -19,14 +19,15 @@ import kotlinx.coroutines.flow.Flow
  * de dados: os ViewModels consomem um número, não o schema.
  */
 @Singleton
-class PendingSyncMonitor @Inject constructor(
-    private val pendingOpDao: pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao,
-) {
-
-    /**
-     * Contagem de operações pendentes de sincronização. 0 = fila
-     * vazia (tudo sincronizado); > 0 = há alterações locais ainda
-     * não confirmadas pela retaguarda.
-     */
-    fun observePendingCount(): Flow<Int> = pendingOpDao.observeCount()
-}
+class PendingSyncMonitor
+    @Inject
+    constructor(
+        private val pendingOpDao: pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao,
+    ) {
+        /**
+         * Contagem de operações pendentes de sincronização. 0 = fila
+         * vazia (tudo sincronizado); > 0 = há alterações locais ainda
+         * não confirmadas pela retaguarda.
+         */
+        fun observePendingCount(): Flow<Int> = pendingOpDao.observeCount()
+    }

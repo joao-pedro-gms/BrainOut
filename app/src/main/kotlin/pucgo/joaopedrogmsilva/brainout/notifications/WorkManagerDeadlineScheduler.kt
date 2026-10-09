@@ -10,12 +10,12 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
+import pucgo.joaopedrogmsilva.brainout.R
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-import pucgo.joaopedrogmsilva.brainout.R
-import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 
 private const val TAG = "BrainOut:DeadlineScheduler"
 
@@ -37,73 +37,80 @@ private const val TAG = "BrainOut:DeadlineScheduler"
  * [WorkManager.cancelUniqueWork].
  */
 @Singleton
-class WorkManagerDeadlineScheduler @Inject constructor(
-    @ApplicationContext private val appContext: Context,
-) : DeadlineNotificationScheduler {
-
-    override fun schedule(taskId: String, triggerAt: Instant) {
-        val delayMillis = triggerAt.toEpochMilli() - System.currentTimeMillis()
-        if (delayMillis <= 0) {
-            // Prazo já vencido no momento do agendamento — sem lembrete
-            // retroativo (regra do domínio E3.6).
-            Log.d(TAG, "Agendamento ignorado: prazo já vencido para taskId=$taskId (triggerAt=$triggerAt)")
-            cancel(taskId)
-            return
-        }
-        Log.d(TAG, "Agendando notificação de prazo para taskId=$taskId em $delayMillis ms (triggerAt=$triggerAt)")
-        val request = OneTimeWorkRequestBuilder<DeadlineWorker>()
-            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-            .setInputData(workDataOf(DeadlineWorker.KEY_TASK_ID to taskId))
-            .addTag(DEADLINE_TAG)
-            .build()
-        WorkManager.getInstance(appContext)
-            .enqueueUniqueWork(uniqueWorkName(taskId), ExistingWorkPolicy.REPLACE, request)
-    }
-
-    override fun cancel(taskId: String) {
-        Log.d(TAG, "Cancelando trabalho de notificação para taskId=$taskId")
-        WorkManager.getInstance(appContext).cancelUniqueWork(uniqueWorkName(taskId))
-    }
-
-    companion object {
-
-        /** Prefixo do nome de trabalho único por tarefa. */
-        const val UNIQUE_WORK_PREFIX: String = "deadline-"
-
-        /** Tag comum a todos os trabalhos de lembrete (útil para testes/QA). */
-        const val DEADLINE_TAG: String = "brainout_deadline"
-
-        /** Id do canal de notificações de prazo (HIGH importance). */
-        const val CHANNEL_ID: String = "brainout_deadlines"
-
-        /** Nome único do trabalho WorkManager de uma tarefa. */
-        fun uniqueWorkName(taskId: String): String = "$UNIQUE_WORK_PREFIX$taskId"
-
-        /**
-         * Cria o canal `brainout_deadlines` (importância HIGH). Idempotente:
-         * chamar para canal já existente é no-op na plataforma. Deve ser
-         * chamado em `BrainOutApplication.onCreate()`.
-         *
-         * Usa recursos string resolvidos diretamente por id — evitar
-         * `getIdentifier` por nome, que é frágil em Robolectric.
-         *
-         * Canal de notificação é API 26+ (`Build.VERSION_CODES.O`). Em
-         * dispositivos 24/25 a chamada é silenciosamente ignorada —
-         * notificações funcionam sem canal (sem tom/opções de
-         * importância customizadas).
-         */
-        fun ensureChannel(context: Context) {
-            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
-            Log.d(TAG, "Garantindo existência do canal de notificação '$CHANNEL_ID'")
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.deadline_channel_name),
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = context.getString(R.string.deadline_channel_description)
+class WorkManagerDeadlineScheduler
+    @Inject
+    constructor(
+        @ApplicationContext private val appContext: Context,
+    ) : DeadlineNotificationScheduler {
+        override fun schedule(
+            taskId: String,
+            triggerAt: Instant,
+        ) {
+            val delayMillis = triggerAt.toEpochMilli() - System.currentTimeMillis()
+            if (delayMillis <= 0) {
+                // Prazo já vencido no momento do agendamento — sem lembrete
+                // retroativo (regra do domínio E3.6).
+                Log.d(TAG, "Agendamento ignorado: prazo já vencido para taskId=$taskId (triggerAt=$triggerAt)")
+                cancel(taskId)
+                return
             }
-            context.getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+            Log.d(TAG, "Agendando notificação de prazo para taskId=$taskId em $delayMillis ms (triggerAt=$triggerAt)")
+            val request =
+                OneTimeWorkRequestBuilder<DeadlineWorker>()
+                    .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                    .setInputData(workDataOf(DeadlineWorker.KEY_TASK_ID to taskId))
+                    .addTag(DEADLINE_TAG)
+                    .build()
+            WorkManager
+                .getInstance(appContext)
+                .enqueueUniqueWork(uniqueWorkName(taskId), ExistingWorkPolicy.REPLACE, request)
+        }
+
+        override fun cancel(taskId: String) {
+            Log.d(TAG, "Cancelando trabalho de notificação para taskId=$taskId")
+            WorkManager.getInstance(appContext).cancelUniqueWork(uniqueWorkName(taskId))
+        }
+
+        companion object {
+            /** Prefixo do nome de trabalho único por tarefa. */
+            const val UNIQUE_WORK_PREFIX: String = "deadline-"
+
+            /** Tag comum a todos os trabalhos de lembrete (útil para testes/QA). */
+            const val DEADLINE_TAG: String = "brainout_deadline"
+
+            /** Id do canal de notificações de prazo (HIGH importance). */
+            const val CHANNEL_ID: String = "brainout_deadlines"
+
+            /** Nome único do trabalho WorkManager de uma tarefa. */
+            fun uniqueWorkName(taskId: String): String = "$UNIQUE_WORK_PREFIX$taskId"
+
+            /**
+             * Cria o canal `brainout_deadlines` (importância HIGH). Idempotente:
+             * chamar para canal já existente é no-op na plataforma. Deve ser
+             * chamado em `BrainOutApplication.onCreate()`.
+             *
+             * Usa recursos string resolvidos diretamente por id — evitar
+             * `getIdentifier` por nome, que é frágil em Robolectric.
+             *
+             * Canal de notificação é API 26+ (`Build.VERSION_CODES.O`). Em
+             * dispositivos 24/25 a chamada é silenciosamente ignorada —
+             * notificações funcionam sem canal (sem tom/opções de
+             * importância customizadas).
+             */
+            fun ensureChannel(context: Context) {
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
+                Log.d(TAG, "Garantindo existência do canal de notificação '$CHANNEL_ID'")
+                val channel =
+                    NotificationChannel(
+                        CHANNEL_ID,
+                        context.getString(R.string.deadline_channel_name),
+                        NotificationManager.IMPORTANCE_HIGH,
+                    ).apply {
+                        description = context.getString(R.string.deadline_channel_description)
+                    }
+                context
+                    .getSystemService(NotificationManager::class.java)
+                    .createNotificationChannel(channel)
+            }
         }
     }
-}

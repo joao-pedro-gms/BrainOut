@@ -14,9 +14,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotifica
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NotificationModule {
-
     @Binds
-    abstract fun bindDeadlineScheduler(
-        impl: WorkManagerDeadlineScheduler,
-    ): DeadlineNotificationScheduler
+    abstract fun bindDeadlineScheduler(impl: WorkManagerDeadlineScheduler): DeadlineNotificationScheduler
 }

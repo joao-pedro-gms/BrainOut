@@ -6,7 +6,6 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class TaskPriorityTest {
-
     @Test
     fun `fromCodeOrThrow converte codigos validos e rejeita fora do intervalo`() {
         TaskPriority.entries.forEach { priority ->

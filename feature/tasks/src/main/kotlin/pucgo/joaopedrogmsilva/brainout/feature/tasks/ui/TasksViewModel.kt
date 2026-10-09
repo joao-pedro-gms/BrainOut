@@ -14,8 +14,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,6 +31,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Estado de UI da [TasksScreen].
@@ -97,115 +97,117 @@ data class TaskRow(
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
-class TasksViewModel @Inject constructor(
-    @Suppress("unused") private val taskRepository: TaskRepository,
-    @Suppress("unused") private val projectRepository: ProjectRepository,
-    private val activeUserProvider: ActiveUserProvider,
-) : ViewModel() {
+class TasksViewModel
+    @Inject
+    constructor(
+        @Suppress("unused") private val taskRepository: TaskRepository,
+        @Suppress("unused") private val projectRepository: ProjectRepository,
+        private val activeUserProvider: ActiveUserProvider,
+    ) : ViewModel() {
+        /**
+         * Token de retry (E2.8). Cada chamada a [retry] incrementa este
+         * valor; o pipeline [uiState] depende dele como chave de
+         * `flatMapLatest`, então a mudança descarta o Flow anterior
+         * (liberando o `WhileSubscribed` interno) e inicia uma nova
+         * inscrição nos repositórios.
+         */
+        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
+        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
-    /**
-     * Token de retry (E2.8). Cada chamada a [retry] incrementa este
-     * valor; o pipeline [uiState] depende dele como chave de
-     * `flatMapLatest`, então a mudança descarta o Flow anterior
-     * (liberando o `WhileSubscribed` interno) e inicia uma nova
-     * inscrição nos repositórios.
-     */
-    private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-    val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    val uiState: StateFlow<TasksUiState> = combine(
-        _retryToken
-            .flatMapLatest { _ ->
-                activeUserProvider.observeActiveUserId()
-                    .flatMapLatest { ownerId ->
-                        if (ownerId == null) {
-                            flowOf(TasksUiState(isLoading = false))
-                        } else {
-                            taskRepository.observeAllForOwner(ownerId)
-                                .flatMapLatest { tasks ->
-                                    projectRepository.observeAllForOwner(ownerId).map { projects ->
-                                        TasksUiState(
-                                            rows = tasks.map { it.toRow(projects) },
-                                            isLoading = false,
-                                        )
-                                    }
+        val uiState: StateFlow<TasksUiState> =
+            combine(
+                _retryToken
+                    .flatMapLatest { _ ->
+                        activeUserProvider
+                            .observeActiveUserId()
+                            .flatMapLatest { ownerId ->
+                                if (ownerId == null) {
+                                    flowOf(TasksUiState(isLoading = false))
+                                } else {
+                                    taskRepository
+                                        .observeAllForOwner(ownerId)
+                                        .flatMapLatest { tasks ->
+                                            projectRepository.observeAllForOwner(ownerId).map { projects ->
+                                                TasksUiState(
+                                                    rows = tasks.map { it.toRow(projects) },
+                                                    isLoading = false,
+                                                )
+                                            }
+                                        }
                                 }
-                        }
-                    }
-                    .catch { throwable ->
-                        if (throwable is CancellationException) throw throwable
-                        Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                        val message = throwable.toTasksErrorMessage()
-                        _errorMessage.value = message
-                        emit(TasksUiState(isLoading = false, errorMessage = message))
-                    }
-                    // Limpa erro pendente APENAS em emissões vindas do
-                    // `flatMapLatest` (sucesso), não nas emitidas pelo
-                    // `catch` acima — identificadas pelo
-                    // `errorMessage == null`. Sem esse filtro, o `catch`
-                    // emitiria um estado com erro e o `onEach` seguinte
-                    // o resetaria para `null` imediatamente, "engolindo"
-                    // a falha. (E2.8)
-                    .onEach { state ->
-                        if (state.errorMessage == null) {
-                            _errorMessage.value = null
-                        }
-                    }
-            },
-        _errorMessage,
-    ) { ui, err ->
-        if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
-    }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = TasksUiState(),
-        )
-
-    /**
-     * Re-assina o pipeline de observação dos repositórios após uma
-     * falha (E2.8). Incrementa [retryToken], o que dispara o
-     * `flatMapLatest` em [uiState] e descarta a coleta atual.
-     */
-    fun retry() {
-        Log.d(TAG, "retry acionado em TasksViewModel")
-        _errorMessage.value = null
-        _retryToken.value = _retryToken.value + 1
-    }
-
-    /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI quando o usuário dispensa o banner. */
-    fun clearError() {
-        _errorMessage.value = null
-    }
-
-    private fun Task.toRow(projects: List<Project>): TaskRow {
-        val byId = projects.associateBy { it.id }
-        return TaskRow(
-            task = this,
-            projectName = byId[this.projectId]?.name ?: NO_PROJECT_LABEL,
-        )
-    }
-
-    companion object {
-        private const val TAG = "BrainOut:TasksVM"
-
-        /** Texto exibido quando a tarefa referencia um projeto inexistente. */
-        const val NO_PROJECT_LABEL: String = "(sem projeto)"
+                            }.catch { throwable ->
+                                if (throwable is CancellationException) throw throwable
+                                Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
+                                val message = throwable.toTasksErrorMessage()
+                                _errorMessage.value = message
+                                emit(TasksUiState(isLoading = false, errorMessage = message))
+                            }
+                            // Limpa erro pendente APENAS em emissões vindas do
+                            // `flatMapLatest` (sucesso), não nas emitidas pelo
+                            // `catch` acima — identificadas pelo
+                            // `errorMessage == null`. Sem esse filtro, o `catch`
+                            // emitiria um estado com erro e o `onEach` seguinte
+                            // o resetaria para `null` imediatamente, "engolindo"
+                            // a falha. (E2.8)
+                            .onEach { state ->
+                                if (state.errorMessage == null) {
+                                    _errorMessage.value = null
+                                }
+                            }
+                    },
+                _errorMessage,
+            ) { ui, err ->
+                if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = TasksUiState(),
+            )
 
         /**
-         * Mensagem canônica para falhas de carga (E2.8). A UI
-         * resolve esta chave para o recurso localizado via
-         * `R.string.tasks_error_load_failed`.
+         * Re-assina o pipeline de observação dos repositórios após uma
+         * falha (E2.8). Incrementa [retryToken], o que dispara o
+         * `flatMapLatest` em [uiState] e descarta a coleta atual.
          */
-        const val ERROR_LOAD_FAILED: String = "Não foi possível carregar suas tarefas"
+        fun retry() {
+            Log.d(TAG, "retry acionado em TasksViewModel")
+            _errorMessage.value = null
+            _retryToken.value = _retryToken.value + 1
+        }
 
-        /** Indica se [message] é a de falha de carga. */
-        fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+        /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI quando o usuário dispensa o banner. */
+        fun clearError() {
+            _errorMessage.value = null
+        }
+
+        private fun Task.toRow(projects: List<Project>): TaskRow {
+            val byId = projects.associateBy { it.id }
+            return TaskRow(
+                task = this,
+                projectName = byId[this.projectId]?.name ?: NO_PROJECT_LABEL,
+            )
+        }
+
+        companion object {
+            private const val TAG = "BrainOut:TasksVM"
+
+            /** Texto exibido quando a tarefa referencia um projeto inexistente. */
+            const val NO_PROJECT_LABEL: String = "(sem projeto)"
+
+            /**
+             * Mensagem canônica para falhas de carga (E2.8). A UI
+             * resolve esta chave para o recurso localizado via
+             * `R.string.tasks_error_load_failed`.
+             */
+            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar suas tarefas"
+
+            /** Indica se [message] é a de falha de carga. */
+            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+        }
     }
-}
 
 /**
  * Converte uma [Throwable] vinda do Room em uma mensagem canônica

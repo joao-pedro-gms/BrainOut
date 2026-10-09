@@ -26,16 +26,18 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 @Composable
 internal fun DashboardEmptyState(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier
-            .height(280.dp)
-            .testTag(DashboardTestTags.EMPTY),
+        modifier =
+            modifier
+                .height(280.dp)
+                .testTag(DashboardTestTags.EMPTY),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

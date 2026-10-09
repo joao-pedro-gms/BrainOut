@@ -6,7 +6,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -19,6 +18,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Dispara [CreateProjectUseCase] capturando falhas em [errorSink]. */
 internal fun runCreateProject(

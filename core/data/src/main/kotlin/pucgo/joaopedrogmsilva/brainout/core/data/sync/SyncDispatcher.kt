@@ -15,8 +15,15 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
  */
 sealed interface SyncOutcome {
     data object Success : SyncOutcome
-    data class Retriable(val reason: String) : SyncOutcome
-    data class Permanent(val httpCode: Int, val reason: String) : SyncOutcome
+
+    data class Retriable(
+        val reason: String,
+    ) : SyncOutcome
+
+    data class Permanent(
+        val httpCode: Int,
+        val reason: String,
+    ) : SyncOutcome
 }
 
 /**
@@ -41,7 +48,6 @@ sealed interface SyncOutcome {
  * HTTP 4xx é permanente (contrato violado).
  */
 interface SyncDispatcher {
-
     /**
      * Envia a op [PendingOpEntity] ao backend e devolve o resultado
      * classificado. Payloads inválidos (JSON malformado, tipo não

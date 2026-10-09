@@ -46,7 +46,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 )
 @TypeConverters(InstantConverter::class)
 abstract class BrainOutDatabase : RoomDatabase() {
-
     /** DAO de usuários ([UserEntity]). */
     abstract fun userDao(): UserDao
 

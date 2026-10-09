@@ -14,14 +14,15 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 data class HomeUser(
     val displayName: String,
     val initials: String,
-    val role: HomeUserRole
+    val role: HomeUserRole,
 )
 
 enum class HomeUserRole { Owner, Member }
 
 /** Placeholder do usuário fake enquanto não há sessão real. */
-val DefaultHomeUser: HomeUser = HomeUser(
-    displayName = "João Pedro",
-    initials = "JP",
-    role = HomeUserRole.Owner
-)
+val DefaultHomeUser: HomeUser =
+    HomeUser(
+        displayName = "João Pedro",
+        initials = "JP",
+        role = HomeUserRole.Owner,
+    )

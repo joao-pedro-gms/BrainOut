@@ -37,8 +37,16 @@ data class ListingPreferences(
  * chave antes de gravá-la (defesa contra entradas inválidas via
  * `DataStore`).
  *
- * A serialização em `DataStore` usa o nome do enum em
- * minúsculas (`name.lowercase()`).
+ * A serialização em `DataStore` usa a chave canônica
+ * `snake_case` devolvida por [toStorageKey] (`name_asc`,
+ * `name_desc`, `created_desc`, `created_asc`). Essa é a mesma
+ * grafia que a ordenação dinâmica do `ProjectDao.searchProjects`
+ * compara em SQL, então o valor persistido é diretamente
+ * interpretável como chave de ordenação.
+ *
+ * [fromStorageKey] continua aceitando também a grafia
+ * concatenada (`nameasc`, …) de versões anteriores, para que
+ * preferências já gravadas no dispositivo continuem legíveis.
  */
 enum class SortOrder {
     NameAsc,
@@ -47,19 +55,26 @@ enum class SortOrder {
     CreatedAsc,
     ;
 
-    /** Serialização textual usada em `DataStore`. */
-    fun toStorageKey(): String = name.lowercase()
+    /** Serialização textual usada em `DataStore` e na ordenação do DAO. */
+    fun toStorageKey(): String =
+        when (this) {
+            NameAsc -> "name_asc"
+            NameDesc -> "name_desc"
+            CreatedDesc -> "created_desc"
+            CreatedAsc -> "created_asc"
+        }
 
     companion object {
         /** Desserializa uma chave de `DataStore`, com fallback seguro. */
-        fun fromStorageKey(value: String?): SortOrder = when (value) {
-            "nameasc", "name_asc" -> NameAsc
-            "namedesc", "name_desc" -> NameDesc
-            "createddesc", "created_desc" -> CreatedDesc
-            "createdasc", "created_asc" -> CreatedAsc
-            null, "" -> CreatedDesc
-            else -> CreatedDesc
-        }
+        fun fromStorageKey(value: String?): SortOrder =
+            when (value) {
+                "nameasc", "name_asc" -> NameAsc
+                "namedesc", "name_desc" -> NameDesc
+                "createddesc", "created_desc" -> CreatedDesc
+                "createdasc", "created_asc" -> CreatedAsc
+                null, "" -> CreatedDesc
+                else -> CreatedDesc
+            }
     }
 }
 
@@ -74,7 +89,6 @@ enum class SortOrder {
  *   [setSelectedTagId] para limpar o filtro.
  */
 interface ListingPreferencesRepository {
-
     /**
      * Observa as preferências de listagem para o [userId]. Se nunca
      * houve escrita, emite o [ListingPreferences] default (sem
@@ -83,14 +97,23 @@ interface ListingPreferencesRepository {
     fun observe(userId: String): Flow<ListingPreferences>
 
     /** Atualiza a query de busca (string vazia = limpar). */
-    suspend fun setSearchQuery(userId: String, query: String)
+    suspend fun setSearchQuery(
+        userId: String,
+        query: String,
+    )
 
     /**
      * Atualiza a tag selecionada como filtro (`null` = limpar o
      * filtro, mostrar todas).
      */
-    suspend fun setSelectedTagId(userId: String, tagId: String?)
+    suspend fun setSelectedTagId(
+        userId: String,
+        tagId: String?,
+    )
 
     /** Atualiza a ordenação. Valores fora de [SortOrder] caem no default. */
-    suspend fun setSortOrder(userId: String, order: SortOrder)
+    suspend fun setSortOrder(
+        userId: String,
+        order: SortOrder,
+    )
 }

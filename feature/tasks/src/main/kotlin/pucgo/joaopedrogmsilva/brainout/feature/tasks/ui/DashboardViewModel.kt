@@ -22,12 +22,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.temporal.TemporalAdjusters
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +38,12 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.temporal.TemporalAdjusters
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Estado de UI da [DashboardScreen] (E2.7).
@@ -87,134 +87,138 @@ data class DashboardUiState(
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
-class DashboardViewModel @Inject constructor(
-    private val projectRepository: ProjectRepository,
-    private val taskRepository: TaskRepository,
-    private val activeUserProvider: ActiveUserProvider,
-) : ViewModel() {
+class DashboardViewModel
+    @Inject
+    constructor(
+        private val projectRepository: ProjectRepository,
+        private val taskRepository: TaskRepository,
+        private val activeUserProvider: ActiveUserProvider,
+    ) : ViewModel() {
+        /**
+         * Token de retry (E2.8). Cada chamada a [retry] incrementa este
+         * valor; o pipeline [uiState] depende dele como chave de
+         * `flatMapLatest`, descartando a coleta atual e re-assinando os
+         * repositórios.
+         */
+        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
+        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
-    /**
-     * Token de retry (E2.8). Cada chamada a [retry] incrementa este
-     * valor; o pipeline [uiState] depende dele como chave de
-     * `flatMapLatest`, descartando a coleta atual e re-assinando os
-     * repositórios.
-     */
-    private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-    val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    val uiState: StateFlow<DashboardUiState> = combine(
-        _retryToken
-            .flatMapLatest { _ ->
-                activeUserProvider.observeActiveUserId()
-                    .flatMapLatest { ownerId ->
-                        if (ownerId == null) {
-                            flowOf(DashboardUiState(isLoading = false))
-                        } else {
-                            combine(
-                                projectRepository.observeAllForOwner(ownerId),
-                                taskRepository.observeCountByPriority(ownerId),
-                                taskRepository.observeCompletionStats(
-                                    ownerId = ownerId,
-                                    weekStartMillis = currentWeekStartMillis(),
-                                ),
-                            ) { projects, priorityCounts, stats ->
-                                DashboardUiState(
-                                    activeProjects = projects.count { !it.isCompleted },
-                                    completedProjects = projects.count { it.isCompleted },
-                                    priorityCounts = normalizePriorityCounts(priorityCounts),
-                                    totalTasks = stats.totalCount,
-                                    doneTasks = stats.doneCount,
-                                    weeklyCompletionPercent = stats.weeklyCompletionPercent,
-                                    overallCompletionPercent = stats.overallCompletionPercent,
-                                    isLoading = false,
+        val uiState: StateFlow<DashboardUiState> =
+            combine(
+                _retryToken
+                    .flatMapLatest { _ ->
+                        activeUserProvider
+                            .observeActiveUserId()
+                            .flatMapLatest { ownerId ->
+                                if (ownerId == null) {
+                                    flowOf(DashboardUiState(isLoading = false))
+                                } else {
+                                    combine(
+                                        projectRepository.observeAllForOwner(ownerId),
+                                        taskRepository.observeCountByPriority(ownerId),
+                                        taskRepository.observeCompletionStats(
+                                            ownerId = ownerId,
+                                            weekStartMillis = currentWeekStartMillis(),
+                                        ),
+                                    ) { projects, priorityCounts, stats ->
+                                        DashboardUiState(
+                                            activeProjects = projects.count { !it.isCompleted },
+                                            completedProjects = projects.count { it.isCompleted },
+                                            priorityCounts = normalizePriorityCounts(priorityCounts),
+                                            totalTasks = stats.totalCount,
+                                            doneTasks = stats.doneCount,
+                                            weeklyCompletionPercent = stats.weeklyCompletionPercent,
+                                            overallCompletionPercent = stats.overallCompletionPercent,
+                                            isLoading = false,
+                                        )
+                                    }
+                                }
+                            }.catch { throwable ->
+                                if (throwable is CancellationException) throw throwable
+                                Log.e(
+                                    TAG,
+                                    "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
+                                    throwable,
                                 )
+                                val message = throwable.toDashboardErrorMessage()
+                                _errorMessage.value = message
+                                emit(DashboardUiState(isLoading = false, errorMessage = message))
+                            }.onEach { state ->
+                                if (state.errorMessage == null) {
+                                    _errorMessage.value = null
+                                }
                             }
-                        }
-                    }
-                    .catch { throwable ->
-                        if (throwable is CancellationException) throw throwable
-                        Log.e(TAG, "Erro ao carregar estatísticas do dashboard: ${throwable.message}", throwable)
-                        val message = throwable.toDashboardErrorMessage()
-                        _errorMessage.value = message
-                        emit(DashboardUiState(isLoading = false, errorMessage = message))
-                    }
-                    .onEach { state ->
-                        if (state.errorMessage == null) {
-                            _errorMessage.value = null
-                        }
-                    }
-            },
-        _errorMessage,
-    ) { ui, err ->
-        if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
-    }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = DashboardUiState(),
-        )
-
-    /**
-     * Re-assina o pipeline após uma falha (E2.8). Incrementa
-     * [retryToken], o que dispara o `flatMapLatest` em [uiState].
-     */
-    fun retry() {
-        Log.d(TAG, "retry acionado no Dashboard")
-        _errorMessage.value = null
-        _retryToken.value = _retryToken.value + 1
-    }
-
-    /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI ao dispensar o banner. */
-    fun clearError() {
-        _errorMessage.value = null
-    }
-
-    /**
-     * Início da semana corrente em epoch millis (UTC), segunda-feira
-     * 00:00 via [TemporalAdjusters.previousOrSame]. Semana UTC evita
-     * depender do fuso do dispositivo para a agregação SQL — a contagem
-     * é estável entre sessões e dispositivos.
-     */
-    private fun currentWeekStartMillis(): Long =
-        Instant.now()
-            .atZone(ZoneOffset.UTC)
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            .toLocalDate()
-            .atStartOfDay(ZoneOffset.UTC)
-            .toInstant()
-            .toEpochMilli()
-
-    /**
-     * Garante sempre 5 entradas (níveis 0..4). Prioridades ausentes na
-     * resposta do DAO ficam com contagem zero.
-     */
-    private fun normalizePriorityCounts(counts: List<TaskPriorityCount>): List<Int> {
-        val byCode = counts.associate { it.priorityCode to it.count }
-        return TaskPriority.VALID_CODES.map { code -> byCode[code] ?: 0 }
-    }
-
-    companion object {
-        private const val TAG = "BrainOut:DashboardVM"
+                    },
+                _errorMessage,
+            ) { ui, err ->
+                if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = DashboardUiState(),
+            )
 
         /**
-         * Mensagem canônica para falhas de carga (E2.8). A UI resolve
-         * esta chave para o recurso localizado via
-         * `R.string.dashboard_error_load_failed`.
+         * Re-assina o pipeline após uma falha (E2.8). Incrementa
+         * [retryToken], o que dispara o `flatMapLatest` em [uiState].
          */
-        const val ERROR_LOAD_FAILED: String = "Não foi possível carregar o dashboard"
+        fun retry() {
+            Log.d(TAG, "retry acionado no Dashboard")
+            _errorMessage.value = null
+            _retryToken.value = _retryToken.value + 1
+        }
 
-        /** Indica se [message] é a de falha de carga. */
-        fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+        /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI ao dispensar o banner. */
+        fun clearError() {
+            _errorMessage.value = null
+        }
+
+        /**
+         * Início da semana corrente em epoch millis (UTC), segunda-feira
+         * 00:00 via [TemporalAdjusters.previousOrSame]. Semana UTC evita
+         * depender do fuso do dispositivo para a agregação SQL — a contagem
+         * é estável entre sessões e dispositivos.
+         */
+        private fun currentWeekStartMillis(): Long =
+            Instant
+                .now()
+                .atZone(ZoneOffset.UTC)
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .toLocalDate()
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant()
+                .toEpochMilli()
+
+        /**
+         * Garante sempre 5 entradas (níveis 0..4). Prioridades ausentes na
+         * resposta do DAO ficam com contagem zero.
+         */
+        private fun normalizePriorityCounts(counts: List<TaskPriorityCount>): List<Int> {
+            val byCode = counts.associate { it.priorityCode to it.count }
+            return TaskPriority.VALID_CODES.map { code -> byCode[code] ?: 0 }
+        }
+
+        companion object {
+            private const val TAG = "BrainOut:DashboardVM"
+
+            /**
+             * Mensagem canônica para falhas de carga (E2.8). A UI resolve
+             * esta chave para o recurso localizado via
+             * `R.string.dashboard_error_load_failed`.
+             */
+            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar o dashboard"
+
+            /** Indica se [message] é a de falha de carga. */
+            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+        }
     }
-}
 
 /**
  * Converte uma [Throwable] vinda do Room em uma mensagem canônica
  * para a UI (E2.8). Sem stack traces expostos — paridade com os
  * demais ViewModels.
  */
-internal fun Throwable.toDashboardErrorMessage(): String =
-    DashboardViewModel.ERROR_LOAD_FAILED
+internal fun Throwable.toDashboardErrorMessage(): String = DashboardViewModel.ERROR_LOAD_FAILED

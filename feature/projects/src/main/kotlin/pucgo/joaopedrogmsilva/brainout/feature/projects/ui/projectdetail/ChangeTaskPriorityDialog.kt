@@ -54,13 +54,14 @@ internal fun ChangeTaskPriorityDialog(
                         label = {
                             Text(text = stringResource(id = option.labelRes()))
                         },
-                        modifier = Modifier
-                            .testTag(
-                                ProjectDetailTestTags.TASK_PRIORITY_CHIP_OPTION_PREFIX +
-                                    option.priorityCode.toString(),
-                            )
-                            // E4.4: 48dp mínimo WCAG 2.5.5.
-                            .heightIn(min = 48.dp),
+                        modifier =
+                            Modifier
+                                .testTag(
+                                    ProjectDetailTestTags.TASK_PRIORITY_CHIP_OPTION_PREFIX +
+                                        option.priorityCode.toString(),
+                                )
+                                // E4.4: 48dp mínimo WCAG 2.5.5.
+                                .heightIn(min = 48.dp),
                     )
                 }
             }

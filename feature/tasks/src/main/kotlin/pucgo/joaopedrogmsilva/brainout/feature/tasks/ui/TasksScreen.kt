@@ -82,6 +82,7 @@ object TasksTestTags {
     const val LOADING: String = "tasks_loading"
     const val EMPTY: String = "tasks_empty"
     const val LIST: String = "tasks_list"
+
     // E2.8 — tags do banner de erro (paridade com Home).
     const val ERROR_BANNER: String = "tasks_error_banner"
     const val ERROR_RETRY: String = "tasks_error_retry"
@@ -96,9 +97,10 @@ private fun TasksContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -112,17 +114,19 @@ private fun TasksContent(
         // empty state. Esta ordem evita que um Room falho mostre
         // simultaneamente spinner e empty state.
         when {
-            state.errorMessage != null -> TasksErrorBanner(
-                message = state.errorMessage,
-                onRetry = onRetry,
-                onDismiss = onDismissError,
-            )
+            state.errorMessage != null ->
+                TasksErrorBanner(
+                    message = state.errorMessage,
+                    onRetry = onRetry,
+                    onDismiss = onDismissError,
+                )
             state.isLoading -> TasksLoading()
             state.rows.isEmpty() -> TasksEmptyState(modifier = Modifier.fillMaxWidth())
-            else -> TasksList(
-                rows = state.rows,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            else ->
+                TasksList(
+                    rows = state.rows,
+                    modifier = Modifier.fillMaxWidth(),
+                )
         }
     }
 }
@@ -138,17 +142,19 @@ private fun TasksErrorBanner(
     onDismiss: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 140.dp)
-            .testTag(TasksTestTags.ERROR_BANNER),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 140.dp)
+                .testTag(TasksTestTags.ERROR_BANNER),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -160,17 +166,19 @@ private fun TasksErrorBanner(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     onClick = onRetry,
-                    modifier = Modifier
-                        .testTag(TasksTestTags.ERROR_RETRY)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(TasksTestTags.ERROR_RETRY)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.tasks_error_retry))
                 }
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .testTag(TasksTestTags.ERROR_DISMISS)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(TasksTestTags.ERROR_DISMISS)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.tasks_error_dismiss))
                 }
@@ -182,9 +190,10 @@ private fun TasksErrorBanner(
 @Composable
 private fun TasksLoading() {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 48.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(top = 48.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
         CircularProgressIndicator(modifier = Modifier.size(48.dp))
@@ -194,15 +203,17 @@ private fun TasksLoading() {
 @Composable
 private fun TasksEmptyState(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier
-            .height(280.dp),
+        modifier =
+            modifier
+                .height(280.dp),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -241,9 +252,10 @@ private fun TasksList(
 private fun TaskCard(row: TaskRow) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
@@ -275,40 +287,47 @@ private fun TaskCard(row: TaskRow) {
 /** Chip de prioridade da tarefa. Cores derivadas do MaterialTheme. */
 @Composable
 private fun PriorityChip(priority: TaskPriority) {
-    val (labelRes, containerColor, contentColor) = when (priority) {
-        TaskPriority.LOW -> Triple(
-            R.string.task_priority_low,
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TaskPriority.MEDIUM -> Triple(
-            R.string.task_priority_medium,
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TaskPriority.HIGH -> Triple(
-            R.string.task_priority_high,
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-        )
-        TaskPriority.URGENT -> Triple(
-            R.string.task_priority_urgent,
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-        )
-        TaskPriority.CRITICAL -> Triple(
-            R.string.task_priority_critical,
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-        )
-    }
+    val (labelRes, containerColor, contentColor) =
+        when (priority) {
+            TaskPriority.LOW ->
+                Triple(
+                    R.string.task_priority_low,
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            TaskPriority.MEDIUM ->
+                Triple(
+                    R.string.task_priority_medium,
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            TaskPriority.HIGH ->
+                Triple(
+                    R.string.task_priority_high,
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            TaskPriority.URGENT ->
+                Triple(
+                    R.string.task_priority_urgent,
+                    MaterialTheme.colorScheme.secondaryContainer,
+                    MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            TaskPriority.CRITICAL ->
+                Triple(
+                    R.string.task_priority_critical,
+                    MaterialTheme.colorScheme.errorContainer,
+                    MaterialTheme.colorScheme.onErrorContainer,
+                )
+        }
     AssistChip(
         onClick = { /* chip é decorativo */ },
         label = { Text(text = stringResource(id = labelRes), style = MaterialTheme.typography.labelSmall) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = containerColor,
-            labelColor = contentColor,
-        ),
+        colors =
+            AssistChipDefaults.assistChipColors(
+                containerColor = containerColor,
+                labelColor = contentColor,
+            ),
         // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
         modifier = Modifier.heightIn(min = 48.dp),
     )
@@ -317,30 +336,35 @@ private fun PriorityChip(priority: TaskPriority) {
 /** Chip de status da tarefa. Cores derivadas do MaterialTheme. */
 @Composable
 private fun StatusChip(status: TaskStatus) {
-    val (labelRes, containerColor, contentColor) = when (status) {
-        TaskStatus.TODO -> Triple(
-            R.string.task_status_todo,
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TaskStatus.DOING -> Triple(
-            R.string.task_status_doing,
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        TaskStatus.DONE -> Triple(
-            R.string.task_status_done,
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-        )
-    }
+    val (labelRes, containerColor, contentColor) =
+        when (status) {
+            TaskStatus.TODO ->
+                Triple(
+                    R.string.task_status_todo,
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            TaskStatus.DOING ->
+                Triple(
+                    R.string.task_status_doing,
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            TaskStatus.DONE ->
+                Triple(
+                    R.string.task_status_done,
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+        }
     AssistChip(
         onClick = { /* chip é decorativo */ },
         label = { Text(text = stringResource(id = labelRes), style = MaterialTheme.typography.labelSmall) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = containerColor,
-            labelColor = contentColor,
-        ),
+        colors =
+            AssistChipDefaults.assistChipColors(
+                containerColor = containerColor,
+                labelColor = contentColor,
+            ),
         // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
         modifier = Modifier.heightIn(min = 48.dp),
     )
@@ -364,37 +388,41 @@ private fun TasksScreenEmptyPreview() {
 @Composable
 private fun TasksScreenPopulatedPreview() {
     val now = java.time.Instant.parse("2026-09-19T00:00:00Z")
-    val rows = listOf(
-        TaskRow(
-            task = Task.create(
-                projectId = "p1",
-                title = "Revisar relatório mensal",
-                priority = TaskPriority.HIGH,
-                status = TaskStatus.DOING,
-                now = now,
+    val rows =
+        listOf(
+            TaskRow(
+                task =
+                    Task.create(
+                        projectId = "p1",
+                        title = "Revisar relatório mensal",
+                        priority = TaskPriority.HIGH,
+                        status = TaskStatus.DOING,
+                        now = now,
+                    ),
+                projectName = "Projeto Demo",
             ),
-            projectName = "Projeto Demo",
-        ),
-        TaskRow(
-            task = Task.create(
-                projectId = "p2",
-                title = "Atualizar wireframes low-fi",
-                priority = TaskPriority.URGENT,
-                status = TaskStatus.TODO,
-                now = now,
+            TaskRow(
+                task =
+                    Task.create(
+                        projectId = "p2",
+                        title = "Atualizar wireframes low-fi",
+                        priority = TaskPriority.URGENT,
+                        status = TaskStatus.TODO,
+                        now = now,
+                    ),
+                projectName = "BrainOut",
             ),
-            projectName = "BrainOut",
-        ),
-        TaskRow(
-            task = Task.create(
-                projectId = "p1",
-                title = "Subir release 0.1.0-alpha02",
-                priority = TaskPriority.CRITICAL,
-                status = TaskStatus.DONE,
-                now = now,
+            TaskRow(
+                task =
+                    Task.create(
+                        projectId = "p1",
+                        title = "Subir release 0.1.0-alpha02",
+                        priority = TaskPriority.CRITICAL,
+                        status = TaskStatus.DONE,
+                        now = now,
+                    ),
+                projectName = "Projeto Demo",
             ),
-            projectName = "Projeto Demo",
-        ),
-    )
+        )
     TasksContent(state = TasksUiState(rows = rows, isLoading = false))
 }

@@ -4,8 +4,8 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.assets
 
 import com.google.common.truth.Truth.assertThat
-import java.io.File
 import org.junit.Test
+import java.io.File
 
 /**
  * Contrato de asset de fonte (NB-05, item 1):
@@ -25,7 +25,6 @@ import org.junit.Test
  * o AGP vai empacotar no APK.
  */
 class NeoFontAssetsTest {
-
     private val fontDir: File = coreUiRes().resolve("font")
 
     @Test

@@ -34,38 +34,42 @@ private const val TAG = "BrainOut:SyncConnectivityWatcher"
  * quando a constraint se satisfaz).
  */
 @Singleton
-class SyncConnectivityWatcher @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val syncScheduler: SyncScheduler,
-) {
+class SyncConnectivityWatcher
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val syncScheduler: SyncScheduler,
+    ) {
+        private var registered = false
 
-    private var registered = false
+        /**
+         * Registra o callback de rede (idempotente). Chamado no
+         * `Application.onCreate()`.
+         */
+        @Synchronized
+        fun start() {
+            if (registered) return
+            Log.d(TAG, "Iniciando SyncConnectivityWatcher (registrando callback de rede)")
+            val connectivityManager =
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    /**
-     * Registra o callback de rede (idempotente). Chamado no
-     * `Application.onCreate()`.
-     */
-    @Synchronized
-    fun start() {
-        if (registered) return
-        Log.d(TAG, "Iniciando SyncConnectivityWatcher (registrando callback de rede)")
-        val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val request =
+                NetworkRequest
+                    .Builder()
+                    .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
 
-        val request = NetworkRequest.Builder()
-            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
+            val callback =
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        Log.d(TAG, "Rede restabelecida (onAvailable) -> Solicitando sincronização imediata")
+                        // Drena imediatamente: reconcile a fila assim que a
+                        // rede volta. KEEP deduplica com drenagens em curso.
+                        syncScheduler.requestImmediateSync()
+                    }
+                }
 
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                Log.d(TAG, "Rede restabelecida (onAvailable) -> Solicitando sincronização imediata")
-                // Drena imediatamente: reconcile a fila assim que a
-                // rede volta. KEEP deduplica com drenagens em curso.
-                syncScheduler.requestImmediateSync()
-            }
+            connectivityManager.registerNetworkCallback(request, callback)
+            registered = true
         }
-
-        connectivityManager.registerNetworkCallback(request, callback)
-        registered = true
     }
-}

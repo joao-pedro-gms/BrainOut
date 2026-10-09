@@ -13,7 +13,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
  * [UserRole.permissions].
  */
 class CanPerformActionUseCaseTest {
-
     private val useCase = CanPerformActionUseCase()
 
     @Test

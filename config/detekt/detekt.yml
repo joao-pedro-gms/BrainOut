@@ -91,6 +91,24 @@ naming:
       - 'AndroidEntryPoint'
   PackageNaming:
     packagePattern: '[a-z]+(\.[a-z][a-zA-Z0-9]*)*'
+  # `MatchingDeclarationName` exige que o nome do arquivo case com a
+  # ÚLTIMA declaração de topo. Três arquivos violam a regra, e nos três
+  # o nome é deliberado e melhor que o nome da declaração:
+  # - `BrainOutNeoTheme.kt` — agrupa o tema Neo (`NeoThemeSpec`,
+  #   `NeoLightTheme`, `NeoDarkTheme`, `resolveNeoThemeSpec`,
+  #   `BrainOutNeoTheme`) e é nomeado pelo wrapper público que o app
+  #   chama. Renomear para `NeoThemeSpec.kt` inverteria a hierarquia:
+  #   a spec viraria o título e o tema, o detalhe.
+  # - `AssetFixtures.kt` / `NeoTokenFixtures.kt` — o sufixo `Fixtures`
+  #   é a convenção dos auxiliares de teste do projeto; o conteúdo são
+  #   fábricas de dados de teste (`FontAsset`, `ContrastPair`), não
+  #   tipos de domínio.
+  # Ou seja: os três nomes são melhores que o que a regra exigiria, e
+  # `ignoreAnnotated` não se aplica (ninguém deles tem anotação). A
+  # regra é útil em código que não tem convenção própria de
+  # "arquivo = agrupador temático"; aqui ela só atrapalharia.
+  MatchingDeclarationName:
+    active: false
 
 performance:
   active: true

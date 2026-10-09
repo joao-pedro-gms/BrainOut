@@ -28,58 +28,64 @@ import javax.inject.Singleton
  * cobre os retries do worker.
  */
 @Singleton
-class SyncScheduler @Inject constructor(
-    private val workManager: WorkManager,
-) {
+class SyncScheduler
+    @Inject
+    constructor(
+        private val workManager: WorkManager,
+    ) {
+        /** Registra o trabalho periódico de 15 min (idempotente via KEEP). */
+        fun ensurePeriodicSync() {
+            val request =
+                androidx.work
+                    .PeriodicWorkRequestBuilder<SyncWorker>(
+                        PERIOD_MINUTES,
+                        TimeUnit.MINUTES,
+                    ).setConstraints(networkConstraints())
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+                    .build()
+            workManager.enqueueUniquePeriodicWork(
+                SyncWorker.UNIQUE_PERIODIC_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request,
+            )
+        }
 
-    /** Registra o trabalho periódico de 15 min (idempotente via KEEP). */
-    fun ensurePeriodicSync() {
-        val request = androidx.work.PeriodicWorkRequestBuilder<SyncWorker>(
-            PERIOD_MINUTES, TimeUnit.MINUTES,
-        )
-            .setConstraints(networkConstraints())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-            .build()
-        workManager.enqueueUniquePeriodicWork(
-            SyncWorker.UNIQUE_PERIODIC_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            request,
-        )
+        /**
+         * Drena imediatamente a fila (OneTimeWorkRequest com constraint
+         * de rede). Com `ExistingWorkPolicy.KEEP`, chamadas repetidas
+         * durante uma drenagem em curso são no-op.
+         */
+        fun requestImmediateSync() {
+            val request =
+                OneTimeWorkRequestBuilder<SyncWorker>()
+                    .setConstraints(networkConstraints())
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+                    .addTag(ONE_TIME_TAG)
+                    .build()
+            workManager.enqueueUniqueWork(
+                UNIQUE_ONE_TIME_NAME,
+                ExistingWorkPolicy.KEEP,
+                request,
+            )
+        }
+
+        private fun networkConstraints(): Constraints =
+            Constraints
+                .Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+        companion object {
+            /** Intervalo do trabalho periódico (minutos). */
+            const val PERIOD_MINUTES: Long = 15
+
+            /** Backoff inicial exponencial do WorkManager. */
+            const val BACKOFF_SECONDS: Long = 30
+
+            /** Tag comum aos OneTimeWorkRequests (usada em testes/QA). */
+            const val ONE_TIME_TAG: String = "brainout-sync-onetime"
+
+            /** Nome do trabalho único OneTime. */
+            const val UNIQUE_ONE_TIME_NAME: String = "brainout-sync-now"
+        }
     }
-
-    /**
-     * Drena imediatamente a fila (OneTimeWorkRequest com constraint
-     * de rede). Com `ExistingWorkPolicy.KEEP`, chamadas repetidas
-     * durante uma drenagem em curso são no-op.
-     */
-    fun requestImmediateSync() {
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(networkConstraints())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-            .addTag(ONE_TIME_TAG)
-            .build()
-        workManager.enqueueUniqueWork(
-            UNIQUE_ONE_TIME_NAME,
-            ExistingWorkPolicy.KEEP,
-            request,
-        )
-    }
-
-    private fun networkConstraints(): Constraints = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .build()
-
-    companion object {
-        /** Intervalo do trabalho periódico (minutos). */
-        const val PERIOD_MINUTES: Long = 15
-
-        /** Backoff inicial exponencial do WorkManager. */
-        const val BACKOFF_SECONDS: Long = 30
-
-        /** Tag comum aos OneTimeWorkRequests (usada em testes/QA). */
-        const val ONE_TIME_TAG: String = "brainout-sync-onetime"
-
-        /** Nome do trabalho único OneTime. */
-        const val UNIQUE_ONE_TIME_NAME: String = "brainout-sync-now"
-    }
-}

@@ -60,21 +60,58 @@ Exemplos válidos:
 ```
 feat(auth): tela de login com validação inline
 fix(tasks): bloqueio de prioridade em task concluída
-chore(gradle): atualizar Kotlin para 2.0.21
+chore(gradle): atualizar Kotlin para 2.3.20
 docs(roadmap): marcar E1.6 como concluído
 ci(workflows): adicionar cache para ~/.gradle/caches
 ```
 
+O exemplo de `chore(gradle)` cita a versão que o catálogo realmente usa:
+`gradle/libs.versions.toml` fixa `kotlin = "2.3.20"` (KGP), com AGP
+9.4.1 e Gradle 9.7.1. Ao escrever um commit de bump, copie a versão do
+catálogo, não uma de memória.
+
 ## Estilo de código
 
-- **Kotlin:** estilo oficial JetBrains; `ktlintCheck` é a fonte da verdade.
+- **Kotlin:** estilo oficial JetBrains; `ktlintCheck` é a fonte da
+  verdade. Ele está aplicado aos **9 subprojetos**, mas corre hoje com
+  `ignoreFailures = true` — a engine 1.x do ktlint 14 sinaliza ~180
+  violações cosméticas pré-existentes e a reformatação dedicada está
+  **pendente**. Isso é pendência em aberto, não licença para ignorar:
+  adote o formato do arquivo que você está editando.
 - **Compose:** `@Preview` em todos os componentes reutilizáveis.
-- **Nomes:** `PascalCase` para tipos, `camelCase` para funções/varáveis,
+- **Nomes:** `PascalCase` para tipos, `camelCase` para funções/variáveis,
   `snake_case` apenas em arquivos Gradle.
 - **Strings:** 100% em `res/values/strings.xml` (e variantes localizadas).
 - **IDs de view (XML, quando usado):** prefixos `et`, `til`, `btn`, `tv`,
   `iv`, `seek` para manter a tradição didática do curso.
 - **Sem código comentado.** Remova antes de comitar.
+
+## O que validar antes de abrir o PR
+
+O comando agregado do CI é `testDevDebugUnitTest`, mas ele **não**
+alcança os módulos sem flavor. Rodar só ele deixa passar uma suíte de
+`:feature/*` ou `:core:ui` quebrada. Reproduza localmente o que o CI
+faz:
+
+```bash
+./gradlew testDevDebugUnitTest \
+          :feature:projects:testDebugUnitTest :feature:tasks:testDebugUnitTest \
+          :feature:auth:testDebugUnitTest :feature:settings:testDebugUnitTest \
+          :core:ui:testDebugUnitTest
+
+./gradlew :core:domain:koverVerify :core:data:koverVerify
+./gradlew :app:lintDevDebug
+```
+
+Dois limites honestos do ambiente local:
+
+- **`detekt` não roda com o JBR 25** do Android Studio (rejeita o
+  `--jvm-target` derivado do JVM do Gradle). Ele roda no CI em Temurin
+  21 — uma falha de detekt local não é um reprovável seu.
+- **Testes instrumentados exigem emulador** (`connectedDevDebugAndroidTest`).
+  Eles compilam, mas o CI **não** os executa (não há runner com emulador
+  no plano gratuito). Se você mexer em migrações Room, rode o emulador
+  você mesmo — nada vai rodar isso por você.
 
 ## Commits atômicos
 

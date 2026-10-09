@@ -23,7 +23,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
  */
 @Dao
 interface UserDao {
-
     // --- Reads ---
 
     /** Observa um usuário pelo `id`. Emite `null` se não existir. */

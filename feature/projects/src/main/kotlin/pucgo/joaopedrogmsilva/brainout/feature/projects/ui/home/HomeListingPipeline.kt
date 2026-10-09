@@ -6,9 +6,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -34,6 +31,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferences
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Snapshot namespaced das preferências de listagem do owner atual. */
 internal data class ListingSnapshot(
@@ -54,8 +54,7 @@ internal data class ListingInputs(
     val filter: HomeProjectFilter,
 )
 
-internal fun ListingPreferences.toSnapshot(): ListingSnapshot =
-    ListingSnapshot(searchQuery, selectedTagId, sortOrder)
+internal fun ListingPreferences.toSnapshot(): ListingSnapshot = ListingSnapshot(searchQuery, selectedTagId, sortOrder)
 
 /**
  * Versão debounced do input de busca que efetivamente dispara a
@@ -69,14 +68,15 @@ internal fun debouncedSearchInput(
     scope: CoroutineScope,
     rawInput: MutableStateFlow<String>,
     debounceWindow: Duration,
-): StateFlow<String> = rawInput
-    .debounce { value -> if (value.isEmpty()) 0.milliseconds else debounceWindow }
-    .distinctUntilChanged()
-    .stateIn(
-        scope = scope,
-        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-        initialValue = "",
-    )
+): StateFlow<String> =
+    rawInput
+        .debounce { value -> if (value.isEmpty()) 0.milliseconds else debounceWindow }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = "",
+        )
 
 /**
  * Snapshot namespaced das preferências de listagem do owner atual.
@@ -88,15 +88,15 @@ internal fun listingPrefsFlow(
     activeUserProvider: ActiveUserProvider,
     listingPreferences: ListingPreferencesRepository,
 ): Flow<ListingSnapshot> =
-    activeUserProvider.observeActiveUserId()
+    activeUserProvider
+        .observeActiveUserId()
         .flatMapLatest { ownerId ->
             if (ownerId == null) {
                 flowOf(ListingSnapshot.empty())
             } else {
                 listingPreferences.observe(ownerId).map { it.toSnapshot() }
             }
-        }
-        .distinctUntilChanged()
+        }.distinctUntilChanged()
 
 /**
  * Tags convertidas em [TagChip] para o owner atual. Pré-mapeado
@@ -108,16 +108,17 @@ internal fun tagChipsForOwnerFlow(
     activeUserProvider: ActiveUserProvider,
     tagRepository: TagRepository,
 ): Flow<List<TagChip>> =
-    activeUserProvider.observeActiveUserId()
+    activeUserProvider
+        .observeActiveUserId()
         .flatMapLatest { ownerId ->
             if (ownerId == null) {
                 flowOf(emptyList())
             } else {
-                tagRepository.observeForOwner(ownerId)
+                tagRepository
+                    .observeForOwner(ownerId)
                     .map { tags -> tags.map { it.toChip() } }
             }
-        }
-        .distinctUntilChanged()
+        }.distinctUntilChanged()
 
 /**
  * Pipeline central da Home (E2.1/E2.5/E2.6/E2.8). Combina os 4
@@ -143,91 +144,99 @@ internal fun homeUiStateFlow(
     projectFilter: MutableStateFlow<HomeProjectFilter>,
     debouncedInput: StateFlow<String>,
     errorMessage: MutableStateFlow<String?>,
-): Flow<HomeUiState> = retryToken.flatMapLatest { _ ->
-    activeUserProvider.observeActiveUserId()
-        .flatMapLatest { ownerId ->
-            if (ownerId == null) {
-                flowOf(HomeUiState(isLoading = false))
-            } else {
-                val capturedOwnerId = ownerId
-                // Combina os 4 sinais "instantâneos" (preferências,
-                // busca debounceada, tags em chips, filtro
-                // estrutural) e usa os valores para chamar
-                // `observeSearch` no Room. O `observeSearch` +
-                // `_searchInput` são combinados no `combine` interno
-                // (5 fontes no total: projects + searchInput +
-                // listingPrefs + tagChips + projectFilter).
-                val listingInputs: Flow<ListingInputs> = combine(
-                    listingPrefsFlow(activeUserProvider, listingPreferences),
-                    debouncedInput,
-                    tagChipsForOwnerFlow(activeUserProvider, tagRepository),
-                    projectFilter,
-                ) { prefs: ListingSnapshot, query: String,
-                    tagChips: List<TagChip>, filter: HomeProjectFilter ->
-                    // Sincroniza o input visual com o snapshot
-                    // persistido quando o owner muda (ex.: login).
-                    if (query.isEmpty() && searchInput.value != prefs.searchQuery) {
-                        searchInput.value = prefs.searchQuery
-                    }
-                    ListingInputs(prefs, query, tagChips, filter)
-                }
-                combine(listingInputs, searchInput) { inputs: ListingInputs, currentInput: String ->
-                    val projectsFromRoom: Flow<List<Project>> = projectRepository.observeSearch(
-                        ownerId = capturedOwnerId,
-                        query = inputs.query,
-                        tagId = inputs.prefs.selectedTagId,
-                        sortOrder = inputs.prefs.sortOrder,
-                    )
-                    // E2.6/R5 — tags por projeto (não todas as
-                    // tags do owner). Cada card lista apenas as
-                    // tags associadas ao seu projeto.
-                    //
-                    // FIX-01 — `observeByProjectIds` completa SEM
-                    // emitir quando o conjunto é vazio (contrato
-                    // "Vazio → Flow vazio"; `combineInternal` de
-                    // lista vazia faz bail-out). Sem um valor
-                    // inicial, o `combine` abaixo nunca emitiria e
-                    // a UI ficaria presa no loading (spinner eterno
-                    // para quem não tem projetos; lista congelada
-                    // quando a busca devolve zero resultados). O
-                    // `onStart` fornece o mapa vazio como default
-                    // e é substituído pela emissão real do Room.
-                    val tagsByProject: Flow<Map<String, List<Tag>>> =
-                        projectsFromRoom.flatMapLatest { projects ->
-                            tagRepository.observeByProjectIds(projects.map { it.id }.toSet())
-                                .onStart { emit(emptyMap()) }
+): Flow<HomeUiState> =
+    retryToken.flatMapLatest { _ ->
+        activeUserProvider
+            .observeActiveUserId()
+            .flatMapLatest { ownerId ->
+                if (ownerId == null) {
+                    flowOf(HomeUiState(isLoading = false))
+                } else {
+                    val capturedOwnerId = ownerId
+                    // Combina os 4 sinais "instantâneos" (preferências,
+                    // busca debounceada, tags em chips, filtro
+                    // estrutural) e usa os valores para chamar
+                    // `observeSearch` no Room. O `observeSearch` +
+                    // `_searchInput` são combinados no `combine` interno
+                    // (5 fontes no total: projects + searchInput +
+                    // listingPrefs + tagChips + projectFilter).
+                    val listingInputs: Flow<ListingInputs> =
+                        combine(
+                            listingPrefsFlow(activeUserProvider, listingPreferences),
+                            debouncedInput,
+                            tagChipsForOwnerFlow(activeUserProvider, tagRepository),
+                            projectFilter,
+                        ) {
+                            prefs: ListingSnapshot,
+                            query: String,
+                            tagChips: List<TagChip>,
+                            filter: HomeProjectFilter,
+                            ->
+                            // Sincroniza o input visual com o snapshot
+                            // persistido quando o owner muda (ex.: login).
+                            if (query.isEmpty() && searchInput.value != prefs.searchQuery) {
+                                searchInput.value = prefs.searchQuery
+                            }
+                            ListingInputs(prefs, query, tagChips, filter)
                         }
-                    combine(
-                        projectsFromRoom,
-                        tagsByProject,
-                        flowOf(inputs),
-                    ) { projects: List<Project>,
-                        tagsMap: Map<String, List<Tag>>,
-                        inp: ListingInputs,
-                        ->
-                        buildHomeUiState(inp, currentInput, projects, tagsMap)
-                    }
-                }.flatMapLatest { it }
+                    combine(listingInputs, searchInput) { inputs: ListingInputs, currentInput: String ->
+                        val projectsFromRoom: Flow<List<Project>> =
+                            projectRepository.observeSearch(
+                                ownerId = capturedOwnerId,
+                                query = inputs.query,
+                                tagId = inputs.prefs.selectedTagId,
+                                sortOrder = inputs.prefs.sortOrder,
+                            )
+                        // E2.6/R5 — tags por projeto (não todas as
+                        // tags do owner). Cada card lista apenas as
+                        // tags associadas ao seu projeto.
+                        //
+                        // FIX-01 — `observeByProjectIds` completa SEM
+                        // emitir quando o conjunto é vazio (contrato
+                        // "Vazio → Flow vazio"; `combineInternal` de
+                        // lista vazia faz bail-out). Sem um valor
+                        // inicial, o `combine` abaixo nunca emitiria e
+                        // a UI ficaria presa no loading (spinner eterno
+                        // para quem não tem projetos; lista congelada
+                        // quando a busca devolve zero resultados). O
+                        // `onStart` fornece o mapa vazio como default
+                        // e é substituído pela emissão real do Room.
+                        val tagsByProject: Flow<Map<String, List<Tag>>> =
+                            projectsFromRoom.flatMapLatest { projects ->
+                                tagRepository
+                                    .observeByProjectIds(projects.map { it.id }.toSet())
+                                    .onStart { emit(emptyMap()) }
+                            }
+                        combine(
+                            projectsFromRoom,
+                            tagsByProject,
+                            flowOf(inputs),
+                        ) {
+                            projects: List<Project>,
+                            tagsMap: Map<String, List<Tag>>,
+                            inp: ListingInputs,
+                            ->
+                            buildHomeUiState(inp, currentInput, projects, tagsMap)
+                        }
+                    }.flatMapLatest { it }
+                }
+            }.catch { throwable ->
+                if (throwable is CancellationException) throw throwable
+                val message = throwable.toHomeErrorMessage()
+                errorMessage.value = message
+                emit(
+                    HomeUiState(
+                        isLoading = false,
+                        projectFilter = projectFilter.value,
+                        errorMessage = message,
+                    ),
+                )
+            }.onEach { state: HomeUiState ->
+                if (state.errorMessage == null) {
+                    errorMessage.value = null
+                }
             }
-        }
-        .catch { throwable ->
-            if (throwable is CancellationException) throw throwable
-            val message = throwable.toHomeErrorMessage()
-            errorMessage.value = message
-            emit(
-                HomeUiState(
-                    isLoading = false,
-                    projectFilter = projectFilter.value,
-                    errorMessage = message,
-                ),
-            )
-        }
-        .onEach { state: HomeUiState ->
-            if (state.errorMessage == null) {
-                errorMessage.value = null
-            }
-        }
-}
+    }
 
 /**
  * Constrói o [HomeUiState] final a partir das fontes combinadas
@@ -240,18 +249,20 @@ internal fun buildHomeUiState(
     rows: List<Project>,
     tagsByProject: Map<String, List<Tag>> = emptyMap(),
 ): HomeUiState {
-    val filtered = rows.filter { project ->
-        when (inputs.filter) {
-            HomeProjectFilter.Active -> !project.isCompleted
-            HomeProjectFilter.Completed -> project.isCompleted
+    val filtered =
+        rows.filter { project ->
+            when (inputs.filter) {
+                HomeProjectFilter.Active -> !project.isCompleted
+                HomeProjectFilter.Completed -> project.isCompleted
+            }
         }
-    }
-    val items = filtered.map { project ->
-        ProjectCardItem(
-            project = project,
-            tags = tagsByProject[project.id]?.map { it.toChip() } ?: emptyList(),
-        )
-    }
+    val items =
+        filtered.map { project ->
+            ProjectCardItem(
+                project = project,
+                tags = tagsByProject[project.id]?.map { it.toChip() } ?: emptyList(),
+            )
+        }
     return HomeUiState(
         projects = items,
         availableTags = inputs.tagChips,

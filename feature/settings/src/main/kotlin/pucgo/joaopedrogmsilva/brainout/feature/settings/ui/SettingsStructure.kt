@@ -21,17 +21,17 @@ enum class SettingsActionType {
     Profile,
     Notifications,
     Theme,
-    SignOut
+    SignOut,
 }
 
 data class SettingsOption(
     val type: SettingsActionType,
-    @StringRes val labelRes: Int
+    @StringRes val labelRes: Int,
 )
 
 data class SettingsSection(
     @StringRes val titleRes: Int,
-    val options: List<SettingsOption>
+    val options: List<SettingsOption>,
 )
 
 /**
@@ -40,24 +40,28 @@ data class SettingsSection(
  * Mantida no escopo do módulo porque só a própria tela consome — o
  * `:app` não precisa conhecer os tipos, apenas passar as callbacks.
  */
-val SettingsSections: List<SettingsSection> = listOf(
-    SettingsSection(
-        titleRes = R.string.settings_section_account,
-        options = listOf(
-            SettingsOption(SettingsActionType.Profile, R.string.settings_option_profile),
-            SettingsOption(SettingsActionType.Notifications, R.string.settings_option_notifications)
-        )
-    ),
-    SettingsSection(
-        titleRes = R.string.settings_section_appearance,
-        options = listOf(
-            SettingsOption(SettingsActionType.Theme, R.string.settings_option_theme)
-        )
-    ),
-    SettingsSection(
-        titleRes = R.string.settings_section_session,
-        options = listOf(
-            SettingsOption(SettingsActionType.SignOut, R.string.settings_option_signout)
-        )
+val SettingsSections: List<SettingsSection> =
+    listOf(
+        SettingsSection(
+            titleRes = R.string.settings_section_account,
+            options =
+                listOf(
+                    SettingsOption(SettingsActionType.Profile, R.string.settings_option_profile),
+                    SettingsOption(SettingsActionType.Notifications, R.string.settings_option_notifications),
+                ),
+        ),
+        SettingsSection(
+            titleRes = R.string.settings_section_appearance,
+            options =
+                listOf(
+                    SettingsOption(SettingsActionType.Theme, R.string.settings_option_theme),
+                ),
+        ),
+        SettingsSection(
+            titleRes = R.string.settings_section_session,
+            options =
+                listOf(
+                    SettingsOption(SettingsActionType.SignOut, R.string.settings_option_signout),
+                ),
+        ),
     )
-)

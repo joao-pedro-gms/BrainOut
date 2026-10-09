@@ -27,20 +27,21 @@ import java.time.Instant
  * [triggerAt].
  */
 interface DeadlineNotificationScheduler {
-
     /**
      * Agenda (ou reagenda, com política de substituição) o lembrete
      * da tarefa [taskId] para disparar em [triggerAt]. Chamadas
      * repetidas para o mesmo `taskId` substituem o agendamento
      * anterior — a última escrita vence.
      */
-    fun schedule(taskId: String, triggerAt: Instant)
+    fun schedule(
+        taskId: String,
+        triggerAt: Instant,
+    )
 
     /** Cancela o lembrete pendente de [taskId]. No-op se não houver. */
     fun cancel(taskId: String)
 
     companion object {
-
         /**
          * Antecedência do lembrete: notificar 1 hora antes do prazo
          * (requisito E3.6 — texto da notificação "prazo em 1 hora").

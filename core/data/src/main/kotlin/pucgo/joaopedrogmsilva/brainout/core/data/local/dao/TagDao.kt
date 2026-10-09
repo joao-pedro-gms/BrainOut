@@ -23,7 +23,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
  */
 @Dao
 interface TagDao {
-
     // --- Reads ---
 
     /**

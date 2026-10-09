@@ -14,7 +14,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
  */
 sealed interface HomeUserState {
     data object Loading : HomeUserState
+
     data object SignedOut : HomeUserState
+
     data class SignedIn(
         val displayName: String,
         val initials: String,
@@ -56,4 +58,8 @@ data class ProjectCardItem(
 )
 
 /** Representação visual de uma tag na lista de chips. */
-data class TagChip(val id: String, val name: String, val color: String)
+data class TagChip(
+    val id: String,
+    val name: String,
+    val color: String,
+)
