@@ -6,17 +6,15 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @Composable
@@ -47,6 +47,7 @@ internal fun TaskRow(
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
+    onRenameTask: (Task) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -55,7 +56,15 @@ internal fun TaskRow(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp)),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        // DEF-22 — o preenchimento `surfaceVariant.copy(alpha = 0.4f)`
+        // dava 1.06:1 / 1.11:1 contra o fundo: a linha da tarefa era
+        // praticamente invisível. `surfaceVariant` puro sobe para
+        // 1.15:1 / 1.33:1 — ainda reprova o 3:1 do WCAG §1.4.11, e
+        // precisa porque o papel é uma superfície alternativa, quase da
+        // mesma luminância do fundo por desenho. A **borda** é o que
+        // marca a fronteira da linha: `outline` puro, 16.10:1 / 15.95:1.
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.subtle, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =
@@ -78,6 +87,7 @@ internal fun TaskRow(
             onChangeStatus = onChangeStatus,
             onDeleteTask = onDeleteTask,
             onChangePriority = onChangePriority,
+            onRenameTask = onRenameTask,
         )
     }
 }
@@ -132,6 +142,7 @@ private fun TaskRowMenu(
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
+    onRenameTask: (Task) -> Unit,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -190,6 +201,20 @@ private fun TaskRowMenu(
             modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_CHANGE_PRIORITY),
         )
         HorizontalDivider()
+        // DEF-22 — `onRenameTask` era passado pelo orquestrador e
+        // declarado `@Suppress("unused")` aqui: o use case
+        // `renameTask` estava implementado e verificado no domínio,
+        // mas nenhuma linha de menu o chamava. Este item é o que torna
+        // a função alcançável.
+        DropdownMenuItem(
+            text = { Text(text = stringResource(id = R.string.project_detail_task_menu_rename)) },
+            onClick = {
+                onDismiss()
+                onRenameTask(task)
+            },
+            modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_RENAME),
+        )
+        HorizontalDivider()
         DropdownMenuItem(
             text = {
                 Text(
@@ -229,28 +254,20 @@ private fun StatusChip(status: TaskStatus) {
                     MaterialTheme.colorScheme.onPrimary,
                 )
         }
-    AssistChip(
-        onClick = { /* status chip é apenas informativo */ },
-        label = { Text(text = label, style = MaterialTheme.typography.labelSmall) },
-        colors =
-            AssistChipDefaults.assistChipColors(
-                containerColor = container,
-                labelColor = content,
-            ),
-        // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
-        modifier = Modifier.heightIn(min = 48.dp),
+    // DEF-22 — ver [NeoInfoChip]: o chip rotula, não age. `onClick = { }`
+    // fazia o TalkBack anunciar "botão" e o alvo de toque engolia o
+    // toque no menu "mais opções" da própria linha.
+    NeoInfoChip(
+        label = label,
+        containerColor = container,
+        labelColor = content,
     )
 }
 
 @Composable
 private fun PriorityChip(priority: TaskPriority) {
-    AssistChip(
-        onClick = { /* priority chip é apenas informativo */ },
-        label = {
-            Text(text = stringResource(id = priority.labelRes()), style = MaterialTheme.typography.labelSmall)
-        },
-        // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
-        modifier = Modifier.heightIn(min = 48.dp),
+    NeoInfoChip(
+        label = stringResource(id = priority.labelRes()),
     )
 }
 

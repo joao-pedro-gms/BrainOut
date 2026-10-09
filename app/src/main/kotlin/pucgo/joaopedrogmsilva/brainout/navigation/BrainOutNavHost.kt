@@ -63,10 +63,13 @@ fun BrainOutNavHost(
         addSettingsRoute(navController, activeUserProvider)
         // Marco E2.6 do ROADMAP — registra a tela "Tarefas" como
         // destino de navegação global (aba "Tarefas" da bottom bar).
-        tasksGraph()
+        // DEF-22 — `navController` é passado para as duas abas globais
+        // porque elas passaram a ter `Scaffold` com botão de voltar;
+        // o destino de retorno é `popBackStack()`.
+        tasksGraph(navController)
         // Marco E2.7 do ROADMAP — registra o Painel (Dashboard) como
         // destino de navegação global (aba "Painel" da bottom bar).
-        dashboardGraph()
+        dashboardGraph(navController)
     }
 }
 

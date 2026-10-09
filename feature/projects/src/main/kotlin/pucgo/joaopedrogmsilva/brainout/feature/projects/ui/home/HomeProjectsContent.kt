@@ -102,7 +102,10 @@ internal fun HomeProjectsContent(
             sortOrder = sortOrder,
             onSortOrderChange = onSortOrderChange,
         )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        // DEF-22 — divisor com o token cheio: `outline` puro marca
+        // 16.10:1 (claro) / 15.95:1 (escuro); com `alpha = 0.3f` caía
+        // para 1.93:1, abaixo do mínimo de 3:1 do WCAG §1.4.11.
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
         // E2.8 — banner de erro com retry. Tem prioridade sobre o
         // estado vazio: se o Room falhou, oferecemos "Tentar
         // novamente" em vez do empty state (que mostraria uma

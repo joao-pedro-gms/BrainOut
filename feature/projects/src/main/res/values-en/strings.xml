@@ -105,6 +105,10 @@
     <string name="project_detail_task_menu_change_priority">Change priority</string>
     <string name="project_detail_task_menu_priority_locked_label">Priority (read-only)</string>
 
+    <!-- DEF-22 — rename task (the use case existed, the UI did not) -->
+    <string name="project_detail_task_menu_rename">Rename task</string>
+    <string name="project_detail_task_rename_dialog_title">Rename task</string>
+
     <!-- RN03 (E2.5) — completed projects tab -->
     <string name="home_filter_active">Active</string>
     <string name="home_filter_completed">Completed</string>
@@ -126,6 +130,8 @@
     <string name="home_search_clear">Clear search</string>
     <string name="home_tag_filter_all">All</string>
     <string name="home_sort_aria_label">Sort projects</string>
+    <!-- DEF-22 — state announced by TalkBack on the selected menu item. -->
+    <string name="home_sort_option_selected">Selected</string>
     <string name="home_sort_name_asc">Name A→Z</string>
     <string name="home_sort_name_desc">Name Z→A</string>
     <string name="home_sort_created_desc">Newest first</string>

@@ -91,6 +91,9 @@ fun ProjectDetailScreen(
     // Tarefa selecionada para edição de prioridade (RN02); não-nula abre
     // [ChangeTaskPriorityDialog]. Só tarefas ativas chegam aqui (UI filtra).
     var priorityDialogTask by remember { mutableStateOf<Task?>(null) }
+    // DEF-22 — tarefa selecionada para renomear; não-nula abre
+    // [RenameTaskDialog]. É o que torna `renameTask` alcançável.
+    var renameTask by remember { mutableStateOf<Task?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -131,7 +134,7 @@ fun ProjectDetailScreen(
             contentPadding = innerPadding,
             onChangeStatus = viewModel::changeStatus,
             onDeleteTask = viewModel::deleteTask,
-            onRenameTask = viewModel::renameTask,
+            onRenameTask = { renameTask = it },
             syncState = syncState,
             onChangePriority = { task, _ ->
                 // RN02 — defesa em profundidade: a UI também bloqueia
@@ -172,6 +175,22 @@ fun ProjectDetailScreen(
             onConfirm = { newPriority ->
                 viewModel.changeTaskPriority(priorityTarget, newPriority)
                 priorityDialogTask = null
+            },
+        )
+    }
+
+    // DEF-22 — o diálogo fecha antes de confirmar: `renameTask` grava
+    // e o erro (título vazio, falha de persistência) chega pelo
+    // snackbar de `errorMessage`, que é o mesmo caminho das demais
+    // validações desta tela.
+    val renameTarget = renameTask
+    if (renameTarget != null) {
+        RenameTaskDialog(
+            initialTitle = renameTarget.title,
+            onDismiss = { renameTask = null },
+            onConfirm = { newTitle ->
+                viewModel.renameTask(renameTarget, newTitle)
+                renameTask = null
             },
         )
     }

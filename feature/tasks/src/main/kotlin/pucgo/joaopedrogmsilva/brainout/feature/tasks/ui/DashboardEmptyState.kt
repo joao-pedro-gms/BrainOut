@@ -4,6 +4,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,17 +22,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 @Composable
 internal fun DashboardEmptyState(modifier: Modifier = Modifier) {
+    // DEF-22 — ver [TasksScreen].`TasksEmptyState`: o preenchimento
+    // `surfaceVariant` puro só dá 1.15:1 / 1.33:1 contra o fundo, então
+    // a região ganha uma borda `outline` de verdade (16.10:1 / 15.95:1)
+    // em vez de continuar quase invisível. O texto fica em 6.56:1 / 9.26:1.
     Surface(
         modifier =
             modifier
                 .height(280.dp)
                 .testTag(DashboardTestTags.EMPTY),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =

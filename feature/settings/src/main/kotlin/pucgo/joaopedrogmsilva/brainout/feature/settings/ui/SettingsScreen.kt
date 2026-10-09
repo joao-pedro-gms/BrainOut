@@ -107,8 +107,13 @@ fun SettingsScreen(
                                 onClick = { onOptionClicked(option.type) },
                             )
                             if (index < section.options.lastIndex) {
+                                // DEF-22 — divisor com o token cheio:
+                                // `outline` puro marca 16.10:1 / 15.95:1;
+                                // com `alpha = 0.3f` a separação entre
+                                // linhas caía para 1.93:1 / 2.59:1, abaixo
+                                // do mínimo de 3:1 (WCAG §1.4.11).
                                 HorizontalDivider(
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    color = MaterialTheme.colorScheme.outline,
                                 )
                             }
                         }

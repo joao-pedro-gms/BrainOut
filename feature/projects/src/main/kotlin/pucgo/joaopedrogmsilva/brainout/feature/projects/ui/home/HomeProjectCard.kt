@@ -11,11 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 
 internal const val MAX_TAG_CHIPS_PREVIEW: Int = 4
 
@@ -91,33 +90,22 @@ internal fun TagChipView(
     selected: Boolean,
 ) {
     val container = remember(chip.color) { parseHexColor(chip.color) }
-    AssistChip(
-        onClick = { /* chips de visualização não disparam ação */ },
-        label = {
-            Text(
-                text = chip.name,
-                style = MaterialTheme.typography.labelSmall,
-            )
-        },
-        colors =
-            AssistChipDefaults.assistChipColors(
-                containerColor =
-                    if (selected) {
-                        container.copy(
-                            alpha = 0.2f,
-                        )
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-                labelColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        border =
-            AssistChipDefaults.assistChipBorder(
-                enabled = true,
-                borderColor = container,
-            ),
-        // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
-        modifier = Modifier.heightIn(min = 48.dp),
+    // DEF-22 — era `AssistChip(onClick = { })` **dentro de um card
+    // clicável**. O alvo de toque do chip interceptava o toque do
+    // usuário e não abria o projeto: o clique morria num callback
+    // vazio. `NeoInfoChip` não tem área interativa, então o toque
+    // chega ao `.clickable` do `ProjectCard`.
+    NeoInfoChip(
+        label = chip.name,
+        containerColor =
+            if (selected) {
+                container.copy(alpha = 0.2f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        labelColor = MaterialTheme.colorScheme.onSurface,
+        borderColor = container,
+        borderWidth = NeoBorders.subtle,
     )
 }
 

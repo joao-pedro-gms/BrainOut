@@ -10,11 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,24 +72,15 @@ internal fun HomeTopBar(user: HomeUser) {
                             HomeUserRole.Owner -> MaterialTheme.colorScheme.onPrimary
                             HomeUserRole.Member -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
-                    AssistChip(
-                        onClick = { /* badge é apenas decorativo */ },
-                        label = {
-                            Text(
-                                text = badgeLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.testTag(HomeTestTags.ROLE_BADGE),
-                            )
-                        },
-                        colors =
-                            AssistChipDefaults.assistChipColors(
-                                containerColor = roleContainer,
-                                labelColor = roleLabel,
-                            ),
-                        // E4.4: garante área de toque mínima de 48dp
-                        // (WCAG 2.5.5 Target Size). M3 AssistChip é ~32dp
-                        // de altura por padrão.
-                        modifier = Modifier.heightIn(min = 48.dp),
+                    // DEF-22 — era `AssistChip(onClick = { })`: o badge
+                    // de papel é informativo, então o TalkBack o
+                    // anunciava como botão e oferecia um toque que não
+                    // fazia nada. `NeoInfoChip` não tem `onClick`.
+                    NeoInfoChip(
+                        label = badgeLabel,
+                        containerColor = roleContainer,
+                        labelColor = roleLabel,
+                        modifier = Modifier.testTag(HomeTestTags.ROLE_BADGE),
                     )
                 }
             }

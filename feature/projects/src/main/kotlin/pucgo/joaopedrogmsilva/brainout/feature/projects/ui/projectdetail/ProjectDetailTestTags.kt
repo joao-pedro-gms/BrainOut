@@ -22,6 +22,14 @@ object ProjectDetailTestTags {
     const val TASK_ITEM_MENU_MOVE_DONE: String = "project_detail_task_item_menu_move_done"
     const val TASK_ITEM_MENU_MOVE_TODO: String = "project_detail_task_item_menu_move_todo"
     const val TASK_ITEM_MENU_CHANGE_PRIORITY: String = "project_detail_task_item_menu_change_priority"
+
+    // DEF-22 — diálogo de renomear tarefa. O item de menu existia
+    // apenas depois desta correção; sem estas tags não havia como
+    // testar que o `onRenameTask` realmente chega ao ViewModel.
+    const val TASK_ITEM_MENU_RENAME: String = "project_detail_task_item_menu_rename"
+    const val RENAME_TASK_DIALOG: String = "project_detail_task_rename_dialog"
+    const val RENAME_TASK_TITLE_FIELD: String = "project_detail_task_rename_title"
+    const val RENAME_TASK_SAVE: String = "project_detail_task_rename_save"
     const val TASK_PRIORITY_DIALOG: String = "project_detail_task_priority_dialog"
     const val TASK_PRIORITY_CHIP_OPTION_PREFIX: String = "project_detail_task_priority_option_"
 
