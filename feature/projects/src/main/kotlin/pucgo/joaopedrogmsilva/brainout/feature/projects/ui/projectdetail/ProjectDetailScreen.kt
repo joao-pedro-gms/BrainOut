@@ -6,7 +6,9 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -123,6 +125,10 @@ fun ProjectDetailScreen(
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
+        // RESP-1 (Fase 1.1) — insets de sistema + cutout + IME. O FAB e
+        // o `SnackbarHost` do `Scaffold` respeitam `contentWindowInsets`,
+        // então nenhum dos dois nasce sob a barra de gestos.
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
         ProjectDetailBody(
             projectId = projectId,

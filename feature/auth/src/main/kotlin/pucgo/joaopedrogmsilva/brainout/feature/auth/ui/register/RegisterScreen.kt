@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -99,12 +102,18 @@ fun RegisterScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        // RESP-1 (Fase 1.1) — mesmos insets da [LoginScreen]: barras de
+        // sistema, cutout e teclado. Sem o IME o botão "Criar conta"
+        // ficava sob o teclado em paisagem — este é o defeito que a
+        // Fase 1 corrige.
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
         RegisterBody(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .imePadding(),
             uiState = uiState,
             callbacks =
                 RegisterCallbacks(

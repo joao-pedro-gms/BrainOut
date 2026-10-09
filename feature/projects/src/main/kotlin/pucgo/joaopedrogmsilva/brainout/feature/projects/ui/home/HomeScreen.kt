@@ -5,7 +5,9 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -105,6 +107,10 @@ fun HomeScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        // RESP-1 (Fase 1.1) — `enableEdgeToEdge()` + `safeDrawing`:
+        // nada mais é desenhado sob status bar, barra de gestos ou
+        // cutout.
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
         // Apenas a aba "Projetos" tem conteúdo interno. As outras duas
         // (Tarefas, Configurações) disparam navegação externa via

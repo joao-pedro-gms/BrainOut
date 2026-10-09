@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -87,6 +89,10 @@ fun TasksScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        // RESP-1 (Fase 1.1) — o DEF-22 deu `Scaffold` a esta tela mas
+        // sem `contentWindowInsets`: o teclado em Tasks ainda cobria a
+        // lista. `safeDrawing` cobre barras, cutout e IME.
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
         TasksContent(
             state = state,

@@ -8,10 +8,13 @@ package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -102,12 +105,24 @@ fun LoginScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        // RESP-1 (Fase 1.1) — `enableEdgeToEdge()` faz a tela desenhar
+        // sob as barras de sistema, e o padrão do Material
+        // (`ScaffoldDefaults.contentWindowInsets` = `systemBars`) não
+        // conhece o teclado. `safeDrawing` fecha os dois: barras,
+        // cutout e IME. As barras entram uma vez só — o `TopAppBar`
+        // consome o topo, e `innerPadding` traz apenas o que sobra.
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
         LoginBody(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    // O teclado fecha a viewport do formulário: em
+                    // paisagem a coluna rolável passa a ter menos
+                    // altura, e o `imePadding` é o que a faz recuar
+                    // para o campo em foco continuar visível.
+                    .imePadding(),
             uiState = uiState,
             callbacks =
                 LoginCallbacks(

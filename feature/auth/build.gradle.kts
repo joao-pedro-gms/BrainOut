@@ -37,6 +37,12 @@ android {
 
     testOptions {
         unitTests {
+            // E2.7 — testes Compose do Login/Register via Robolectric
+            // (createComposeRule roda em JVM com os resources mesclados).
+            // É o único caminho para `@Config(qualifiers = ...)` de AC-1.1:
+            // o `androidTest` do módulo roda só com emulador, e o CI não
+            // o executa — um teste de landscape lá seria teste morto.
+            isIncludeAndroidResources = true
             // ViewModels logam via android.util.Log; sem isso os testes
             // JVM puros falham com "Method d in android.util.Log not mocked".
             isReturnDefaultValues = true
@@ -109,6 +115,16 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+
+    // RESP-1 — AC-1.1: Login/Register em paisagem com o teclado aberto.
+    // `@Config(qualifiers = "w800dp-h400dp")` só existe no Robolectric
+    // (src/test), não no androidTest.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.espresso.core)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
