@@ -114,14 +114,22 @@ class HomeViewModel
         private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
         val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-        /** Texto bruto da busca conforme o usuário digita (E2.6). */
-        private val _searchInput: MutableStateFlow<String> = MutableStateFlow("")
-        val searchQuery: StateFlow<String> = _searchInput.asStateFlow()
+        /**
+         * Texto bruto da busca conforme o usuário digita (E2.6).
+         *
+         * O par público se chama `searchQuery` (e não `searchInput`)
+         * porque é esse o termo usado pela UI e pelos testes; o
+         * backing field precisa do prefixo `_` do padrão
+         * StateFlow, e o ktlint casa o par pelo sufixo — daí a
+         * única linha a mais, que é apenas nomenclatura.
+         */
+        private val _searchQuery: MutableStateFlow<String> = MutableStateFlow("")
+        val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
         private val debouncedSearchInput: StateFlow<String> =
             debouncedSearchInput(
                 scope = viewModelScope,
-                rawInput = _searchInput,
+                rawInput = _searchQuery,
                 debounceWindow = SEARCH_DEBOUNCE,
             )
 
@@ -133,7 +141,7 @@ class HomeViewModel
                 listingPreferences = listingPreferences,
                 tagRepository = tagRepository,
                 projectRepository = projectRepository,
-                searchInput = _searchInput,
+                searchInput = _searchQuery,
                 projectFilter = _projectFilter,
                 debouncedInput = debouncedSearchInput,
                 errorMessage = _errorMessage,
@@ -187,7 +195,7 @@ class HomeViewModel
 
         /** Atualiza a query de busca e persiste no DataStore (E2.6). */
         fun onSearchQueryChange(newQuery: String) {
-            _searchInput.value = newQuery
+            _searchQuery.value = newQuery
             runOnSearchQueryChange(viewModelScope, listingPreferences, activeUserProvider, newQuery)
         }
 

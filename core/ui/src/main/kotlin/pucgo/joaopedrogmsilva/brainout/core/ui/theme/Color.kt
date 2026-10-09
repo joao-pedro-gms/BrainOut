@@ -14,9 +14,10 @@ import androidx.compose.ui.graphics.Color
  * escuras ficam neste único ponto de verdade. Features consomem apenas
  * `MaterialTheme.colorScheme` / `BrainOutShapes` / `BrainOutTypography`;
  * nenhuma cor deve aparecer em código de feature.
+ *
+ * A paleta clara começa na linha seguinte.
  */
 
-// --- Light tokens ---
 internal val BrainOutPrimary = Color(0xFF6750A4)
 internal val BrainOutOnPrimary = Color(0xFFFFFFFF)
 internal val BrainOutPrimaryContainer = Color(0xFFEADDFF)

@@ -93,7 +93,7 @@ data class PendingOpEntity(
                 entityId = entityId,
                 opType = opType.name,
                 payload =
-                    payloadObj?.let { obj -> SYNC_JSON.encodeToString(SyncPayloadSerializer(obj), obj) }
+                    payloadObj?.let { obj -> SYNC_JSON.encodeToString(syncPayloadSerializer(obj), obj) }
                         ?: "{}",
                 createdAt = now,
             )
@@ -120,7 +120,7 @@ val SYNC_JSON: Json =
  * três formas de payload são conhecidas e fechadas.
  */
 @Suppress("FunctionNaming")
-private fun SyncPayloadSerializer(obj: Any): kotlinx.serialization.KSerializer<Any> =
+private fun syncPayloadSerializer(obj: Any): kotlinx.serialization.KSerializer<Any> =
     @Suppress("UNCHECKED_CAST")
     when (obj) {
         is ProjectSyncPayload -> ProjectSyncPayload.serializer()

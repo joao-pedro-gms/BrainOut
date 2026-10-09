@@ -17,6 +17,18 @@
 #    camelCase. Sem esta linha, `BrainOutTheme`, `MainRoot`, `HomeBody` e
 #    ~200 outras funções Compose são marcadas como violação.
 #
+# 3. `ktlint_standard_property-naming` desliga a exigência de screaming
+#    snake case em `const val`. É o MESMO tipo de conflito do item 2,
+#    pelo motivo oposto: o projeto nomeia constantes de rota e de token
+#    em PascalCase (`ProjectsRoutes.Home`, `NeoScrim.alpha`) por
+#    consistência com os Composables e com o resto da API pública de
+#    `:core:ui`. A regra padrão exigiria `HOME` / `ALPHA`.
+#    Renomear quebraria a API consumida por `BrainOutNavHost` e pelos
+#    testes de navegação (`ProjectsRoutesTest`, `AuthRoutesTest`,
+#    `TasksRoutesTest`) — troca de API pública por conformidade de
+#    estilo, que é exatamente o que o item 1 do header já rejeitou
+#    com `android_studio`.
+#
 # Sem este arquivo o ktlint roda sem direção de estilo declarada, o que é
 # parte do motivo de o gate ter ficado invisível até a correção de DEF-09.
 
@@ -25,6 +37,7 @@ root = true
 [*.{kt,kts}]
 ktlint_code_style = ktlint_official
 ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_standard_property-naming = disabled
 max_line_length = 120
 insert_final_newline = true
 ij_kotlin_allow_trailing_comma = true
