@@ -177,6 +177,111 @@ def test_task_delete_idempotent(client: TestClient) -> None:
     assert resp.status_code == 204
 
 
+# --- Tasks: due_date/assignee_id (DEF-17) ----------------------------------
+
+
+def test_task_post_then_get_roundtrips_due_date_and_assignee(client: TestClient) -> None:
+    pid = _uuid_str()
+    client.put(f"/v1/projects/{pid}", json={"name": "p"})
+    tid = _uuid_str()
+    due = "2026-12-31T23:59:00Z"
+    assignee = _uuid_str()
+
+    created = client.post(
+        "/v1/tasks",
+        json={
+            "id": tid,
+            "project_id": pid,
+            "title": "t",
+            "due_date": due,
+            "assignee_id": assignee,
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["due_date"] == due
+    assert created.json()["assignee_id"] == assignee
+
+    fetched = client.get(f"/v1/tasks/{tid}")
+    assert fetched.status_code == 200, fetched.text
+    assert fetched.json()["due_date"] == due
+    assert fetched.json()["assignee_id"] == assignee
+
+    listed = client.get("/v1/tasks", params={"project_id": pid}).json()["items"]
+    assert [t["due_date"] for t in listed] == [due]
+    assert [t["assignee_id"] for t in listed] == [assignee]
+
+
+def test_task_put_null_clears_due_date_and_assignee(client: TestClient) -> None:
+    pid = _uuid_str()
+    client.put(f"/v1/projects/{pid}", json={"name": "p"})
+    tid = _uuid_str()
+    due = "2026-12-31T23:59:00Z"
+    assignee = _uuid_str()
+    client.put(
+        f"/v1/tasks/{tid}",
+        json={
+            "project_id": pid,
+            "title": "t",
+            "due_date": due,
+            "assignee_id": assignee,
+        },
+    )
+
+    # PUT = representação completa: `null` limpa, não é ignorado.
+    cleared = client.put(
+        f"/v1/tasks/{tid}",
+        json={
+            "project_id": pid,
+            "title": "t",
+            "due_date": None,
+            "assignee_id": None,
+        },
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["due_date"] is None
+    assert cleared.json()["assignee_id"] is None
+    assert client.get(f"/v1/tasks/{tid}").json()["due_date"] is None
+
+
+def test_task_without_due_date_and_assignee_still_validates(client: TestClient) -> None:
+    """Retrocompat: cliente antigo omite os campos e continua valendo."""
+    pid = _uuid_str()
+    client.put(f"/v1/projects/{pid}", json={"name": "p"})
+
+    created = client.post("/v1/tasks", json={"project_id": pid, "title": "t"})
+    assert created.status_code == 201, created.text
+    assert created.json()["due_date"] is None
+    assert created.json()["assignee_id"] is None
+
+    # PUT sem os campos também segue 200 (não 422).
+    put_resp = client.put(f"/v1/tasks/{_uuid_str()}", json={"project_id": pid, "title": "t2"})
+    assert put_resp.status_code == 200, put_resp.text
+    assert put_resp.json()["due_date"] is None
+    assert put_resp.json()["assignee_id"] is None
+
+    # Registro gravado sem os campos continua validando no modelo de
+    # resposta (`Task` herda `TaskIn`) — é o que garante retrocompat.
+    stored_id = created.json()["id"]
+    assert server.Task(**server._TASKS[stored_id]).due_date is None
+
+
+def test_task_put_rejects_id_mismatch(client: TestClient) -> None:
+    """Regressão: divergência id-do-corpo vs id-do-path segue 400."""
+    pid = _uuid_str()
+    client.put(f"/v1/projects/{pid}", json={"name": "p"})
+    resp = client.put(
+        f"/v1/tasks/{_uuid_str()}",
+        json={
+            "id": _uuid_str(),
+            "project_id": pid,
+            "title": "t",
+            "due_date": "2026-12-31T23:59:00Z",
+        },
+    )
+    assert resp.status_code == 400
+    assert "difere" in resp.json()["detail"]
+
+
 # --- Tags: criar, associar, listar, remover --------------------------------
 
 
