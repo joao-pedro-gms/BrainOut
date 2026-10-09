@@ -343,14 +343,6 @@ class TaskRepositoryImplTest {
             storage[task.id] = task
         }
 
-        override suspend fun updateStatus(
-            id: String,
-            status: String,
-        ) {
-            val current = storage[id] ?: return
-            storage[id] = current.copy(status = status)
-        }
-
         override suspend fun updateStatusAndCompletedAt(
             id: String,
             status: String,

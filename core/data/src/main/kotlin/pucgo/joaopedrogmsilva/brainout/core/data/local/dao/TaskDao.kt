@@ -121,17 +121,6 @@ interface TaskDao {
     suspend fun update(task: TaskEntity)
 
     /**
-     * Atualiza apenas a coluna `status`. Validações de transição
-     * (matriz `TaskStatus.canTransitionTo`) ficam no domínio
-     * (`Task.transitionTo`); aqui só persistimos o novo valor.
-     */
-    @Query("UPDATE tasks SET status = :status WHERE id = :id")
-    suspend fun updateStatus(
-        id: String,
-        status: String,
-    )
-
-    /**
      * Atualiza `status` E `completed_at` numa única escrita. Usado
      * por [pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl.completeAndCascade]
      * dentro de uma `@Transaction` junto com a marca de projeto
