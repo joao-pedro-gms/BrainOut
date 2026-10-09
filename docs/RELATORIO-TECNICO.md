@@ -13,6 +13,19 @@
 > A4; gerado via Chromium headless em 2026-09-25 a partir deste
 > Markdown; título, tabelas, código e listas preservados).
 >
+> > ⚠️ **PDF superado — o Markdown é a fonte.** O arquivo
+> > `RELATORIO-TECNICO.pdf` foi gerado em 2026-09-25 (commit `405cfe0`,
+> > assunto *"docs(n2): inclui PDF do RELATORIO-TECNICO (26p A4)"*) e
+> > **não** foi regenerado desde então. Ele é **anterior** a todas as
+> > correções de outubro de 2026 (auditoria DEF-08..DEF-16, PR #143,
+> > identidade Neo e a revisão de R14/DOZE deste documento) e por isso
+> > **não reflete o estado atual do projeto**. A contagem de 26 páginas
+> > foi reconferida contra o arquivo em disco em 2026-10-09
+> > (`/Count 26` no nó raiz da árvore de páginas, 26 objetos
+> > `/Type /Page`) e **bate com o arquivo real**. Para a versão
+> > vigente, leia **este Markdown**; o PDF deve ser tratado como
+> > histórico.
+>
 > Marco do roadmap: **E5.1** (`docs/ROADMAP.md`).
 
 ---
@@ -66,8 +79,10 @@ projetos e tarefas. A proposta é entregar uma ferramenta enxuta para
 estudantes universitários que precisam organizar trabalhos em grupo e
 prazos pessoais sem a sobrecarga cognitiva de suítes corporativas de
 gestão. O produto foi construído como projeto integrador da disciplina
-de Projeto Integrador (ADS, PUC Goiás, 2026/2) e atende integralmente
-aos requisitos **R1–R14** do documento norteador.
+de Projeto Integrador (ADS, PUC Goiás, 2026/2) e atende aos requisitos
+**R1–R14** do documento norteador, com **R14 em estado Parcial** — o
+pacote instalável assinado é gerado e verificado, mas o teste em ≥ 2
+dispositivos físicos (E5.3) ainda não foi executado (ver §4 e §16.5).
 
 ### 3.2 Público-alvo
 
@@ -139,7 +154,11 @@ A tabela a seguir consolida o Apêndice C
 atualização de **R5, R6, R9 e R14** após a entrega dos marcos E3.3,
 E3.4 e E2.7 (todos marcados `[x]` no
 [docs/ROADMAP.md](ROADMAP.md)). Caminhos e símbolos são os arquivos
-efetivamente presentes em `main` na data de fechamento do E5.1.
+efetivamente presentes em `main` na data de fechamento do E5.1,
+reconferidos em 09/10/2026 contra o commit `54f1d79`. Treze requisitos
+estão **Atendidos** e **R14 está Parcial**: o pacote assinado é gerado e
+verificado, mas o teste em ≥ 2 dispositivos físicos (E5.3) não foi
+executado.
 
 | Nº | Requisito | Status | Onde é verificável | Marco |
 |----|-----------|--------|--------------------|-------|
@@ -156,7 +175,7 @@ efetivamente presentes em `main` na data de fechamento do E5.1.
 | R11 | Usabilidade e acessibilidade conforme diretrizes da plataforma | **Atendido** | Tokens de tema em `core/ui/.../theme/` (`Color.kt`, `Theme.kt`); contraste WCAG AA coberto por `core/ui/src/test/.../theme/ContrastRatioTest.kt` (24 testes: 22 texto ≥ 4.5:1 + 2 gráfico ≥ 3.0:1, ambos temas claro/escuro); áreas de toque ≥ 48dp via `Modifier.heightIn(min = 48.dp)` em todos os `AssistChip`/`FilterChip` interativos de `:feature:projects` e `:feature:tasks`; `contentDescription` em `IconButton(MoreVert)` da `ProjectDetailScreen` e demais ícones funcionais; `null` explícito em ícones decorativos; ordenação TalkBack documentada em `docs/ACESSIBILIDADE.md`; tema claro/escuro com `Theme.kt` + E4.5 | E4.4, E4.5 |
 | R12 | Organização do código em camadas, sem credenciais versionadas | **Atendido** | Camadas: `:core:domain` (Kotlin JVM puro, sem Android), `:core:data` (Room/Retrofit/DataStore + `DataModule.kt`), `:core:ui`, `:feature:{auth,projects,tasks,settings}` — raiz `pucgo.joaopedrogmsilva.brainout` (E1.1/E1.2). Credenciais: `local.properties` e `keystore.properties` fora do versionamento (`.gitignore`); keystore lido de variáveis de ambiente (`BRAINOUT_KEYSTORE_PATH`/`PASSWORD`, `BRAINOUT_KEY_ALIAS`/`PASSWORD`) tanto local quanto em `release-apk.yml`; senhas persistidas com hash + pepper (`PasswordHasherImpl` + `PepperProvider` com `EncryptedSharedPreferences` + `MasterKey`); cobertura mínima 60% por Kover em `:core:domain` (87,9%) e `:core:data` (67,3%) | E1.1, E3.2, E4.7 |
 | R13 | Repositório Git com histórico distribuído e README | **Atendido** | `README.md` (pré-requisitos, build, execução, troubleshooting, links para o documento norteador e para o relatório técnico); `docs/CONTRIBUTING.md`; histórico Git contínuo (mais de 60 commits, PRs #23–#66); pipeline com ktlint + detekt + testes + Kover em `.github/workflows/ci.yml`; 3 jobs sequenciais (`static-analysis`, `unit-tests`, `backend-integration`); `codeql.yml` semanal; `dependabot.yml` para actions/Gradle | E1.9, E1.10, E5.2 |
-| R14 | Pacote instalável gerado e testado em dispositivo físico | **Atendido** | Workflow de release assinado `.github/workflows/release-apk.yml` (gera `.aab` via `:app:bundleRelease`, valida os 4 secrets `BRAINOUT_*`, decodifica o keystore em `$RUNNER_TEMP`, roda `jarsigner -verify`, publica artifact `brainout-release-aab-<tag>` com retenção de 30 dias). Tag `v0.3.1-ciclo3` (CI run 35599507321) produziu artefato assinado de 4,2 MB documentado em `docs/qa/run-log-t_333ab600.md`. Teste em 2 dispositivos físicos registrado em `docs/DISPOSITIVOS.md` (E5.3 — primário Samsung S20 FE 5G / API 33; secundário emprestado, modelo ainda indefinido; checklist de compatibilidade com `minSdk` 24 / `targetSdk` 35 pré-aprovado) | E3.7, E5.3 |
+| R14 | Pacote instalável gerado e testado em dispositivo físico | **Parcial** | **Geração do pacote: entregue (E3.7).** Workflow de release assinado `.github/workflows/release-apk.yml` (gera `.aab` via `:app:bundleRelease`, valida os 4 secrets `BRAINOUT_*`, decodifica o keystore em `$RUNNER_TEMP`, roda `jarsigner -verify`, publica artifact `brainout-release-aab-<tag>` com retenção de 30 dias). Tag `v0.3.1-ciclo3` (CI run 35599507321) produziu artefato assinado de 4,2 MB documentado em `docs/qa/run-log-t_333ab600.md`. **Teste em ≥ 2 dispositivos físicos: não entregue (E5.3).** `docs/DISPOSITIVOS.md` ainda tem campos `⏳`: o secundário emprestado tem Modelo, Fabricante, versão do Android, API level e Tela/densidade **todos indefinidos** (`docs/DISPOSITIVOS.md:37-47`) e os checklists 3.1–3.8 (§3) e 5.1 estão inteiros em branco. **Nenhuma instalação foi executada ou registrada em dispositivo físico**, portanto o requisito não pode ser marcado como atendido. Mesmo veredito de [docs/APENDICE-C-CONFORMIDADE.md:27](APENDICE-C-CONFORMIDADE.md). O `targetSdk` citado no checklist de compatibilidade (`docs/DISPOSITIVOS.md:62-63`) foi corrigido para 37 em 2026-10-09. | E3.7 (atendido); E5.3 (pendente) |
 
 > **Notas de verificação.**
 > - Cada caminho foi conferido por `read`/`grep` direto no código de
@@ -167,14 +186,30 @@ efetivamente presentes em `main` na data de fechamento do E5.1.
 >   automática) estão mergeados em `main` (PR #66, squash `9dd8696`).
 > - **R9 (Parcial → Atendido):** E2.7 (`DashboardScreen` +
 >   `DashboardViewModel`) está mergeado em `main` (PR `feat/dashboard-e27`).
-> - **R14 (Parcial → Atendido):** geração do pacote assinado já funcional
->   (`v0.3.1-ciclo3`); a validação em 2 dispositivos físicos (E5.3) está
->   mapeada em `docs/DISPOSITIVOS.md` com campos preenchidos para o
->   primário (S20 FE 5G, API 33) e pendentes (`⏳`) para o secundário
->   emprestado. **O checklist 5.1–5.5 do `docs/DISPOSITIVOS.md` permanece
->   em branco até a execução presencial.** Esta redação reconhece o
->   status real: pacote gerado e assinado, **teste físico em dois
->   dispositivos ainda não executado** (ver §16).
+> - **R14 (Parcial → Parcial — veredito corrigido em 2026-10-09):** a
+>   geração do pacote assinado está entregue e é real (`v0.3.1-ciclo3`,
+>   run `35599507321`, artefato de 4,2 MB em
+>   `docs/qa/run-log-t_333ab600.md`), mas o **teste em ≥ 2 dispositivos
+>   físicos (E5.3) não foi executado**. Conferido em 2026-10-09 contra
+>   `docs/DISPOSITIVOS.md`: a ficha do secundário emprestado está
+>   integralmente em `⏳` (`docs/DISPOSITIVOS.md:37-47`) e os checklists
+>   3.1–3.8 e 5.1 estão em branco. A versão anterior deste relatório
+>   marcava R14 como **Atendido** e ao mesmo tempo afirmava, na própria
+>   nota, que o teste físico ainda não tinha sido executado — contradição
+>   interna corrigida nesta revisão. O veredito **Parcial** segue o
+>   apêndice (`docs/APENDICE-C-CONFORMIDADE.md:27`).
+> - **SDK (2026-10-09):** `compileSdk = 37` (`app/build.gradle.kts:54`) e
+>   `targetSdk = 37` (`:59`), `minSdk = 24` (`:58`). As tabelas das §5.3 e
+>   §14.1 citavam 35/35/24 e foram corrigidas.
+> - **Números derivados de build (cobertura de linhas e contagem de
+>   testes):** **não verificados nesta revisão e deliberadamente
+>   mantidos como estão** (§12.2.1 e §12.3). Existem três versões
+>   divergentes do mesmo número — este documento, o apêndice e o
+>   `kover report.xml` — e nenhuma delas é confiável sem reexecutar o
+>   build depois que a cadeia de correções (DEF-08..DEF-16, PR #143) aterrissar.
+>   O refresh é feito em revisão à parte, após a cadeia. Enquanto isso,
+>   **nenhum número de cobertura ou de testes deve ser citado como
+>   medido atual**.
 
 ---
 
@@ -245,7 +280,7 @@ Catálogo único em `gradle/libs.versions.toml`:
 | Criptografia             | `androidx.security:security-crypto` 1.1.0 + `desugar_jdk_libs` 2.1.5 |
 | Testes                   | JUnit 4.13.2, Robolectric 4.15.1, Compose UI Test, MockWebServer 4.12.0, Turbine 1.2.0, MockK 1.13.13, Truth 1.4.4 |
 | Qualidade                | ktlint 14.2.0, detekt 1.23.7, Android Lint, Kover 0.9.9 (E4.7) |
-| `compileSdk` / `targetSdk` / `minSdk` | 35 / 35 / 24 |
+| `compileSdk` / `targetSdk` / `minSdk` | 37 / 37 / 24 |
 
 ### 5.4 Fluxo de dados
 
@@ -780,6 +815,22 @@ dagger.hilt.*, hilt_aggregated_deps.*, *.di.*, *.BuildConfig,
 | `:core:domain` | **87,9%** | ROADMAP E4.7 (atualizado após E2.7) |
 | `:core:data` | **67,3%** | ROADMAP E4.7 (atualizado após E2.7) |
 
+> ⚠️ **Números pendentes de refresh — não são a medição atual.**
+> Os dois valores acima vêm do marco E4.7 e **não foram reexecutados
+> desde então**. Existem três versões divergentes do mesmo número: esta
+> tabela (87,9% / 67,3%), o apêndice
+> ([docs/APENDICE-C-CONFORMIDADE.md:35-36](APENDICE-C-CONFORMIDADE.md),
+> 84,9% / 84,1%) e o `kover report.xml` (90,0% / 83,6%). As três
+> divergem porque o denominador do gate mudou depois (DEF-14 estreitou
+> `*.remote.*` para `*Dto`, devolvendo `RemoteDataSource`, `BrainOutApi` e
+> `HolidayRemoteDataSource` à medição) e porque a cadeia de correções de
+> outubro (DEF-08..DEF-16, PR #143) ainda não foi consolidada.
+> **Refresh deliberadamente fora desta revisão:** só um build reexecutado
+> depois que a cadeia aterrissar pode arbitrar o número, e é isso que a
+> revisão seguinte fará. Enquanto isso, não citar nenhum dos três como
+> cobertura vigente. O gate de 60% (E4.7) segue satisfeito em qualquer
+> das três leituras.
+
 Relatório HTML publicado como artifact `coverage-report` (retenção
 14 dias) no job `unit-tests` do `ci.yml`.
 
@@ -799,6 +850,20 @@ Contagem de arquivos de teste (excluindo instrumented):
 | `:feature:settings` | 2 |
 | `backend-stub/tests` | 2 (16 pytest cases em `test_contract.py`) |
 | **Total** | **56 unit + 3 androidTest + 16 pytest** |
+
+> **Contagens de teste não verificadas nesta revisão.** A tabela
+> acima é a medição do fechamento do E5.1 e **não** foi reexecutada aqui —
+> nenhum `./gradlew test` foi rodado, por decisão explícita deste card
+> (o build está sob a cadeia de correções em andamento no mesmo working
+> tree). O apêndice registra 618 testes em 08/10/2026 e o
+> `docs/DEFEITOS.md` cita 662 após a correção DEF-10; nenhuma das três
+> leituras foi arbitrada aqui. **Nenhuma contagem de testes deve ser
+> citada como medição atual** até o refresh pós-cadeia. O refresh
+> esperado é maior que 56/3/16, porque DEF-08 fez a suíte
+> instrumentada de `:core:data` (`MigrationTest`,
+> `UserDaoInstrumentedTest`) passar a compilar, e DEF-13 habilitou
+> `LoginScreenTest` no emulador — os três `androidTest` acima só
+> passaram a rodar, não a existir.
 
 ### 12.4 Cobertura funcional por requisito
 
@@ -959,9 +1024,9 @@ echo "brainout.baseUrl.dev=http://10.0.2.2:8000" >> ../local.properties
 | Ferramenta | Versão mínima | Observação |
 |------------|---------------|------------|
 | JDK | 21 (Temurin no CI/release; JBR do Android Studio localmente) — piso do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo é verificado em 21; bytecode permanece Java 17 | `org.gradle.java.installations.auto-detect=true` + `auto-download=false` em `gradle.properties` |
-| Android SDK | `compileSdk = 35` | Instalar via Android Studio ou `sdkmanager` |
+| Android SDK | `compileSdk = 37` | Instalar via Android Studio ou `sdkmanager` |
 | Android Studio | Hedgehog (2023.1.1)+ | Emulador, editor, SDK Manager |
-| Emulador ou dispositivo | API 24+ | Emulador API 35 (imagem `system-images;android-35;google_apis;x86_64`) ou dispositivo físico com depuração USB |
+| Emulador ou dispositivo | API 24+ | Emulador API 37 (imagem `system-images;android-37;google_apis;x86_64`) ou dispositivo físico com depuração USB |
 | Python 3 + pip | 3.10+ | Apenas para o backend stub local |
 | Docker | opcional | Para rodar o `backend-stub` em container |
 
@@ -1047,8 +1112,8 @@ stub com `--host 0.0.0.0`.
 
 ```bash
 # Criar AVD uma vez (cmdline-tools instalado)
-sdkmanager "system-images;android-35;google_apis;x86_64"
-avdmanager create avd -n pixel8 -k "system-images;android-35;google_apis;x86_64" -d pixel_8
+sdkmanager "system-images;android-37;google_apis;x86_64"
+avdmanager create avd -n pixel8 -k "system-images;android-37;google_apis;x86_64" -d pixel_8
 
 # Subir emulador e instalar
 $ANDROID_HOME/emulator/emulator -avd pixel8 &
@@ -1183,8 +1248,8 @@ documentados em [docs/ROADMAP.md](ROADMAP.md).
 | ID | Sev. | Origem | Resumo | Status |
 |----|------|--------|--------|--------|
 | DEF-02 | Crítico | CI run 35598981118 | `signReleaseBundle`: `BRAINOUT_KEY_PASSWORD` difere da senha que abre a chave dentro do PKCS12 (PKCS12 usa a senha do keystore para a chave). | **Não corrigido em código** — contorno documentado em `docs/CI-CD.md` (PR #47): gerar o keystore com a MESMA senha em `-storepass` e `-keypass` e cadastrar os dois secrets com esse valor. Sem correção de código a fazer — a falha só se repete se o operador gerar o keystore com senhas divergentes. |
-| DEF-06 | Crítico | QA manual (i18n) | 8 chaves `deadline_*` (E3.6) presentes em `app/src/main/res/values/strings.xml` (PT) sem par em `values-en/strings.xml`. Com locale `en` ativa, notificações aparecem em PT. A regra `lint { abortOnError = true; error += "MissingTranslation" }` em `:app` (PR #49) não pegou porque o CI roda `ktlint + detekt` (não `lintDebug`). | **Não corrigido** — a auditoria de 24/09 (`docs/AUDITORIA-2026-09-24.md`) confirma que a regra foi endurecida no CI (`lintDevDebug`) após a varredura; tradução efetiva das 8 chaves + 6 chaves do E4.4 + 2 chaves do E3.5 (`deadline_holidays_unavailable`, `deadline_not_business_day`) está em commit dedicado posterior à auditoria; cobertura final a confirmar em E4.8 (congelamento). |
-| DEF-07 | Menor | QA manual (holidays) | Em `main`, o módulo de feriados (E3.5) ainda não havia recebido polimento (assinatura de testes, `@Suppress("NewApi")` para `java.time.*` em `minSdk 24`, supressões justificadas de detekt para `TooManyFunctions`/`LongParameterList`/`LongMethod`, e traduções EN). detekt e `lintDebug` falhavam em `:core:data` e `:feature:projects`. | **Não corrigido** — correção entregue em commit `e828544` dentro do PR #51 (`feat/external-holiday-api`), **aberto** no momento da entrega N2; merge previsto antes do congelamento E4.8. |
+| DEF-06 | Crítico | QA manual (i18n) | 8 chaves `deadline_*` (E3.6) presentes em `app/src/main/res/values/strings.xml` (PT) sem par em `values-en/strings.xml`. Com locale `en` ativa, notificações aparecem em PT. A regra `lint { abortOnError = true; error += "MissingTranslation" }` em `:app` (PR #49) não pegou porque o CI roda `ktlint + detekt` (não `lintDebug`). | **CORRIGIDO** — commit `d171d25` (PR #57, mergeado em `main` em 21/09/2026), conforme `docs/DEFEITOS.md:129`. As 8 chaves foram traduzidas e a regra foi endurecida no CI (`lintDevDebug`), que hoje barra a regressão. Reverificado em 08/10/2026 (`docs/DEFEITOS.md`). **Não há mais pendência de confirmação em E4.8**: o E4.8 já congelou e a correção está em `main`. |
+| DEF-07 | Menor | QA manual (holidays) | Em `main`, o módulo de feriados (E3.5) ainda não havia recebido polimento (assinatura de testes, `@Suppress("NewApi")` para `java.time.*` em `minSdk 24`, supressões justificadas de detekt para `TooManyFunctions`/`LongParameterList`/`LongMethod`, e traduções EN). detekt e `lintDebug` falhavam em `:core:data` e `:feature:projects`. | **CORRIGIDO** — PR #59 (`feat(holidays): integrar consulta de feriados e prazos (E3.5)`), mergeado em `main` em 21/09/2026 como commit `bb95109`, conforme `docs/DEFEITOS.md:130`. **O PR #51 (`feat/external-holiday-api`, commit `e828544`), citado em versões anteriores deste relatório, foi FECHADO SEM MERGE** e portanto nunca corrigiu o defeito: ele não está em `main` e não deve ser lido como evidência de correção. A evidência válida é o PR #59 / `bb95109`. |
 
 Defeitos já corrigidos (não bloqueiam a N2): **DEF-01** (PR #43 —
 keystore em path absoluto `$RUNNER_TEMP`), **DEF-03** (PR #48 —
@@ -1200,14 +1265,21 @@ resumidos a seguir (status de merge no momento da redação):
 
 | ID | Sev. | Local | Status na N2 |
 |----|------|-------|---------------|
-| P0-1 | Crítico | `BrainOutNavHost.kt:163-177` — `signOut()` em `rememberCoroutineScope` | Pendente de correção (PR de follow-up) |
-| P0-2 | Crítico | `CompleteTaskWorker.kt:35-48` — `catch (Exception)` retraya tarefas deletadas | Pendente de correção |
-| P0-3 | Crítico | `PepperProvider.kt:48-50` — pepper derivado de `masterKey.toString()` (string pública) | Pendente de correção (geração de salt aleatório persistido) |
-| P0-4 | Crítico | `BrainOutSyncDispatcher` + `TagSyncPayload` — DELETE de tag sem id cliente-supplied | Pendente de correção (paridade com projetos/tasks) |
+| P0-1 | Crítico | `BrainOutNavHost.kt` — `signOut()` em escopo cancelável junto à composição | **Resolvido** — o `signOut()` roda em `lifecycleOwner.lifecycleScope.launch`, não em `rememberCoroutineScope` (`app/src/main/kotlin/pucgo/joaopedrogmsilva/brainout/navigation/BrainOutNavHost.kt:181`). A escrita no DataStore conclui antes de navegar e o escopo sobrevive à saída de `Settings`, evitando sessão órfã na próxima abertura. |
+| P0-2 | Crítico | `CompleteTaskWorker.kt` — `catch (Exception)` retray tarefas deletadas | **Resolvido** — o worker captura `DomainException`, não `Exception` cru (`app/src/main/kotlin/pucgo/joaopedrogmsilva/brainout/notifications/CompleteTaskWorker.kt:52`), e termina idempotentemente com `Result.success()` para que o WorkManager não reprocesse uma violação permanente. Coberto por `CompleteTaskWorkerTest`. |
+| P0-3 | Crítico | `PepperProvider.kt` — pepper derivado de `masterKey.toString()` (string pública) | **Resolvido** — o pepper é sorteado com `SecureRandom` (`core/data/.../security/PepperProvider.kt:64-66`, 16 bytes em `:77`) e persistido em `EncryptedSharedPreferences` (`:49`), protegido por `MasterKey` AES256-GCM. Não há mais `masterKey.toString()` no caminho de derivação; o pepper é determinístico por instalação. |
+| P0-4 | Crítico | `BrainOutSyncDispatcher` + `TagSyncPayload` — DELETE de tag sem id cliente-supplied | **Resolvido** — `TagSyncPayload` carrega `id` cliente-supplied com `@SerialName("id")` (`core/data/.../local/entity/PendingOpEntity.kt:158-161`), paridade com projetos e tasks no contrato `/v1/*` (UUID do cliente, PUT/POST upsert idempotente). |
 | P0-5 | Crítico | `ci.yml` — tarefas não-flavor (`testDebugUnitTest`/`lintDebug`) | **Resolvido** — CI migrado para `testDevDebugUnitTest`/`lintDevDebug` (linhas 110, 125, 222 do `ci.yml`) |
 | P0-6 | Crítico | `release-apk.yml:52-56` — validação parcial dos secrets | **Resolvido** — workflow valida os 4 secrets + `jarsigner -verify` (release-apk.yml) |
-| P0-7 | Menor | `TagNotFoundException` extends RuntimeException | Pendente de correção |
-| P0-8 | Crítico | `ChangeTaskStatusUseCase.kt:59` — `kotlin.error` lança `IllegalStateException` cru | Pendente de correção |
+| P0-7 | Menor | `TagNotFoundException` extends RuntimeException | **Resolvido** — `TagNotFoundException` estende `DomainException`, a raiz única do pacote `error/` (`core/domain/.../error/TagNotFoundException.kt:11-13`), então `catch (DomainException)` captura também essa falha. Hierarquia fixada por `DomainExceptionHierarchyTest` e `TagNotFoundExceptionTest` em `core/domain/src/test/.../error/`. |
+| P0-8 | Crítico | `ChangeTaskStatusUseCase.kt` — `kotlin.error` lança `IllegalStateException` cru | **Resolvido** — não há mais `kotlin.error` no arquivo (`core/domain/.../usecase/ChangeTaskStatusUseCase.kt`); a transição inválida é recusada pela hierarquia de domínio, com `InvalidStateTransitionException` sob `DomainException`. |
+
+> Verificação: os oito P0 foram reconferidos **um a um no código** em
+> 2026-10-09 (`grep`/`read` sobre `main`, commit `54f1d79`). Os P0-5 e
+> P0-6 já constavam como resolvidos na redação anterior; os outros seis
+> passaram de "Pendente de correção" para "Resolvido" com a evidência
+> `file:line` da coluna acima. Nenhum deles depende de uma execução de
+> build: são todos verificáveis por leitura de fonte.
 
 P1/P2 (refatoração, decomposição de telas grandes, supressões de
 detekt) **não bloqueiam** a N2 e estão listados na auditoria como
@@ -1236,12 +1308,80 @@ Limitações documentadas em
   E3.4 em `HomeViewModelTest` (17 casos) e
   `ProjectDetailViewModelTest` (14 casos).
 
-### 16.4 Pendências de validação manual (E5.3)
+### 16.4 Correções posteriores ao fechamento do E5.1
+
+Esta subseção foi acrescentada em 2026-10-09 para registrar o que
+aconteceu no repositório **depois** da redação original deste relatório.
+Nada aqui é alterado pelo status de R1–R14 da §4; são correções e
+reforços de qualidade. Detalhe completo em
+[docs/DEFEITOS.md](DEFEITOS.md).
+
+**Auditoria de 08/10/2026 — DEF-08..DEF-14** (gate de qualidade e
+ambiente, todos **corrigidos**):
+
+| ID | Sev. | Achado | Correção |
+|----|------|--------|----------|
+| DEF-08 | Crítico | A suíte instrumentada de `:core:data` **não compilava**: `MigrationTest` e `UserDaoInstrumentedTest` importavam Truth e `runTest`, declarados só em `testImplementation`. As 3 migrations do Room (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`) não eram exercitadas em lugar nenhum. | `core/data/build.gradle.kts:181-182` (`androidTestImplementation`); `MigrationTest` passa a cobrir 2→3 e 3→4 em SQLite real. |
+| DEF-09 | Crítico | O plugin ktlint era aplicado **só na raiz**: `ktlintCheck` inspecionava 2 arquivos de build e **zero** dos arquivos `.kt` versionados. O gate de estilo do CI era verde por construção. | `build.gradle.kts:112-129` (`subprojects { apply(plugin = "...ktlint") }` com `android = true`); agora há relatório nos 9 projetos. |
+| DEF-10 | Menor | Com o ktlint alcançando os 9 projetos, apareceram violações cosméticas em 17 arquivos. | `ktlintFormat` nos 9 subprojetos (commit `b59318e`) + 9 violações não auto-corrigíveis (`b6db6e0`): **770 → 0**. `ignoreFailures` voltou para `false` (`631a4ba`) — o gate volta a bloquear. |
+| DEF-11 | Menor | `.gitignore` não cobria `.venv`, e o `README.md:148` manda criar `backend-stub/.venv` — um `git add` de rotina versionaria o virtualenv inteiro. | `.gitignore:66-73` cobre `.venv/`, `venv/`, `env/` e `backend-stub/.venv/`. |
+| DEF-12 | Menor | `backend-stub/requirements.txt` fixava `pydantic==2.9.2` (→ `pydantic-core 2.23.4`), sem wheel para Python 3.14; a instalação caía em build via Rust e falhava porque o `PyO3` só declara suporte até 3.13. | Pins relaxados para faixas (`fastapi>=0.118.3,<1.0`, `pydantic>=2.12,<3.0`, …); instala por wheel em 3.12, 3.13 e 3.14. |
+| DEF-13 | Crítico | `LoginScreenTest` compilava mas **os 3 testes falhavam em runtime** no emulador API 37: `NoSuchMethodException: InputManager.getInstance`, porque o **Espresso 3.6.1** usava um método removido da plataforma. | `espresso` 3.6.1 → **3.7.0** (`gradle/libs.versions.toml:51`), que troca `InputManager.getInstance` por `Context.getSystemService`. Verificado no emulador: 3 testes, 0 falhas. |
+| DEF-14 | Menor | O gate do Kover excluía `*.remote.*`, tirando **806 linhas** de produção do denominador em `:core:data` — inclusive `RemoteDataSource` (253 linhas), que **tem** teste. A métrica estava inflada. | Padrão estreitado para `*Dto`/`*Dto$*`; `RemoteDataSource`, `BrainOutApi` e `HolidayRemoteDataSource` voltaram ao denominador. `*.di.*` mantido (wiring, sem lógica). |
+
+**PR #143** (`fix(auditoria): 4 bugs confirmados + paridade documental`,
+commit `54f1d79`, 09/10/2026) — quatro defeitos reais de produto,
+todos **corrigidos**:
+
+- **Ordenação da Home era no-op.** `SortOrder.toStorageKey()` emitia
+  `nameasc`/`namedesc`/`createddesc`/`createdasc`, enquanto o `CASE WHEN`
+  de `ProjectDao.searchProjects` compara `name_asc`, `name_desc`,
+  `created_asc`, `created_desc`. **Nenhum dos quatro casava**: os quatro
+  `CASE` devolviam NULL e o SQLite entregava as linhas na ordem natural
+  do scan — a ordenação escolhida pelo usuário nunca teve efeito. Agora
+  `toStorageKey()` emite a grafia canônica em `snake_case`;
+  `fromStorageKey` continua aceitando a forma concatenada legada para
+  preferências já gravadas. Contrato fixado por `SortOrderStorageKeyTest`
+  (`core/domain/.../repository/`) e por `ProjectDaoSearchSortOrderTest`,
+  que roda a query real contra um banco Room em memória. O bug escapou
+  porque `HomeViewModelTest` faz mock de `observeSearch`.
+- **Bypass de RN02 fechado** (prioridade imutável em tarefa concluída era
+  burlável por um overload) e **hierarquia de exceções unificada** —
+  `BusinessRuleException` passou a estender `DomainException`, então
+  `catch (DomainException)` também captura violações de regra de negócio.
+  Contrato fixado por `DomainExceptionHierarchyTest`.
+- **DEF-15** (`TaskRepositoryImpl.update` gravava tarefa inexistente e
+  enfileirava a op, porque o `@Update` do Room é no-op silencioso quando a
+  linha não existe) — corrigido com guarda de existência que lança
+  `TaskNotFoundException` **antes** do `enqueueInTx`.
+- **DEF-16** (`completeAndCascade` retornava no-op para tarefas já em
+  `DONE` sem reidratar `projects.is_completed`, deixando projetos
+  concluídos antes da v3 permanentemente ativos com zero tarefas ativas) —
+  corrigido por `repairCompletedProject()`, reconta e marca de forma
+  idempotente e sem gerar op pendente.
+
+Ambos os DEF-15/16 são cobertos por `TaskSaveAuditTest`
+(`core/data/src/test/.../local/dao/TaskSaveAuditTest.kt`), auditoria de
+gravação que prova que a fila `pending_ops` **não** fica órfã.
+
+**Identidade Neo (tema ativo).** A redesign de tokens e arte entrou pelo
+NB-04/NB-05 e está **ativa por padrão**: `BrainOutTheme` delega para
+`BrainOutNeoTheme`, com `NeoColor.kt`, `NeoTokens.kt`, `NeoTypography.kt`
+em `core/ui/src/main/kotlin/.../theme/`, 5 fontes locais em
+`core/ui/src/main/res/font/` e 20 drawables `neo_*` em `res/drawable/`.
+O contraste WCAG AA tem suíte própria (`NeoContrastRatioTest`, 5 casos,
+paleta Neo ativa) ao lado da legada (`ContrastRatioTest`, 24 casos). Os
+totais de bytes e as regras da arte são assinados em teste contra o disco
+(PR #135).
+
+### 16.5 Pendências de validação manual (E5.3)
 
 - **E5.3 — Teste em 2 dispositivos físicos**: o checklist 5.1–5.5 do
   `docs/DISPOSITIVOS.md` permanece em branco até a sessão presencial
   com o dispositivo secundário emprestado. O primário (Samsung
   Galaxy S20 FE 5G, Android 13, API 33) já tem a ficha preenchida.
+  **É esta pendência que mantém R14 em Parcial** na §4 — sem ela, o
+  requisito não pode ser marcado como atendido.
 - **E4.2 — Sessões de usabilidade P1–P5**: a Parte 2 de
   [docs/USABILIDADE.md](USABILIDADE.md) (relatório de achados +
   pontuação SUS) permanece em branco. Janela de execução: 17/11 a
@@ -1251,7 +1391,7 @@ Limitações documentadas em
   manuais" de [docs/ACESSIBILIDADE.md](ACESSIBILIDADE.md) ainda em
   branco. Plano: rodar no S20 FE no E5.3.
 
-### 16.5 Backlog pós-N2 (backlog documentado)
+### 16.6 Backlog pós-N2 (backlog documentado)
 
 - Decomposição de `HomeScreen.kt` (1403 LoC), `ProjectDetailScreen.kt`
   (1027 LoC), `DashboardScreen.kt` (593 LoC) — extrair `*TopBar`,
