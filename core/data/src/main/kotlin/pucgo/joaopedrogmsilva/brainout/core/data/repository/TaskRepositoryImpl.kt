@@ -15,6 +15,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
@@ -86,9 +87,26 @@ class TaskRepositoryImpl @Inject constructor(
         return task
     }
 
-    /** Atualiza a tarefa e enfileira a op UPDATE na mesma transação. */
+    /**
+     * Atualiza a tarefa e enfileira a op UPDATE na mesma transação.
+     *
+     * Lança [TaskNotFoundException] quando não existe tarefa com esse
+     * `id` no banco local. A checagem é obrigatória: o `@Update` do
+     * Room é um no-op silencioso quando a linha não existe (ele emite
+     * `UPDATE tasks SET ... WHERE id = ?` e a contagem de linhas
+     * afetadas é zero, sem erro), então sem esta guarda o método
+     * devolveria a entidade como se tivesse sido persistida **e**
+     * enfileiraria uma op de sincronização. O backend receberia um PUT
+     * upsert que cria no servidor uma tarefa inexistente no device,
+     * e a fila local marcaria a operação como concluída — divergência
+     * silenciosa que só apareceria no próximo `list_tasks`.
+     */
     override suspend fun update(task: Task): Task {
         logDebug(TAG, "Atualizando tarefa id=${task.id}, title=${task.title}, status=${task.status}")
+        if (taskDao.findById(task.id) == null) {
+            logWarn(TAG, "update ignorado: tarefa id=${task.id} não existe no Room")
+            throw TaskNotFoundException(task.id)
+        }
         pendingOpDao.enqueueInTx(
             op = opFor(task.id, SyncOpType.UPDATE, task),
         ) {
@@ -195,6 +213,16 @@ class TaskRepositoryImpl @Inject constructor(
      * via [ProjectDao.cascadeCompleteTask] — e a op pendente
      * (UPDATE da tarefa em DONE) entra na mesma transação.
      *
+     * Tarefas que já estão em DONE **não são um no-op absoluto**:
+     * registros herdados da v2 (antes da coluna `completed_at`) chegam
+     * aqui com o status concluído e o projeto nunca marcado, porque a
+     * regra de cascata só passou a existir na v3. Esse registro é
+     * reidratado: recontamos as ativas do projeto e, se não houver
+     * nenhuma, marcamos o projeto como concluído. A correção é
+     * idempotente e não gera op pendente — o backend deriva a mesma
+     * marca de conclusão pelo mesmo caminho de negócio, então
+     * reenviar um UPDATE com o mesmo `done=true` seria ruído.
+     *
      * A exceção [InvalidStateTransitionException] é propagada sem
      * efeito no banco caso nenhuma transição intermediária seja
      * permitida (estado inicial desconhecido, p.ex.).
@@ -204,10 +232,8 @@ class TaskRepositoryImpl @Inject constructor(
         val current = taskDao.findById(taskId)?.toDomain()
             ?: throw TaskNotFoundException(taskId)
         if (current.status == TaskStatus.DONE) {
-            // Já está concluída — no-op. O projeto já deve estar
-            // concluído pelo caminho original; nada a fazer.
-            logDebug(TAG, "completeAndCascade no-op: tarefa $taskId já em DONE")
-            return current
+            logDebug(TAG, "completeAndCascade: tarefa $taskId já em DONE — reidratando a cascata do projeto")
+            return repairCompletedProject(current)
         }
         // Encadeia a transição para respeitar a matriz do domínio
         // (E1.4). Cada `transitionTo` valida a próxima etapa.
@@ -227,6 +253,29 @@ class TaskRepositoryImpl @Inject constructor(
             )
         }
         return done
+    }
+
+    /**
+     * Reidrata a cascata de RN03 para uma tarefa que **já** está em
+     * [TaskStatus.DONE] (registro legado da v2, sem `completed_at` e
+     * com o projeto nunca marcado). Se o projeto não tiver nenhuma
+     * tarefa ativa, marca-o como concluído.
+     *
+     * Não enfileira op pendente: a tarefa já está concluída, o
+     * backend deriva a conclusão do projeto pelo mesmo caminho de
+     * negócio e o registro local não mudou. A correção é puramente
+     * local e idempotente.
+     *
+     * @param current Tarefa já persistida em DONE.
+     * @return A mesma [current], sem alteração de estado.
+     */
+    private suspend fun repairCompletedProject(current: Task): Task {
+        val activeAfter = taskDao.countActiveByProject(current.projectId)
+        if (activeAfter == 0) {
+            projectDao.updateIsCompleted(current.projectId, true)
+            logDebug(TAG, "Cascata RN03 reidratada: projeto ${current.projectId} marcado como concluído")
+        }
+        return current
     }
 
     /**
