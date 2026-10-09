@@ -75,7 +75,7 @@ python -m uvicorn server:app --host 0.0.0.0 --port 8000
 ```bash
 cd backend-stub
 pip install -r requirements.txt
-pytest -q              # 16 casos verdes
+pytest -q              # 20 casos verdes
 ```
 
 Para o smoke ponta-a-ponta (servidor precisa estar de pé). Ele lê
@@ -111,7 +111,7 @@ python3 tests/smoke_e2e.py                     # com BASE_URL=http://localhost:8
 | GET    | `/v1/tasks`                            | Lista tarefas (filtro `?project_id=`)             |
 | POST   | `/v1/tasks`                            | Cria tarefa (id do cliente opcional)              |
 | GET    | `/v1/tasks/{id}`                       | Busca tarefa por id                               |
-| PUT    | `/v1/tasks/{id}`                       | Upsert idempotente de tarefa                      |
+| PUT    | `/v1/tasks/{id}`                       | Upsert idempotente de tarefa (repr. completa)     |
 | DELETE | `/v1/tasks/{id}`                       | Remove tarefa                                     |
 | GET    | `/v1/tags`                             | Lista tags                                        |
 | POST   | `/v1/tags`                             | Cria tag (id gerado no servidor)                  |
@@ -119,5 +119,24 @@ python3 tests/smoke_e2e.py                     # com BASE_URL=http://localhost:8
 
 Todos os payloads mantêm `snake_case` para casar com os DTOs em
 `core/data/src/main/kotlin/.../core/data/remote/RemoteDtos.kt`.
+
+### Tarefa — campos opcionais (DEF-17)
+
+Além de `id`, `project_id`, `title`, `priority` e `done`, a tarefa
+carrega dois campos **opcionais** (`null` = sem valor):
+
+| Campo | Tipo | Observação |
+|-------|------|------------|
+| `due_date` | `string \| null` | ISO-8601 em UTC com sufixo `Z` e precisão de segundos — mesmo formato de `created_at`. **Não** é epoch em milissegundos nem em segundos. |
+| `assignee_id` | `string \| null` | Id do usuário responsável. |
+
+Os dois são opcionais com default `None`: um cliente já instalado que
+continue omitindo-os segue validando (retrocompatibilidade — nenhum
+campo novo é obrigatório e a API não foi versionada).
+
+`PUT /v1/tasks/{id}` permanece **upsert de representação completa**:
+`due_date` e `assignee_id` ausentes OU `null` no corpo gravam `null`,
+limpando o valor armazenado. Não há merge parcial — o cliente precisa
+reenviar os campos que quer preservar.
 
 A especificação completa está em `docs/ARQUITETURA.md` (seção 4 e 5).

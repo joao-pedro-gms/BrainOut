@@ -95,20 +95,38 @@ class Project(ProjectIn):
 
 
 class TaskIn(BaseModel):
+    """Tarefa como devolvida pelo servidor.
+
+    `due_date` e `assignee_id` são OPCIONAIS (`null` = sem valor) —
+    DEF-17. `due_date` é uma string ISO-8601 em UTC com sufixo `Z` e
+    precisão de segundos, o mesmo formato de `created_at` e de
+    `_now_iso()`; não é epoch em milissegundos nem em segundos.
+    `assignee_id` é o id (string) do usuário responsável, ou `null`.
+    """
+
     project_id: str
     title: str = Field(min_length=1, max_length=200)
     priority: int = Field(default=0, ge=0, le=4)
     done: bool = False
+    due_date: Optional[str] = None
+    assignee_id: Optional[str] = None
 
 
 class TaskUpsert(BaseModel):
-    """Body do POST/PUT de tarefa — `id` opcional."""
+    """Body do POST/PUT de tarefa — `id` opcional.
+
+    `due_date`/`assignee_id` são opcionais com default `None`: um
+    cliente já instalado que continue omitindo-os segue validando
+    (retrocompatibilidade — DEF-17).
+    """
 
     id: Optional[str] = None
     project_id: str
     title: str = Field(min_length=1, max_length=200)
     priority: int = Field(default=0, ge=0, le=4)
     done: bool = False
+    due_date: Optional[str] = None
+    assignee_id: Optional[str] = None
 
 
 class Task(TaskIn):
@@ -320,6 +338,8 @@ def create_task(body: TaskUpsert) -> dict:
         "title": body.title,
         "priority": body.priority,
         "done": body.done,
+        "due_date": body.due_date,
+        "assignee_id": body.assignee_id,
     }
     _TASKS[tid] = task
     return task
@@ -335,7 +355,14 @@ def get_task(task_id: str) -> dict:
 
 @app.put("/v1/tasks/{task_id}")
 def upsert_task(task_id: str, body: TaskUpsert) -> dict:
-    """Upsert idempotente de tarefa."""
+    """Upsert idempotente de tarefa (representação completa).
+
+    O PUT substitui a representação inteira: `due_date` e
+    `assignee_id` ausentes OU `null` no corpo gravam `null`, ou seja,
+    limpam o valor armazenado. Não há merge parcial — o cliente
+    precisa reenviar os campos que quer preservar. `created_at` é
+    preservado (append-only), como em projeto.
+    """
     _require_uuid(task_id, "task_id")
     if body.id is not None and body.id != task_id:
         raise HTTPException(
@@ -353,6 +380,8 @@ def upsert_task(task_id: str, body: TaskUpsert) -> dict:
             "title": body.title,
             "priority": body.priority,
             "done": body.done,
+            "due_date": body.due_date,
+            "assignee_id": body.assignee_id,
         }
         _TASKS[task_id] = record
     else:
@@ -360,6 +389,8 @@ def upsert_task(task_id: str, body: TaskUpsert) -> dict:
         existing["title"] = body.title
         existing["priority"] = body.priority
         existing["done"] = body.done
+        existing["due_date"] = body.due_date
+        existing["assignee_id"] = body.assignee_id
         record = existing
     return record
 
