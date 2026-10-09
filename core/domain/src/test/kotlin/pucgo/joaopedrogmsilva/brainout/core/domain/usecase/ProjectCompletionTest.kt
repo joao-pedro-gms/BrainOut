@@ -89,6 +89,9 @@ class ProjectCompletionTest {
         runTest {
             val current = task(id = "reopen-me", status = TaskStatus.DONE)
             coEvery { repository.findById("reopen-me") } returns current
+            // Guard de RN01 (DEF-20) fica abaixo do teto — este teste
+            // cobre o caminho da cascata, não a fronteira do limite.
+            coEvery { repository.countActiveByProject("p-1") } returns MAX_ACTIVE_TASKS_PER_PROJECT - 1
             val reopened = current.transitionTo(TaskStatus.DOING)
             coEvery { repository.reopenAndCascade("reopen-me", TaskStatus.DOING) } returns reopened
 
@@ -142,6 +145,9 @@ class ProjectCompletionTest {
             // porque DONE → TODO não é permitido pela matriz.
             val current = task(status = TaskStatus.DONE)
             coEvery { repository.findById("t-1") } returns current
+            // Guard de RN01 (DEF-20) abaixo do teto — aqui o que interessa
+            // é a exceção vinda da matriz, não a do limite.
+            coEvery { repository.countActiveByProject("p-1") } returns MAX_ACTIVE_TASKS_PER_PROJECT - 1
             coEvery { repository.reopenAndCascade("t-1", TaskStatus.TODO) } throws
                 InvalidStateTransitionException(
                     "Transição de status inválida: DONE -> TODO",
