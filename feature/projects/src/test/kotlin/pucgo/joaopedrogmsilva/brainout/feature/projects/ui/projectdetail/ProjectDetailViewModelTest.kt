@@ -193,6 +193,29 @@ class ProjectDetailViewModelTest {
         }
 
     @Test
+    fun `changeStatus ao reabrir no teto de RN01 expoe a mensagem do limite`() =
+        runTest {
+            // DEF-20: a rejeição chega do domínio como
+            // ProjectTaskLimitReachedException e o ViewModel precisa
+            // exibir a MESMA mensagem do caminho de criação — não o
+            // fallback genérico (ERROR_LOAD_FAILED), que descreve uma
+            // falha de leitura e seria mentira aqui.
+            coEvery { changeStatus.invoke("t1", TaskStatus.DOING) } throws
+                ProjectTaskLimitReachedException(projectId, MAX_ACTIVE_TASKS_PER_PROJECT)
+
+            val vm = viewModel()
+            advanceUntilIdle()
+
+            vm.changeStatus("t1", TaskStatus.DOING)
+            advanceUntilIdle()
+
+            assertThat(vm.errorMessage.value)
+                .isEqualTo("Projeto $projectId já atingiu o limite de $MAX_ACTIVE_TASKS_PER_PROJECT tarefas ativas")
+            assertThat(vm.errorMessage.value)
+                .isNotEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+        }
+
+    @Test
     fun `deleteProject chama use case e onDone`() =
         runTest {
             var doneCalled = false

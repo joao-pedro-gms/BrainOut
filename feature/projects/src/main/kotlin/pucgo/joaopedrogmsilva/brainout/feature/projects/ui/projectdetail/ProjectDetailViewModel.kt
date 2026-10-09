@@ -273,8 +273,19 @@ class ProjectDetailViewModel
          */
         suspend fun evaluateDeadline(deadline: Instant?): DeadlineInfo = checkDeadline(deadline)
 
-        /** Move a [task] para [target], respeitando a matriz de transições. */
-
+        /**
+         * Move a tarefa [taskId] para [target], respeitando a matriz
+         * de transições.
+         *
+         * RN01 (DEF-20) — reabrir (`DONE ->` ativo) num projeto no
+         * teto de [MAX_ACTIVE_TASKS_PER_PROJECT] é rejeitado pelo
+         * [ChangeTaskStatusUseCase] com
+         * [ProjectTaskLimitReachedException]. Aqui ela vira a mesma
+         * mensagem do caminho de criação (`addTask`), e não o
+         * fallback genérico de [toProjectDetailErrorMessage], que
+         * descreve falha de **leitura** e seria mentira numa
+         * rejeição de regra de negócio.
+         */
         fun changeStatus(
             taskId: String,
             target: TaskStatus,
@@ -286,6 +297,9 @@ class ProjectDetailViewModel
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
                     Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
                     _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
+                } catch (e: ProjectTaskLimitReachedException) {
+                    Log.w(TAG, "RN01: reabertura no teto de tarefas ativas para taskId=$taskId")
+                    _errorMessage.update { e.message ?: taskLimitMessage() }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {

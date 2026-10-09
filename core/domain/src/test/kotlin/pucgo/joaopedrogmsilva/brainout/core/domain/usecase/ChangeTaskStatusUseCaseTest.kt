@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
@@ -34,6 +35,9 @@ import java.time.Instant
  * - Transições intermediárias (TODO ↔ DOING) usam
  *   [TaskRepository.changeStatus] sem cascata.
  * - Transição inválida continua lançando [InvalidStateTransitionException].
+ * - RN01 (DEF-20): a reabertura revalida o teto de
+ *   [MAX_ACTIVE_TASKS_PER_PROJECT]; concluir e transições
+ *   intermediárias não passam por esse guard.
  */
 class ChangeTaskStatusUseCaseTest {
     private val repository: TaskRepository = mockk()
@@ -105,8 +109,12 @@ class ChangeTaskStatusUseCaseTest {
             val taskDone = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
             val reopened = taskDone.transitionTo(TaskStatus.DOING)
             // findById chamado pelo caso de uso para detectar que a tarefa
-            // está em DONE — então usa reopenAndCascade.
+            // está em DONE — então usa reopenAndCascade. O teto da RN01
+            // (guard novo do DEF-20) também é consultado; abaixo do limite
+            // para não interromper o caminho de agendamento.
             coEvery { repository.findById(taskDone.id) } returns taskDone
+            coEvery { repository.countActiveByProject(taskDone.projectId) } returns
+                MAX_ACTIVE_TASKS_PER_PROJECT - 1
             coEvery { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) } returns reopened
 
             useCase(taskDone.id, TaskStatus.DOING)
@@ -120,6 +128,114 @@ class ChangeTaskStatusUseCaseTest {
                         },
                 )
             }
+        }
+
+    // ------------------------------------------------------------------
+    // RN01 / DEF-20 — o teto de tarefas ativas também vale na reabertura
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `reabrir no teto de 50 tarefas ativas lanca ProjectTaskLimitReachedException`() =
+        runTest {
+            // DEF-20: 50 ativas + esta concluída. Reabrira 51, violando
+            // a RN01 — o guard precisa rejeitar ANTES de tocar no
+            // repositório, então reopenAndCascade não pode ser chamado.
+            val taskDone = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
+            coEvery { repository.findById(taskDone.id) } returns taskDone
+            coEvery { repository.countActiveByProject(taskDone.projectId) } returns
+                MAX_ACTIVE_TASKS_PER_PROJECT
+
+            val ex =
+                assertThrows(ProjectTaskLimitReachedException::class.java) {
+                    kotlinx.coroutines.runBlocking { useCase(taskDone.id, TaskStatus.DOING) }
+                }
+
+            assertThat(ex.message).contains("$MAX_ACTIVE_TASKS_PER_PROJECT")
+            coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
+            coVerify(exactly = 0) { repository.changeStatus(any(), any()) }
+            coVerify(exactly = 0) { repository.completeAndCascade(any()) }
+            verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
+            verify(exactly = 0) { deadlineScheduler.cancel(any()) }
+        }
+
+    @Test
+    fun `reabrir com 49 tarefas ativas passa pelo guard e chama reopenAndCascade`() =
+        runTest {
+            // Contraprova do guard: uma abaixo do teto reabre para
+            // exatamente 50, que é o máximo permitido.
+            val taskDone = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
+            val reopened = taskDone.transitionTo(TaskStatus.DOING)
+            coEvery { repository.findById(taskDone.id) } returns taskDone
+            coEvery { repository.countActiveByProject(taskDone.projectId) } returns
+                MAX_ACTIVE_TASKS_PER_PROJECT - 1
+            coEvery { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) } returns reopened
+
+            val result = useCase(taskDone.id, TaskStatus.DOING)
+
+            assertThat(result).isEqualTo(reopened)
+            coVerify(exactly = 1) { repository.countActiveByProject(taskDone.projectId) }
+            coVerify(exactly = 1) { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) }
+        }
+
+    @Test
+    fun `guard de RN01 conta so ativas e a propria tarefa DONE nao bloqueia reabertura`() =
+        runTest {
+            // O non-obvio do guard: a tarefa reaberta está em DONE e por
+            // isso NÃO entra em countActiveByProject. Aqui o projeto tem
+            // 50 LINHAS (49 ativas + a concluída) mas só 49 ATIVAS — um
+            // guard que contasse linhas (ou que somasse a própria tarefa)
+            // rejeitaria erradamente, e a reabertura chegaria a 50, que é
+            // o teto permitido.
+            val taskDone = activeTask(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE)
+            val reopened = taskDone.transitionTo(TaskStatus.DOING)
+            val linhasDoProjeto =
+                List(MAX_ACTIVE_TASKS_PER_PROJECT - 1) { "a-$it" } + taskDone.id
+            coEvery { repository.findById(taskDone.id) } returns taskDone
+            coEvery { repository.countActiveByProject(taskDone.projectId) } answers {
+                linhasDoProjeto.count { id -> id != taskDone.id }
+            }
+            coEvery { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) } returns reopened
+
+            val result = useCase(taskDone.id, TaskStatus.DOING)
+
+            assertThat(result).isEqualTo(reopened)
+            coVerify(exactly = 1) { repository.countActiveByProject(taskDone.projectId) }
+            coVerify(exactly = 1) { repository.reopenAndCascade(taskDone.id, TaskStatus.DOING) }
+        }
+
+    @Test
+    fun `transicao DONE para DONE passa por completeAndCascade sem consultar o teto`() =
+        runTest {
+            // target == DONE sai pela primeira perna do `when` e nunca
+            // aumenta a contagem de ativas: o guard de RN01 não pode nem
+            // ser consultado, e a conclusão cascata segue intacta.
+            val task = activeTask(status = TaskStatus.DOING)
+            val done = task.transitionTo(TaskStatus.DONE)
+            coEvery { repository.completeAndCascade(task.id) } returns done
+
+            val result = useCase(task.id, TaskStatus.DONE)
+
+            assertThat(result).isEqualTo(done)
+            coVerify(exactly = 1) { repository.completeAndCascade(task.id) }
+            coVerify(exactly = 0) { repository.countActiveByProject(any()) }
+            coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
+        }
+
+    @Test
+    fun `transicao intermediaria nao consulta o teto de tarefas ativas`() =
+        runTest {
+            // TODO <-> DOING não altera a cardinalidade de ativas, então
+            // o guard também não pode ser acionado (sem custo extra).
+            val task = activeTask(status = TaskStatus.DOING)
+            val target = task.transitionTo(TaskStatus.TODO)
+            coEvery { repository.findById(task.id) } returns task
+            coEvery { repository.changeStatus(task.id, TaskStatus.TODO) } returns target
+
+            val result = useCase(task.id, TaskStatus.TODO)
+
+            assertThat(result).isEqualTo(target)
+            coVerify(exactly = 0) { repository.countActiveByProject(any()) }
+            coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
         }
 
     @Test
