@@ -11,7 +11,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasTextExactly
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -60,11 +59,14 @@ class DashboardScreenTest {
             }
         }
 
-        // Título do painel.
-        composeRule.onNodeWithText("Painel").assertIsDisplayed()
-
         // Contadores de projetos, escopados por test tag (o número
         // "3" também aparece como rótulo de barra do gráfico).
+        //
+        // DEF-22: o título "Painel" saiu de `DashboardContent` e foi
+        // para a `TasksTopBar` do `Scaffold` — o mesmo contrato de
+        // LoginScreen/SettingsScreen, onde o corpo não repete o
+        // título da barra. A asserção do título mora agora em
+        // `DashboardScreenScaffoldTest`, que monta o `Scaffold`.
         composeRule.onNodeWithTag(DashboardTestTags.PROJECT_STATE_CARD).assertExists()
         composeRule
             .onNodeWithTag(DashboardTestTags.PROJECT_ACTIVE_COUNT, useUnmergedTree = true)

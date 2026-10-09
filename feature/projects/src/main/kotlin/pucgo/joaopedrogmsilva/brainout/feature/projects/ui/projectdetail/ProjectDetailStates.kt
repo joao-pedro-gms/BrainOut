@@ -6,6 +6,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -114,13 +116,17 @@ internal fun ProjectDetailErrorBanner(
 /** Card exibido quando a lista de tarefas está vazia. */
 @Composable
 internal fun EmptyTasksCard() {
+    // DEF-22 — ver [HomeEmptyState]: `surfaceVariant.copy(alpha = 0.4f)`
+    // dava 1.06:1 / 1.11:1. A região ganha uma borda `outline` real
+    // (16.10:1 / 15.95:1) em vez de continuar quase invisível.
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =

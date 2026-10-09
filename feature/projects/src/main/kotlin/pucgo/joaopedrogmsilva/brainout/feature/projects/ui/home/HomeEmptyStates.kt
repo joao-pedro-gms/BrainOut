@@ -2,9 +2,19 @@
 // Empty states da Home (E2.6/E2.5): lista vazia sem filtro, lista
 // vazia de concluídos e busca/filtro sem resultados. Só apresentação;
 // a escolha entre eles continua no orchestrator do conteúdo.
+//
+// DEF-22 — os três cartões ganharam **fronteira** em vez de(alpha).
+// O preenchimento `surfaceVariant.copy(alpha = 0.4f)` dava 1.06:1 no
+// claro e 1.11:1 no escuro: uma diferença invisível na tela. Tirar o
+// alpha sozinho não resolve — `surfaceVariant` puro marca 1.15:1 /
+// 1.33:1, porque o papel é uma *superfície alternativa*, quase da mesma
+// luminância do fundo por desenho. O que separa a região do fundo é a
+// **fronteira**: `outline` puro a 16.10:1 / 15.95:1. O texto interno
+// (`onSurfaceVariant`) fica em 6.56:1 / 9.26:1, acima de 4.5:1.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -38,7 +49,8 @@ internal fun HomeNoMatchesState(
     Surface(
         modifier = modifier.testTag(HomeTestTags.NO_MATCHES),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =
@@ -73,7 +85,8 @@ internal fun HomeCompletedEmptyState(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =
@@ -103,7 +116,8 @@ internal fun HomeEmptyState(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
         Column(
             modifier =

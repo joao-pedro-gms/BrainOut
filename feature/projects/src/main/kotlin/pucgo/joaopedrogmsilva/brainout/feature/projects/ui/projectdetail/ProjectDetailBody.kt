@@ -38,7 +38,10 @@ internal fun ProjectDetailBody(
     contentPadding: PaddingValues,
     onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
     onDeleteTask: (Task) -> Unit,
-    @Suppress("unused") onRenameTask: (Task, String) -> Unit,
+    // DEF-22 — antes era `@Suppress("unused") onRenameTask: (Task, String) -> Unit`,
+    // que ninguém chamava: o use case existia e era inalcançável. O
+    // corpo agora só abre o diálogo; o `ViewModel` recebe o título novo.
+    onRenameTask: (Task) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
     syncState: ProjectDetailSyncState,
 ) {
@@ -65,7 +68,12 @@ internal fun ProjectDetailBody(
             syncState = syncState,
         )
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        // DEF-22 — divisor com o token cheio: `outline` puro marca
+        // 16.10:1 (claro) / 15.95:1 (escuro). Com `alpha = 0.3f` o
+        // divisor caía para 1.93:1 / 2.59:1, abaixo do mínimo de 3:1
+        // do WCAG §1.4.11 — a separação entre cabeçalho e lista
+        // simplesmente não existia para quem tem baixa visão.
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
         Text(
             text = stringResource(id = R.string.project_detail_tasks_title),
@@ -102,6 +110,7 @@ internal fun ProjectDetailBody(
                         onChangeStatus = onChangeStatus,
                         onDeleteTask = onDeleteTask,
                         onChangePriority = onChangePriority,
+                        onRenameTask = onRenameTask,
                     )
                 }
             }

@@ -44,4 +44,7 @@
     <string name="dashboard_weekly_rate_title">Weekly completion rate</string>
     <string name="dashboard_overall_rate_title">Overall completion rate</string>
     <string name="dashboard_rate_percent">%1$d%%</string>
+
+    <!-- DEF-22 — rótulo da ação de voltar nas abas globais. -->
+    <string name="common_back">Back</string>
 </resources>

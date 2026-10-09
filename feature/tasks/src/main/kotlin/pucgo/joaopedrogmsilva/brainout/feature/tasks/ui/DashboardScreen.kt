@@ -28,11 +28,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,22 +41,39 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 /**
  * Tela "Painel" do BrainOut (E2.7).
  *
+ * DEF-22 — passou a usar `Scaffold` + [TasksTopBar], como a [TasksScreen]:
+ * antes não havia como voltar, e o título ficava sob a barra de status
+ * porque `MainActivity` liga `enableEdgeToEdge()`.
+ *
+ * @param onBackClicked chamado pelo botão de voltar da [TasksTopBar].
  * @param viewModel injetado pelo Hilt; substituível por fake em
  *  previews/testes.
  */
 @Composable
 fun DashboardScreen(
+    onBackClicked: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    DashboardContent(
-        state = state,
-        onRetry = viewModel::retry,
-        onDismissError = viewModel::clearError,
-        modifier = modifier,
-    )
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TasksTopBar(
+                titleRes = R.string.dashboard_screen_title,
+                onBackClicked = onBackClicked,
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
+        DashboardContent(
+            state = state,
+            onRetry = viewModel::retry,
+            onDismissError = viewModel::clearError,
+            modifier = Modifier.padding(innerPadding),
+        )
+    }
 }
 
 /** Identificadores para testes de UI Compose. */
@@ -93,12 +109,16 @@ internal fun DashboardContent(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = stringResource(id = R.string.dashboard_screen_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        // DEF-22 — o título saiu daqui e foi para a `TasksTopBar`.
+        // Repetir o mesmo texto no corpo faria o TalkBack anunciar
+        // "Painel" duas vezes e a tela mostrar o título duas vezes.
+        // É o que LoginScreen e SettingsScreen já faziam: o título
+        // pertence à barra, o corpo traz o conteúdo.
+        //
+        // Divisor com o token cheio: `outline` puro dá 16.10:1 (claro)
+        // e 15.95:1 (escuro); com `alpha = 0.3f` caía para 1.93:1 /
+        // 2.59:1, abaixo do mínimo de 3:1 do WCAG §1.4.11.
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
         // E2.8 — prioridade ao banner de erro, depois loader, depois
         // conteúdo. Mesma ordem de TasksScreen/HomeScreen.

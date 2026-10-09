@@ -67,6 +67,20 @@ dependencies {
     testImplementation(libs.truth)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+
+    // DEF-22 — `NeoInfoChip` é um Composable, então precisa de
+    // createComposeRule (que roda em JVM via Robolectric) para
+    // verificar que ele não se anuncia como botão.
+    //
+    // `ui-test-manifest` não é decoração: sem ele o Robolectric não
+    // resolve `androidx.activity.ComponentActivity` no manifest de
+    // teste e TODOS os testes falham com "Unable to resolve activity
+    // for Intent". É `debugImplementation` (e não
+    // `testImplementation`) porque o manifesto precisa entrar no APK
+    // de teste que o Robolectric carrega.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 detekt {

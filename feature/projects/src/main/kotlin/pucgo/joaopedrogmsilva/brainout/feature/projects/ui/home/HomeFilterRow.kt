@@ -2,6 +2,11 @@
 // Filtros estruturais da Home (RN03 — E2.5) e menu de ordenação
 // (E2.6). O valor ativo do menu recebe leading check para que o
 // usuário saiba qual opção está selecionada.
+//
+// DEF-22 — o marcador de "selecionado" era `Icons.Filled.Add` (mais),
+// que o usuário lê como "adicionar" — o oposto do que o KDoc desta
+// função prometia e o oposto do que o check comunica. Passou a ser
+// `Icons.Filled.Check`, com `stateDescription` para o TalkBack.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -13,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -104,6 +111,9 @@ internal fun HomeSortMenu(
     onSelect: (SortOrder) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // DEF-22 — descrição de estado para o TalkBack: quem não enxerga o
+    // check precisa ouvir que a opção é a selecionada.
+    val selectedOrderLabel = stringResource(id = R.string.home_sort_option_selected)
     Box {
         IconButton(
             onClick = { expanded = true },
@@ -131,11 +141,16 @@ internal fun HomeSortMenu(
                         onSelect(order)
                         expanded = false
                     },
+                    // DEF-22 — era `Icons.Filled.Add`, que o usuário lê
+                    // como "adicionar", não como "opção selecionada" — o
+                    // oposto do que o marcador deveria dizer, e o oposto
+                    // do que o KDoc desta função prometia ("leading
+                    // checkmark"). `Icons.Filled.Check` marca a seleção.
                     leadingIcon =
                         if (isSelected) {
                             {
                                 Icon(
-                                    imageVector = Icons.Filled.Add,
+                                    imageVector = Icons.Filled.Check,
                                     contentDescription = null,
                                 )
                             }
@@ -145,7 +160,16 @@ internal fun HomeSortMenu(
                     modifier =
                         Modifier
                             .testTag(HomeTestTags.sortMenuItem(order))
-                            .heightIn(min = 48.dp),
+                            // `stateDescription` faz o TalkBack anunciar
+                            // "selecionado" em vez de o usuário ter que
+                            // inferir a posição do check na lista
+                            // (DESIGN.md §6: chips e seletores usam
+                            // `stateDescription`).
+                            .semantics {
+                                if (isSelected) {
+                                    stateDescription = selectedOrderLabel
+                                }
+                            }.heightIn(min = 48.dp),
                 )
             }
         }

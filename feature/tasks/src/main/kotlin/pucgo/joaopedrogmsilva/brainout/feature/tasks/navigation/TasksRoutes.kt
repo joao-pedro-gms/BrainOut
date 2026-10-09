@@ -5,6 +5,7 @@
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation
 
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.ui.DashboardScreen
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.ui.TasksScreen
@@ -30,19 +31,33 @@ object TasksRoutes {
  * Mantida como extensão para que o `:app` (ou o `ProjectsRoutes` que
  * já monta Home e ProjectDetail) possa chamá-la com `tasksGraph()`
  * sem precisar conhecer detalhes do composable.
+ *
+ * DEF-22 — o `Scaffold` de [TasksScreen] precisa de um destino de
+ * retorno. `popBackStack()` é o comportamento esperado de um botão
+ * "voltar" e o mesmo que o gesto do sistema dispara; se a pilha
+ * estiver no destino raiz, voltar é um no-op e a Activity trata
+ * (fecha o app), como em qualquer outra tela.
  */
-fun NavGraphBuilder.tasksGraph() {
+fun NavGraphBuilder.tasksGraph(
+    navController: NavHostController,
+    onBackClicked: () -> Unit = navController::popBackStack,
+) {
     composable(TasksRoutes.TASKS) {
-        TasksScreen()
+        TasksScreen(onBackClicked = onBackClicked)
     }
 }
 
 /**
  * Declara o destino [DashboardScreen] no [NavGraphBuilder] do host
  * (E2.7 do ROADMAP — visão consolidada acessível a partir da Home).
+ *
+ * DEF-22 — mesmo contrato de retorno de [tasksGraph].
  */
-fun NavGraphBuilder.dashboardGraph() {
+fun NavGraphBuilder.dashboardGraph(
+    navController: NavHostController,
+    onBackClicked: () -> Unit = navController::popBackStack,
+) {
     composable(TasksRoutes.DASHBOARD) {
-        DashboardScreen()
+        DashboardScreen(onBackClicked = onBackClicked)
     }
 }
