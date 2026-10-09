@@ -261,24 +261,63 @@ class TaskSaveAuditTest {
         }
 
     // ------------------------------------------------------------------
-    // ACHADO 6 — updateStatus (usado fora das cascatas) grava status
-    // sem tocar completed_at, quebrando o invariante de RN03.
+    // ACHADO 6 (CORRIGIDO — DEF-19) — existia um `TaskDao.updateStatus`
+    // que gravava só a coluna `status`, deixando DONE sem carimbo
+    // temporal. O método foi **removido**: sobrou só
+    // `updateStatusAndCompletedAt`, o caminho que grava o par
+    // `status` + `completed_at` numa única escrita. O teste que
+    // provava o defeito foi invertido para travar o **invariante**
+    // (não o método): qualquer conclusão de tarefa, venha de onde
+    // vier, tem de deixar `status = DONE` E `completed_at` não-nulo.
     // ------------------------------------------------------------------
 
     @Test
-    fun `ACHADO 6 updateStatus grava DONE sem completed_at`() =
+    fun `ACHADO 6 concluindo tarefa grava status E completed_at na mesma escrita`() =
         runTest {
             projectDao.insert(sampleProject())
             taskDao.insert(sampleTask(id = "t-1", status = "DOING"))
 
-            taskDao.updateStatus("t-1", "DONE")
+            repository().completeAndCascade("t-1")
 
             val relida = taskDao.findById("t-1")
             assertThat(relida?.status).isEqualTo("DONE")
+            // O carimbo temporal é o que DEF-19 apagava: sem ele a
+            // tarefa nunca conta em `doneThisWeekCount` e a taxa de
+            // conclusão semanal do Dashboard fica distorcida.
+            assertThat(relida?.completedAt).isNotNull()
+
+            // Efeito observável do defeito, agora fechado: a tarefa
+            // concluída conta na janela semanal.
+            val stats = taskDao.observeCompletionStats("u-1", weekStartMillis = 0L).first()
+            assertThat(stats.doneCount).isEqualTo(1)
+            assertThat(stats.doneThisWeekCount).isEqualTo(1)
+        }
+
+    /**
+     * O mesmo invariante pela reabertura: sair de DONE limpa o
+     * carimbo. Uma escrita de status que não limpe `completed_at`
+     * deixaria a tarefa ativa com data de conclusão.
+     */
+    @Test
+    fun `ACHADO 6b reabrindo tarefa limpa o completed_at junto com o status`() =
+        runTest {
+            projectDao.insert(sampleProject(isCompleted = true))
+            taskDao.insert(
+                sampleTask(
+                    id = "t-1",
+                    status = "DONE",
+                    completedAt = Instant.parse("2026-03-02T10:15:00Z"),
+                ),
+            )
+
+            repository().reopenAndCascade(
+                "t-1",
+                pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus.DOING,
+            )
+
+            val relida = taskDao.findById("t-1")
+            assertThat(relida?.status).isEqualTo("DOING")
             assertThat(relida?.completedAt).isNull()
-            // Ler de volta para o domínio não quebra, mas a tarefa
-            // concluída não tem carimbo — a taxa semanal do dashboard
-            // nunca a conta.
         }
 
     // ------------------------------------------------------------------

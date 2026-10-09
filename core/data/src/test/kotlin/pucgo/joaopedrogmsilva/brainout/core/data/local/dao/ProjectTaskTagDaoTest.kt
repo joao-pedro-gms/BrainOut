@@ -211,15 +211,19 @@ class ProjectTaskTagDaoTest {
         }
 
     @Test
-    fun `updateStatus changes status without touching other fields`() =
+    fun `updateStatusAndCompletedAt writes status and completion stamp atomically`() =
         runTest {
             projectDao.insert(sampleProject(id = "p-1", ownerId = "u-1"))
             taskDao.insert(sampleTask(id = "t-1", projectId = "p-1", status = "TODO"))
 
-            taskDao.updateStatus("t-1", "DOING")
+            taskDao.updateStatusAndCompletedAt("t-1", "DONE", Instant.parse("2026-03-02T10:15:00Z"))
 
             val loaded = taskDao.findById("t-1")
-            assertThat(loaded?.status).isEqualTo("DOING")
+            assertThat(loaded?.status).isEqualTo("DONE")
+            assertThat(loaded?.completedAt).isEqualTo(Instant.parse("2026-03-02T10:15:00Z"))
+            // Campos fora do par status/completed_at seguem intactos.
+            assertThat(loaded?.title).isEqualTo("Tarefa t-1")
+            assertThat(loaded?.priorityCode).isEqualTo(1)
         }
 
     private fun sampleProject(
