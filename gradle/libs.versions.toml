@@ -21,7 +21,7 @@ coreKtx = "1.13.1"
 appcompat = "1.7.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
-composeBom = "2024.10.01"
+composeBom = "2026.09.00"
 # androidx.window 1.5.1 (D-05) — ÚNICA dependência nova da frente de
 # responsividade. Não é bump do Compose: o `compose-bom` já gerencia
 # material3-window-size-class, material3-adaptive-navigation-suite e o grupo
