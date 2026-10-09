@@ -7,6 +7,16 @@
 // que o usuário lê como "adicionar" — o oposto do que o KDoc desta
 // função prometia e o oposto do que o check comunica. Passou a ser
 // `Icons.Filled.Check`, com `stateDescription` para o TalkBack.
+//
+// DEF-23b — `home_filter_aria_label` era um `Text` que o comentário
+// chamava de "rótulo oculto" mas que **nada escondia**: sem
+// `clearAndSetSemantics`, sem `alpha = 0f`, sem `graphicsLayer`. Ele
+// renderizava "Filtrar projetos" solto no meio da linha de filtros
+// (lixo visual) e, pior, fazia o TalkBack anunciar esse texto avulso em
+// vez de um agrupamento semântico. Virou um nó de grupo com
+// `contentDescription` + `stateDescription` (§6 do DESIGN.md: "grupos e
+// `stateDescription`"), que é o que o leitor de tela consome — sem
+// renderizar nada.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -36,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -50,11 +61,33 @@ internal fun HomeProjectFilterRow(
     sortOrder: SortOrder,
     onSortOrderChange: (SortOrder) -> Unit,
 ) {
+    // DEF-23b — `home_filter_aria_label` (o "rótulo de acessibilidade
+    // oculto") era um `Text` que nada escondia: sem `alpha = 0f`, sem
+    // `clearAndSetSemantics`, sem `graphicsLayer`. Ele pintava "Filtrar
+    // projetos" no meio da linha de filtros e o TalkBack lia esse texto
+    // avulso em vez de um agrupamento.
+    //
+    // Agora o nome do grupo vive em `contentDescription` e a seleção
+    // atual em `stateDescription` — a receita do DESIGN.md §6 ("grupos e
+    // `stateDescription`"). O usuário de leitor de tela ouve "Filtrar
+    // projetos, Ativos" ao chegar no grupo, sem precisar percorrer os
+    // chips; quem enxerga não vê texto novo.
+    //
+    // `mergeDescendants = false` de propósito: os `FilterChip` são
+    // focáveis individualmente (o usuário navega entre eles e aciona cada
+    // um). Mesclar os tornaria um alvo só e engoliria os chips, que é o
+    // oposto do que §6 quer.
+    val groupLabel = stringResource(id = R.string.home_filter_aria_label)
+    val selectedFilterLabel = stringResource(id = current.labelRes)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .testTag(HomeTestTags.FILTER_GROUP),
+                .testTag(HomeTestTags.FILTER_GROUP)
+                .semantics {
+                    contentDescription = groupLabel
+                    stateDescription = selectedFilterLabel
+                },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -81,12 +114,8 @@ internal fun HomeProjectFilterRow(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        // Rótulo de acessibilidade oculto para o agrupamento (TalkBack).
-        Text(
-            text = stringResource(id = R.string.home_filter_aria_label),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        // DEF-23b — o rótulo saiu daqui. Ele virou `contentDescription`
+        // do `Row` acima; mantê-lo aqui o renderizaria de novo.
         // E2.6 — menu de ordenação (Nome A→Z / Z→A / Mais recentes /
         // Mais antigas). Dispara um `DropdownMenu` ancorado no
         // `IconButton` de sort. O valor ativo fica marcado com
