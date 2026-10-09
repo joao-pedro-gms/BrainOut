@@ -8,13 +8,13 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import javax.inject.Inject
 
 /**
  * Receiver da notificação de lembrete de prazo (marco E3.6).
@@ -34,11 +34,13 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotifica
  */
 @AndroidEntryPoint
 class DeadlineReceiver : BroadcastReceiver() {
-
     @Inject
     lateinit var deadlineScheduler: DeadlineNotificationScheduler
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return
         val result = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -48,11 +50,13 @@ class DeadlineReceiver : BroadcastReceiver() {
                     // A alteração de status ocorre via WorkManager (requisito
                     // do critério E3.6): enfileiramos o worker dedicado e
                     // deixamos o WorkManager decidir quando executá-lo.
-                    val request = OneTimeWorkRequestBuilder<CompleteTaskWorker>()
-                        .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to taskId))
-                        .addTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
-                        .build()
-                    WorkManager.getInstance(context)
+                    val request =
+                        OneTimeWorkRequestBuilder<CompleteTaskWorker>()
+                            .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to taskId))
+                            .addTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
+                            .build()
+                    WorkManager
+                        .getInstance(context)
                         .enqueue(request)
                 }
                 deadlineScheduler.cancel(taskId)
@@ -65,7 +69,6 @@ class DeadlineReceiver : BroadcastReceiver() {
     }
 
     companion object {
-
         /** Ação do botão "Concluir" da notificação. */
         const val ACTION_COMPLETE_TASK: String = "pucgo.joaopedrogmsilva.brainout.action.COMPLETE_TASK"
 

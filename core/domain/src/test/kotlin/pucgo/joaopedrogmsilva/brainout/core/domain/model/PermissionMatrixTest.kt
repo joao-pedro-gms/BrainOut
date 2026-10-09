@@ -11,7 +11,6 @@ import org.junit.Test
  * do roadmap.
  */
 class PermissionMatrixTest {
-
     @Test
     fun `OWNER owns every defined permission`() {
         val allPermissions = Permission.entries.toSet()
@@ -47,9 +46,10 @@ class PermissionMatrixTest {
     fun `permission sets are exhaustive and immutable per role`() {
         // Apenas Owner e Member são esperados nesta entrega. Refletindo
         // essa expectativa no teste para detectar regressões futuras.
-        assertThat(UserRole.entries.toList()).containsExactly(
-            UserRole.OWNER,
-            UserRole.MEMBER,
-        ).inOrder()
+        assertThat(UserRole.entries.toList())
+            .containsExactly(
+                UserRole.OWNER,
+                UserRole.MEMBER,
+            ).inOrder()
     }
 }

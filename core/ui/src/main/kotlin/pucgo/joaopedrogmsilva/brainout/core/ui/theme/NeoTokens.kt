@@ -62,7 +62,12 @@ object NeoBorders {
  * desenho, senão a face cobre o volume (ou o volume é cortado por um
  * `clip` de pai).
  */
-data class NeoShadow(val x: Dp, val y: Dp, val blur: Dp, val spread: Dp) {
+data class NeoShadow(
+    val x: Dp,
+    val y: Dp,
+    val blur: Dp,
+    val spread: Dp,
+) {
     /** Face deslocada durante o press: some o offset, mantendo o desenho. */
     fun pressed(): NeoShadow = copy(x = NeoSpacing.none, y = NeoSpacing.none)
 }

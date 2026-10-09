@@ -23,7 +23,6 @@ import org.robolectric.RobolectricTestRunner
  */
 @RunWith(RobolectricTestRunner::class)
 class SessionStoreTest {
-
     private fun newStore(): SessionStore {
         val context = ApplicationProvider.getApplicationContext<Context>()
         // Cada teste usa uma instância distinta do DataStore via name
@@ -36,60 +35,66 @@ class SessionStoreTest {
     }
 
     @Test
-    fun `currentUserId returns null when no session is stored`() = runTest {
-        val store = newStore()
-        // Limpa qualquer estado residual de execuções anteriores.
-        store.clear()
+    fun `currentUserId returns null when no session is stored`() =
+        runTest {
+            val store = newStore()
+            // Limpa qualquer estado residual de execuções anteriores.
+            store.clear()
 
-        assertThat(store.currentUserId()).isNull()
-    }
-
-    @Test
-    fun `saveUserId persists and currentUserId returns the saved id`() = runTest {
-        val store = newStore()
-        store.clear()
-
-        store.saveUserId("user-123")
-
-        assertThat(store.currentUserId()).isEqualTo("user-123")
-    }
+            assertThat(store.currentUserId()).isNull()
+        }
 
     @Test
-    fun `observeUserId emits the saved id`() = runTest {
-        val store = newStore()
-        store.clear()
-        store.saveUserId("user-abc")
+    fun `saveUserId persists and currentUserId returns the saved id`() =
+        runTest {
+            val store = newStore()
+            store.clear()
 
-        val emitted = store.observeUserId().first()
+            store.saveUserId("user-123")
 
-        assertThat(emitted).isEqualTo("user-abc")
-    }
+            assertThat(store.currentUserId()).isEqualTo("user-123")
+        }
 
     @Test
-    fun `clear removes the stored id`() = runTest {
-        val store = newStore()
-        store.saveUserId("user-to-remove")
+    fun `observeUserId emits the saved id`() =
+        runTest {
+            val store = newStore()
+            store.clear()
+            store.saveUserId("user-abc")
 
-        store.clear()
+            val emitted = store.observeUserId().first()
 
-        assertThat(store.currentUserId()).isNull()
-    }
+            assertThat(emitted).isEqualTo("user-abc")
+        }
+
+    @Test
+    fun `clear removes the stored id`() =
+        runTest {
+            val store = newStore()
+            store.saveUserId("user-to-remove")
+
+            store.clear()
+
+            assertThat(store.currentUserId()).isNull()
+        }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `saveUserId rejects blank id`() = runTest {
-        val store = newStore()
+    fun `saveUserId rejects blank id`() =
+        runTest {
+            val store = newStore()
 
-        store.saveUserId("")
-    }
+            store.saveUserId("")
+        }
 
     @Test
-    fun `saving twice replaces the previous id`() = runTest {
-        val store = newStore()
-        store.clear()
+    fun `saving twice replaces the previous id`() =
+        runTest {
+            val store = newStore()
+            store.clear()
 
-        store.saveUserId("first")
-        store.saveUserId("second")
+            store.saveUserId("first")
+            store.saveUserId("second")
 
-        assertThat(store.currentUserId()).isEqualTo("second")
-    }
+            assertThat(store.currentUserId()).isEqualTo("second")
+        }
 }

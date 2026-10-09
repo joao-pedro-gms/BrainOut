@@ -65,9 +65,10 @@ internal fun HomeSearchBar(
                 IconButton(
                     onClick = { onQueryChange("") },
                     // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
-                    modifier = Modifier
-                        .testTag(HomeTestTags.SEARCH_CLEAR)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(HomeTestTags.SEARCH_CLEAR)
+                            .heightIn(min = 48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Clear,
@@ -77,9 +78,10 @@ internal fun HomeSearchBar(
             }
         },
         singleLine = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(HomeTestTags.SEARCH_FIELD),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(HomeTestTags.SEARCH_FIELD),
     )
 }
 
@@ -97,9 +99,10 @@ internal fun HomeTagFilterRow(
 ) {
     if (availableTags.isEmpty()) return
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(HomeTestTags.TAG_FILTER_ROW),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(HomeTestTags.TAG_FILTER_ROW),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp),
     ) {
@@ -110,10 +113,11 @@ internal fun HomeTagFilterRow(
                 label = {
                     Text(text = stringResource(id = R.string.home_tag_filter_all))
                 },
-                modifier = Modifier
-                    .testTag(HomeTestTags.TAG_FILTER_ALL)
-                    // E4.4: 48dp mínimo WCAG 2.5.5.
-                    .heightIn(min = 48.dp),
+                modifier =
+                    Modifier
+                        .testTag(HomeTestTags.TAG_FILTER_ALL)
+                        // E4.4: 48dp mínimo WCAG 2.5.5.
+                        .heightIn(min = 48.dp),
             )
         }
         items(items = availableTags, key = { it.id }) { chip ->
@@ -123,10 +127,11 @@ internal fun HomeTagFilterRow(
                     onSelect(if (chip.id == selectedTagId) null else chip.id)
                 },
                 label = { Text(text = chip.name) },
-                modifier = Modifier
-                    .testTag(HomeTestTags.tagFilterChip(chip.id))
-                    // E4.4: 48dp mínimo WCAG 2.5.5.
-                    .heightIn(min = 48.dp),
+                modifier =
+                    Modifier
+                        .testTag(HomeTestTags.tagFilterChip(chip.id))
+                        // E4.4: 48dp mínimo WCAG 2.5.5.
+                        .heightIn(min = 48.dp),
             )
         }
     }

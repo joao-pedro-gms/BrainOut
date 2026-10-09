@@ -5,8 +5,8 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import java.time.Instant
 
 /**
  * Linha da tabela `projects` no Room.
@@ -49,27 +49,27 @@ data class ProjectEntity(
     @ColumnInfo(name = "is_completed")
     val isCompleted: Boolean,
 ) {
-
     /** Converte a linha para o modelo imutável de domínio [Project]. */
-    fun toDomain(): Project = Project(
-        id = id,
-        name = name,
-        description = description,
-        ownerId = ownerId,
-        createdAt = createdAt,
-        isCompleted = isCompleted,
-    )
+    fun toDomain(): Project =
+        Project(
+            id = id,
+            name = name,
+            description = description,
+            ownerId = ownerId,
+            createdAt = createdAt,
+            isCompleted = isCompleted,
+        )
 
     companion object {
-
         /** Constrói a entidade a partir de um [Project] de domínio. */
-        fun fromDomain(project: Project): ProjectEntity = ProjectEntity(
-            id = project.id,
-            ownerId = project.ownerId,
-            name = project.name,
-            description = project.description,
-            createdAt = project.createdAt,
-            isCompleted = project.isCompleted,
-        )
+        fun fromDomain(project: Project): ProjectEntity =
+            ProjectEntity(
+                id = project.id,
+                ownerId = project.ownerId,
+                name = project.name,
+                description = project.description,
+                createdAt = project.createdAt,
+                isCompleted = project.isCompleted,
+            )
     }
 }

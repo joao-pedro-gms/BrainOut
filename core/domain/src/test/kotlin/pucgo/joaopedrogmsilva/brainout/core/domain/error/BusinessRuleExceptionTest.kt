@@ -5,7 +5,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class BusinessRuleExceptionTest {
-
     @Test
     fun `mensagem preserva regra violada`() {
         val exception = ProjectTaskLimitReachedException(projectId = "p-1", limit = 50)

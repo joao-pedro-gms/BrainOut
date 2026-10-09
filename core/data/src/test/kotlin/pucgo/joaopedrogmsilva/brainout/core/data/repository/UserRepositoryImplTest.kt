@@ -2,8 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import com.google.common.truth.Truth.assertThat
-import java.time.Instant
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -14,6 +12,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Testes do [UserRepositoryImpl] usando um fake de [UserDao].
@@ -26,104 +26,115 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
  * - Trim do e-mail nas buscas.
  */
 class UserRepositoryImplTest {
-
     @Test
-    fun `save persists a User and findByEmail returns it`() = runTest {
-        val dao = FakeUserDao()
-        val repository = UserRepositoryImpl(dao)
-        val user = sampleUser(email = "joao@example.com")
+    fun `save persists a User and findByEmail returns it`() =
+        runTest {
+            val dao = FakeUserDao()
+            val repository = UserRepositoryImpl(dao)
+            val user = sampleUser(email = "joao@example.com")
 
-        val returned = repository.save(user)
-        val loaded = repository.findByEmail("joao@example.com")
+            val returned = repository.save(user)
+            val loaded = repository.findByEmail("joao@example.com")
 
-        assertThat(returned).isEqualTo(user)
-        assertThat(loaded).isEqualTo(user)
-    }
-
-    @Test
-    fun `findByEmail returns null when missing`() = runTest {
-        val repository = UserRepositoryImpl(FakeUserDao())
-        assertThat(repository.findByEmail("nobody@example.com")).isNull()
-    }
-
-    @Test
-    fun `findById returns user when present`() = runTest {
-        val dao = FakeUserDao()
-        val user = sampleUser()
-        dao.storage[user.id] = UserEntity.fromDomain(user)
-        val repository = UserRepositoryImpl(dao)
-
-        assertThat(repository.findById(user.id)).isEqualTo(user)
-    }
-
-    @Test
-    fun `findById returns null when missing`() = runTest {
-        val repository = UserRepositoryImpl(FakeUserDao())
-        assertThat(repository.findById("missing")).isNull()
-    }
-
-    @Test
-    fun `save translates unique violation into DuplicateEmailException`() = runTest {
-        val dao = FakeUserDao().apply {
-            nextInsertError = FakeUserDao.UNIQUE_EMAIL_VIOLATION
+            assertThat(returned).isEqualTo(user)
+            assertThat(loaded).isEqualTo(user)
         }
-        val repository = UserRepositoryImpl(dao)
-
-        val thrown = runCatching {
-            repository.save(sampleUser(email = "joao@example.com"))
-        }.exceptionOrNull()
-
-        assertThat(thrown).isInstanceOf(DuplicateEmailException::class.java)
-        assertThat((thrown as DuplicateEmailException).email).isEqualTo("joao@example.com")
-    }
 
     @Test
-    fun `save propagates non-unique errors unchanged`() = runTest {
-        val generic = IllegalStateException("boom")
-        val dao = FakeUserDao().apply { nextInsertError = generic }
-        val repository = UserRepositoryImpl(dao)
-
-        val thrown = runCatching {
-            repository.save(sampleUser())
-        }.exceptionOrNull()
-
-        assertThat(thrown).isSameInstanceAs(generic)
-    }
+    fun `findByEmail returns null when missing`() =
+        runTest {
+            val repository = UserRepositoryImpl(FakeUserDao())
+            assertThat(repository.findByEmail("nobody@example.com")).isNull()
+        }
 
     @Test
-    fun `findByEmail trims whitespace`() = runTest {
-        val dao = FakeUserDao()
-        val user = sampleUser(email = "joao@example.com")
-        dao.storage[user.id] = UserEntity.fromDomain(user)
-        val repository = UserRepositoryImpl(dao)
+    fun `findById returns user when present`() =
+        runTest {
+            val dao = FakeUserDao()
+            val user = sampleUser()
+            dao.storage[user.id] = UserEntity.fromDomain(user)
+            val repository = UserRepositoryImpl(dao)
 
-        assertThat(repository.findByEmail("  joao@example.com  ")).isEqualTo(user)
-    }
-
-    @Test
-    fun `observeById emits null then user`() = runTest {
-        val dao = FakeUserDao()
-        val repository = UserRepositoryImpl(dao)
-        val user = sampleUser()
-
-        // Emite null antes de qualquer inserção (snapshot do Flow).
-        assertThat(repository.observeById(user.id).first()).isNull()
-
-        dao.simulateInsert(user)
-        assertThat(repository.observeById(user.id).first()).isEqualTo(user)
-    }
+            assertThat(repository.findById(user.id)).isEqualTo(user)
+        }
 
     @Test
-    fun `observeByEmail emits user after insertion`() = runTest {
-        val dao = FakeUserDao()
-        val repository = UserRepositoryImpl(dao)
-        val user = sampleUser(email = "joao@example.com")
+    fun `findById returns null when missing`() =
+        runTest {
+            val repository = UserRepositoryImpl(FakeUserDao())
+            assertThat(repository.findById("missing")).isNull()
+        }
 
-        assertThat(repository.observeByEmail("joao@example.com").first()).isNull()
+    @Test
+    fun `save translates unique violation into DuplicateEmailException`() =
+        runTest {
+            val dao =
+                FakeUserDao().apply {
+                    nextInsertError = FakeUserDao.UNIQUE_EMAIL_VIOLATION
+                }
+            val repository = UserRepositoryImpl(dao)
 
-        dao.simulateInsert(user)
-        assertThat(repository.observeByEmail("joao@example.com").first()).isEqualTo(user)
-    }
+            val thrown =
+                runCatching {
+                    repository.save(sampleUser(email = "joao@example.com"))
+                }.exceptionOrNull()
+
+            assertThat(thrown).isInstanceOf(DuplicateEmailException::class.java)
+            assertThat((thrown as DuplicateEmailException).email).isEqualTo("joao@example.com")
+        }
+
+    @Test
+    fun `save propagates non-unique errors unchanged`() =
+        runTest {
+            val generic = IllegalStateException("boom")
+            val dao = FakeUserDao().apply { nextInsertError = generic }
+            val repository = UserRepositoryImpl(dao)
+
+            val thrown =
+                runCatching {
+                    repository.save(sampleUser())
+                }.exceptionOrNull()
+
+            assertThat(thrown).isSameInstanceAs(generic)
+        }
+
+    @Test
+    fun `findByEmail trims whitespace`() =
+        runTest {
+            val dao = FakeUserDao()
+            val user = sampleUser(email = "joao@example.com")
+            dao.storage[user.id] = UserEntity.fromDomain(user)
+            val repository = UserRepositoryImpl(dao)
+
+            assertThat(repository.findByEmail("  joao@example.com  ")).isEqualTo(user)
+        }
+
+    @Test
+    fun `observeById emits null then user`() =
+        runTest {
+            val dao = FakeUserDao()
+            val repository = UserRepositoryImpl(dao)
+            val user = sampleUser()
+
+            // Emite null antes de qualquer inserção (snapshot do Flow).
+            assertThat(repository.observeById(user.id).first()).isNull()
+
+            dao.simulateInsert(user)
+            assertThat(repository.observeById(user.id).first()).isEqualTo(user)
+        }
+
+    @Test
+    fun `observeByEmail emits user after insertion`() =
+        runTest {
+            val dao = FakeUserDao()
+            val repository = UserRepositoryImpl(dao)
+            val user = sampleUser(email = "joao@example.com")
+
+            assertThat(repository.observeByEmail("joao@example.com").first()).isNull()
+
+            dao.simulateInsert(user)
+            assertThat(repository.observeByEmail("joao@example.com").first()).isEqualTo(user)
+        }
 
     private fun sampleUser(
         id: String = UUID.randomUUID().toString(),
@@ -131,14 +142,15 @@ class UserRepositoryImplTest {
         email: String = "joao@example.com",
         role: UserRole = UserRole.MEMBER,
         createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
-    ): User = User(
-        id = id,
-        name = name,
-        email = email,
-        passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-        role = role,
-        createdAt = createdAt,
-    )
+    ): User =
+        User(
+            id = id,
+            name = name,
+            email = email,
+            passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
+            role = role,
+            createdAt = createdAt,
+        )
 
     /**
      * Implementação fake de [UserDao] suficiente para exercitar o
@@ -195,8 +207,7 @@ class UserRepositoryImplTest {
             notifyFlowsChanged(user.copy(id = user.id))
         }
 
-        override suspend fun deleteById(id: String): Int =
-            if (storage.remove(id) != null) 1 else 0
+        override suspend fun deleteById(id: String): Int = if (storage.remove(id) != null) 1 else 0
 
         override suspend fun count(): Int = storage.size
 
@@ -220,10 +231,11 @@ class UserRepositoryImplTest {
         }
 
         companion object {
-            val UNIQUE_EMAIL_VIOLATION: Throwable = RuntimeException(
-                "android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: users.email " +
-                    "(code 2067 SQLITE_CONSTRAINT_UNIQUE)",
-            )
+            val UNIQUE_EMAIL_VIOLATION: Throwable =
+                RuntimeException(
+                    "android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: users.email " +
+                        "(code 2067 SQLITE_CONSTRAINT_UNIQUE)",
+                )
         }
     }
 }

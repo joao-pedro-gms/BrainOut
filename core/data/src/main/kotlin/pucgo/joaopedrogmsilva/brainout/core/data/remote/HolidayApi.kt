@@ -16,7 +16,6 @@ import retrofit2.http.Path
  * o BrainOutApi), refletindo o contrato real do serviço externo.
  */
 interface HolidayApi {
-
     /**
      * Lista os feriados nacionais do [year] informado.
      *
@@ -25,5 +24,7 @@ interface HolidayApi {
      *   lista vazia por convenção do domínio.
      */
     @GET("api/feriados/v1/{year}")
-    suspend fun listHolidays(@Path("year") year: Int): List<HolidayDto>
+    suspend fun listHolidays(
+        @Path("year") year: Int,
+    ): List<HolidayDto>
 }

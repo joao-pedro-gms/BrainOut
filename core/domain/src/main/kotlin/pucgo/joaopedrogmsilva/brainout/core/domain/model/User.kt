@@ -55,14 +55,15 @@ data class User(
             passwordHash: String,
             role: UserRole,
             now: Instant = Instant.now(),
-        ): User = User(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            email = email.trim(),
-            passwordHash = passwordHash,
-            role = role,
-            createdAt = now,
-        )
+        ): User =
+            User(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                email = email.trim(),
+                passwordHash = passwordHash,
+                role = role,
+                createdAt = now,
+            )
 
         /** Valida nome retornando [Unit] ou lançando [InvalidModelException]. */
         fun requireValidName(raw: String) {

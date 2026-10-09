@@ -27,8 +27,9 @@ import javax.inject.Inject
  * [HiltWorkerFactory] aqui.
  */
 @HiltAndroidApp
-class BrainOutApplication : Application(), Configuration.Provider {
-
+class BrainOutApplication :
+    Application(),
+    Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -54,9 +55,11 @@ class BrainOutApplication : Application(), Configuration.Provider {
     }
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
 
     companion object {
         private const val TAG = "BrainOut:Application"

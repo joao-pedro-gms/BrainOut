@@ -21,7 +21,6 @@ import java.util.Locale
  */
 @RunWith(RobolectricTestRunner::class)
 class I18nStringsSmokeTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     /** Contexto com a localidade passada, preservando os demais qualifiers. */

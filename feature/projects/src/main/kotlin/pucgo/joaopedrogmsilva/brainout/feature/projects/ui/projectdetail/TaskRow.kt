@@ -51,15 +51,17 @@ internal fun TaskRow(
     var menuExpanded by remember { mutableStateOf(false) }
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp)),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp)),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             TaskRowHeader(
@@ -163,18 +165,21 @@ private fun TaskRowMenu(
             text = {
                 val isLocked = task.status == TaskStatus.DONE
                 Text(
-                    text = stringResource(
-                        id = if (isLocked) {
-                            R.string.project_detail_task_menu_priority_locked_label
+                    text =
+                        stringResource(
+                            id =
+                                if (isLocked) {
+                                    R.string.project_detail_task_menu_priority_locked_label
+                                } else {
+                                    R.string.project_detail_task_menu_change_priority
+                                },
+                        ),
+                    color =
+                        if (isLocked) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
-                            R.string.project_detail_task_menu_change_priority
+                            MaterialTheme.colorScheme.onSurface
                         },
-                    ),
-                    color = if (isLocked) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
                 )
             },
             enabled = task.status != TaskStatus.DONE,
@@ -203,30 +208,35 @@ private fun TaskRowMenu(
 
 @Composable
 private fun StatusChip(status: TaskStatus) {
-    val (label, container, content) = when (status) {
-        TaskStatus.TODO -> Triple(
-            stringResource(id = R.string.task_status_todo),
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TaskStatus.DOING -> Triple(
-            stringResource(id = R.string.task_status_doing),
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-        )
-        TaskStatus.DONE -> Triple(
-            stringResource(id = R.string.task_status_done),
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.onPrimary,
-        )
-    }
+    val (label, container, content) =
+        when (status) {
+            TaskStatus.TODO ->
+                Triple(
+                    stringResource(id = R.string.task_status_todo),
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            TaskStatus.DOING ->
+                Triple(
+                    stringResource(id = R.string.task_status_doing),
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            TaskStatus.DONE ->
+                Triple(
+                    stringResource(id = R.string.task_status_done),
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.onPrimary,
+                )
+        }
     AssistChip(
         onClick = { /* status chip é apenas informativo */ },
         label = { Text(text = label, style = MaterialTheme.typography.labelSmall) },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = container,
-            labelColor = content,
-        ),
+        colors =
+            AssistChipDefaults.assistChipColors(
+                containerColor = container,
+                labelColor = content,
+            ),
         // E4.4: 48dp mínimo (WCAG 2.5.5 Target Size).
         modifier = Modifier.heightIn(min = 48.dp),
     )
@@ -246,13 +256,14 @@ private fun PriorityChip(priority: TaskPriority) {
 
 /** Helper para mapear [TaskPriority] ao recurso de string correspondente. */
 @Composable
-internal fun TaskPriority.labelRes(): Int = when (this) {
-    TaskPriority.LOW -> R.string.task_priority_low
-    TaskPriority.MEDIUM -> R.string.task_priority_medium
-    TaskPriority.HIGH -> R.string.task_priority_high
-    TaskPriority.URGENT -> R.string.task_priority_urgent
-    TaskPriority.CRITICAL -> R.string.task_priority_critical
-}
+internal fun TaskPriority.labelRes(): Int =
+    when (this) {
+        TaskPriority.LOW -> R.string.task_priority_low
+        TaskPriority.MEDIUM -> R.string.task_priority_medium
+        TaskPriority.HIGH -> R.string.task_priority_high
+        TaskPriority.URGENT -> R.string.task_priority_urgent
+        TaskPriority.CRITICAL -> R.string.task_priority_critical
+    }
 
 /**
  * Transições válidas a partir do estado atual, com o rótulo do menu
@@ -260,22 +271,27 @@ internal fun TaskPriority.labelRes(): Int = when (this) {
  * do domínio e evita oferecer opções que resultariam em
  * `InvalidStateTransitionException` ao chamar `changeStatus`.
  */
-private fun TaskStatus.allowedTransitions(): List<Pair<TaskStatus, Int>> = when (this) {
-    TaskStatus.TODO -> listOf(
-        TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
-    )
-    TaskStatus.DOING -> listOf(
-        TaskStatus.TODO to R.string.project_detail_task_menu_move_todo,
-        TaskStatus.DONE to R.string.project_detail_task_menu_move_done,
-    )
-    TaskStatus.DONE -> listOf(
-        TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
-    )
-}
+private fun TaskStatus.allowedTransitions(): List<Pair<TaskStatus, Int>> =
+    when (this) {
+        TaskStatus.TODO ->
+            listOf(
+                TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
+            )
+        TaskStatus.DOING ->
+            listOf(
+                TaskStatus.TODO to R.string.project_detail_task_menu_move_todo,
+                TaskStatus.DONE to R.string.project_detail_task_menu_move_done,
+            )
+        TaskStatus.DONE ->
+            listOf(
+                TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
+            )
+    }
 
 /** Resolve o test tag do item de menu correspondente ao status alvo. */
-private fun TaskStatus.menuTag(): String = when (this) {
-    TaskStatus.TODO -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_TODO
-    TaskStatus.DOING -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DOING
-    TaskStatus.DONE -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DONE
-}
+private fun TaskStatus.menuTag(): String =
+    when (this) {
+        TaskStatus.TODO -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_TODO
+        TaskStatus.DOING -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DOING
+        TaskStatus.DONE -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DONE
+    }

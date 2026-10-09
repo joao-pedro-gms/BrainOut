@@ -12,15 +12,25 @@ import android.util.Log
  * O [runCatching] silencia a exceção em testes JVM mantendo a execução
  * normal em runtime Android.
  */
-internal fun logDebug(tag: String, message: String) {
+internal fun logDebug(
+    tag: String,
+    message: String,
+) {
     runCatching { Log.d(tag, message) }
 }
 
-internal fun logWarn(tag: String, message: String) {
+internal fun logWarn(
+    tag: String,
+    message: String,
+) {
     runCatching { Log.w(tag, message) }
 }
 
-internal fun logError(tag: String, message: String, throwable: Throwable? = null) {
+internal fun logError(
+    tag: String,
+    message: String,
+    throwable: Throwable? = null,
+) {
     if (throwable != null) {
         runCatching { Log.e(tag, message, throwable) }
     } else {

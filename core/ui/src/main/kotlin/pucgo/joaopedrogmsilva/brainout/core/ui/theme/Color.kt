@@ -78,4 +78,3 @@ internal val BrainOutDarkOnSurface = Color(0xFFE6E1E5)
 internal val BrainOutDarkSurfaceVariant = Color(0xFF49454F)
 internal val BrainOutDarkOnSurfaceVariant = Color(0xFFCAC4D0)
 internal val BrainOutDarkOutline = Color(0xFF938F99)
-

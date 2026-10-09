@@ -43,14 +43,15 @@ data class Project(
             ownerId: String,
             description: String? = null,
             now: Instant = Instant.now(),
-        ): Project = Project(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            description = description,
-            ownerId = ownerId,
-            createdAt = now,
-            isCompleted = false,
-        )
+        ): Project =
+            Project(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                description = description,
+                ownerId = ownerId,
+                createdAt = now,
+                isCompleted = false,
+            )
 
         fun requireValidName(raw: String) {
             val trimmed = raw.trim()

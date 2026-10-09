@@ -41,24 +41,27 @@ internal fun HomeFloatingActionButton(
         },
         text = {
             Text(
-                text = if (isOwner) {
-                    stringResource(id = R.string.home_fab_create)
-                } else {
-                    stringResource(id = R.string.home_fab_disabled_owner)
-                },
+                text =
+                    if (isOwner) {
+                        stringResource(id = R.string.home_fab_create)
+                    } else {
+                        stringResource(id = R.string.home_fab_disabled_owner)
+                    },
                 style = MaterialTheme.typography.labelLarge,
             )
         },
-        containerColor = if (isOwner) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-        contentColor = if (isOwner) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+        containerColor =
+            if (isOwner) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        contentColor =
+            if (isOwner) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         modifier = Modifier.testTag(HomeTestTags.FAB),
     )
 }

@@ -1,11 +1,11 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+import javax.inject.Inject
 
 /**
  * Caso de uso responsável por autenticar um usuário a partir de e-mail
@@ -21,27 +21,33 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  * inexistente, hash inválido ou senha incorreta) para evitar
  * enumeração de contas.
  */
-class AuthenticateUserUseCase @Inject constructor(
-    private val userRepository: UserRepository,
-    private val passwordHasher: PasswordHasher,
-) {
-    /**
-     * @param email E-mail do usuário.
-     * @param rawPassword Senha em texto puro.
-     * @return O [User] autenticado.
-     */
-    suspend operator fun invoke(email: String, rawPassword: String): User {
-        User.requireValidEmail(email)
-        require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
-            "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
+class AuthenticateUserUseCase
+    @Inject
+    constructor(
+        private val userRepository: UserRepository,
+        private val passwordHasher: PasswordHasher,
+    ) {
+        /**
+         * @param email E-mail do usuário.
+         * @param rawPassword Senha em texto puro.
+         * @return O [User] autenticado.
+         */
+        suspend operator fun invoke(
+            email: String,
+            rawPassword: String,
+        ): User {
+            User.requireValidEmail(email)
+            require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
+                "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
+            }
+
+            val normalizedEmail = email.trim()
+            val user =
+                userRepository.findByEmail(normalizedEmail)
+                    ?: throw InvalidCredentialsException()
+
+            val valid = passwordHasher.verify(rawPassword, user.passwordHash)
+            if (!valid) throw InvalidCredentialsException()
+            return user
         }
-
-        val normalizedEmail = email.trim()
-        val user = userRepository.findByEmail(normalizedEmail)
-            ?: throw InvalidCredentialsException()
-
-        val valid = passwordHasher.verify(rawPassword, user.passwordHash)
-        if (!valid) throw InvalidCredentialsException()
-        return user
     }
-}

@@ -30,17 +30,19 @@ internal fun DashboardErrorBanner(
     onDismiss: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 140.dp)
-            .testTag(DashboardTestTags.ERROR_BANNER),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 140.dp)
+                .testTag(DashboardTestTags.ERROR_BANNER),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -53,17 +55,19 @@ internal fun DashboardErrorBanner(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
                     onClick = onRetry,
-                    modifier = Modifier
-                        .testTag(DashboardTestTags.ERROR_RETRY)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(DashboardTestTags.ERROR_RETRY)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.dashboard_error_retry))
                 }
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .testTag(DashboardTestTags.ERROR_DISMISS)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .testTag(DashboardTestTags.ERROR_DISMISS)
+                            .heightIn(min = 48.dp),
                 ) {
                     Text(text = stringResource(id = R.string.dashboard_error_dismiss))
                 }

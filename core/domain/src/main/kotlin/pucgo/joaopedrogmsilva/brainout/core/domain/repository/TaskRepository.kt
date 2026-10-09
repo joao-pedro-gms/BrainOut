@@ -7,11 +7,20 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 
 interface TaskRepository {
     fun observeForProject(projectId: String): Flow<List<Task>>
+
     fun observeAllForOwner(ownerId: String): Flow<List<Task>>
+
     suspend fun findById(id: String): Task?
+
     suspend fun create(task: Task): Task
+
     suspend fun update(task: Task): Task
-    suspend fun changeStatus(id: String, target: TaskStatus): Task
+
+    suspend fun changeStatus(
+        id: String,
+        target: TaskStatus,
+    ): Task
+
     suspend fun delete(id: String)
 
     /**
@@ -36,7 +45,10 @@ interface TaskRepository {
      * corrente (a partir de [weekStartMillis], epoch millis UTC).
      * Base da taxa de conclusão semanal do Dashboard.
      */
-    fun observeCompletionStats(ownerId: String, weekStartMillis: Long): Flow<TaskCompletionStats>
+    fun observeCompletionStats(
+        ownerId: String,
+        weekStartMillis: Long,
+    ): Flow<TaskCompletionStats>
 
     /**
      * Marca uma tarefa como [TaskStatus.DONE] **e** aplica a cascata
@@ -70,5 +82,8 @@ interface TaskRepository {
      * (ex.: reabertura para um estado que não é target válido a
      * partir do status atual).
      */
-    suspend fun reopenAndCascade(taskId: String, target: TaskStatus): Task
+    suspend fun reopenAndCascade(
+        taskId: String,
+        target: TaskStatus,
+    ): Task
 }

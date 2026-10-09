@@ -4,9 +4,9 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.assets
 
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Test
 import java.io.File
 import java.security.MessageDigest
-import org.junit.Test
 
 /**
  * `docs/design/ASSETS.md` é a entrega de proveniência do NB-05: publica
@@ -33,7 +33,6 @@ import org.junit.Test
  * classpath.
  */
 class NeoDocumentedAssetsTest {
-
     private val document: File = repoRoot().resolve("docs/design/ASSETS.md")
     private val fontDir: File = coreUiRes().resolve("font")
     private val drawableDir: File = coreUiRes().resolve("drawable")
@@ -109,9 +108,10 @@ class NeoDocumentedAssetsTest {
 
     @Test
     fun `os quatro tamanhos da secao 3 batem com a arte do disco`() {
-        val table = tables.table(ART) { header ->
-            header.firstOrNull() == "Recurso" && header.lastOrNull() == "Bytes"
-        }
+        val table =
+            tables.table(ART) { header ->
+                header.firstOrNull() == "Recurso" && header.lastOrNull() == "Bytes"
+            }
         val bytes = table.column("Bytes")
 
         table.assertNoUnknownRows(ART, artFiles.map { it.nameWithoutExtension })
@@ -130,13 +130,19 @@ class NeoDocumentedAssetsTest {
     }
 
     /** As três linhas de categoria do inventário, na chave que as identifica. */
-    private fun inventory(): List<AssetScope> = listOf(
-        AssetScope("`res/font/`", "Fontes", fontFiles, FONT_SOURCE),
-        AssetScope("`res/drawable/neo_ic_*.xml`", "Ícones", iconFiles, DRAWABLE_SOURCE),
-        AssetScope("`res/drawable/neo_art_*.xml`", "Arte", artFiles, DRAWABLE_SOURCE),
-    )
+    private fun inventory(): List<AssetScope> =
+        listOf(
+            AssetScope("`res/font/`", "Fontes", fontFiles, FONT_SOURCE),
+            AssetScope("`res/drawable/neo_ic_*.xml`", "Ícones", iconFiles, DRAWABLE_SOURCE),
+            AssetScope("`res/drawable/neo_art_*.xml`", "Arte", artFiles, DRAWABLE_SOURCE),
+        )
 
-    private fun assertScope(table: MarkdownTable, scope: AssetScope, bytes: Int, count: Int) {
+    private fun assertScope(
+        table: MarkdownTable,
+        scope: AssetScope,
+        bytes: Int,
+        count: Int,
+    ) {
         val cells = table.rowContaining(INVENTORY, scope.key)
         val onDisk = scope.files.sumOf { it.length() }
 
@@ -159,9 +165,10 @@ class NeoDocumentedAssetsTest {
     }
 
     /** Tabela da §1.3: identificada por `Recurso` na frente e `sha256` no fim. */
-    private fun fontsTable(): MarkdownTable = tables.table(FONTS) { header ->
-        header.firstOrNull() == "Recurso" && header.lastOrNull() == "sha256"
-    }
+    private fun fontsTable(): MarkdownTable =
+        tables.table(FONTS) { header ->
+            header.firstOrNull() == "Recurso" && header.lastOrNull() == "sha256"
+        }
 
     /**
      * Compara um número publicado com o do disco. A falha mostra o texto
@@ -176,16 +183,21 @@ class NeoDocumentedAssetsTest {
         disk: Long,
         source: String,
     ) {
-        val digits = NUMBER_IN_CELL.find(squeezeSpaces(cell))?.value.orEmpty()
-            .filterNot { it.isWhitespace() }
-        val published = checkNotNull(digits.toIntOrNull()) {
-            "ASSETS.md %s, linha «%s», coluna %s: não achei número em «%s»".format(
-                where,
-                label,
-                column,
-                cell.trim(),
-            )
-        }
+        val digits =
+            NUMBER_IN_CELL
+                .find(squeezeSpaces(cell))
+                ?.value
+                .orEmpty()
+                .filterNot { it.isWhitespace() }
+        val published =
+            checkNotNull(digits.toIntOrNull()) {
+                "ASSETS.md %s, linha «%s», coluna %s: não achei número em «%s»".format(
+                    where,
+                    label,
+                    column,
+                    cell.trim(),
+                )
+            }
 
         assertWithMessage(
             "ASSETS.md %s, linha «%s», coluna %s: documento = %s, disco = %s (%s)",
@@ -230,9 +242,10 @@ private val SHA256_HEX = Regex("[0-9a-f]{64}")
  * Tabela colada de outro lugar traz o separador de milhar como espaço não
  * separável; vira espaço comum para a leitura do número não depender disso.
  */
-private fun squeezeSpaces(text: String): String = text
-    .map { char -> if (Character.isSpaceChar(char) || char.isWhitespace()) ' ' else char }
-    .joinToString("")
+private fun squeezeSpaces(text: String): String =
+    text
+        .map { char -> if (Character.isSpaceChar(char) || char.isWhitespace()) ' ' else char }
+        .joinToString("")
 
 /**
  * Lê `docs/design/ASSETS.md` e devolve as tabelas markdown que ele contém.
@@ -247,12 +260,19 @@ private fun markdownTables(file: File): List<MarkdownTable> {
 
     fun flush() {
         if (buffer.size >= TABLE_MIN_LINES) {
-            val cells = buffer.map { line ->
-                line.trim().removePrefix("|").removeSuffix("|").split("|").map { it.trim() }
-            }
-            val rows = cells.drop(1).filterNot { row ->
-                row.isNotEmpty() && row.all { it.matches(SEPARATOR_CELL) }
-            }
+            val cells =
+                buffer.map { line ->
+                    line
+                        .trim()
+                        .removePrefix("|")
+                        .removeSuffix("|")
+                        .split("|")
+                        .map { it.trim() }
+                }
+            val rows =
+                cells.drop(1).filterNot { row ->
+                    row.isNotEmpty() && row.all { it.matches(SEPARATOR_CELL) }
+                }
             tables += MarkdownTable(cells.first(), rows)
         }
         buffer = mutableListOf()
@@ -290,7 +310,10 @@ private fun MarkdownTable.column(name: String): Int {
 }
 
 /** Linha da tabela cuja primeira célula contém [key] — exatamente uma. */
-private fun MarkdownTable.rowContaining(where: String, key: String): List<String> {
+private fun MarkdownTable.rowContaining(
+    where: String,
+    key: String,
+): List<String> {
     val found = rows.filter { row -> row.firstOrNull()?.contains(key) == true }
 
     check(found.size == 1) {
@@ -303,7 +326,10 @@ private fun MarkdownTable.rowContaining(where: String, key: String): List<String
  * Nenhuma linha documentando arquivo que o disco não tem: `ASSETS.md` não
  * pode prometer asset que ninguém empacota.
  */
-private fun MarkdownTable.assertNoUnknownRows(where: String, onDisk: List<String>) {
+private fun MarkdownTable.assertNoUnknownRows(
+    where: String,
+    onDisk: List<String>,
+) {
     val documented = rows.map { row -> row.first().trim().removeSurrounding("`") }
     val unknown = documented - onDisk.toSet()
 
@@ -317,19 +343,30 @@ private fun MarkdownTable.assertNoUnknownRows(where: String, onDisk: List<String
 
 /** sha256 em hex minúsculo, como a tabela publica. */
 private fun sha256Of(file: File): String =
-    MessageDigest.getInstance("SHA-256")
+    MessageDigest
+        .getInstance("SHA-256")
         .digest(file.readBytes())
         .joinToString("") { byte -> "%02x".format(byte) }
 
 /** Arquivos de [dir] pelo prefixo e extensão, em ordem estável. */
-private fun filesWith(dir: File, prefix: String, extension: String): List<File> =
-    dir.listFiles { file -> file.name.startsWith(prefix) && file.extension == extension }
+private fun filesWith(
+    dir: File,
+    prefix: String,
+    extension: String,
+): List<File> =
+    dir
+        .listFiles { file -> file.name.startsWith(prefix) && file.extension == extension }
         .orEmpty()
         .sortedBy { file -> file.name }
 
 /** `299463` -> `299 463`, o formato que o documento usa. */
 private fun formatGrouped(value: Long): String =
-    value.toString().reversed().chunked(GROUP_DIGITS).joinToString(" ").reversed()
+    value
+        .toString()
+        .reversed()
+        .chunked(GROUP_DIGITS)
+        .joinToString(" ")
+        .reversed()
 
 private const val GROUP_DIGITS = 3
 private const val TABLE_MIN_LINES = 2

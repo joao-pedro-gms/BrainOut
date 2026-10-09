@@ -55,10 +55,14 @@ internal fun CreateProjectDialog(
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
     var nameError by rememberSaveable { mutableStateOf<String?>(null) }
-    val selectedTagIds = rememberSaveable(saver = androidx.compose.runtime.saveable.listSaver(
-        save = { it.toList() },
-        restore = { it.toMutableStateList() },
-    )) { mutableStateListOf<String>() }
+    val selectedTagIds =
+        rememberSaveable(
+            saver =
+                androidx.compose.runtime.saveable.listSaver(
+                    save = { it.toList() },
+                    restore = { it.toMutableStateList() },
+                ),
+        ) { mutableStateListOf<String>() }
     var showAddTag by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
@@ -125,12 +129,13 @@ internal fun CreateProjectDialog(
 }
 
 @Composable
-internal fun resolveCreateProjectNameError(key: String?): String? = when (key) {
-    CREATE_PROJECT_NAME_REQUIRED_KEY ->
-        stringResource(id = R.string.home_create_project_name_required)
-    null -> null
-    else -> key
-}
+internal fun resolveCreateProjectNameError(key: String?): String? =
+    when (key) {
+        CREATE_PROJECT_NAME_REQUIRED_KEY ->
+            stringResource(id = R.string.home_create_project_name_required)
+        null -> null
+        else -> key
+    }
 
 @Composable
 private fun CreateProjectDialogBody(
@@ -212,8 +217,11 @@ private fun CreateProjectTagsFlow(
             FilterChip(
                 selected = isSelected,
                 onClick = {
-                    if (isSelected) selectedTagIds.remove(chip.id)
-                    else selectedTagIds.add(chip.id)
+                    if (isSelected) {
+                        selectedTagIds.remove(chip.id)
+                    } else {
+                        selectedTagIds.add(chip.id)
+                    }
                 },
                 label = { Text(text = chip.name) },
                 // E4.4: FilterChip padrão M3 tem ~32dp de altura.

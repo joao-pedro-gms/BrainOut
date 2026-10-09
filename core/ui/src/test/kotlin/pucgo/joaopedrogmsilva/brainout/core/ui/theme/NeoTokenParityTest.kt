@@ -20,7 +20,6 @@ import org.junit.Test
  * Nada aqui replica constantes: os valores esperados vêm do arquivo.
  */
 class NeoTokenParityTest {
-
     private val json: String = readTokensJson()
 
     private fun hexToColor(hex: String): Color {
@@ -62,8 +61,11 @@ class NeoTokenParityTest {
 
     @Test
     fun `escala de espacamento e identica a do JSON`() {
-        val declared = json.substringAfter("\"spacing\"").substringBefore("]")
-            .let { Regex("\\d+").findAll(it).map { m -> m.value.toInt() }.toList() }
+        val declared =
+            json
+                .substringAfter("\"spacing\"")
+                .substringBefore("]")
+                .let { Regex("\\d+").findAll(it).map { m -> m.value.toInt() }.toList() }
         val implemented = NeoSpacing.scale.map { it.value.toInt() }
 
         assertThat(implemented).isEqualTo(declared)
@@ -104,18 +106,24 @@ class NeoTokenParityTest {
                 NeoShadow(6.dp, 6.dp, 0.dp, 0.dp),
             )
         // O JSON declara exatamente 4 sombras (none/small/medium/display).
-        val declaredShadowNames = json.substringAfter("\"shadows\"")
-            .substringBefore("\"sizes\"")
-            .let { Regex("\"(\\w+)\"\\s*:\\s*\\{").findAll(it).map { m -> m.groupValues[1] }.toList() }
+        val declaredShadowNames =
+            json
+                .substringAfter("\"shadows\"")
+                .substringBefore("\"sizes\"")
+                .let { Regex("\"(\\w+)\"\\s*:\\s*\\{").findAll(it).map { m -> m.groupValues[1] }.toList() }
         assertThat(declaredShadowNames).containsExactly("none", "small", "medium", "display")
     }
 
     @Test
     fun `tamanhos minimos de controle nao ficam abaixo de 48dp`() {
-        val sizes = listOf(
-            NeoSizes.touchMin, NeoSizes.buttonMinHeight, NeoSizes.fieldMinHeight,
-            NeoSizes.fabMinHeight, NeoSizes.rowMinHeight,
-        )
+        val sizes =
+            listOf(
+                NeoSizes.touchMin,
+                NeoSizes.buttonMinHeight,
+                NeoSizes.fieldMinHeight,
+                NeoSizes.fabMinHeight,
+                NeoSizes.rowMinHeight,
+            )
         sizes.forEach { assertThat(it.value).isAtLeast(48f) }
         assertThat(NeoSizes.icon).isEqualTo(24.dp)
         assertThat(NeoSizes.iconMeta).isEqualTo(20.dp)

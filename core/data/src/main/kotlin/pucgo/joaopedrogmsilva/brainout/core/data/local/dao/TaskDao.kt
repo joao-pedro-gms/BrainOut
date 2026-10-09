@@ -21,7 +21,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
  */
 @Dao
 interface TaskDao {
-
     // --- Reads ---
 
     /**
@@ -86,7 +85,10 @@ interface TaskDao {
         WHERE p.owner_id = :ownerId
         """,
     )
-    fun observeCompletionStats(ownerId: String, weekStartMillis: Long): Flow<CompletionStatsRow>
+    fun observeCompletionStats(
+        ownerId: String,
+        weekStartMillis: Long,
+    ): Flow<CompletionStatsRow>
 
     /** Busca pontual por `id`. Retorna `null` se não existir. */
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
@@ -124,7 +126,10 @@ interface TaskDao {
      * (`Task.transitionTo`); aqui só persistimos o novo valor.
      */
     @Query("UPDATE tasks SET status = :status WHERE id = :id")
-    suspend fun updateStatus(id: String, status: String)
+    suspend fun updateStatus(
+        id: String,
+        status: String,
+    )
 
     /**
      * Atualiza `status` E `completed_at` numa única escrita. Usado

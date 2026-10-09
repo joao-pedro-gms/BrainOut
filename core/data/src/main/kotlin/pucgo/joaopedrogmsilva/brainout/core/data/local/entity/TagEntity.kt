@@ -5,8 +5,8 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
+import java.time.Instant
 
 /**
  * Linha da tabela `tags` no Room.
@@ -51,25 +51,25 @@ data class TagEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Instant,
 ) {
-
     /** Converte a linha para o modelo imutável de domínio [Tag]. */
-    fun toDomain(): Tag = Tag(
-        id = id,
-        ownerId = ownerId,
-        name = name,
-        color = color,
-        createdAt = createdAt,
-    )
+    fun toDomain(): Tag =
+        Tag(
+            id = id,
+            ownerId = ownerId,
+            name = name,
+            color = color,
+            createdAt = createdAt,
+        )
 
     companion object {
-
         /** Constrói a entidade a partir de uma [Tag] de domínio. */
-        fun fromDomain(tag: Tag): TagEntity = TagEntity(
-            id = tag.id,
-            ownerId = tag.ownerId,
-            name = tag.name,
-            color = tag.color,
-            createdAt = tag.createdAt,
-        )
+        fun fromDomain(tag: Tag): TagEntity =
+            TagEntity(
+                id = tag.id,
+                ownerId = tag.ownerId,
+                name = tag.name,
+                color = tag.color,
+                createdAt = tag.createdAt,
+            )
     }
 }

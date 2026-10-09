@@ -37,13 +37,14 @@ internal fun HomeTopBar(user: HomeUser) {
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -58,18 +59,21 @@ internal fun HomeTopBar(user: HomeUser) {
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
-                    val badgeLabel = when (user.role) {
-                        HomeUserRole.Owner -> stringResource(id = R.string.home_role_badge_owner)
-                        HomeUserRole.Member -> stringResource(id = R.string.home_role_badge_member)
-                    }
-                    val roleContainer: Color = when (user.role) {
-                        HomeUserRole.Owner -> MaterialTheme.colorScheme.primary
-                        HomeUserRole.Member -> MaterialTheme.colorScheme.surfaceVariant
-                    }
-                    val roleLabel: Color = when (user.role) {
-                        HomeUserRole.Owner -> MaterialTheme.colorScheme.onPrimary
-                        HomeUserRole.Member -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    val badgeLabel =
+                        when (user.role) {
+                            HomeUserRole.Owner -> stringResource(id = R.string.home_role_badge_owner)
+                            HomeUserRole.Member -> stringResource(id = R.string.home_role_badge_member)
+                        }
+                    val roleContainer: Color =
+                        when (user.role) {
+                            HomeUserRole.Owner -> MaterialTheme.colorScheme.primary
+                            HomeUserRole.Member -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    val roleLabel: Color =
+                        when (user.role) {
+                            HomeUserRole.Owner -> MaterialTheme.colorScheme.onPrimary
+                            HomeUserRole.Member -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     AssistChip(
                         onClick = { /* badge é apenas decorativo */ },
                         label = {
@@ -79,10 +83,11 @@ internal fun HomeTopBar(user: HomeUser) {
                                 modifier = Modifier.testTag(HomeTestTags.ROLE_BADGE),
                             )
                         },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = roleContainer,
-                            labelColor = roleLabel,
-                        ),
+                        colors =
+                            AssistChipDefaults.assistChipColors(
+                                containerColor = roleContainer,
+                                labelColor = roleLabel,
+                            ),
                         // E4.4: garante área de toque mínima de 48dp
                         // (WCAG 2.5.5 Target Size). M3 AssistChip é ~32dp
                         // de altura por padrão.
@@ -91,9 +96,10 @@ internal fun HomeTopBar(user: HomeUser) {
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
     )
 }

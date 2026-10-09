@@ -17,12 +17,13 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
  * ```
  */
 class CanPerformActionUseCase {
-
     /**
      * @param role Papel do usuário.
      * @param permission Permissão a verificar.
      * @return `true` se [role] concede [permission]; `false` caso contrário.
      */
-    operator fun invoke(role: UserRole, permission: Permission): Boolean =
-        role.hasPermission(permission)
+    operator fun invoke(
+        role: UserRole,
+        permission: Permission,
+    ): Boolean = role.hasPermission(permission)
 }

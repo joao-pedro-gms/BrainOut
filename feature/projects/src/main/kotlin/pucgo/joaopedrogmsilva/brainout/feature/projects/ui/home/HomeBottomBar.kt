@@ -53,9 +53,10 @@ internal fun HomeBottomBar(
     }
 }
 
-internal fun HomeTab.icon(): ImageVector = when (this) {
-    HomeTab.Projects -> Icons.Outlined.Folder
-    HomeTab.Tasks -> Icons.AutoMirrored.Outlined.Assignment
-    HomeTab.Dashboard -> Icons.Outlined.BarChart
-    HomeTab.Settings -> Icons.Outlined.Settings
-}
+internal fun HomeTab.icon(): ImageVector =
+    when (this) {
+        HomeTab.Projects -> Icons.Outlined.Folder
+        HomeTab.Tasks -> Icons.AutoMirrored.Outlined.Assignment
+        HomeTab.Dashboard -> Icons.Outlined.BarChart
+        HomeTab.Settings -> Icons.Outlined.Settings
+    }

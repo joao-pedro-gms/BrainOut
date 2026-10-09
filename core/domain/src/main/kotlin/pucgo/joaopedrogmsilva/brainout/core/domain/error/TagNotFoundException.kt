@@ -8,5 +8,6 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.error
  * hierarquia de domínio de forma agregada — não `RuntimeException`
  * crua (regra do `core/domain/AGENTS.md`).
  */
-class TagNotFoundException(tagId: String) :
-    DomainException("Tag não encontrada: $tagId")
+class TagNotFoundException(
+    tagId: String,
+) : DomainException("Tag não encontrada: $tagId")

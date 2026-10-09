@@ -39,7 +39,6 @@ import org.robolectric.annotation.Config
 // `:core:ui:testDebugUnitTest` de rodar por inteiro.
 @Config(sdk = [34])
 class ThemeSelectionTest {
-
     // ------------------------------------------------------------------
     // 1. Resolução estática do ColorScheme
     // ------------------------------------------------------------------
@@ -91,10 +90,11 @@ class ThemeSelectionTest {
     @Test
     fun `system night mode YES maps to BrainOutDarkColors`() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-        val nightConfig = Configuration(app.resources.configuration).apply {
-            uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
-                Configuration.UI_MODE_NIGHT_YES
-        }
+        val nightConfig =
+            Configuration(app.resources.configuration).apply {
+                uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                    Configuration.UI_MODE_NIGHT_YES
+            }
 
         // BrainOutTheme lê isSystemInDarkTheme(), que consulta
         // Configuration.UI_MODE_NIGHT_MASK. Forçando YES, o helper
@@ -112,10 +112,11 @@ class ThemeSelectionTest {
     @Test
     fun `system night mode NO maps to BrainOutLightColors`() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-        val dayConfig = Configuration(app.resources.configuration).apply {
-            uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
-                Configuration.UI_MODE_NIGHT_NO
-        }
+        val dayConfig =
+            Configuration(app.resources.configuration).apply {
+                uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                    Configuration.UI_MODE_NIGHT_NO
+            }
 
         val wouldPickDark =
             (dayConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==

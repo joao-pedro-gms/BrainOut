@@ -4,12 +4,12 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.assets
 
 import com.google.common.truth.Truth.assertThat
-import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Test
 import org.w3c.dom.Attr
 import org.w3c.dom.Document
 import org.w3c.dom.Element
+import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * Contrato de asset vetorial (NB-05, itens 3 e 4):
@@ -28,15 +28,16 @@ import org.w3c.dom.Element
  * O XML é lido do disco porque é exatamente o que o AGP empacota.
  */
 class NeoVectorAssetsTest {
-
     private val drawableDir: File = coreUiRes().resolve("drawable")
 
     @Test
     fun `o manifesto de drawables tem os 16 icones e as 4 artes`() {
-        val names = drawableDir.listFiles { file -> file.extension == "xml" }
-            .orEmpty()
-            .map { it.nameWithoutExtension }
-            .sorted()
+        val names =
+            drawableDir
+                .listFiles { file -> file.extension == "xml" }
+                .orEmpty()
+                .map { it.nameWithoutExtension }
+                .sorted()
 
         assertThat(names).isEqualTo(
             (expectedIconAssets.keys + expectedArtAssets).sorted(),
@@ -86,23 +87,29 @@ class NeoVectorAssetsTest {
             assertThat(vector.attr("viewportHeight")).isEqualTo(ART_VIEWPORT)
             assertThat(vector.paths().size).isAtLeast(MIN_ART_PATHS)
 
-            val fills = vector.paths()
-                .map { it.attr("fillColor") }
-                .filterNot { it == TRANSPARENT_FILL }
-                .toSet()
+            val fills =
+                vector
+                    .paths()
+                    .map { it.attr("fillColor") }
+                    .filterNot { it == TRANSPARENT_FILL }
+                    .toSet()
             assertThat(allowedArtColors).containsAtLeastElementsIn(fills)
             assertThat(fills.size).isAtMost(MAX_ART_COLORS)
 
-            val strokes = vector.paths()
-                .map { it.attr("strokeColor") }
-                .filter { it.isNotEmpty() }
-                .toSet()
+            val strokes =
+                vector
+                    .paths()
+                    .map { it.attr("strokeColor") }
+                    .filter { it.isNotEmpty() }
+                    .toSet()
             assertThat(allowedArtColors).containsAtLeastElementsIn(strokes)
 
-            val widths = vector.paths()
-                .map { it.attr("strokeWidth") }
-                .filter { it.isNotEmpty() }
-                .toSet()
+            val widths =
+                vector
+                    .paths()
+                    .map { it.attr("strokeWidth") }
+                    .filter { it.isNotEmpty() }
+                    .toSet()
             assertThat(widths).containsExactly(ART_STROKE_WIDTH)
         }
     }
@@ -121,22 +128,24 @@ class NeoVectorAssetsTest {
             assertThat(figures).isNotEmpty()
 
             // A figura é o grupo com traço; o bbox dela é a base do offset.
-            val figure = figures
-                .map { pathBox(it.attr("pathData")) }
-                .reduce { a, b ->
-                    Box(
-                        minOf(a.left, b.left),
-                        minOf(a.top, b.top),
-                        maxOf(a.right, b.right),
-                        maxOf(a.bottom, b.bottom),
-                    )
-                }
-            val shadowBox = Box(
-                figure.left + SHADOW_OFFSET,
-                figure.top + SHADOW_OFFSET,
-                figure.right + SHADOW_OFFSET,
-                figure.bottom + SHADOW_OFFSET,
-            )
+            val figure =
+                figures
+                    .map { pathBox(it.attr("pathData")) }
+                    .reduce { a, b ->
+                        Box(
+                            minOf(a.left, b.left),
+                            minOf(a.top, b.top),
+                            maxOf(a.right, b.right),
+                            maxOf(a.bottom, b.bottom),
+                        )
+                    }
+            val shadowBox =
+                Box(
+                    figure.left + SHADOW_OFFSET,
+                    figure.top + SHADOW_OFFSET,
+                    figure.right + SHADOW_OFFSET,
+                    figure.bottom + SHADOW_OFFSET,
+                )
             val shadows = paths.filter { pathBox(it.attr("pathData")) == shadowBox }
 
             assertThat(shadows).hasSize(1)
@@ -157,7 +166,12 @@ class NeoVectorAssetsTest {
 
     @Test
     fun `a soma de fontes e drawables cabe no teto de 1 MB`() {
-        val fontFiles = coreUiRes().resolve("font").listFiles().orEmpty().toList()
+        val fontFiles =
+            coreUiRes()
+                .resolve("font")
+                .listFiles()
+                .orEmpty()
+                .toList()
         val drawableFiles = drawableDir.listFiles().orEmpty().toList()
         val assets = fontFiles + drawableFiles
         val total = assets.sumOf { it.length() }
@@ -168,8 +182,10 @@ class NeoVectorAssetsTest {
 
     @Test
     fun `todo xml de asset carrega o cabecalho de autoria`() {
-        val assets = drawableDir.listFiles { file -> file.extension == "xml" }
-            .orEmpty()
+        val assets =
+            drawableDir
+                .listFiles { file -> file.extension == "xml" }
+                .orEmpty()
 
         assertThat(assets).isNotEmpty()
         assets.forEach { file ->
@@ -193,19 +209,24 @@ class NeoVectorAssetsTest {
      * ao vetor, nenhum texto fora de whitespace e nenhuma URL além do
      * namespace que o próprio XML exige.
      */
-    private fun assertVectorMarkupOnly(file: File, document: Document) {
+    private fun assertVectorMarkupOnly(
+        file: File,
+        document: Document,
+    ) {
         val nodes = document.getElementsByTagName("*")
         val elements = (0 until nodes.length).map { nodes.item(it) as Element }
 
         assertThat(elements.map { it.tagName }.toSet() - ART_TAGS).isEmpty()
-        elements.flatMap { element ->
-            (0 until element.attributes.length).map {
-                element.attributes.item(it) as Attr
+        elements
+            .flatMap { element ->
+                (0 until element.attributes.length).map {
+                    element.attributes.item(it) as Attr
+                }
+            }.filterNot { it.name.startsWith(XMLNS_PREFIX) }
+            .forEach { attribute ->
+                assertThat(attribute.namespaceURI).isEqualTo(ANDROID_NS)
+                assertThat(attribute.localName).isIn(ART_ATTRIBUTES)
             }
-        }.filterNot { it.name.startsWith(XMLNS_PREFIX) }.forEach { attribute ->
-            assertThat(attribute.namespaceURI).isEqualTo(ANDROID_NS)
-            assertThat(attribute.localName).isIn(ART_ATTRIBUTES)
-        }
 
         // Vetor poligonal não tem texto: sobra só whitespace entre tags.
         assertThat(document.documentElement.textContent.trim()).isEmpty()
@@ -237,16 +258,17 @@ private const val ART_SHADOW_FILL = "#FF181818"
 private val ART_TAGS: Set<String> = setOf("vector", "group", "path")
 
 /** Únicos atributos android: admitidos na arte (sem `src`, `blur`…). */
-private val ART_ATTRIBUTES: Set<String> = setOf(
-    "width",
-    "height",
-    "viewportWidth",
-    "viewportHeight",
-    "fillColor",
-    "pathData",
-    "strokeColor",
-    "strokeWidth",
-)
+private val ART_ATTRIBUTES: Set<String> =
+    setOf(
+        "width",
+        "height",
+        "viewportWidth",
+        "viewportHeight",
+        "fillColor",
+        "pathData",
+        "strokeColor",
+        "strokeWidth",
+    )
 
 private val URL_REGEX = Regex("""https?://[^\s"'<>]+""")
 
@@ -277,8 +299,10 @@ private fun Document.groups(): List<Element> =
         (0 until list.length).map { list.item(it) as Element }
     }
 
-private fun Document.groupAttr(index: Int, name: String): String =
-    groups()[index].attr(name)
+private fun Document.groupAttr(
+    index: Int,
+    name: String,
+): String = groups()[index].attr(name)
 
 /** Caixa envolvente de um `pathData` poligonal (`left, top, right, bottom`). */
 private data class Box(
@@ -306,7 +330,10 @@ private fun pathBox(pathData: String): Box {
     var right = Double.NEGATIVE_INFINITY
     var bottom = Double.NEGATIVE_INFINITY
 
-    fun visit(nx: Double, ny: Double) {
+    fun visit(
+        nx: Double,
+        ny: Double,
+    ) {
         x = nx
         y = ny
         left = minOf(left, x)
@@ -318,27 +345,31 @@ private fun pathBox(pathData: String): Box {
     PATH_TOKEN.findAll(pathData).forEach { match ->
         val command = match.groupValues[1]
         val relative = command.first().isLowerCase()
-        val numbers = PATH_NUMBER.findAll(match.groupValues[2])
-            .map { it.value.toDouble() }
-            .toList()
+        val numbers =
+            PATH_NUMBER
+                .findAll(match.groupValues[2])
+                .map { it.value.toDouble() }
+                .toList()
 
         when (command.uppercase()) {
-            "M" -> numbers.chunked(2).forEach { pair ->
-                check(pair.size == 2) { "par x,y esperado em M: $pathData" }
-                visit(
-                    if (relative) x + pair[0] else pair[0],
-                    if (relative) y + pair[1] else pair[1],
-                )
-                startX = x
-                startY = y
-            }
-            "L" -> numbers.chunked(2).forEach { pair ->
-                check(pair.size == 2) { "par x,y esperado em L: $pathData" }
-                visit(
-                    if (relative) x + pair[0] else pair[0],
-                    if (relative) y + pair[1] else pair[1],
-                )
-            }
+            "M" ->
+                numbers.chunked(2).forEach { pair ->
+                    check(pair.size == 2) { "par x,y esperado em M: $pathData" }
+                    visit(
+                        if (relative) x + pair[0] else pair[0],
+                        if (relative) y + pair[1] else pair[1],
+                    )
+                    startX = x
+                    startY = y
+                }
+            "L" ->
+                numbers.chunked(2).forEach { pair ->
+                    check(pair.size == 2) { "par x,y esperado em L: $pathData" }
+                    visit(
+                        if (relative) x + pair[0] else pair[0],
+                        if (relative) y + pair[1] else pair[1],
+                    )
+                }
             "H" -> numbers.forEach { visit(if (relative) x + it else it, y) }
             "V" -> numbers.forEach { visit(x, if (relative) y + it else it) }
             "Z" -> visit(startX, startY)

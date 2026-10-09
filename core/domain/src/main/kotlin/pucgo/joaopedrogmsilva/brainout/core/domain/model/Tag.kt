@@ -54,12 +54,13 @@ data class Tag(
             name: String,
             color: String,
             now: Instant = Instant.now(),
-        ): Tag = Tag(
-            id = UUID.randomUUID().toString(),
-            ownerId = ownerId,
-            name = name.trim(),
-            color = color,
-            createdAt = now,
-        )
+        ): Tag =
+            Tag(
+                id = UUID.randomUUID().toString(),
+                ownerId = ownerId,
+                name = name.trim(),
+                color = color,
+                createdAt = now,
+            )
     }
 }

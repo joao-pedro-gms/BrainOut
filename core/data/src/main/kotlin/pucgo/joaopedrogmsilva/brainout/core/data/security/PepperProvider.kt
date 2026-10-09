@@ -33,46 +33,50 @@ import javax.inject.Singleton
  * para neutralizar rainbow tables mesmo em dump de banco.
  */
 interface PepperProvider {
-
     fun bytes(): ByteArray
 
     /**
      * Implementação padrão baseada em [EncryptedSharedPreferences].
      */
     @Singleton
-    class Default @Inject constructor(
-        @ApplicationContext private val context: Context,
-    ) : PepperProvider {
-
-        override fun bytes(): ByteArray {
-            val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-                context.applicationContext,
-                PEPPER_PREFS_NAME,
-                MasterKey.Builder(context.applicationContext)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build(),
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-            )
-            val existing = prefs.getString(PEPPER_KEY, null)
-            if (existing != null) {
-                return Base64.decode(existing, Base64.NO_WRAP)
+    class Default
+        @Inject
+        constructor(
+            @ApplicationContext private val context: Context,
+        ) : PepperProvider {
+            override fun bytes(): ByteArray {
+                val prefs: SharedPreferences =
+                    EncryptedSharedPreferences.create(
+                        context.applicationContext,
+                        PEPPER_PREFS_NAME,
+                        MasterKey
+                            .Builder(context.applicationContext)
+                            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                            .build(),
+                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                    )
+                val existing = prefs.getString(PEPPER_KEY, null)
+                if (existing != null) {
+                    return Base64.decode(existing, Base64.NO_WRAP)
+                }
+                val generated =
+                    ByteArray(PEPPER_LENGTH_BYTES).also {
+                        SecureRandom().nextBytes(it)
+                    }
+                prefs
+                    .edit()
+                    .putString(PEPPER_KEY, Base64.encodeToString(generated, Base64.NO_WRAP))
+                    .apply()
+                return generated
             }
-            val generated = ByteArray(PEPPER_LENGTH_BYTES).also {
-                SecureRandom().nextBytes(it)
-            }
-            prefs.edit()
-                .putString(PEPPER_KEY, Base64.encodeToString(generated, Base64.NO_WRAP))
-                .apply()
-            return generated
-        }
 
-        private companion object {
-            const val PEPPER_PREFS_NAME: String = "brainout_pepper"
-            const val PEPPER_KEY: String = "v1"
-            const val PEPPER_LENGTH_BYTES: Int = 16
+            private companion object {
+                const val PEPPER_PREFS_NAME: String = "brainout_pepper"
+                const val PEPPER_KEY: String = "v1"
+                const val PEPPER_LENGTH_BYTES: Int = 16
+            }
         }
-    }
 
     @Module
     @InstallIn(SingletonComponent::class)

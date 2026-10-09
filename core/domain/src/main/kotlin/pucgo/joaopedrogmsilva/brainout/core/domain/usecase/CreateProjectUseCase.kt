@@ -1,9 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import javax.inject.Inject
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
+import javax.inject.Inject
 
 /**
  * Caso de uso responsável por criar um novo [Project].
@@ -16,27 +16,30 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
  * Lança [pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException]
  * se `name` ou `description` violarem as invariantes do domínio.
  */
-class CreateProjectUseCase @Inject constructor(
-    private val repository: ProjectRepository,
-) {
-    /**
-     * @param name Nome do projeto (1..120 caracteres após trim).
-     * @param ownerId [Project.ownerId] — id do usuário dono.
-     * @param description Descrição opcional (até 500 caracteres).
-     * @param tagIds Tags a associar — cada uma deve existir e
-     *   pertencer ao mesmo `ownerId` do projeto.
-     */
-    suspend operator fun invoke(
-        name: String,
-        ownerId: String,
-        description: String? = null,
-        tagIds: List<String> = emptyList(),
-    ): Project {
-        val project = Project.create(
-            name = name,
-            ownerId = ownerId,
-            description = description,
-        )
-        return repository.create(project, tagIds)
+class CreateProjectUseCase
+    @Inject
+    constructor(
+        private val repository: ProjectRepository,
+    ) {
+        /**
+         * @param name Nome do projeto (1..120 caracteres após trim).
+         * @param ownerId [Project.ownerId] — id do usuário dono.
+         * @param description Descrição opcional (até 500 caracteres).
+         * @param tagIds Tags a associar — cada uma deve existir e
+         *   pertencer ao mesmo `ownerId` do projeto.
+         */
+        suspend operator fun invoke(
+            name: String,
+            ownerId: String,
+            description: String? = null,
+            tagIds: List<String> = emptyList(),
+        ): Project {
+            val project =
+                Project.create(
+                    name = name,
+                    ownerId = ownerId,
+                    description = description,
+                )
+            return repository.create(project, tagIds)
+        }
     }
-}

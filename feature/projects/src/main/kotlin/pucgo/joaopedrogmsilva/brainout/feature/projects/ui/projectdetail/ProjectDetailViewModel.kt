@@ -10,8 +10,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +22,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
@@ -42,6 +39,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteTaskUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateTaskUseCase
+import java.time.Instant
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Estado de UI da [ProjectDetailScreen].
@@ -96,365 +96,373 @@ data class ProjectDetailSyncState(
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList") // E3.5 injeta CheckDeadlineUseCase (9 deps).
-class ProjectDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    @Suppress("unused") private val taskRepository: TaskRepository,
-    private val createTask: CreateTaskUseCase,
-    private val updateTask: UpdateTaskUseCase,
-    private val changeStatus: ChangeTaskStatusUseCase,
-    private val deleteProject: DeleteProjectUseCase,
-    private val deleteTask: DeleteTaskUseCase,
-    private val checkDeadline: CheckDeadlineUseCase,
-    private val connectivityObserver: ConnectivityObserver,
-    private val pendingSyncMonitor: PendingSyncMonitor,
-) : ViewModel() {
-
-    private val projectId: String =
-        checkNotNull(savedStateHandle.get<String>(PROJECT_ID_ARG)) {
-            "projectId é obrigatório em ProjectDetail"
-        }
-
-    private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    /**
-     * Estado de conectividade + fila pendente (E3.4) para o banner
-     * offline do detalhe do projeto. Mesma combinação da Home:
-     * callback de rede + contagem de `pending_ops`.
-     */
-    val syncState: StateFlow<ProjectDetailSyncState> = combine(
-        connectivityObserver.observe(),
-        pendingSyncMonitor.observePendingCount(),
-    ) { connectivity: ConnectivityState, pending: Int ->
-        ProjectDetailSyncState(isOnline = connectivity.isOnline, pendingOps = pending)
-    }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = ProjectDetailSyncState(),
-        )
-
-    /**
-     * Token de retry (E2.8). Cada chamada a [retry] incrementa este
-     * valor; o pipeline [uiState] depende dele via `flatMapLatest`,
-     * então a mudança descarta a coleta atual e re-assina o Flow do
-     * [TaskRepository].
-     */
-    private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-    val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
-
-    /**
-     * Estado de UI da tela — E2.1/E2.2 + E2.8.
-     *
-     * Cada emissão do Flow do [TaskRepository] é mapeada para um
-     * [ProjectDetailUiState] com `isLoading = false`. O `.catch`
-     * final (E2.8) captura falhas do Room e as converte em
-     * `errorMessage` + `isLoading = false`, para que a UI possa
-     * mostrar o banner de erro com "Tentar novamente" em vez de
-     * ficar presa em "Loading" para sempre.
-     *
-     * [CancellationException] é re-lançada para preservar o
-     * cancelamento estruturado de corrotinas (não engolir sinal de
-     * cancelamento do ViewModel).
-     */
-    val uiState: StateFlow<ProjectDetailUiState> = _retryToken
-        .flatMapLatest { _ ->
-            taskRepository
-                .observeForProject(projectId)
-                .catch { throwable ->
-                    if (throwable is CancellationException) throw throwable
-                    val message = throwable.toProjectDetailErrorMessage()
-                    _errorMessage.value = message
-                    // Lista de sentinela — o `onEach` abaixo a
-                    // distingue da lista vazia real do Room para
-                    // evitar "engolir" o erro pendente.
-                    emit(sentinelOnError)
-                }
-                // Limpa erro pendente APENAS em emissões vindas do
-                // upstream (sucesso do Flow), não na sentinela
-                // emitida pelo `catch` acima. Sem esse filtro, o
-                // `catch` emitiria a lista vazia e o `onEach`
-                // seguinte resetaria o erro para `null`
-                // imediatamente, "engolindo" a falha. (E2.8)
-                .onEach { tasks ->
-                    if (tasks !== sentinelOnError) {
-                        _errorMessage.value = null
-                    }
-                }
-        }
-        .let { tasksFlow ->
-            kotlinx.coroutines.flow.flow {
-                tasksFlow.collect { tasks ->
-                    emit(
-                        ProjectDetailUiState(
-                            projectId = projectId,
-                            tasks = tasks,
-                            isLoading = false,
-                            errorMessage = _errorMessage.value,
-                        ),
-                    )
-                }
+class ProjectDetailViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        @Suppress("unused") private val taskRepository: TaskRepository,
+        private val createTask: CreateTaskUseCase,
+        private val updateTask: UpdateTaskUseCase,
+        private val changeStatus: ChangeTaskStatusUseCase,
+        private val deleteProject: DeleteProjectUseCase,
+        private val deleteTask: DeleteTaskUseCase,
+        private val checkDeadline: CheckDeadlineUseCase,
+        private val connectivityObserver: ConnectivityObserver,
+        private val pendingSyncMonitor: PendingSyncMonitor,
+    ) : ViewModel() {
+        private val projectId: String =
+            checkNotNull(savedStateHandle.get<String>(PROJECT_ID_ARG)) {
+                "projectId é obrigatório em ProjectDetail"
             }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = ProjectDetailUiState(projectId = projectId),
-        )
 
-    /**
-     * Sentinela interna para distinguir a lista vazia emitida pelo
-     * `catch` (que sinaliza erro) de uma lista vazia real do Room.
-     * Evita que o `onEach` "engola" o erro pendente logo após o
-     * `catch` emitir a lista.
-     *
-     * Criada uma única vez por ViewModel — cada `catch` produz um
-     * `emit(sentinelOnError)`, então o downstream recebe a mesma
-     * referência. Como a lista do Room é uma `MutableList` real
-     * (vinda do Cursor do `RoomDatabase`), nunca terá referência
-     * idêntica a esta `ListOf(0)`.
-     */
-    private val sentinelOnError: List<Task> = listOf()
-
-    /**
-     * Cria uma nova tarefa no projeto corrente. Aplica a RN01
-     * (limite de [MAX_ACTIVE_TASKS_PER_PROJECT] tarefas ativas)
-     * através do [CreateTaskUseCase] — se a regra for violada,
-     * uma mensagem amigável é exposta via [errorMessage] para que
-     * a UI mostre o chip de erro e chame [clearError] após 5s.
-     *
-     * @param dueDate prazo opcional (E3.5: integra com a checagem
-     *   de feriados nacionais).
-     * E2.8 — também captura falhas genéricas do Room (e.g.
-     * `SQLiteException`) que não são mapeadas por exceções de
-     * domínio, evitando crash silencioso.
-     */
-    fun addTask(
-        title: String,
-        priority: TaskPriority = TaskPriority.MEDIUM,
-        dueDate: Instant? = null,
-    ) {
-        val trimmed = title.trim()
-        if (trimmed.isEmpty()) {
-            _errorMessage.update { ERROR_EMPTY_TITLE }
-            return
-        }
-        Log.d(TAG, "addTask: title=$trimmed, priority=$priority, projectId=$projectId")
-        viewModelScope.launch {
-            try {
-                createTask.invoke(
-                    projectId = projectId,
-                    title = trimmed,
-                    priority = priority,
-                    dueDate = dueDate,
-                )
-            } catch (e: ProjectTaskLimitReachedException) {
-                @Suppress("SwallowedException")
-                val message = e.message ?: taskLimitMessage()
-                Log.w(TAG, "Limite de tarefas ativas atingido (RN01) no projeto $projectId")
-                _errorMessage.update { message }
-            } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                Log.w(TAG, "Título de tarefa inválido: ${e.message}")
-                _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                Log.e(TAG, "Erro ao adicionar tarefa: ${e.message}", e)
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /**
-     * Avalia um prazo usando o [CheckDeadlineUseCase] (E3.5). É uma
-     * fachada para que a UI não precise importar o caso de uso
-     * diretamente; delega 1-para-1 e devolve [DeadlineInfo] com a
-     * janela de feriado dos próximos 7 dias antes do prazo.
-     */
-    suspend fun evaluateDeadline(deadline: Instant?): DeadlineInfo =
-        checkDeadline(deadline)
-
-    /** Move a [task] para [target], respeitando a matriz de transições. */
-
-    fun changeStatus(taskId: String, target: TaskStatus) {
-        Log.d(TAG, "changeStatus: taskId=$taskId, target=$target")
-        viewModelScope.launch {
-            try {
-                changeStatus.invoke(taskId, target)
-            } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
-                Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
-                _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                Log.e(TAG, "Erro ao alterar status da tarefa $taskId: ${e.message}", e)
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /**
-     * Altera a prioridade de uma tarefa (RN02 — E2.4).
-     *
-     * A UI já bloqueia tarefas concluídas, mas o ViewModel
-     * também aplica a defesa em profundidade: se a tarefa
-     * persistida estiver em [TaskStatus.DONE], a operação é
-     * ignorada e o erro é exposto via [errorMessage] para que a
-     * UI possa exibir a mensagem específica de RN02 (chip
-     * bloqueado).
-     *
-     * Em tarefas ativas, usa [Task.changePriority] (que valida o
-     * intervalo 0..4) e depois delega ao [UpdateTaskUseCase] — este
-     * use case recarrega o estado persistido e rejeita tentativas
-     * com a persistência em DONE (bypass via `copy`).
-     */
-    fun changeTaskPriority(task: Task, newPriority: TaskPriority) {
-        Log.d(TAG, "changeTaskPriority: taskId=${task.id}, newPriority=$newPriority")
-        val updated = try {
-            task.changePriority(newPriority)
-        } catch (e: TaskPriorityChangeForbiddenException) {
-            Log.w(TAG, "RN02: alteração de prioridade bloqueada para taskId=${task.id} (tarefa DONE)")
-            _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
-            return
-        } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-            _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
-            return
-        }
-        viewModelScope.launch {
-            try {
-                updateTask.invoke(updated)
-            } catch (e: TaskPriorityChangeForbiddenException) {
-                // Persistência indica DONE (bypass via copy).
-                Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
-                _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
-            } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                Log.e(TAG, "Erro ao alterar prioridade da tarefa ${task.id}: ${e.message}", e)
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /** Renomeia a [task] via [Task.rename], que valida o título. */
-    fun renameTask(task: Task, newTitle: String) {
-        val trimmed = newTitle.trim()
-        if (trimmed.isEmpty() || trimmed == task.title) return
-        Log.d(TAG, "renameTask: taskId=${task.id}, newTitle=$trimmed")
-        viewModelScope.launch {
-            try {
-                updateTask.invoke(task.rename(trimmed))
-            } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                Log.e(TAG, "Erro ao renomear tarefa ${task.id}: ${e.message}", e)
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /** Remove a [task] do projeto (ação do menu "Excluir" do item). */
-    fun deleteTask(task: Task) {
-        Log.d(TAG, "deleteTask: taskId=${task.id}")
-        viewModelScope.launch {
-            try {
-                deleteTask.invoke(task.id)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /**
-     * Exclui o projeto corrente e, em seguida, chama [onDone] para
-     * que a camada de navegação faça `popBackStack()`.
-     */
-    fun deleteProject(onDone: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                deleteProject.invoke(projectId)
-                onDone()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _errorMessage.update { e.toProjectDetailErrorMessage() }
-            }
-        }
-    }
-
-    /** Limpa a mensagem de erro atual — usado pela UI após o chip expirar. */
-    fun clearError() {
-        _errorMessage.value = null
-    }
-
-    /**
-     * Re-assina o pipeline de observação de tarefas após uma falha
-     * (E2.8). Incrementa [retryToken], o que dispara o
-     * `flatMapLatest` em [uiState] e descarta a coleta atual.
-     */
-    fun retry() {
-        _errorMessage.value = null
-        _retryToken.value = _retryToken.value + 1
-    }
-
-    companion object {
-        private const val TAG = "BrainOut:ProjectDetailVM"
-
-        /** Nome do argumento da rota do Navigation Compose. */
-        const val PROJECT_ID_ARG: String = "projectId"
-
-        // Mensagens embutidas no ViewModel em vez de strings.xml —
-        // mesma decisão do AuthViewModel (ver comentário no companion
-        // object de lá): frases de validação técnica que não dependem
-        // de localização para os testes de VM; a camada de UI traduz
-        // para o recurso localizado via `resolveProjectDetailMessage`
-        // (E4.6) quando a mensagem casa com uma chave conhecida.
-        const val ERROR_EMPTY_TITLE: String = "Título da tarefa não pode ser vazio"
-        const val ERROR_INVALID_TITLE: String = "Título inválido"
-        const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
-        const val ERROR_PRIORITY_LOCKED: String =
-            "RN02: alteração de prioridade bloqueada em tarefa concluída"
+        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
         /**
-         * Mensagem canônica para falhas genéricas do Room/use case
-         * (E2.8). A UI resolve esta chave para o recurso localizado
-         * via `R.string.project_detail_error_load_failed`.
+         * Estado de conectividade + fila pendente (E3.4) para o banner
+         * offline do detalhe do projeto. Mesma combinação da Home:
+         * callback de rede + contagem de `pending_ops`.
          */
-        const val ERROR_LOAD_FAILED: String = "Não foi possível carregar as tarefas do projeto"
+        val syncState: StateFlow<ProjectDetailSyncState> =
+            combine(
+                connectivityObserver.observe(),
+                pendingSyncMonitor.observePendingCount(),
+            ) { connectivity: ConnectivityState, pending: Int ->
+                ProjectDetailSyncState(isOnline = connectivity.isOnline, pendingOps = pending)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = ProjectDetailSyncState(),
+            )
 
-        private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
-        private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
+        /**
+         * Token de retry (E2.8). Cada chamada a [retry] incrementa este
+         * valor; o pipeline [uiState] depende dele via `flatMapLatest`,
+         * então a mudança descarta a coleta atual e re-assina o Flow do
+         * [TaskRepository].
+         */
+        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
+        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
-        /** Mensagem canônica de RN01 para o limite informado (usada pela UI). */
-        fun taskLimitMessage(limit: Int = MAX_ACTIVE_TASKS_PER_PROJECT): String =
-            "$ERROR_TASK_LIMIT_PREFIX$limit$ERROR_TASK_LIMIT_SUFFIX"
+        /**
+         * Estado de UI da tela — E2.1/E2.2 + E2.8.
+         *
+         * Cada emissão do Flow do [TaskRepository] é mapeada para um
+         * [ProjectDetailUiState] com `isLoading = false`. O `.catch`
+         * final (E2.8) captura falhas do Room e as converte em
+         * `errorMessage` + `isLoading = false`, para que a UI possa
+         * mostrar o banner de erro com "Tentar novamente" em vez de
+         * ficar presa em "Loading" para sempre.
+         *
+         * [CancellationException] é re-lançada para preservar o
+         * cancelamento estruturado de corrotinas (não engolir sinal de
+         * cancelamento do ViewModel).
+         */
+        val uiState: StateFlow<ProjectDetailUiState> =
+            _retryToken
+                .flatMapLatest { _ ->
+                    taskRepository
+                        .observeForProject(projectId)
+                        .catch { throwable ->
+                            if (throwable is CancellationException) throw throwable
+                            val message = throwable.toProjectDetailErrorMessage()
+                            _errorMessage.value = message
+                            // Lista de sentinela — o `onEach` abaixo a
+                            // distingue da lista vazia real do Room para
+                            // evitar "engolir" o erro pendente.
+                            emit(sentinelOnError)
+                        }
+                        // Limpa erro pendente APENAS em emissões vindas do
+                        // upstream (sucesso do Flow), não na sentinela
+                        // emitida pelo `catch` acima. Sem esse filtro, o
+                        // `catch` emitiria a lista vazia e o `onEach`
+                        // seguinte resetaria o erro para `null`
+                        // imediatamente, "engolindo" a falha. (E2.8)
+                        .onEach { tasks ->
+                            if (tasks !== sentinelOnError) {
+                                _errorMessage.value = null
+                            }
+                        }
+                }.let { tasksFlow ->
+                    kotlinx.coroutines.flow.flow {
+                        tasksFlow.collect { tasks ->
+                            emit(
+                                ProjectDetailUiState(
+                                    projectId = projectId,
+                                    tasks = tasks,
+                                    isLoading = false,
+                                    errorMessage = _errorMessage.value,
+                                ),
+                            )
+                        }
+                    }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                    initialValue = ProjectDetailUiState(projectId = projectId),
+                )
 
-        /** Indica se [message] é a mensagem de RN01 (limite de tarefas). */
-        fun isTaskLimitMessage(message: String): Boolean =
-            message.startsWith(ERROR_TASK_LIMIT_PREFIX) && message.endsWith(ERROR_TASK_LIMIT_SUFFIX)
+        /**
+         * Sentinela interna para distinguir a lista vazia emitida pelo
+         * `catch` (que sinaliza erro) de uma lista vazia real do Room.
+         * Evita que o `onEach` "engola" o erro pendente logo após o
+         * `catch` emitir a lista.
+         *
+         * Criada uma única vez por ViewModel — cada `catch` produz um
+         * `emit(sentinelOnError)`, então o downstream recebe a mesma
+         * referência. Como a lista do Room é uma `MutableList` real
+         * (vinda do Cursor do `RoomDatabase`), nunca terá referência
+         * idêntica a esta `ListOf(0)`.
+         */
+        private val sentinelOnError: List<Task> = listOf()
 
-        /** Indica se [message] é a mensagem canônica de RN02 (prioridade bloqueada). */
-        fun isPriorityLockedMessage(message: String): Boolean =
-            message.startsWith(ERROR_PRIORITY_LOCKED_PREFIX) && ERROR_PRIORITY_LOCKED_TAG in message
+        /**
+         * Cria uma nova tarefa no projeto corrente. Aplica a RN01
+         * (limite de [MAX_ACTIVE_TASKS_PER_PROJECT] tarefas ativas)
+         * através do [CreateTaskUseCase] — se a regra for violada,
+         * uma mensagem amigável é exposta via [errorMessage] para que
+         * a UI mostre o chip de erro e chame [clearError] após 5s.
+         *
+         * @param dueDate prazo opcional (E3.5: integra com a checagem
+         *   de feriados nacionais).
+         * E2.8 — também captura falhas genéricas do Room (e.g.
+         * `SQLiteException`) que não são mapeadas por exceções de
+         * domínio, evitando crash silencioso.
+         */
+        fun addTask(
+            title: String,
+            priority: TaskPriority = TaskPriority.MEDIUM,
+            dueDate: Instant? = null,
+        ) {
+            val trimmed = title.trim()
+            if (trimmed.isEmpty()) {
+                _errorMessage.update { ERROR_EMPTY_TITLE }
+                return
+            }
+            Log.d(TAG, "addTask: title=$trimmed, priority=$priority, projectId=$projectId")
+            viewModelScope.launch {
+                try {
+                    createTask.invoke(
+                        projectId = projectId,
+                        title = trimmed,
+                        priority = priority,
+                        dueDate = dueDate,
+                    )
+                } catch (e: ProjectTaskLimitReachedException) {
+                    @Suppress("SwallowedException")
+                    val message = e.message ?: taskLimitMessage()
+                    Log.w(TAG, "Limite de tarefas ativas atingido (RN01) no projeto $projectId")
+                    _errorMessage.update { message }
+                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                    Log.w(TAG, "Título de tarefa inválido: ${e.message}")
+                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Erro ao adicionar tarefa: ${e.message}", e)
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
 
-        /** Indica se [message] é a mensagem canônica de falha de carga (E2.8). */
-        fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+        /**
+         * Avalia um prazo usando o [CheckDeadlineUseCase] (E3.5). É uma
+         * fachada para que a UI não precise importar o caso de uso
+         * diretamente; delega 1-para-1 e devolve [DeadlineInfo] com a
+         * janela de feriado dos próximos 7 dias antes do prazo.
+         */
+        suspend fun evaluateDeadline(deadline: Instant?): DeadlineInfo = checkDeadline(deadline)
 
-        private const val ERROR_PRIORITY_LOCKED_PREFIX: String = "RN02: alteração de prioridade bloqueada"
-        private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
+        /** Move a [task] para [target], respeitando a matriz de transições. */
+
+        fun changeStatus(
+            taskId: String,
+            target: TaskStatus,
+        ) {
+            Log.d(TAG, "changeStatus: taskId=$taskId, target=$target")
+            viewModelScope.launch {
+                try {
+                    changeStatus.invoke(taskId, target)
+                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
+                    Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
+                    _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Erro ao alterar status da tarefa $taskId: ${e.message}", e)
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
+
+        /**
+         * Altera a prioridade de uma tarefa (RN02 — E2.4).
+         *
+         * A UI já bloqueia tarefas concluídas, mas o ViewModel
+         * também aplica a defesa em profundidade: se a tarefa
+         * persistida estiver em [TaskStatus.DONE], a operação é
+         * ignorada e o erro é exposto via [errorMessage] para que a
+         * UI possa exibir a mensagem específica de RN02 (chip
+         * bloqueado).
+         *
+         * Em tarefas ativas, usa [Task.changePriority] (que valida o
+         * intervalo 0..4) e depois delega ao [UpdateTaskUseCase] — este
+         * use case recarrega o estado persistido e rejeita tentativas
+         * com a persistência em DONE (bypass via `copy`).
+         */
+        fun changeTaskPriority(
+            task: Task,
+            newPriority: TaskPriority,
+        ) {
+            Log.d(TAG, "changeTaskPriority: taskId=${task.id}, newPriority=$newPriority")
+            val updated =
+                try {
+                    task.changePriority(newPriority)
+                } catch (e: TaskPriorityChangeForbiddenException) {
+                    Log.w(TAG, "RN02: alteração de prioridade bloqueada para taskId=${task.id} (tarefa DONE)")
+                    _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+                    return
+                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                    return
+                }
+            viewModelScope.launch {
+                try {
+                    updateTask.invoke(updated)
+                } catch (e: TaskPriorityChangeForbiddenException) {
+                    // Persistência indica DONE (bypass via copy).
+                    Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
+                    _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Erro ao alterar prioridade da tarefa ${task.id}: ${e.message}", e)
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
+
+        /** Renomeia a [task] via [Task.rename], que valida o título. */
+        fun renameTask(
+            task: Task,
+            newTitle: String,
+        ) {
+            val trimmed = newTitle.trim()
+            if (trimmed.isEmpty() || trimmed == task.title) return
+            Log.d(TAG, "renameTask: taskId=${task.id}, newTitle=$trimmed")
+            viewModelScope.launch {
+                try {
+                    updateTask.invoke(task.rename(trimmed))
+                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Erro ao renomear tarefa ${task.id}: ${e.message}", e)
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
+
+        /** Remove a [task] do projeto (ação do menu "Excluir" do item). */
+        fun deleteTask(task: Task) {
+            Log.d(TAG, "deleteTask: taskId=${task.id}")
+            viewModelScope.launch {
+                try {
+                    deleteTask.invoke(task.id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
+
+        /**
+         * Exclui o projeto corrente e, em seguida, chama [onDone] para
+         * que a camada de navegação faça `popBackStack()`.
+         */
+        fun deleteProject(onDone: () -> Unit) {
+            viewModelScope.launch {
+                try {
+                    deleteProject.invoke(projectId)
+                    onDone()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                }
+            }
+        }
+
+        /** Limpa a mensagem de erro atual — usado pela UI após o chip expirar. */
+        fun clearError() {
+            _errorMessage.value = null
+        }
+
+        /**
+         * Re-assina o pipeline de observação de tarefas após uma falha
+         * (E2.8). Incrementa [retryToken], o que dispara o
+         * `flatMapLatest` em [uiState] e descarta a coleta atual.
+         */
+        fun retry() {
+            _errorMessage.value = null
+            _retryToken.value = _retryToken.value + 1
+        }
+
+        companion object {
+            private const val TAG = "BrainOut:ProjectDetailVM"
+
+            /** Nome do argumento da rota do Navigation Compose. */
+            const val PROJECT_ID_ARG: String = "projectId"
+
+            // Mensagens embutidas no ViewModel em vez de strings.xml —
+            // mesma decisão do AuthViewModel (ver comentário no companion
+            // object de lá): frases de validação técnica que não dependem
+            // de localização para os testes de VM; a camada de UI traduz
+            // para o recurso localizado via `resolveProjectDetailMessage`
+            // (E4.6) quando a mensagem casa com uma chave conhecida.
+            const val ERROR_EMPTY_TITLE: String = "Título da tarefa não pode ser vazio"
+            const val ERROR_INVALID_TITLE: String = "Título inválido"
+            const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
+            const val ERROR_PRIORITY_LOCKED: String =
+                "RN02: alteração de prioridade bloqueada em tarefa concluída"
+
+            /**
+             * Mensagem canônica para falhas genéricas do Room/use case
+             * (E2.8). A UI resolve esta chave para o recurso localizado
+             * via `R.string.project_detail_error_load_failed`.
+             */
+            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar as tarefas do projeto"
+
+            private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
+            private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
+
+            /** Mensagem canônica de RN01 para o limite informado (usada pela UI). */
+            fun taskLimitMessage(limit: Int = MAX_ACTIVE_TASKS_PER_PROJECT): String =
+                "$ERROR_TASK_LIMIT_PREFIX$limit$ERROR_TASK_LIMIT_SUFFIX"
+
+            /** Indica se [message] é a mensagem de RN01 (limite de tarefas). */
+            fun isTaskLimitMessage(message: String): Boolean =
+                message.startsWith(ERROR_TASK_LIMIT_PREFIX) && message.endsWith(ERROR_TASK_LIMIT_SUFFIX)
+
+            /** Indica se [message] é a mensagem canônica de RN02 (prioridade bloqueada). */
+            fun isPriorityLockedMessage(message: String): Boolean =
+                message.startsWith(ERROR_PRIORITY_LOCKED_PREFIX) && ERROR_PRIORITY_LOCKED_TAG in message
+
+            /** Indica se [message] é a mensagem canônica de falha de carga (E2.8). */
+            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
+
+            private const val ERROR_PRIORITY_LOCKED_PREFIX: String = "RN02: alteração de prioridade bloqueada"
+            private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
+        }
     }
-}
 
 /**
  * Converte uma [Throwable] vinda do Room em uma mensagem canônica
  * para a UI (E2.8). Mantém a regra de não expor stack traces: a UI
  * só recebe a chave de recurso; o detalhe técnico fica em logcat.
  */
-internal fun Throwable.toProjectDetailErrorMessage(): String =
-    ProjectDetailViewModel.ERROR_LOAD_FAILED
+internal fun Throwable.toProjectDetailErrorMessage(): String = ProjectDetailViewModel.ERROR_LOAD_FAILED

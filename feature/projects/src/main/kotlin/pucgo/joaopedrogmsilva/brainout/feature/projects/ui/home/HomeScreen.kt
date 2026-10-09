@@ -66,14 +66,16 @@ fun HomeScreen(
     var currentTab by rememberSaveable { mutableStateOf(HomeTab.Projects) }
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
-    val homeUser: HomeUser = when (val current = userState) {
-        HomeUserState.Loading, HomeUserState.SignedOut -> DefaultHomeUser
-        is HomeUserState.SignedIn -> HomeUser(
-            displayName = current.displayName,
-            initials = current.initials,
-            role = current.role,
-        )
-    }
+    val homeUser: HomeUser =
+        when (val current = userState) {
+            HomeUserState.Loading, HomeUserState.SignedOut -> DefaultHomeUser
+            is HomeUserState.SignedIn ->
+                HomeUser(
+                    displayName = current.displayName,
+                    initials = current.initials,
+                    role = current.role,
+                )
+        }
 
     val isOwner = homeUser.role == HomeUserRole.Owner
 
@@ -92,7 +94,7 @@ fun HomeScreen(
                         HomeTab.Dashboard -> onOpenDashboard()
                         HomeTab.Projects -> currentTab = selected
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
@@ -110,25 +112,26 @@ fun HomeScreen(
         // existir na pilha. Esta branch existe apenas para satisfazer
         // a exaustividade do `when`.
         when (currentTab) {
-            HomeTab.Projects -> HomeProjectsContent(
-                contentPadding = innerPadding,
-                onOpenProject = onOpenProject,
-                projects = listState.projects,
-                isLoading = listState.isLoading,
-                currentFilter = currentFilter,
-                onSelectFilter = viewModel::setProjectFilter,
-                errorMessage = actionError ?: listState.errorMessage,
-                onRetry = viewModel::retry,
-                onDismissError = viewModel::clearError,
-                availableTags = listState.availableTags,
-                searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
-                onSearchQueryChange = viewModel::onSearchQueryChange,
-                selectedTagId = listState.selectedTagId,
-                onTagFilterChange = viewModel::onTagFilterChange,
-                sortOrder = listState.sortOrder,
-                onSortOrderChange = viewModel::onSortOrderChange,
-                syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
-            )
+            HomeTab.Projects ->
+                HomeProjectsContent(
+                    contentPadding = innerPadding,
+                    onOpenProject = onOpenProject,
+                    projects = listState.projects,
+                    isLoading = listState.isLoading,
+                    currentFilter = currentFilter,
+                    onSelectFilter = viewModel::setProjectFilter,
+                    errorMessage = actionError ?: listState.errorMessage,
+                    onRetry = viewModel::retry,
+                    onDismissError = viewModel::clearError,
+                    availableTags = listState.availableTags,
+                    searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
+                    onSearchQueryChange = viewModel::onSearchQueryChange,
+                    selectedTagId = listState.selectedTagId,
+                    onTagFilterChange = viewModel::onTagFilterChange,
+                    sortOrder = listState.sortOrder,
+                    onSortOrderChange = viewModel::onSortOrderChange,
+                    syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
+                )
             HomeTab.Tasks -> Unit
             HomeTab.Dashboard -> Unit
             HomeTab.Settings -> Unit

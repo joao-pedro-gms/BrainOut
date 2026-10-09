@@ -5,7 +5,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class TagNotFoundExceptionTest {
-
     @Test
     fun `mensagem identifica tag ausente`() {
         val exception = TagNotFoundException("tag-1")

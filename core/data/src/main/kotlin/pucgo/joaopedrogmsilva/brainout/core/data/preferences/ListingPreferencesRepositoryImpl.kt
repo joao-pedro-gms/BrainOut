@@ -5,13 +5,13 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferences
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Implementação DataStore (Preferences) de [ListingPreferencesRepository]
@@ -34,69 +34,79 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
  *  pelo Hilt via [pucgo.joaopedrogmsilva.brainout.core.data.di.DataModule].
  */
 @Singleton
-class ListingPreferencesRepositoryImpl @Inject constructor(
-    private val dataStore: DataStore<Preferences>,
-) : ListingPreferencesRepository {
+class ListingPreferencesRepositoryImpl
+    @Inject
+    constructor(
+        private val dataStore: DataStore<Preferences>,
+    ) : ListingPreferencesRepository {
+        override fun observe(userId: String): Flow<ListingPreferences> {
+            val keys = keysFor(userId)
+            return dataStore.data.map { prefs ->
+                ListingPreferences(
+                    searchQuery = prefs[keys.searchQuery] ?: "",
+                    selectedTagId = prefs[keys.selectedTagId],
+                    sortOrder = SortOrder.fromStorageKey(prefs[keys.sortOrder]),
+                )
+            }
+        }
 
-    override fun observe(userId: String): Flow<ListingPreferences> {
-        val keys = keysFor(userId)
-        return dataStore.data.map { prefs ->
-            ListingPreferences(
-                searchQuery = prefs[keys.searchQuery] ?: "",
-                selectedTagId = prefs[keys.selectedTagId],
-                sortOrder = SortOrder.fromStorageKey(prefs[keys.sortOrder]),
+        override suspend fun setSearchQuery(
+            userId: String,
+            query: String,
+        ) {
+            val key = keysFor(userId).searchQuery
+            dataStore.edit { prefs ->
+                val trimmed = query.trim()
+                if (trimmed.isEmpty()) {
+                    prefs.remove(key)
+                } else {
+                    prefs[key] = trimmed
+                }
+            }
+        }
+
+        override suspend fun setSelectedTagId(
+            userId: String,
+            tagId: String?,
+        ) {
+            val key = keysFor(userId).selectedTagId
+            dataStore.edit { prefs ->
+                if (tagId.isNullOrBlank()) {
+                    prefs.remove(key)
+                } else {
+                    prefs[key] = tagId
+                }
+            }
+        }
+
+        override suspend fun setSortOrder(
+            userId: String,
+            order: SortOrder,
+        ) {
+            val key = keysFor(userId).sortOrder
+            dataStore.edit { prefs ->
+                prefs[key] = order.toStorageKey()
+            }
+        }
+
+        /**
+         * Estrutura com as três chaves namespaced por `userId`. Mantida
+         * interna porque o prefixo `"listing_$userId"` é detalhe de
+         * implementação deste repositório.
+         */
+        private data class PrefKeys(
+            val searchQuery: Preferences.Key<String>,
+            val selectedTagId: Preferences.Key<String>,
+            val sortOrder: Preferences.Key<String>,
+        )
+
+        private fun keysFor(userId: String): PrefKeys {
+            require(userId.isNotBlank()) { "userId não pode ser vazio" }
+            val prefix = "listing_${userId}_"
+            return PrefKeys(
+                searchQuery = stringPreferencesKey("${prefix}search_query"),
+                selectedTagId = stringPreferencesKey("${prefix}selected_tag_id"),
+                sortOrder = stringPreferencesKey("${prefix}sort_order"),
             )
         }
     }
-
-    override suspend fun setSearchQuery(userId: String, query: String) {
-        val key = keysFor(userId).searchQuery
-        dataStore.edit { prefs ->
-            val trimmed = query.trim()
-            if (trimmed.isEmpty()) {
-                prefs.remove(key)
-            } else {
-                prefs[key] = trimmed
-            }
-        }
-    }
-
-    override suspend fun setSelectedTagId(userId: String, tagId: String?) {
-        val key = keysFor(userId).selectedTagId
-        dataStore.edit { prefs ->
-            if (tagId.isNullOrBlank()) {
-                prefs.remove(key)
-            } else {
-                prefs[key] = tagId
-            }
-        }
-    }
-
-    override suspend fun setSortOrder(userId: String, order: SortOrder) {
-        val key = keysFor(userId).sortOrder
-        dataStore.edit { prefs ->
-            prefs[key] = order.toStorageKey()
-        }
-    }
-
-    /**
-     * Estrutura com as três chaves namespaced por `userId`. Mantida
-     * interna porque o prefixo `"listing_$userId"` é detalhe de
-     * implementação deste repositório.
-     */
-    private data class PrefKeys(
-        val searchQuery: Preferences.Key<String>,
-        val selectedTagId: Preferences.Key<String>,
-        val sortOrder: Preferences.Key<String>,
-    )
-
-    private fun keysFor(userId: String): PrefKeys {
-        require(userId.isNotBlank()) { "userId não pode ser vazio" }
-        val prefix = "listing_${userId}_"
-        return PrefKeys(
-            searchQuery = stringPreferencesKey("${prefix}search_query"),
-            selectedTagId = stringPreferencesKey("${prefix}selected_tag_id"),
-            sortOrder = stringPreferencesKey("${prefix}sort_order"),
-        )
-    }
-}

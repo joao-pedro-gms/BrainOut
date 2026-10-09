@@ -30,11 +30,11 @@ private const val TAG = "BrainOut:SessionStore"
 class SessionStore(
     private val dataStore: DataStore<Preferences>,
 ) {
-
     /** Observa o id do usuário autenticado. `null` significa "sem sessão". */
-    fun observeUserId(): Flow<String?> = dataStore.data.map { prefs ->
-        prefs[USER_ID_KEY]
-    }
+    fun observeUserId(): Flow<String?> =
+        dataStore.data.map { prefs ->
+            prefs[USER_ID_KEY]
+        }
 
     /**
      * Versão suspensa da leitura para uso em pontos de inicialização
@@ -72,9 +72,8 @@ class SessionStore(
      * vez (marco E3.6). Independente da sessão: sobrevive a logout.
      * Removida apenas em [clear] (reset total do DataStore).
      */
-    suspend fun wasNotificationPermissionAsked(): Boolean {
-        return dataStore.data.first()[NOTIFICATION_PERMISSION_ASKED_KEY] == true
-    }
+    suspend fun wasNotificationPermissionAsked(): Boolean =
+        dataStore.data.first()[NOTIFICATION_PERMISSION_ASKED_KEY] == true
 
     /** Registra que a permissão de notificações foi pedida (E3.6). */
     suspend fun markNotificationPermissionAsked() {

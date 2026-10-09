@@ -23,10 +23,11 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 @Composable
 internal fun DashboardLoading() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(240.dp)
-            .testTag(DashboardTestTags.LOADING),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(240.dp)
+                .testTag(DashboardTestTags.LOADING),
         contentAlignment = Alignment.Center,
     ) {
         Column(

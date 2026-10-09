@@ -11,9 +11,9 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasTextExactly
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
@@ -35,22 +35,22 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 // locale default do Robolectric (en), `values-en` venceria a resolução.
 @Config(sdk = [34], qualifiers = "pt-rBR")
 class DashboardScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
     fun `valores iniciais sao renderizados nos cartoes e no grafico`() {
-        val state = DashboardUiState(
-            activeProjects = 3,
-            completedProjects = 1,
-            priorityCounts = listOf(2, 4, 3, 1, 0),
-            totalTasks = 10,
-            doneTasks = 4,
-            weeklyCompletionPercent = 20,
-            overallCompletionPercent = 40,
-            isLoading = false,
-        )
+        val state =
+            DashboardUiState(
+                activeProjects = 3,
+                completedProjects = 1,
+                priorityCounts = listOf(2, 4, 3, 1, 0),
+                totalTasks = 10,
+                doneTasks = 4,
+                weeklyCompletionPercent = 20,
+                overallCompletionPercent = 40,
+                isLoading = false,
+            )
 
         composeRule.setContent {
             BrainOutTheme {
@@ -110,10 +110,11 @@ class DashboardScreenTest {
         composeRule.setContent {
             MaterialTheme {
                 DashboardContent(
-                    state = DashboardUiState(
-                        isLoading = false,
-                        errorMessage = DashboardViewModel.ERROR_LOAD_FAILED,
-                    ),
+                    state =
+                        DashboardUiState(
+                            isLoading = false,
+                            errorMessage = DashboardViewModel.ERROR_LOAD_FAILED,
+                        ),
                     onRetry = {},
                     onDismissError = {},
                 )

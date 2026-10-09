@@ -1,5 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 @file:Suppress("ConstructorParameterNaming")
+
 package pucgo.joaopedrogmsilva.brainout.core.data.local.entity
 
 import androidx.room.Entity

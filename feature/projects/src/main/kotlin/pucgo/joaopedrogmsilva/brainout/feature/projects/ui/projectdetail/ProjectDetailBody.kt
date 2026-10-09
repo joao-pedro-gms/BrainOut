@@ -43,10 +43,11 @@ internal fun ProjectDetailBody(
     syncState: ProjectDetailSyncState,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -84,10 +85,11 @@ internal fun ProjectDetailBody(
             EmptyTasksCard()
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .testTag(ProjectDetailTestTags.TASK_LIST),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .testTag(ProjectDetailTestTags.TASK_LIST),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 80.dp),
             ) {

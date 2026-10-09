@@ -43,99 +43,105 @@ private const val TAG = "BrainOut:DeadlineWorker"
  * reprocessar a fila.
  */
 @HiltWorker
-class DeadlineWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val taskRepository: TaskRepository,
-    private val projectRepository: ProjectRepository,
-) : CoroutineWorker(appContext, params) {
-
-    override suspend fun doWork(): Result {
-        val taskId = inputData.getString(KEY_TASK_ID)
-        if (taskId == null) {
-            Log.e(TAG, "doWork falhou: KEY_TASK_ID não informado")
-            return Result.failure()
+class DeadlineWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val taskRepository: TaskRepository,
+        private val projectRepository: ProjectRepository,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            val taskId = inputData.getString(KEY_TASK_ID)
+            if (taskId == null) {
+                Log.e(TAG, "doWork falhou: KEY_TASK_ID não informado")
+                return Result.failure()
+            }
+            Log.d(TAG, "Executando DeadlineWorker para taskId=$taskId")
+            val outcome = publishReminder(taskId)
+            return outcome ?: Result.success()
         }
-        Log.d(TAG, "Executando DeadlineWorker para taskId=$taskId")
-        val outcome = publishReminder(taskId)
-        return outcome ?: Result.success()
-    }
 
-    /**
-     * Publica o lembrete da tarefa [taskId]; retorna `null` quando o
-     * fluxo termina com sucesso (inclusive nos cortes-circuitos) ou
-     * [Result.failure] quando o `Data` de entrada é inválido.
-     */
-    private suspend fun publishReminder(taskId: String): Result? {
-        val task: Task? = taskRepository.findById(taskId)
-        if (task == null) {
-            Log.d(TAG, "Lembrete cancelado: tarefa $taskId não foi encontrada")
+        /**
+         * Publica o lembrete da tarefa [taskId]; retorna `null` quando o
+         * fluxo termina com sucesso (inclusive nos cortes-circuitos) ou
+         * [Result.failure] quando o `Data` de entrada é inválido.
+         */
+        private suspend fun publishReminder(taskId: String): Result? {
+            val task: Task? = taskRepository.findById(taskId)
+            if (task == null) {
+                Log.d(TAG, "Lembrete cancelado: tarefa $taskId não foi encontrada")
+                return null
+            }
+            if (task.status == TaskStatus.DONE) {
+                Log.d(TAG, "Lembrete cancelado: tarefa $taskId já está concluída")
+                return null
+            }
+
+            val projectName =
+                projectRepository.findById(task.projectId)?.name
+                    ?: applicationContext.getString(R.string.deadline_unknown_project)
+
+            if (!hasNotificationPermission(applicationContext)) {
+                Log.w(TAG, "Lembrete não exibido: permissão POST_NOTIFICATIONS negada")
+                return null
+            }
+
+            val contentIntent =
+                PendingIntent.getActivity(
+                    applicationContext,
+                    task.id.hashCode(),
+                    Intent(applicationContext, pucgo.joaopedrogmsilva.brainout.MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val completeIntent =
+                PendingIntent.getBroadcast(
+                    applicationContext,
+                    task.id.hashCode(),
+                    Intent(applicationContext, DeadlineReceiver::class.java)
+                        .setAction(DeadlineReceiver.ACTION_COMPLETE_TASK)
+                        .putExtra(DeadlineReceiver.EXTRA_TASK_ID, task.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+            val notification =
+                NotificationCompat
+                    .Builder(applicationContext, WorkManagerDeadlineScheduler.CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(applicationContext.getString(R.string.deadline_notification_title, task.title))
+                    .setContentText(applicationContext.getString(R.string.deadline_notification_body, projectName))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setAutoCancel(true)
+                    .setContentIntent(contentIntent)
+                    .addAction(0, applicationContext.getString(R.string.deadline_action_complete), completeIntent)
+                    .build()
+
+            // `NotificationManagerCompat.notify` exige que a permissão
+            // `POST_NOTIFICATIONS` tenha sido concedida em API 33+. O
+            // guarda `hasNotificationPermission` acima cobre isso em runtime;
+            // aqui usamos `@RequiresPermission` para silenciar o lint com
+            // garantia documentada (a verificação é feita na linha 68).
+            @SuppressLint("MissingPermission")
+            NotificationManagerCompat
+                .from(applicationContext)
+                .notify(task.id.hashCode(), notification)
+            Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
             return null
         }
-        if (task.status == TaskStatus.DONE) {
-            Log.d(TAG, "Lembrete cancelado: tarefa $taskId já está concluída")
-            return null
+
+        private fun hasNotificationPermission(context: Context): Boolean =
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+
+        companion object {
+            /** Chave do `Data` de entrada com o id da tarefa. */
+            const val KEY_TASK_ID: String = "task_id"
         }
-
-        val projectName = projectRepository.findById(task.projectId)?.name
-            ?: applicationContext.getString(R.string.deadline_unknown_project)
-
-        if (!hasNotificationPermission(applicationContext)) {
-            Log.w(TAG, "Lembrete não exibido: permissão POST_NOTIFICATIONS negada")
-            return null
-        }
-
-        val contentIntent = PendingIntent.getActivity(
-            applicationContext,
-            task.id.hashCode(),
-            Intent(applicationContext, pucgo.joaopedrogmsilva.brainout.MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val completeIntent = PendingIntent.getBroadcast(
-            applicationContext,
-            task.id.hashCode(),
-            Intent(applicationContext, DeadlineReceiver::class.java)
-                .setAction(DeadlineReceiver.ACTION_COMPLETE_TASK)
-                .putExtra(DeadlineReceiver.EXTRA_TASK_ID, task.id),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val notification = NotificationCompat.Builder(applicationContext, WorkManagerDeadlineScheduler.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(applicationContext.getString(R.string.deadline_notification_title, task.title))
-            .setContentText(applicationContext.getString(R.string.deadline_notification_body, projectName))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setAutoCancel(true)
-            .setContentIntent(contentIntent)
-            .addAction(0, applicationContext.getString(R.string.deadline_action_complete), completeIntent)
-            .build()
-
-        // `NotificationManagerCompat.notify` exige que a permissão
-        // `POST_NOTIFICATIONS` tenha sido concedida em API 33+. O
-        // guarda `hasNotificationPermission` acima cobre isso em runtime;
-        // aqui usamos `@RequiresPermission` para silenciar o lint com
-        // garantia documentada (a verificação é feita na linha 68).
-        @SuppressLint("MissingPermission")
-        NotificationManagerCompat.from(applicationContext)
-            .notify(task.id.hashCode(), notification)
-        Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
-        return null
     }
-
-    private fun hasNotificationPermission(context: Context): Boolean =
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-    companion object {
-
-        /** Chave do `Data` de entrada com o id da tarefa. */
-        const val KEY_TASK_ID: String = "task_id"
-    }
-}

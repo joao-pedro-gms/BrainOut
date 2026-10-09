@@ -9,7 +9,6 @@ import java.time.Instant
 import java.util.UUID
 
 class TagTest {
-
     @Test
     fun `rename retorna nova instancia com nome atualizado`() {
         val original = Tag.create(ownerId = "u", name = "Estudo", color = "#0000FF")

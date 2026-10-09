@@ -1,9 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.notifications
 
+import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import javax.inject.Inject
 import javax.inject.Singleton
-import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 
 /**
  * Guarda a flag de "já pedimos a permissão POST_NOTIFICATIONS" em
@@ -15,15 +15,16 @@ import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
  * segundo arquivo de preferências por um único booleano.
  */
 @Singleton
-class NotificationPermissionStore @Inject constructor(
-    private val sessionStore: SessionStore,
-) {
+class NotificationPermissionStore
+    @Inject
+    constructor(
+        private val sessionStore: SessionStore,
+    ) {
+        /** `true` se a permissão já foi pedida alguma vez. */
+        suspend fun wasAsked(): Boolean = sessionStore.wasNotificationPermissionAsked()
 
-    /** `true` se a permissão já foi pedida alguma vez. */
-    suspend fun wasAsked(): Boolean = sessionStore.wasNotificationPermissionAsked()
-
-    /** Registra que a permissão foi pedida (independente do resultado). */
-    suspend fun markAsked() {
-        sessionStore.markNotificationPermissionAsked()
+        /** Registra que a permissão foi pedida (independente do resultado). */
+        suspend fun markAsked() {
+            sessionStore.markNotificationPermissionAsked()
+        }
     }
-}

@@ -1,7 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -18,8 +17,6 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import java.time.Instant
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -32,6 +29,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCa
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
+import java.time.Instant
 
 /**
  * Teste Compose instrumentado do fluxo de erro visível na
@@ -55,7 +53,6 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
  */
 @RunWith(AndroidJUnit4::class)
 class LoginScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -63,11 +60,12 @@ class LoginScreenTest {
         authenticate: AuthenticateUserUseCase = mockk(relaxed = true),
         createUser: CreateUserUseCase = mockk(relaxed = true),
         sessionStore: SessionStore = mockk(relaxed = true),
-    ): AuthViewModel = AuthViewModel(
-        createUserUseCase = createUser,
-        authenticateUserUseCase = authenticate,
-        sessionStore = sessionStore,
-    )
+    ): AuthViewModel =
+        AuthViewModel(
+            createUserUseCase = createUser,
+            authenticateUserUseCase = authenticate,
+            sessionStore = sessionStore,
+        )
 
     @Test
     fun submitting_with_empty_email_shows_email_error_and_focuses_email() {
@@ -87,11 +85,13 @@ class LoginScreenTest {
         }
 
         // Digita apenas a senha — e-mail continua vazio.
-        composeTestRule.onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
             .performTextInput("any-password")
 
         // Toca em Entrar.
-        composeTestRule.onNodeWithTag(LoginTestTags.SUBMIT)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.SUBMIT)
             .performClick()
 
         composeTestRule.waitForIdle()
@@ -102,12 +102,14 @@ class LoginScreenTest {
         // contrato fixado em `AuthViewModelTest`). Verificamos o estado
         // `Error` da semântica do campo, sem depender do idioma do
         // emulador.
-        composeTestRule.onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
             .assertIsDisplayed()
 
         // Foco volta para o primeiro campo inválido (E1.6).
-        composeTestRule.onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
             .assertIsFocused()
 
         // Não navegou porque a validação falhou.
@@ -134,12 +136,15 @@ class LoginScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
             .performTextInput("joao@example.com")
-        composeTestRule.onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
             .performTextInput("wrong-password")
 
-        composeTestRule.onNodeWithTag(LoginTestTags.SUBMIT)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.SUBMIT)
             .performClick()
 
         composeTestRule.waitForIdle()
@@ -147,11 +152,13 @@ class LoginScreenTest {
         // A credencial inválida vira `passwordError` (banner `errorMessage`
         // é reservado a erros de domínio sem campo) e o foco volta para a
         // senha — contrato de E1.6 fixado em `AuthViewModelTest`.
-        composeTestRule.onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
             .assertIsDisplayed()
 
-        composeTestRule.onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
+        composeTestRule
+            .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
             .assertIsFocused()
 
         // Nenhuma navegação após credenciais inválidas.
@@ -160,46 +167,51 @@ class LoginScreenTest {
     }
 
     @Test
-    fun login_with_valid_credentials_navigates_to_home() = runTest {
-        val authenticate = mockk<AuthenticateUserUseCase>()
-        val sessionStore = mockk<SessionStore>(relaxed = true)
-        val user = User(
-            id = "user-id",
-            name = "João Pedro",
-            email = "joao@example.com",
-            passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-            role = UserRole.OWNER,
-            createdAt = Instant.parse("2026-09-18T10:00:00Z"),
-        )
-        coEvery { authenticate(any(), any()) } returns user
-        coEvery { sessionStore.saveUserId(any()) } returns Unit
-        val viewModel = newViewModel(authenticate = authenticate, sessionStore = sessionStore)
+    fun login_with_valid_credentials_navigates_to_home() =
+        runTest {
+            val authenticate = mockk<AuthenticateUserUseCase>()
+            val sessionStore = mockk<SessionStore>(relaxed = true)
+            val user =
+                User(
+                    id = "user-id",
+                    name = "João Pedro",
+                    email = "joao@example.com",
+                    passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
+                    role = UserRole.OWNER,
+                    createdAt = Instant.parse("2026-09-18T10:00:00Z"),
+                )
+            coEvery { authenticate(any(), any()) } returns user
+            coEvery { sessionStore.saveUserId(any()) } returns Unit
+            val viewModel = newViewModel(authenticate = authenticate, sessionStore = sessionStore)
 
-        var navigationCount = 0
+            var navigationCount = 0
 
-        composeTestRule.setContent {
-            BrainOutTheme {
-                Surface {
-                    LoginScreen(
-                        onLoginSubmit = { navigationCount++ },
-                        onCreateAccountClicked = {},
-                        viewModel = viewModel,
-                    )
+            composeTestRule.setContent {
+                BrainOutTheme {
+                    Surface {
+                        LoginScreen(
+                            onLoginSubmit = { navigationCount++ },
+                            onCreateAccountClicked = {},
+                            viewModel = viewModel,
+                        )
+                    }
                 }
             }
+
+            composeTestRule
+                .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+                .performTextInput("joao@example.com")
+            composeTestRule
+                .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
+                .performTextInput("correct-password")
+            composeTestRule
+                .onNodeWithTag(LoginTestTags.SUBMIT)
+                .performClick()
+
+            composeTestRule.waitForIdle()
+
+            assertThat(navigationCount).isEqualTo(1)
+            coVerify { authenticate("joao@example.com", "correct-password") }
+            coVerify { sessionStore.saveUserId("user-id") }
         }
-
-        composeTestRule.onNodeWithTag(LoginTestTags.EMAIL_FIELD)
-            .performTextInput("joao@example.com")
-        composeTestRule.onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
-            .performTextInput("correct-password")
-        composeTestRule.onNodeWithTag(LoginTestTags.SUBMIT)
-            .performClick()
-
-        composeTestRule.waitForIdle()
-
-        assertThat(navigationCount).isEqualTo(1)
-        coVerify { authenticate("joao@example.com", "correct-password") }
-        coVerify { sessionStore.saveUserId("user-id") }
-    }
 }

@@ -60,16 +60,18 @@ private fun RateCard(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier
-            .testTag(testTag)
-            .heightIn(min = 96.dp),
+        modifier =
+            modifier
+                .testTag(testTag)
+                .heightIn(min = 96.dp),
         shape = RoundedCornerShape(12.dp),
         color = containerColor,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

@@ -9,7 +9,6 @@ import org.junit.Test
  * alinhadas com o esperado pelo `BrainOutNavHost` em :app.
  */
 class ProjectsRoutesTest {
-
     @Test
     fun `home route is the canonical name`() {
         assertThat(ProjectsRoutes.Home).isEqualTo("home")

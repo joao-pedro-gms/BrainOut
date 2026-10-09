@@ -41,18 +41,20 @@ internal fun HomeNoMatchesState(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = if (query.isNotBlank()) {
-                    stringResource(id = R.string.home_no_matches_title_with_query, query)
-                } else {
-                    stringResource(id = R.string.home_no_matches_title)
-                },
+                text =
+                    if (query.isNotBlank()) {
+                        stringResource(id = R.string.home_no_matches_title_with_query, query)
+                    } else {
+                        stringResource(id = R.string.home_no_matches_title)
+                    },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -74,9 +76,10 @@ internal fun HomeCompletedEmptyState(modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -103,9 +106,10 @@ internal fun HomeEmptyState(modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

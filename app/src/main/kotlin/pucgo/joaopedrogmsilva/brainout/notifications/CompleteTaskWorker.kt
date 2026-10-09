@@ -8,10 +8,10 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.io.IOException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DomainException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
+import java.io.IOException
 
 private const val TAG = "BrainOut:CompleteTaskWorker"
 
@@ -31,40 +31,43 @@ private const val TAG = "BrainOut:CompleteTaskWorker"
  * corridas com a exclusão em outro ponto da UI.
  */
 @HiltWorker
-class CompleteTaskWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val changeTaskStatus: ChangeTaskStatusUseCase,
-) : CoroutineWorker(appContext, params) {
-
-    override suspend fun doWork(): Result {
-        val taskId = inputData.getString(KEY_TASK_ID)
-        if (taskId == null) {
-            Log.e(TAG, "doWork falhou: KEY_TASK_ID ausente nos dados de entrada")
-            return Result.failure()
+class CompleteTaskWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val changeTaskStatus: ChangeTaskStatusUseCase,
+    ) : CoroutineWorker(appContext, params) {
+        override suspend fun doWork(): Result {
+            val taskId = inputData.getString(KEY_TASK_ID)
+            if (taskId == null) {
+                Log.e(TAG, "doWork falhou: KEY_TASK_ID ausente nos dados de entrada")
+                return Result.failure()
+            }
+            Log.d(TAG, "Concluindo tarefa $taskId via notificação")
+            return try {
+                changeTaskStatus(taskId, TaskStatus.DONE)
+                Log.d(TAG, "Tarefa $taskId marcada como DONE com sucesso")
+                Result.success()
+            } catch (e: DomainException) {
+                // Tarefa inexistente (excluída em outro ponto) ou outra
+                // violação de regra permanente — idempotente: encerra
+                // com sucesso para que o WorkManager não reprocesse
+                Log.w(
+                    TAG,
+                    "Domínio rejeitou alteração de status da tarefa $taskId: ${e.message}. Finalizando idempotente.",
+                )
+                Result.success()
+            } catch (e: IOException) {
+                // Falha transitória (Room indisponível, etc.) — backoff
+                // exponencial do WorkManager.
+                Log.e(TAG, "Falha de I/O ao concluir tarefa $taskId: ${e.message}. Solicitando retry.")
+                Result.retry()
+            }
         }
-        Log.d(TAG, "Concluindo tarefa $taskId via notificação")
-        return try {
-            changeTaskStatus(taskId, TaskStatus.DONE)
-            Log.d(TAG, "Tarefa $taskId marcada como DONE com sucesso")
-            Result.success()
-        } catch (e: DomainException) {
-            // Tarefa inexistente (excluída em outro ponto) ou outra
-            // violação de regra permanente — idempotente: encerra
-            // com sucesso para que o WorkManager não reprocesse
-            Log.w(TAG, "Domínio rejeitou alteração de status da tarefa $taskId: ${e.message}. Finalizando idempotente.")
-            Result.success()
-        } catch (e: IOException) {
-            // Falha transitória (Room indisponível, etc.) — backoff
-            // exponencial do WorkManager.
-            Log.e(TAG, "Falha de I/O ao concluir tarefa $taskId: ${e.message}. Solicitando retry.")
-            Result.retry()
+
+        companion object {
+            /** Chave do `Data` de entrada com o id da tarefa. */
+            const val KEY_TASK_ID: String = "task_id"
         }
     }
-
-    companion object {
-
-        /** Chave do `Data` de entrada com o id da tarefa. */
-        const val KEY_TASK_ID: String = "task_id"
-    }
-}

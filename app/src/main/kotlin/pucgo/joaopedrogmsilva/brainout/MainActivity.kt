@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,6 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutNavHost
 import pucgo.joaopedrogmsilva.brainout.navigation.BrainOutRoutes
 import pucgo.joaopedrogmsilva.brainout.notifications.NotificationPermissionStore
-import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
 
 private const val TAG = "BrainOut:MainActivity"
@@ -66,7 +66,6 @@ private const val TAG = "BrainOut:MainActivity"
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var activeUserProvider: ActiveUserProvider
 
@@ -81,7 +80,7 @@ class MainActivity : ComponentActivity() {
             BrainOutTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
                     MainRoot(
@@ -107,33 +106,34 @@ class MainActivity : ComponentActivity() {
  * - Negativa → toast explicativo com o texto do E3.6.
  */
 @Composable
-private fun NotificationPermissionRequest(
-    permissionStore: NotificationPermissionStore,
-) {
+private fun NotificationPermissionRequest(permissionStore: NotificationPermissionStore) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
     val context = androidx.compose.ui.platform.LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        Log.d(TAG, "Resultado da permissão POST_NOTIFICATIONS: concedida=$granted")
-        if (!granted) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.deadline_permission_denied_toast),
-                Toast.LENGTH_LONG,
-            ).show()
+    val launcher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            Log.d(TAG, "Resultado da permissão POST_NOTIFICATIONS: concedida=$granted")
+            if (!granted) {
+                Toast
+                    .makeText(
+                        context,
+                        context.getString(R.string.deadline_permission_denied_toast),
+                        Toast.LENGTH_LONG,
+                    ).show()
+            }
+            (context as? ComponentActivity)?.lifecycleScope?.launch {
+                permissionStore.markAsked()
+            }
         }
-        (context as? ComponentActivity)?.lifecycleScope?.launch {
-            permissionStore.markAsked()
-        }
-    }
 
     LaunchedEffect(Unit) {
-        val alreadyGranted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
+        val alreadyGranted =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
         if (alreadyGranted) {
             Log.d(TAG, "Permissão POST_NOTIFICATIONS já concedida previamente")
             return@LaunchedEffect
@@ -161,29 +161,33 @@ private fun MainRoot(
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        val hasActiveUser: Boolean = withContext(Dispatchers.IO) {
-            activeUserProvider.currentActiveUser() != null
-        }
-        val destination = if (hasActiveUser) {
-            BrainOutRoutes.Home
-        } else {
-            BrainOutRoutes.Splash
-        }
+        val hasActiveUser: Boolean =
+            withContext(Dispatchers.IO) {
+                activeUserProvider.currentActiveUser() != null
+            }
+        val destination =
+            if (hasActiveUser) {
+                BrainOutRoutes.Home
+            } else {
+                BrainOutRoutes.Splash
+            }
         Log.d(TAG, "Sessão ativa encontrada=$hasActiveUser -> Rota inicial: $destination")
         startDestination = destination
     }
 
     when (val current = startDestination) {
-        null -> Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-        else -> BrainOutNavHost(
-            navController = navController,
-            activeUserProvider = activeUserProvider,
-            startDestination = current,
-        )
+        null ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        else ->
+            BrainOutNavHost(
+                navController = navController,
+                activeUserProvider = activeUserProvider,
+                startDestination = current,
+            )
     }
 }

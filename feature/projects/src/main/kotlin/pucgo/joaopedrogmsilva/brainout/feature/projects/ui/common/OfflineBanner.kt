@@ -43,31 +43,35 @@ internal fun OfflineBanner(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = if (showBanner) {
-            MaterialTheme.colorScheme.errorContainer
-        } else {
-            MaterialTheme.colorScheme.secondaryContainer
-        },
+        color =
+            if (showBanner) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.secondaryContainer
+            },
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(
-                imageVector = if (showBanner) {
-                    Icons.Outlined.CloudOff
-                } else {
-                    Icons.Outlined.CloudSync
-                },
+                imageVector =
+                    if (showBanner) {
+                        Icons.Outlined.CloudOff
+                    } else {
+                        Icons.Outlined.CloudSync
+                    },
                 contentDescription = null,
-                tint = if (showBanner) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                },
+                tint =
+                    if (showBanner) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    },
             )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 if (showBanner) {
@@ -79,20 +83,23 @@ internal fun OfflineBanner(
                 }
                 if (pendingOps > 0) {
                     Text(
-                        text = stringResource(
-                            id = if (pendingOps == 1) {
-                                R.string.home_pending_ops_message
-                            } else {
-                                R.string.home_pending_ops_message_plural
-                            },
-                            pendingOps,
-                        ),
+                        text =
+                            stringResource(
+                                id =
+                                    if (pendingOps == 1) {
+                                        R.string.home_pending_ops_message
+                                    } else {
+                                        R.string.home_pending_ops_message_plural
+                                    },
+                                pendingOps,
+                            ),
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (showBanner) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
+                        color =
+                            if (showBanner) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            },
                     )
                 }
             }

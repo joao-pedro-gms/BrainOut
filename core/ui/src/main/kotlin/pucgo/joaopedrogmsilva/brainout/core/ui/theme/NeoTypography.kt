@@ -30,19 +30,20 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R
  * rede de segurança do Android, não uma família declarada aqui).
  */
 object NeoFonts {
-
     /** Pesos reais empacotados: 600 (fichas), 700 (títulos), 800 (display). */
-    val Archivo: FontFamily = FontFamily(
-        Font(R.font.archivo_semi_bold, weight = FontWeight.W600),
-        Font(R.font.archivo_bold, weight = FontWeight.W700),
-        Font(R.font.archivo_extra_bold, weight = FontWeight.W800),
-    )
+    val Archivo: FontFamily =
+        FontFamily(
+            Font(R.font.archivo_semi_bold, weight = FontWeight.W600),
+            Font(R.font.archivo_bold, weight = FontWeight.W700),
+            Font(R.font.archivo_extra_bold, weight = FontWeight.W800),
+        )
 
     /** Pesos reais empacotados: 400 (corpo), 600 (rótulos e metadados). */
-    val PublicSans: FontFamily = FontFamily(
-        Font(R.font.public_sans_regular, weight = FontWeight.W400),
-        Font(R.font.public_sans_semi_bold, weight = FontWeight.W600),
-    )
+    val PublicSans: FontFamily =
+        FontFamily(
+            Font(R.font.public_sans_regular, weight = FontWeight.W400),
+            Font(R.font.public_sans_semi_bold, weight = FontWeight.W600),
+        )
 }
 
 /**
@@ -72,146 +73,161 @@ object NeoFonts {
  * `fontFeatureSettings = "tnum"` sem depender de alinhamento por acaso.
  */
 object NeoTypography {
+    val displayLarge: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W800,
+            fontSize = 40.sp,
+            lineHeight = 48.sp,
+            letterSpacing = (-0.5).sp,
+        )
 
-    val displayLarge: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W800,
-        fontSize = 40.sp,
-        lineHeight = 48.sp,
-        letterSpacing = (-0.5).sp,
-    )
+    val displayMedium: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W800,
+            fontSize = 36.sp,
+            lineHeight = 44.sp,
+            letterSpacing = (-0.5).sp,
+        )
 
-    val displayMedium: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W800,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
-        letterSpacing = (-0.5).sp,
-    )
+    val displaySmall: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W800,
+            fontSize = 32.sp,
+            lineHeight = 40.sp,
+            letterSpacing = (-0.5).sp,
+        )
 
-    val displaySmall: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W800,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-0.5).sp,
-    )
+    val headlineLarge: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W700,
+            fontSize = 32.sp,
+            lineHeight = 40.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val headlineLarge: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W700,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = 0.sp,
-    )
+    val headlineMedium: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W700,
+            fontSize = 28.sp,
+            lineHeight = 36.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val headlineMedium: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W700,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = 0.sp,
-    )
+    val headlineSmall: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W700,
+            fontSize = 24.sp,
+            lineHeight = 32.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val headlineSmall: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W700,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = 0.sp,
-    )
+    val titleLarge: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W700,
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val titleLarge: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W700,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp,
-    )
+    val titleMedium: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W600,
+            fontSize = 18.sp,
+            lineHeight = 26.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val titleMedium: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W600,
-        fontSize = 18.sp,
-        lineHeight = 26.sp,
-        letterSpacing = 0.sp,
-    )
+    val titleSmall: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.Archivo,
+            fontWeight = FontWeight.W600,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val titleSmall: TextStyle = TextStyle(
-        fontFamily = NeoFonts.Archivo,
-        fontWeight = FontWeight.W600,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.sp,
-    )
+    val bodyLarge: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W400,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val bodyLarge: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W400,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.sp,
-    )
+    val bodyMedium: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W400,
+            fontSize = 14.sp,
+            lineHeight = 22.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val bodyMedium: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W400,
-        fontSize = 14.sp,
-        lineHeight = 22.sp,
-        letterSpacing = 0.sp,
-    )
+    val bodySmall: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W400,
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.sp,
+        )
 
-    val bodySmall: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W400,
-        fontSize = 13.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp,
-    )
+    val labelLarge: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W600,
+            fontSize = 15.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.1.sp,
+        )
 
-    val labelLarge: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W600,
-        fontSize = 15.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp,
-    )
+    val labelMedium: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W600,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.1.sp,
+        )
 
-    val labelMedium: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W600,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp,
-    )
-
-    val labelSmall: TextStyle = TextStyle(
-        fontFamily = NeoFonts.PublicSans,
-        fontWeight = FontWeight.W600,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.1.sp,
-    )
+    val labelSmall: TextStyle =
+        TextStyle(
+            fontFamily = NeoFonts.PublicSans,
+            fontWeight = FontWeight.W600,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            letterSpacing = 0.1.sp,
+        )
 
     /**
      * Os quinze estilos na ordem do contrato, para o teste de paridade e
      * para a galeria de componentes consultar por papel Material.
      */
-    val styles: Map<String, TextStyle> = linkedMapOf(
-        "displayLarge" to displayLarge,
-        "displayMedium" to displayMedium,
-        "displaySmall" to displaySmall,
-        "headlineLarge" to headlineLarge,
-        "headlineMedium" to headlineMedium,
-        "headlineSmall" to headlineSmall,
-        "titleLarge" to titleLarge,
-        "titleMedium" to titleMedium,
-        "titleSmall" to titleSmall,
-        "bodyLarge" to bodyLarge,
-        "bodyMedium" to bodyMedium,
-        "bodySmall" to bodySmall,
-        "labelLarge" to labelLarge,
-        "labelMedium" to labelMedium,
-        "labelSmall" to labelSmall,
-    )
+    val styles: Map<String, TextStyle> =
+        linkedMapOf(
+            "displayLarge" to displayLarge,
+            "displayMedium" to displayMedium,
+            "displaySmall" to displaySmall,
+            "headlineLarge" to headlineLarge,
+            "headlineMedium" to headlineMedium,
+            "headlineSmall" to headlineSmall,
+            "titleLarge" to titleLarge,
+            "titleMedium" to titleMedium,
+            "titleSmall" to titleSmall,
+            "bodyLarge" to bodyLarge,
+            "bodyMedium" to bodyMedium,
+            "bodySmall" to bodySmall,
+            "labelLarge" to labelLarge,
+            "labelMedium" to labelMedium,
+            "labelSmall" to labelSmall,
+        )
 }

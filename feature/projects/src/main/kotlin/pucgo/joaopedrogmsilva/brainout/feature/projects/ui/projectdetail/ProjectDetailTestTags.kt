@@ -24,6 +24,7 @@ object ProjectDetailTestTags {
     const val TASK_ITEM_MENU_CHANGE_PRIORITY: String = "project_detail_task_item_menu_change_priority"
     const val TASK_PRIORITY_DIALOG: String = "project_detail_task_priority_dialog"
     const val TASK_PRIORITY_CHIP_OPTION_PREFIX: String = "project_detail_task_priority_option_"
+
     // E2.8 — tags de teste para loader e banner de erro.
     const val LOADING: String = "project_detail_loading"
     const val ERROR_BANNER: String = "project_detail_error_banner"

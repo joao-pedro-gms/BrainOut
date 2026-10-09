@@ -22,7 +22,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
  */
 @Dao
 interface PendingOpDao {
-
     // --- Reads ---
 
     /**
@@ -58,7 +57,10 @@ interface PendingOpDao {
 
     /** Remove todas as ops de uma entidade (usado após sync completo). */
     @Query("DELETE FROM pending_ops WHERE entity_type = :entityType AND entity_id = :entityId")
-    suspend fun deleteForEntity(entityType: String, entityId: String)
+    suspend fun deleteForEntity(
+        entityType: String,
+        entityId: String,
+    )
 
     /**
      * Registra uma tentativa: incrementa [PendingOpEntity.attempts] e
@@ -86,7 +88,10 @@ interface PendingOpDao {
      * nunca há alteração local sem op pendente correspondente.
      */
     @Transaction
-    suspend fun enqueueInTx(op: PendingOpEntity, write: suspend () -> Unit) {
+    suspend fun enqueueInTx(
+        op: PendingOpEntity,
+        write: suspend () -> Unit,
+    ) {
         write()
         insert(op)
     }

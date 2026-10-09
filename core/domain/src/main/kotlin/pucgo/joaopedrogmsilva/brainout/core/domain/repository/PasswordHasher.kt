@@ -12,7 +12,6 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.repository
  * determinístico (ex.: sempre devolve "hashed(<senha>)").
  */
 interface PasswordHasher {
-
     /**
      * Recebe a senha em texto puro e retorna o hash a ser persistido.
      *
@@ -25,5 +24,8 @@ interface PasswordHasher {
      * gerado por [hash]. Deve ser resistente a timing attacks quando
      * executado em produção.
      */
-    fun verify(rawPassword: String, storedHash: String): Boolean
+    fun verify(
+        rawPassword: String,
+        storedHash: String,
+    ): Boolean
 }

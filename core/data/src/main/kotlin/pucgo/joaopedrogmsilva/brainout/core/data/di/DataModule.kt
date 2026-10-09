@@ -1,5 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 @file:Suppress("TooManyFunctions") // E3.5 adiciona providers de feriados.
+
 package pucgo.joaopedrogmsilva.brainout.core.data.di
 
 import android.content.Context
@@ -11,7 +12,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 import pucgo.joaopedrogmsilva.brainout.core.data.BuildConfig
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
@@ -33,8 +33,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.BrainOutSyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.AndroidConnectivityObserver
+import pucgo.joaopedrogmsilva.brainout.core.data.sync.BrainOutSyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
 import pucgo.joaopedrogmsilva.brainout.core.data.sync.SyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
@@ -44,6 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+import javax.inject.Singleton
 
 /**
  * Módulo Hilt do `:core:data`.
@@ -64,27 +65,28 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
-
     @Provides
     @Singleton
     fun provideBrainOutDatabase(
         @ApplicationContext context: Context,
-    ): BrainOutDatabase = Room.databaseBuilder(
-        context,
-        BrainOutDatabase::class.java,
-        BrainOutDatabase.DATABASE_NAME,
-    )
-        // Migration v1 → v2: adiciona `projects`, `tasks`, `tags` e
-        // `project_tags` sem destruir `users`. Mantém os cadastros
-        // existentes do E1.5.
-        // Migration v2 → v3 (RN03 — E2.5): adiciona a coluna
-        // `tasks.completed_at` (`ALTER TABLE ADD COLUMN INTEGER
-        // nullable`) sem destruir dados. Tarefas preexistentes
-        // ficam com `completed_at IS NULL`.
-        // Migration v3 → v4 (E3.3): cria a tabela `pending_ops` da
-        // fila de sincronização offline — não destrutiva.
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-        .build()
+    ): BrainOutDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                BrainOutDatabase::class.java,
+                BrainOutDatabase.DATABASE_NAME,
+            )
+            // Migration v1 → v2: adiciona `projects`, `tasks`, `tags` e
+            // `project_tags` sem destruir `users`. Mantém os cadastros
+            // existentes do E1.5.
+            // Migration v2 → v3 (RN03 — E2.5): adiciona a coluna
+            // `tasks.completed_at` (`ALTER TABLE ADD COLUMN INTEGER
+            // nullable`) sem destruir dados. Tarefas preexistentes
+            // ficam com `completed_at IS NULL`.
+            // Migration v3 → v4 (E3.3): cria a tabela `pending_ops` da
+            // fila de sincronização offline — não destrutiva.
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .build()
 
     @Provides
     fun provideUserDao(database: BrainOutDatabase): UserDao = database.userDao()
@@ -139,9 +141,8 @@ object DataModule {
      */
     @Provides
     @Singleton
-    fun provideListingPreferencesRepository(
-        dataStore: DataStore<Preferences>,
-    ): ListingPreferencesRepository = ListingPreferencesRepositoryImpl(dataStore = dataStore)
+    fun provideListingPreferencesRepository(dataStore: DataStore<Preferences>): ListingPreferencesRepository =
+        ListingPreferencesRepositoryImpl(dataStore = dataStore)
 
     @Provides
     @Singleton
@@ -155,9 +156,7 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideSessionStore(
-        dataStore: DataStore<Preferences>,
-    ): SessionStore = SessionStore(dataStore = dataStore)
+    fun provideSessionStore(dataStore: DataStore<Preferences>): SessionStore = SessionStore(dataStore = dataStore)
 
     /**
      * Fonte de dados remota (E3.2). A URL base vem do `BuildConfig`
@@ -180,8 +179,7 @@ object DataModule {
      */
     @Provides
     @Singleton
-    fun provideSyncDispatcher(remote: RemoteDataSource): SyncDispatcher =
-        BrainOutSyncDispatcher(remote)
+    fun provideSyncDispatcher(remote: RemoteDataSource): SyncDispatcher = BrainOutSyncDispatcher(remote)
 
     /**
      * Observador de conectividade reativo (E3.4): alimenta o banner
@@ -190,9 +188,7 @@ object DataModule {
      */
     @Provides
     @Singleton
-    fun provideConnectivityObserver(
-        impl: AndroidConnectivityObserver,
-    ): ConnectivityObserver = impl
+    fun provideConnectivityObserver(impl: AndroidConnectivityObserver): ConnectivityObserver = impl
 
     /**
      * Fonte de dados remota do serviço público de feriados nacionais
@@ -207,7 +203,6 @@ object DataModule {
     /** Bind de [HolidayRepository] para a implementação HTTP (E3.5). */
     @Provides
     @Singleton
-    fun provideHolidayRepository(
-        remote: HolidayRemoteDataSource,
-    ): HolidayRepository = HolidayRepositoryImpl(remote = remote)
+    fun provideHolidayRepository(remote: HolidayRemoteDataSource): HolidayRepository =
+        HolidayRepositoryImpl(remote = remote)
 }

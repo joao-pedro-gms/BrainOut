@@ -7,8 +7,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import java.time.Instant
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +41,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
+import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Testes do [HomeViewModel].
@@ -70,7 +70,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private val projectRepository: ProjectRepository = mockk(relaxed = true)
@@ -104,96 +103,103 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun newViewModel(): HomeViewModel = HomeViewModel(
-        projectRepository = projectRepository,
-        tagRepository = tagRepository,
-        activeUserProvider = activeUserProvider,
-        listingPreferences = listingPreferences,
-        connectivityObserver = object : ConnectivityObserver {
-            override fun observe() = connectivityFlow
-        },
-        pendingSyncMonitor = mockk {
-            every { observePendingCount() } returns pendingOpsFlow
-        },
-        createProject = createProject,
-        updateProject = updateProject,
-        deleteProject = deleteProject,
-        createTag = createTag,
-    )
+    private fun newViewModel(): HomeViewModel =
+        HomeViewModel(
+            projectRepository = projectRepository,
+            tagRepository = tagRepository,
+            activeUserProvider = activeUserProvider,
+            listingPreferences = listingPreferences,
+            connectivityObserver =
+                object : ConnectivityObserver {
+                    override fun observe() = connectivityFlow
+                },
+            pendingSyncMonitor =
+                mockk {
+                    every { observePendingCount() } returns pendingOpsFlow
+                },
+            createProject = createProject,
+            updateProject = updateProject,
+            deleteProject = deleteProject,
+            createTag = createTag,
+        )
 
     @Test
-    fun `SignedIn owner surfaces owner role`() = runTest {
-        val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.OWNER))
-        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+    fun `SignedIn owner surfaces owner role`() =
+        runTest {
+            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        viewModel.userState.test {
-            // Pode vir Loading inicialmente; consumimos até SignedIn.
-            var emitted = awaitItem()
-            while (emitted is HomeUserState.Loading) {
-                emitted = awaitItem()
+            viewModel.userState.test {
+                // Pode vir Loading inicialmente; consumimos até SignedIn.
+                var emitted = awaitItem()
+                while (emitted is HomeUserState.Loading) {
+                    emitted = awaitItem()
+                }
+                assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
+                val signedIn = emitted as HomeUserState.SignedIn
+                assertThat(signedIn.displayName).isEqualTo("João Pedro")
+                assertThat(signedIn.role).isEqualTo(HomeUserRole.Owner)
+                assertThat(signedIn.initials).isEqualTo("JP")
+                cancelAndIgnoreRemainingEvents()
             }
-            assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
-            val signedIn = emitted as HomeUserState.SignedIn
-            assertThat(signedIn.displayName).isEqualTo("João Pedro")
-            assertThat(signedIn.role).isEqualTo(HomeUserRole.Owner)
-            assertThat(signedIn.initials).isEqualTo("JP")
-            cancelAndIgnoreRemainingEvents()
+
+            coVerify { activeUserProvider.observeActiveUser() }
         }
 
-        coVerify { activeUserProvider.observeActiveUser() }
-    }
-
     @Test
-    fun `SignedIn member surfaces member role`() = runTest {
-        val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
-        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+    fun `SignedIn member surfaces member role`() =
+        runTest {
+            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
+            coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        viewModel.userState.test {
-            var emitted = awaitItem()
-            while (emitted is HomeUserState.Loading) {
-                emitted = awaitItem()
+            viewModel.userState.test {
+                var emitted = awaitItem()
+                while (emitted is HomeUserState.Loading) {
+                    emitted = awaitItem()
+                }
+                assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
+                val signedIn = emitted as HomeUserState.SignedIn
+                assertThat(signedIn.role).isEqualTo(HomeUserRole.Member)
+                cancelAndIgnoreRemainingEvents()
             }
-            assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
-            val signedIn = emitted as HomeUserState.SignedIn
-            assertThat(signedIn.role).isEqualTo(HomeUserRole.Member)
-            cancelAndIgnoreRemainingEvents()
         }
-    }
 
     @Test
-    fun `null user surfaces SignedOut`() = runTest {
-        val userFlow = MutableStateFlow<User?>(null)
-        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+    fun `null user surfaces SignedOut`() =
+        runTest {
+            val userFlow = MutableStateFlow<User?>(null)
+            coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        viewModel.userState.test {
-            var emitted = awaitItem()
-            while (emitted is HomeUserState.Loading) {
-                emitted = awaitItem()
+            viewModel.userState.test {
+                var emitted = awaitItem()
+                while (emitted is HomeUserState.Loading) {
+                    emitted = awaitItem()
+                }
+                assertThat(emitted).isEqualTo(HomeUserState.SignedOut)
+                cancelAndIgnoreRemainingEvents()
             }
-            assertThat(emitted).isEqualTo(HomeUserState.SignedOut)
-            cancelAndIgnoreRemainingEvents()
         }
-    }
 
     @Test
-    fun `onMemberFabClicked opens upgrade dialog`() = runTest {
-        val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
-        coEvery { activeUserProvider.observeActiveUser() } returns userFlow
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+    fun `onMemberFabClicked opens upgrade dialog`() =
+        runTest {
+            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
+            coEvery { activeUserProvider.observeActiveUser() } returns userFlow
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        assertThat(viewModel.upgradeDialogVisible.value).isFalse()
-        viewModel.onMemberFabClicked()
-        assertThat(viewModel.upgradeDialogVisible.value).isTrue()
-        viewModel.dismissUpgradeDialog()
-        assertThat(viewModel.upgradeDialogVisible.value).isFalse()
-    }
+            assertThat(viewModel.upgradeDialogVisible.value).isFalse()
+            viewModel.onMemberFabClicked()
+            assertThat(viewModel.upgradeDialogVisible.value).isTrue()
+            viewModel.dismissUpgradeDialog()
+            assertThat(viewModel.upgradeDialogVisible.value).isFalse()
+        }
 
     @Test
     fun `computeInitials produces sensible monograms`() {
@@ -205,20 +211,21 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `createProject dispara use case com ownerId correto`() = runTest {
-        val newProject = Project.create(name = "Novo", ownerId = "u1")
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { createProject.invoke(any(), any(), any(), any()) } returns newProject
+    fun `createProject dispara use case com ownerId correto`() =
+        runTest {
+            val newProject = Project.create(name = "Novo", ownerId = "u1")
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { createProject.invoke(any(), any(), any(), any()) } returns newProject
 
-        val viewModel = newViewModel()
-        viewModel.createProject("Novo", null, emptyList())
-        advanceUntilIdle()
+            val viewModel = newViewModel()
+            viewModel.createProject("Novo", null, emptyList())
+            advanceUntilIdle()
 
-        coVerify {
-            createProject.invoke(name = "Novo", ownerId = "u1", description = null, tagIds = emptyList())
+            coVerify {
+                createProject.invoke(name = "Novo", ownerId = "u1", description = null, tagIds = emptyList())
+            }
         }
-    }
 
     // === E2.8 — estados de erro e retry ==========================================
 
@@ -235,43 +242,45 @@ class HomeViewModelTest {
      * emissão do upstream (parâmetro fundamental do spinner).
      */
     @Test
-    fun `E2 8 uiState recebe primeira emissao do Flow com isLoading false`() = runTest {
-        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
-        val tagsFlow = MutableStateFlow<List<Tag>>(emptyList())
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
-        coEvery { tagRepository.observeForOwner("u1") } returns tagsFlow
+    fun `E2 8 uiState recebe primeira emissao do Flow com isLoading false`() =
+        runTest {
+            val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+            val tagsFlow = MutableStateFlow<List<Tag>>(emptyList())
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
+            coEvery { tagRepository.observeForOwner("u1") } returns tagsFlow
 
-        val viewModel = newViewModel()
+            val viewModel = newViewModel()
 
-        // Estado inicial antes da primeira emissão do `combine`
-        // (cacheado como `initialValue`): `isLoading = true`. Isso
-        // é o que a UI usa para renderizar o spinner enquanto o
-        // Room não emite.
-        assertThat(viewModel.uiState.value.isLoading).isTrue()
+            // Estado inicial antes da primeira emissão do `combine`
+            // (cacheado como `initialValue`): `isLoading = true`. Isso
+            // é o que a UI usa para renderizar o spinner enquanto o
+            // Room não emite.
+            assertThat(viewModel.uiState.value.isLoading).isTrue()
 
-        viewModel.uiState.test {
-            // Primeira emissão do `combine`: lista vazia, loading
-            // concluído.
-            advanceUntilIdle()
-            var state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.projects).isEmpty()
+            viewModel.uiState.test {
+                // Primeira emissão do `combine`: lista vazia, loading
+                // concluído.
+                advanceUntilIdle()
+                var state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.projects).isEmpty()
 
-            // Emite a primeira lista não-vazia.
-            val now = Instant.parse("2026-09-19T00:00:00Z")
-            projectsFlow.value = listOf(
-                Project.create(name = "P1", ownerId = "u1", now = now),
-            )
-            advanceUntilIdle()
-            state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.projects).hasSize(1)
+                // Emite a primeira lista não-vazia.
+                val now = Instant.parse("2026-09-19T00:00:00Z")
+                projectsFlow.value =
+                    listOf(
+                        Project.create(name = "P1", ownerId = "u1", now = now),
+                    )
+                advanceUntilIdle()
+                state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.projects).hasSize(1)
 
-            cancelAndIgnoreRemainingEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     /**
      * Simula falha do Room no Flow de busca (E2.6) usado pelo
@@ -281,26 +290,28 @@ class HomeViewModelTest {
      * sobre o novo pipeline `observeSearch`.
      */
     @Test
-    fun `E2 8 erro do Flow de busca popula errorMessage e sai do loading`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flow {
-            throw IllegalStateException("boom")
+    fun `E2 8 erro do Flow de busca popula errorMessage e sai do loading`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
+                flow {
+                    throw IllegalStateException("boom")
+                }
+            coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel = newViewModel()
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.errorMessage).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.isLoading).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
         }
-        coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
-
-        val viewModel = newViewModel()
-
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.errorMessage).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
-            assertThat(state.isLoading).isFalse()
-            cancelAndIgnoreRemainingEvents()
-        }
-
-        assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
-    }
 
     /**
      * Após uma falha, `retry()` deve re-assinar o Flow. Aqui
@@ -313,40 +324,42 @@ class HomeViewModelTest {
      * chega a iniciar (e o `catch` nunca dispara).
      */
     @Test
-    fun `E2 8 retry re-assina o Flow apos erro e limpa errorMessage`() = runTest {
-        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
-        // Inicialmente falha; após retry, o mock é reconfigurado abaixo.
-        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flow {
-            throw IllegalStateException("boom")
+    fun `E2 8 retry re-assina o Flow apos erro e limpa errorMessage`() =
+        runTest {
+            val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
+            // Inicialmente falha; após retry, o mock é reconfigurado abaixo.
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
+                flow {
+                    throw IllegalStateException("boom")
+                }
+
+            val viewModel = newViewModel()
+
+            // Força a inscrição no `stateIn` para que o upstream
+            // comece a emitir e o `catch` seja exercitado.
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                // Após a falha, `errorMessage` deve estar populado.
+                assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
+
+                // Reconfigura o mock para emitir lista vazia (sucesso).
+                coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
+
+                viewModel.retry()
+                advanceUntilIdle()
+
+                // O retry re-assina o Flow e o sucesso limpa o erro.
+                assertThat(viewModel.errorMessage.value).isNull()
+                val state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.errorMessage).isNull()
+
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
-        val viewModel = newViewModel()
-
-        // Força a inscrição no `stateIn` para que o upstream
-        // comece a emitir e o `catch` seja exercitado.
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            // Após a falha, `errorMessage` deve estar populado.
-            assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
-
-            // Reconfigura o mock para emitir lista vazia (sucesso).
-            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
-
-            viewModel.retry()
-            advanceUntilIdle()
-
-            // O retry re-assina o Flow e o sucesso limpa o erro.
-            assertThat(viewModel.errorMessage.value).isNull()
-            val state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isNull()
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
 
     /**
      * Regressão FIX-01 — causa raiz das quatro falhas. O contrato
@@ -365,23 +378,24 @@ class HomeViewModelTest {
      * Home depende disso.
      */
     @Test
-    fun `E2 8 pipeline emite estado vazio mesmo sem emissao das tags por projeto`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flowOf(emptyList())
-        // Contrato real do repositório: completa sem emitir.
-        every { tagRepository.observeByProjectIds(any()) } returns emptyFlow()
+    fun `E2 8 pipeline emite estado vazio mesmo sem emissao das tags por projeto`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flowOf(emptyList())
+            // Contrato real do repositório: completa sem emitir.
+            every { tagRepository.observeByProjectIds(any()) } returns emptyFlow()
 
-        val viewModel = newViewModel()
+            val viewModel = newViewModel()
 
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.projects).isEmpty()
-            cancelAndIgnoreRemainingEvents()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.projects).isEmpty()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     /**
      * Falha em `createProject` (uso de I/O do Room) deve ser
@@ -389,34 +403,36 @@ class HomeViewModelTest {
      * `errorMessage` — sem crash, sem stack trace exposto.
      */
     @Test
-    fun `E2 8 falha em createProject popula errorMessage de acao`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { createProject.invoke(any(), any(), any(), any()) } throws
-            IllegalStateException("disk full")
+    fun `E2 8 falha em createProject popula errorMessage de acao`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { createProject.invoke(any(), any(), any(), any()) } throws
+                IllegalStateException("disk full")
 
-        val viewModel = newViewModel()
-        viewModel.createProject("x", null, emptyList())
-        advanceUntilIdle()
+            val viewModel = newViewModel()
+            viewModel.createProject("x", null, emptyList())
+            advanceUntilIdle()
 
-        assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_ACTION_FAILED)
-    }
+            assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_ACTION_FAILED)
+        }
 
     @Test
-    fun `E2 8 clearError zera errorMessage`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { createProject.invoke(any(), any(), any(), any()) } throws
-            IllegalStateException("boom")
+    fun `E2 8 clearError zera errorMessage`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { createProject.invoke(any(), any(), any(), any()) } throws
+                IllegalStateException("boom")
 
-        val viewModel = newViewModel()
-        viewModel.createProject("x", null, emptyList())
-        advanceUntilIdle()
-        assertThat(viewModel.errorMessage.value).isNotNull()
+            val viewModel = newViewModel()
+            viewModel.createProject("x", null, emptyList())
+            advanceUntilIdle()
+            assertThat(viewModel.errorMessage.value).isNotNull()
 
-        viewModel.clearError()
-        assertThat(viewModel.errorMessage.value).isNull()
-    }
+            viewModel.clearError()
+            assertThat(viewModel.errorMessage.value).isNull()
+        }
 
     // === E2.6 — busca, filtro, ordenação ==========================================
 
@@ -427,22 +443,23 @@ class HomeViewModelTest {
      * (estado de UI, sem esperar o debounce).
      */
     @Test
-    fun `E2 6 onSearchQueryChange persiste e expoe no searchQuery`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+    fun `E2 6 onSearchQueryChange persiste e expoe no searchQuery`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
 
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        viewModel.onSearchQueryChange("App")
-        advanceUntilIdle()
+            viewModel.onSearchQueryChange("App")
+            advanceUntilIdle()
 
-        // Estado de UI: imediato, sem debounce.
-        assertThat(viewModel.searchQuery.value).isEqualTo("App")
-        // Persistência: o repositório recebeu a chamada (suspendeu
-        // via `viewModelScope.launch`).
-        coVerify { listingPreferences.setSearchQuery("u1", "App") }
-    }
+            // Estado de UI: imediato, sem debounce.
+            assertThat(viewModel.searchQuery.value).isEqualTo("App")
+            // Persistência: o repositório recebeu a chamada (suspendeu
+            // via `viewModelScope.launch`).
+            coVerify { listingPreferences.setSearchQuery("u1", "App") }
+        }
 
     /**
      * Verifica que a busca textual é propagada para o Room
@@ -451,35 +468,36 @@ class HomeViewModelTest {
      * sem precisar esperar o wall-clock 300ms.
      */
     @Test
-    fun `E2 6 busca textual e propagada para observeSearch apos debounce`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
-        coEvery {
-            projectRepository.observeSearch("u1", "app", any(), any())
-        } returns projectsFlow
+    fun `E2 6 busca textual e propagada para observeSearch apos debounce`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+            coEvery {
+                projectRepository.observeSearch("u1", "app", any(), any())
+            } returns projectsFlow
 
-        val viewModel = newViewModel()
-        // Assina o `uiState` para que o pipeline comece a rodar —
-        // sem assinante, o `WhileSubscribed` interno não inicia.
-        val job = launch { viewModel.uiState.collect() }
-        advanceUntilIdle()
+            val viewModel = newViewModel()
+            // Assina o `uiState` para que o pipeline comece a rodar —
+            // sem assinante, o `WhileSubscribed` interno não inicia.
+            val job = launch { viewModel.uiState.collect() }
+            advanceUntilIdle()
 
-        viewModel.onSearchQueryChange("app")
-        // Avança o virtual clock o suficiente para o debounce(300ms) disparar.
-        advanceTimeBy(400.milliseconds)
-        advanceUntilIdle()
+            viewModel.onSearchQueryChange("app")
+            // Avança o virtual clock o suficiente para o debounce(300ms) disparar.
+            advanceTimeBy(400.milliseconds)
+            advanceUntilIdle()
 
-        coVerify {
-            projectRepository.observeSearch(
-                ownerId = "u1",
-                query = "app",
-                tagId = null,
-                sortOrder = SortOrder.CreatedDesc,
-            )
+            coVerify {
+                projectRepository.observeSearch(
+                    ownerId = "u1",
+                    query = "app",
+                    tagId = null,
+                    sortOrder = SortOrder.CreatedDesc,
+                )
+            }
+            job.cancel()
         }
-        job.cancel()
-    }
 
     /**
      * Verifica que `onTagFilterChange` persiste via
@@ -487,18 +505,19 @@ class HomeViewModelTest {
      * propagado para `observeSearch`.
      */
     @Test
-    fun `E2 6 filtro por tag persiste e propaga para observeSearch`() = runTest {
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+    fun `E2 6 filtro por tag persiste e propaga para observeSearch`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
 
-        val viewModel = newViewModel()
-        advanceUntilIdle()
+            val viewModel = newViewModel()
+            advanceUntilIdle()
 
-        viewModel.onTagFilterChange("tag-estudos")
-        advanceUntilIdle()
+            viewModel.onTagFilterChange("tag-estudos")
+            advanceUntilIdle()
 
-        coVerify { listingPreferences.setSelectedTagId("u1", "tag-estudos") }
-    }
+            coVerify { listingPreferences.setSelectedTagId("u1", "tag-estudos") }
+        }
 
     /**
      * Verifica que `onSortOrderChange` persiste o valor no
@@ -509,36 +528,37 @@ class HomeViewModelTest {
      * "ordenação persiste entre instâncias do VM".
      */
     @Test
-    fun `E2 6 ordenacao persiste entre instancias do ViewModel`() = runTest {
-        val prefsFlow = MutableStateFlow(ListingPreferences(sortOrder = SortOrder.NameAsc))
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { listingPreferences.observe("u1") } returns prefsFlow
-        coEvery { listingPreferences.setSortOrder("u1", SortOrder.NameAsc) } coAnswers {
-            prefsFlow.value = ListingPreferences(sortOrder = SortOrder.NameAsc)
-        }
-        coEvery { listingPreferences.setSortOrder("u1", SortOrder.CreatedAsc) } coAnswers {
-            prefsFlow.value = ListingPreferences(sortOrder = SortOrder.CreatedAsc)
-        }
+    fun `E2 6 ordenacao persiste entre instancias do ViewModel`() =
+        runTest {
+            val prefsFlow = MutableStateFlow(ListingPreferences(sortOrder = SortOrder.NameAsc))
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { listingPreferences.observe("u1") } returns prefsFlow
+            coEvery { listingPreferences.setSortOrder("u1", SortOrder.NameAsc) } coAnswers {
+                prefsFlow.value = ListingPreferences(sortOrder = SortOrder.NameAsc)
+            }
+            coEvery { listingPreferences.setSortOrder("u1", SortOrder.CreatedAsc) } coAnswers {
+                prefsFlow.value = ListingPreferences(sortOrder = SortOrder.CreatedAsc)
+            }
 
-        val viewModelA = newViewModel()
-        advanceUntilIdle()
-        viewModelA.onSortOrderChange(SortOrder.CreatedAsc)
-        advanceUntilIdle()
-
-        // Uma nova instância do VM deve refletir o sort persistido
-        // via `observe()` — simulando "abrir o app de novo" sobre o
-        // mesmo mock de DataStore.
-        val viewModelB = newViewModel()
-        advanceUntilIdle()
-
-        viewModelB.uiState.test {
+            val viewModelA = newViewModel()
             advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.sortOrder).isEqualTo(SortOrder.CreatedAsc)
-            cancelAndIgnoreRemainingEvents()
+            viewModelA.onSortOrderChange(SortOrder.CreatedAsc)
+            advanceUntilIdle()
+
+            // Uma nova instância do VM deve refletir o sort persistido
+            // via `observe()` — simulando "abrir o app de novo" sobre o
+            // mesmo mock de DataStore.
+            val viewModelB = newViewModel()
+            advanceUntilIdle()
+
+            viewModelB.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.sortOrder).isEqualTo(SortOrder.CreatedAsc)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     /**
      * O debounce configurado em [HomeViewModel.searchQuery] não
@@ -547,21 +567,22 @@ class HomeViewModelTest {
      * primeiro keystroke.
      */
     @Test
-    fun `E2 6 debounce nao bloqueia emissao inicial`() = runTest {
-        val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
-        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
+    fun `E2 6 debounce nao bloqueia emissao inicial`() =
+        runTest {
+            val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
 
-        val viewModel = newViewModel()
-        viewModel.uiState.test {
-            advanceUntilIdle()
-            val state = expectMostRecentItem()
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.searchQuery).isEmpty()
-            cancelAndIgnoreRemainingEvents()
+            val viewModel = newViewModel()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.isLoading).isFalse()
+                assertThat(state.searchQuery).isEmpty()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     /**
      * E3.4 — banner offline da Home: `syncState` reflete o estado
@@ -569,36 +590,38 @@ class HomeViewModelTest {
      * some) e a contagem do [PendingSyncMonitor].
      */
     @Test
-    fun `E3 4 syncState reflete offline e contagem pendente`() = runTest {
-        coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
-        val viewModel = newViewModel()
+    fun `E3 4 syncState reflete offline e contagem pendente`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            val viewModel = newViewModel()
 
-        viewModel.syncState.test {
-            advanceUntilIdle()
-            var state = expectMostRecentItem()
-            assertThat(state.isOnline).isTrue()
-            assertThat(state.showOfflineBanner).isFalse()
-            assertThat(state.pendingOps).isEqualTo(0)
+            viewModel.syncState.test {
+                advanceUntilIdle()
+                var state = expectMostRecentItem()
+                assertThat(state.isOnline).isTrue()
+                assertThat(state.showOfflineBanner).isFalse()
+                assertThat(state.pendingOps).isEqualTo(0)
 
-            connectivityFlow.value = ConnectivityState(isOnline = false)
-            pendingOpsFlow.value = 2
-            advanceUntilIdle()
+                connectivityFlow.value = ConnectivityState(isOnline = false)
+                pendingOpsFlow.value = 2
+                advanceUntilIdle()
 
-            state = expectMostRecentItem()
-            assertThat(state.isOnline).isFalse()
-            assertThat(state.showOfflineBanner).isTrue()
-            assertThat(state.pendingOps).isEqualTo(2)
+                state = expectMostRecentItem()
+                assertThat(state.isOnline).isFalse()
+                assertThat(state.showOfflineBanner).isTrue()
+                assertThat(state.pendingOps).isEqualTo(2)
 
-            cancelAndIgnoreRemainingEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
-    private fun sampleUser(role: UserRole): User = User(
-        id = "user-id-${role.name}",
-        name = "João Pedro",
-        email = "joao@example.com",
-        passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-        role = role,
-        createdAt = Instant.parse("2026-09-18T10:00:00Z"),
-    )
+    private fun sampleUser(role: UserRole): User =
+        User(
+            id = "user-id-${role.name}",
+            name = "João Pedro",
+            email = "joao@example.com",
+            passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
+            role = role,
+            createdAt = Instant.parse("2026-09-18T10:00:00Z"),
+        )
 }

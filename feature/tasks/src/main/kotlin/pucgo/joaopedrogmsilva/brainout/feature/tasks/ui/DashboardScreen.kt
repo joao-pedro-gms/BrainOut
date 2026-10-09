@@ -86,10 +86,11 @@ internal fun DashboardContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -102,10 +103,11 @@ internal fun DashboardContent(
         // E2.8 — prioridade ao banner de erro, depois loader, depois
         // conteúdo. Mesma ordem de TasksScreen/HomeScreen.
         when {
-            state.errorMessage != null -> DashboardErrorBanner(
-                onRetry = onRetry,
-                onDismiss = onDismissError,
-            )
+            state.errorMessage != null ->
+                DashboardErrorBanner(
+                    onRetry = onRetry,
+                    onDismiss = onDismissError,
+                )
             state.isLoading -> DashboardLoading()
             else -> DashboardBody(state = state)
         }
@@ -149,16 +151,17 @@ private fun DashboardScreenEmptyPreview() {
 private fun DashboardScreenPopulatedPreview() {
     androidx.compose.material3.MaterialTheme {
         DashboardContent(
-            state = DashboardUiState(
-                activeProjects = 3,
-                completedProjects = 1,
-                priorityCounts = listOf(2, 4, 3, 1, 0),
-                totalTasks = 10,
-                doneTasks = 4,
-                weeklyCompletionPercent = 40,
-                overallCompletionPercent = 40,
-                isLoading = false,
-            ),
+            state =
+                DashboardUiState(
+                    activeProjects = 3,
+                    completedProjects = 1,
+                    priorityCounts = listOf(2, 4, 3, 1, 0),
+                    totalTasks = 10,
+                    doneTasks = 4,
+                    weeklyCompletionPercent = 40,
+                    overallCompletionPercent = 40,
+                    isLoading = false,
+                ),
         )
     }
 }

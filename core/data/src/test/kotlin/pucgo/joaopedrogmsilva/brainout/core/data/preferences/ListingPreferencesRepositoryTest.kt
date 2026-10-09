@@ -36,7 +36,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
  */
 @RunWith(RobolectricTestRunner::class)
 class ListingPreferencesRepositoryTest {
-
     private lateinit var dataStore: DataStore<Preferences>
 
     @Before
@@ -45,105 +44,114 @@ class ListingPreferencesRepositoryTest {
         dataStore = context.authDataStore
     }
 
-    private fun newRepo(): ListingPreferencesRepositoryImpl =
-        ListingPreferencesRepositoryImpl(dataStore = dataStore)
+    private fun newRepo(): ListingPreferencesRepositoryImpl = ListingPreferencesRepositoryImpl(dataStore = dataStore)
 
     @Test
-    fun `observe emite default antes de qualquer escrita`() = runTest {
-        val repo = newRepo()
-        val prefs = repo.observe(userId = "u-novo").first()
-        assertThat(prefs.searchQuery).isEmpty()
-        assertThat(prefs.selectedTagId).isNull()
-        assertThat(prefs.sortOrder).isEqualTo(SortOrder.CreatedDesc)
-    }
+    fun `observe emite default antes de qualquer escrita`() =
+        runTest {
+            val repo = newRepo()
+            val prefs = repo.observe(userId = "u-novo").first()
+            assertThat(prefs.searchQuery).isEmpty()
+            assertThat(prefs.selectedTagId).isNull()
+            assertThat(prefs.sortOrder).isEqualTo(SortOrder.CreatedDesc)
+        }
 
     @Test
-    fun `setSearchQuery persiste valor e observe emite o snapshot atualizado`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "u1", query = "App Android")
+    fun `setSearchQuery persiste valor e observe emite o snapshot atualizado`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "u1", query = "App Android")
 
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.searchQuery).isEqualTo("App Android")
-    }
-
-    @Test
-    fun `setSearchQuery com string vazia remove a chave em vez de gravar vazio`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "u1", query = "qualquer coisa")
-        // Sobrescreve com vazio.
-        repo.setSearchQuery(userId = "u1", query = "")
-
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.searchQuery).isEmpty()
-    }
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.searchQuery).isEqualTo("App Android")
+        }
 
     @Test
-    fun `setSearchQuery com whitespace-only apara e remove a chave`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "u1", query = "x")
-        repo.setSearchQuery(userId = "u1", query = "   ")
+    fun `setSearchQuery com string vazia remove a chave em vez de gravar vazio`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "u1", query = "qualquer coisa")
+            // Sobrescreve com vazio.
+            repo.setSearchQuery(userId = "u1", query = "")
 
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.searchQuery).isEmpty()
-    }
-
-    @Test
-    fun `setSelectedTagId persiste tag e observe emite o snapshot`() = runTest {
-        val repo = newRepo()
-        repo.setSelectedTagId(userId = "u1", tagId = "tag-urgente")
-
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.selectedTagId).isEqualTo("tag-urgente")
-    }
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.searchQuery).isEmpty()
+        }
 
     @Test
-    fun `setSelectedTagId com null remove o filtro`() = runTest {
-        val repo = newRepo()
-        repo.setSelectedTagId(userId = "u1", tagId = "tag-x")
-        repo.setSelectedTagId(userId = "u1", tagId = null)
+    fun `setSearchQuery com whitespace-only apara e remove a chave`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "u1", query = "x")
+            repo.setSearchQuery(userId = "u1", query = "   ")
 
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.selectedTagId).isNull()
-    }
-
-    @Test
-    fun `setSortOrder persiste a chave e observe emite o snapshot`() = runTest {
-        val repo = newRepo()
-        repo.setSortOrder(userId = "u1", order = SortOrder.NameAsc)
-
-        val emitted = repo.observe(userId = "u1").first()
-        assertThat(emitted.sortOrder).isEqualTo(SortOrder.NameAsc)
-    }
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.searchQuery).isEmpty()
+        }
 
     @Test
-    fun `prefs de um usuario nao vazam para outro`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "u1", query = "App")
-        repo.setSelectedTagId(userId = "u1", tagId = "tag-1")
-        repo.setSortOrder(userId = "u1", order = SortOrder.NameDesc)
+    fun `setSelectedTagId persiste tag e observe emite o snapshot`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSelectedTagId(userId = "u1", tagId = "tag-urgente")
 
-        val prefsU2 = repo.observe(userId = "u2").first()
-        assertThat(prefsU2).isEqualTo(ListingPreferences())
-    }
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.selectedTagId).isEqualTo("tag-urgente")
+        }
 
     @Test
-    fun `observe emite o snapshot consolidado das tres chaves`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "u1", query = "App")
-        repo.setSelectedTagId(userId = "u1", tagId = "tag-1")
-        repo.setSortOrder(userId = "u1", order = SortOrder.CreatedAsc)
+    fun `setSelectedTagId com null remove o filtro`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSelectedTagId(userId = "u1", tagId = "tag-x")
+            repo.setSelectedTagId(userId = "u1", tagId = null)
 
-        val prefs = repo.observe(userId = "u1").first()
-        assertThat(prefs.searchQuery).isEqualTo("App")
-        assertThat(prefs.selectedTagId).isEqualTo("tag-1")
-        assertThat(prefs.sortOrder).isEqualTo(SortOrder.CreatedAsc)
-    }
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.selectedTagId).isNull()
+        }
+
+    @Test
+    fun `setSortOrder persiste a chave e observe emite o snapshot`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSortOrder(userId = "u1", order = SortOrder.NameAsc)
+
+            val emitted = repo.observe(userId = "u1").first()
+            assertThat(emitted.sortOrder).isEqualTo(SortOrder.NameAsc)
+        }
+
+    @Test
+    fun `prefs de um usuario nao vazam para outro`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "u1", query = "App")
+            repo.setSelectedTagId(userId = "u1", tagId = "tag-1")
+            repo.setSortOrder(userId = "u1", order = SortOrder.NameDesc)
+
+            val prefsU2 = repo.observe(userId = "u2").first()
+            assertThat(prefsU2).isEqualTo(ListingPreferences())
+        }
+
+    @Test
+    fun `observe emite o snapshot consolidado das tres chaves`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "u1", query = "App")
+            repo.setSelectedTagId(userId = "u1", tagId = "tag-1")
+            repo.setSortOrder(userId = "u1", order = SortOrder.CreatedAsc)
+
+            val prefs = repo.observe(userId = "u1").first()
+            assertThat(prefs.searchQuery).isEqualTo("App")
+            assertThat(prefs.selectedTagId).isEqualTo("tag-1")
+            assertThat(prefs.sortOrder).isEqualTo(SortOrder.CreatedAsc)
+        }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `keysFor rejeita userId em branco`() = runTest {
-        val repo = newRepo()
-        repo.setSearchQuery(userId = "", query = "x")
-    }
+    fun `keysFor rejeita userId em branco`() =
+        runTest {
+            val repo = newRepo()
+            repo.setSearchQuery(userId = "", query = "x")
+        }
 
     /**
      * Garante que valores corrompidos em `sort_order` (vindos de

@@ -12,13 +12,15 @@ import androidx.core.app.NotificationManagerCompat
  * Android framework mocks além do `NotificationManagerCompat`.
  */
 object NotificationDismissal {
-
     /**
      * Remove a notificação de lembrete associada a [taskId]. O id de
      * notificação é o mesmo usado na publicação
      * ([DeadlineWorker] usa `task.id.hashCode()`).
      */
-    fun dismiss(context: Context, taskId: String) {
+    fun dismiss(
+        context: Context,
+        taskId: String,
+    ) {
         NotificationManagerCompat.from(context).cancel(taskId.hashCode())
     }
 }

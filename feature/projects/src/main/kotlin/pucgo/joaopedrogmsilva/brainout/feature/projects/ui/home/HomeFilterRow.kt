@@ -44,9 +44,10 @@ internal fun HomeProjectFilterRow(
     onSortOrderChange: (SortOrder) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(HomeTestTags.FILTER_GROUP),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(HomeTestTags.FILTER_GROUP),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -60,15 +61,16 @@ internal fun HomeProjectFilterRow(
                         style = MaterialTheme.typography.labelMedium,
                     )
                 },
-                modifier = Modifier
-                    .testTag(
-                        when (option) {
-                            HomeProjectFilter.Active -> HomeTestTags.FILTER_ACTIVE
-                            HomeProjectFilter.Completed -> HomeTestTags.FILTER_COMPLETED
-                        },
-                    )
-                    // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
-                    .heightIn(min = 48.dp),
+                modifier =
+                    Modifier
+                        .testTag(
+                            when (option) {
+                                HomeProjectFilter.Active -> HomeTestTags.FILTER_ACTIVE
+                                HomeProjectFilter.Completed -> HomeTestTags.FILTER_COMPLETED
+                            },
+                        )
+                        // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                        .heightIn(min = 48.dp),
             )
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -105,10 +107,11 @@ internal fun HomeSortMenu(
     Box {
         IconButton(
             onClick = { expanded = true },
-            modifier = Modifier
-                .testTag(HomeTestTags.SORT_MENU_BUTTON)
-                // E4.4: 48dp mínimo WCAG 2.5.5.
-                .heightIn(min = 48.dp),
+            modifier =
+                Modifier
+                    .testTag(HomeTestTags.SORT_MENU_BUTTON)
+                    // E4.4: 48dp mínimo WCAG 2.5.5.
+                    .heightIn(min = 48.dp),
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.Sort,
@@ -128,19 +131,21 @@ internal fun HomeSortMenu(
                         onSelect(order)
                         expanded = false
                     },
-                    leadingIcon = if (isSelected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Filled.Add,
-                                contentDescription = null,
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                    modifier = Modifier
-                        .testTag(HomeTestTags.sortMenuItem(order))
-                        .heightIn(min = 48.dp),
+                    leadingIcon =
+                        if (isSelected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Filled.Add,
+                                    contentDescription = null,
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                    modifier =
+                        Modifier
+                            .testTag(HomeTestTags.sortMenuItem(order))
+                            .heightIn(min = 48.dp),
                 )
             }
         }
@@ -157,9 +162,10 @@ internal fun HomeSortMenu(
  * sinalizadas em tempo de compilação aqui.
  */
 @androidx.annotation.StringRes
-internal fun sortOrderLabelRes(order: SortOrder): Int = when (order) {
-    SortOrder.NameAsc -> R.string.home_sort_name_asc
-    SortOrder.NameDesc -> R.string.home_sort_name_desc
-    SortOrder.CreatedDesc -> R.string.home_sort_created_desc
-    SortOrder.CreatedAsc -> R.string.home_sort_created_asc
-}
+internal fun sortOrderLabelRes(order: SortOrder): Int =
+    when (order) {
+        SortOrder.NameAsc -> R.string.home_sort_name_asc
+        SortOrder.NameDesc -> R.string.home_sort_name_desc
+        SortOrder.CreatedDesc -> R.string.home_sort_created_desc
+        SortOrder.CreatedAsc -> R.string.home_sort_created_asc
+    }

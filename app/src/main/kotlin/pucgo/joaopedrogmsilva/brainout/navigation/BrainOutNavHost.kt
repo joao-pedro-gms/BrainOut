@@ -11,19 +11,19 @@ package pucgo.joaopedrogmsilva.brainout.navigation
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.LoginScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register.RegisterScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash.SplashScreen
-import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.ProjectDetailScreen
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home.HomeScreen
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.ProjectDetailScreen
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
@@ -70,9 +70,7 @@ fun BrainOutNavHost(
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addSplashRoute(
-    navController: NavHostController,
-) {
+private fun androidx.navigation.NavGraphBuilder.addSplashRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Splash) {
         SplashScreen(
             onStartClicked = {
@@ -80,14 +78,12 @@ private fun androidx.navigation.NavGraphBuilder.addSplashRoute(
                 navController.navigate(BrainOutRoutes.Login) {
                     popUpTo(BrainOutRoutes.Splash) { inclusive = true }
                 }
-            }
+            },
         )
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addLoginRoute(
-    navController: NavHostController,
-) {
+private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Login) {
         LoginScreen(
             onLoginSubmit = {
@@ -99,14 +95,12 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(
             onCreateAccountClicked = {
                 Log.d(TAG, "Navegando: Login -> Register")
                 navController.navigate(BrainOutRoutes.Register)
-            }
+            },
         )
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(
-    navController: NavHostController,
-) {
+private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Register) {
         RegisterScreen(
             onRegisterSubmit = {
@@ -118,14 +112,12 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(
             onHaveAccountClicked = {
                 Log.d(TAG, "Navegando: Register -> PopBackStack")
                 navController.popBackStack()
-            }
+            },
         )
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
-    navController: NavHostController,
-) {
+private fun androidx.navigation.NavGraphBuilder.addHomeRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Home) {
         HomeScreen(
             onOpenProject = { projectId ->
@@ -143,31 +135,31 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
             onOpenDashboard = {
                 Log.d(TAG, "Navegando: Home -> Dashboard")
                 navController.navigate(TasksRoutes.DASHBOARD)
-            }
+            },
         )
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(
-    navController: NavHostController,
-) {
+private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(navController: NavHostController) {
     composable(
         route = BrainOutRoutes.ProjectDetailPattern,
-        arguments = listOf(
-            navArgument(BrainOutRoutes.ProjectIdArg) {
-                type = NavType.StringType
-            }
-        )
+        arguments =
+            listOf(
+                navArgument(BrainOutRoutes.ProjectIdArg) {
+                    type = NavType.StringType
+                },
+            ),
     ) { backStackEntry ->
-        val projectId = backStackEntry.arguments
-            ?.getString(BrainOutRoutes.ProjectIdArg)
-            .orEmpty()
+        val projectId =
+            backStackEntry.arguments
+                ?.getString(BrainOutRoutes.ProjectIdArg)
+                .orEmpty()
         ProjectDetailScreen(
             projectId = projectId,
             onBackClicked = {
                 Log.d(TAG, "Navegando: ProjectDetail -> PopBackStack")
                 navController.popBackStack()
-            }
+            },
         )
     }
 }
@@ -195,11 +187,12 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
                     }
                     SettingsActionType.Profile,
                     SettingsActionType.Notifications,
-                    SettingsActionType.Theme -> {
+                    SettingsActionType.Theme,
+                    -> {
                         // Sub-telas não fazem parte do E1.6 — placeholder.
                     }
                 }
-            }
+            },
         )
     }
 }

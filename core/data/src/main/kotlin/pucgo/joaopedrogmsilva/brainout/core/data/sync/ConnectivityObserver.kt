@@ -7,13 +7,13 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val TAG = "BrainOut:ConnectivityObserver"
 
@@ -46,61 +46,66 @@ data class ConnectivityState(
  * ser falsificada nos testes de ViewModel.
  */
 interface ConnectivityObserver {
-
     /** Emite o estado atual e cada mudança subsequente. */
     fun observe(): Flow<ConnectivityState>
 }
 
 @Singleton
-class AndroidConnectivityObserver @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : ConnectivityObserver {
+class AndroidConnectivityObserver
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : ConnectivityObserver {
+        override fun observe(): Flow<ConnectivityState> =
+            callbackFlow {
+                val connectivityManager =
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    override fun observe(): Flow<ConnectivityState> = callbackFlow {
-        val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val request =
+                    NetworkRequest
+                        .Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build()
 
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
+                val callback =
+                    object : ConnectivityManager.NetworkCallback() {
+                        override fun onAvailable(network: Network) {
+                            logDebug(TAG, "Rede disponível com internet (onAvailable)")
+                            trySend(ConnectivityState(isOnline = true))
+                        }
 
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                logDebug(TAG, "Rede disponível com internet (onAvailable)")
-                trySend(ConnectivityState(isOnline = true))
-            }
+                        override fun onLost(network: Network) {
+                            // onLost por rede: só consideramos offline quando
+                            // não resta nenhuma rede ativa (multi-rede: Wi-Fi +
+                            // dados móveis — a perda de uma não é ficar offline).
+                            val hasActiveNetwork = connectivityManager.activeNetwork != null
+                            if (!hasActiveNetwork) {
+                                logDebug(TAG, "Nenhuma rede ativa remanescente (onLost -> OFFLINE)")
+                                trySend(ConnectivityState(isOnline = false))
+                            } else {
+                                logDebug(TAG, "Rede perdida (onLost), mas outra rede permanece ativa")
+                            }
+                        }
+                    }
 
-            override fun onLost(network: Network) {
-                // onLost por rede: só consideramos offline quando
-                // não resta nenhuma rede ativa (multi-rede: Wi-Fi +
-                // dados móveis — a perda de uma não é ficar offline).
-                val hasActiveNetwork = connectivityManager.activeNetwork != null
-                if (!hasActiveNetwork) {
-                    logDebug(TAG, "Nenhuma rede ativa remanescente (onLost -> OFFLINE)")
-                    trySend(ConnectivityState(isOnline = false))
-                } else {
-                    logDebug(TAG, "Rede perdida (onLost), mas outra rede permanece ativa")
+                // Estado inicial: consulta pontual antes de registrar o
+                // callback, para que o banner já apareça correto na primeira
+                // composição (o app pode abrir já em modo avião).
+                val initialActive = connectivityManager.activeNetwork
+                val initialOnline =
+                    initialActive?.let { network ->
+                        connectivityManager
+                            .getNetworkCapabilities(network)
+                            ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                    } ?: false
+                logDebug(TAG, "Estado inicial de conectividade: isOnline=$initialOnline")
+                trySend(ConnectivityState(isOnline = initialOnline))
+
+                connectivityManager.registerNetworkCallback(request, callback)
+
+                awaitClose {
+                    logDebug(TAG, "Unregistering ConnectivityManager callback")
+                    connectivityManager.unregisterNetworkCallback(callback)
                 }
-            }
-        }
-
-        // Estado inicial: consulta pontual antes de registrar o
-        // callback, para que o banner já apareça correto na primeira
-        // composição (o app pode abrir já em modo avião).
-        val initialActive = connectivityManager.activeNetwork
-        val initialOnline = initialActive?.let { network ->
-            connectivityManager
-                .getNetworkCapabilities(network)
-                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } ?: false
-        logDebug(TAG, "Estado inicial de conectividade: isOnline=$initialOnline")
-        trySend(ConnectivityState(isOnline = initialOnline))
-
-        connectivityManager.registerNetworkCallback(request, callback)
-
-        awaitClose {
-            logDebug(TAG, "Unregistering ConnectivityManager callback")
-            connectivityManager.unregisterNetworkCallback(callback)
-        }
-    }.distinctUntilChanged()
-}
+            }.distinctUntilChanged()
+    }

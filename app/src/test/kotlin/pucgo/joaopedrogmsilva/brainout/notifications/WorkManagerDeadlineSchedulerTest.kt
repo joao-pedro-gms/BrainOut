@@ -9,12 +9,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.google.common.truth.Truth.assertThat
-import java.time.Instant
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.Instant
 
 /**
  * Testes do [WorkManagerDeadlineScheduler] (marco E3.6) contra um
@@ -32,7 +32,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)
 class WorkManagerDeadlineSchedulerTest {
-
     private lateinit var context: Context
     private lateinit var scheduler: WorkManagerDeadlineScheduler
 
@@ -44,7 +43,8 @@ class WorkManagerDeadlineSchedulerTest {
     }
 
     private fun pendingInfos(taskId: String): List<WorkInfo> =
-        WorkManager.getInstance(context)
+        WorkManager
+            .getInstance(context)
             .getWorkInfosForUniqueWork(WorkManagerDeadlineScheduler.uniqueWorkName(taskId))
             .get()
 

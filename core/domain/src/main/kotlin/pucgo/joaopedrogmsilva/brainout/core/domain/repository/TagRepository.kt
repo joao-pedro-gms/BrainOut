@@ -6,7 +6,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 
 interface TagRepository {
     fun observeForOwner(ownerId: String): Flow<List<Tag>>
+
     suspend fun findById(id: String): Tag?
+
     suspend fun findByIds(ids: Collection<String>): List<Tag>
 
     /**
@@ -17,5 +19,6 @@ interface TagRepository {
     fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>>
 
     suspend fun create(tag: Tag): Tag
+
     suspend fun delete(id: String)
 }

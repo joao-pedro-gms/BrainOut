@@ -13,7 +13,9 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.model
  * [permissions]. A checagem em tempo de execução é responsabilidade de
  * [pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CanPerformActionUseCase].
  */
-enum class UserRole(val permissions: Set<Permission>) {
+enum class UserRole(
+    val permissions: Set<Permission>,
+) {
     OWNER(
         setOf(
             Permission.CREATE_PROJECT,

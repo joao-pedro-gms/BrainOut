@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -17,6 +15,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val TAG = "BrainOut:TagRepo"
 
@@ -44,69 +44,72 @@ private const val TAG = "BrainOut:TagRepo"
  * @property pendingOpDao DAO da fila de sincronização (E3.3).
  */
 @Singleton
-class TagRepositoryImpl @Inject constructor(
-    private val tagDao: TagDao,
-    private val projectDao: ProjectDao,
-    private val pendingOpDao: PendingOpDao,
-) : TagRepository {
+class TagRepositoryImpl
+    @Inject
+    constructor(
+        private val tagDao: TagDao,
+        private val projectDao: ProjectDao,
+        private val pendingOpDao: PendingOpDao,
+    ) : TagRepository {
+        override fun observeForOwner(ownerId: String): Flow<List<Tag>> =
+            tagDao.observeForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
 
-    override fun observeForOwner(ownerId: String): Flow<List<Tag>> =
-        tagDao.observeForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
+        override fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>> =
+            combine(
+                ids.map { id -> projectDao.observeTagsFor(id).map { id to it } },
+            ) { pairs ->
+                @Suppress("UNCHECKED_CAST")
+                (pairs as Array<Pair<String, List<TagEntity>>>)
+                    .associate { (projectId, tags) -> projectId to tags.map { it.toDomain() } }
+            }
 
-    override fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>> =
-        combine(
-            ids.map { id -> projectDao.observeTagsFor(id).map { id to it } },
-        ) { pairs ->
-            @Suppress("UNCHECKED_CAST")
-            (pairs as Array<Pair<String, List<TagEntity>>>)
-                .associate { (projectId, tags) -> projectId to tags.map { it.toDomain() } }
+        override suspend fun findById(id: String): Tag? = tagDao.findById(id)?.toDomain()
+
+        override suspend fun findByIds(ids: Collection<String>): List<Tag> =
+            tagDao.findByIds(ids.toList()).map { it.toDomain() }
+
+        /**
+         * Cria a tag localmente e enfileira a op CREATE na mesma
+         * transação. Colisão de nome (índice único) reverte ambas as
+         * escritas — a fila nunca guarda op de tag que não existe.
+         */
+        override suspend fun create(tag: Tag): Tag {
+            logDebug(TAG, "Criando tag id=${tag.id}, name=${tag.name}, color=${tag.color}, ownerId=${tag.ownerId}")
+            pendingOpDao.enqueueInTx(
+                op =
+                    PendingOpEntity.enqueue(
+                        entityType = SyncEntityType.TAG,
+                        entityId = tag.id,
+                        opType = SyncOpType.CREATE,
+                        payloadObj =
+                            TagSyncPayload(
+                                id = tag.id,
+                                name = tag.name,
+                                color = tag.color,
+                            ),
+                    ),
+            ) {
+                tagDao.insert(TagEntity.fromDomain(tag))
+            }
+            return tag
         }
 
-    override suspend fun findById(id: String): Tag? =
-        tagDao.findById(id)?.toDomain()
-
-    override suspend fun findByIds(ids: Collection<String>): List<Tag> =
-        tagDao.findByIds(ids.toList()).map { it.toDomain() }
-
-    /**
-     * Cria a tag localmente e enfileira a op CREATE na mesma
-     * transação. Colisão de nome (índice único) reverte ambas as
-     * escritas — a fila nunca guarda op de tag que não existe.
-     */
-    override suspend fun create(tag: Tag): Tag {
-        logDebug(TAG, "Criando tag id=${tag.id}, name=${tag.name}, color=${tag.color}, ownerId=${tag.ownerId}")
-        pendingOpDao.enqueueInTx(
-            op = PendingOpEntity.enqueue(
-                entityType = SyncEntityType.TAG,
-                entityId = tag.id,
-                opType = SyncOpType.CREATE,
-                payloadObj = TagSyncPayload(
-                    id = tag.id,
-                    name = tag.name,
-                    color = tag.color,
-                ),
-            ),
-        ) {
-            tagDao.insert(TagEntity.fromDomain(tag))
+        /**
+         * Remove a tag localmente e enfileira a op DELETE na mesma
+         * transação. Associações em `project_tags` são removidas via
+         * `ON DELETE CASCADE`.
+         */
+        override suspend fun delete(id: String) {
+            logDebug(TAG, "Deletando tag id=$id")
+            pendingOpDao.enqueueInTx(
+                op =
+                    PendingOpEntity.enqueue(
+                        entityType = SyncEntityType.TAG,
+                        entityId = id,
+                        opType = SyncOpType.DELETE,
+                    ),
+            ) {
+                tagDao.deleteById(id)
+            }
         }
-        return tag
     }
-
-    /**
-     * Remove a tag localmente e enfileira a op DELETE na mesma
-     * transação. Associações em `project_tags` são removidas via
-     * `ON DELETE CASCADE`.
-     */
-    override suspend fun delete(id: String) {
-        logDebug(TAG, "Deletando tag id=$id")
-        pendingOpDao.enqueueInTx(
-            op = PendingOpEntity.enqueue(
-                entityType = SyncEntityType.TAG,
-                entityId = id,
-                opType = SyncOpType.DELETE,
-            ),
-        ) {
-            tagDao.deleteById(id)
-        }
-    }
-}

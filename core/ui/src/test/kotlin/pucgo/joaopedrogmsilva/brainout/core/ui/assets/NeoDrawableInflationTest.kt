@@ -29,7 +29,6 @@ import org.robolectric.annotation.Config
 // Robolectric assume o targetSdk 37 e falha no maxSdkVersion do android-all.
 @Config(sdk = [34])
 class NeoDrawableInflationTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
@@ -48,16 +47,16 @@ class NeoDrawableInflationTest {
     @Test
     fun `as cinco fontes existem como recurso empacotado`() {
         expectedFontAssets.forEach { asset ->
-            val id = context.resources.getIdentifier(
-                asset.resource,
-                "font",
-                context.packageName,
-            )
+            val id =
+                context.resources.getIdentifier(
+                    asset.resource,
+                    "font",
+                    context.packageName,
+                )
 
             assertThat(id).isGreaterThan(0)
         }
     }
 
-    private fun drawableId(name: String): Int =
-        context.resources.getIdentifier(name, "drawable", context.packageName)
+    private fun drawableId(name: String): Int = context.resources.getIdentifier(name, "drawable", context.packageName)
 }
