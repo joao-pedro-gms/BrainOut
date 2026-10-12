@@ -10,6 +10,7 @@
 |----------------------|------------------------------------|-----------------------------------------------------------------|
 | `ci.yml`             | Push em `main`, PR contra `main`, `workflow_dispatch` | Análise estática (ktlint + detekt), testes unitários, integração com backend stub |
 | `release-apk.yml`    | Tag `v*`                           | Gera `.aab` assinado (`bundleRelease`); publica como artifact do run             |
+| `release-apk-debug.yml` | Tag `v*`, `workflow_dispatch`   | Gera APK `devDebug` (`assembleDebug`) e anexa `BrainOut-<tag>-debug.apk` à GitHub Release da tag |
 | `codeql.yml`         | Push em `main`, PR, semanalmente   | Análise estática de segurança (CodeQL)                          |
 | `pages.yml`          | Push em `main` que altere `docs/wireframes/**`, `workflow_dispatch` | Publica os wireframes em GitHub Pages (`actions/deploy-pages`)  |
 
@@ -146,6 +147,20 @@ enquanto a flag estiver em `true`.
   `find app/build/outputs/bundle -maxdepth 3 -name '*.aab'` e valida a
   assinatura com `jarsigner -verify` antes do upload. Retenção de 30
   dias. Não há upload automático para loja externa.
+
+### `release-apk-debug.yml` — APK debug na GitHub Release
+
+Companheiro do workflow acima. **Não substitui** o `.aab` assinado e
+**não lê** os secrets `BRAINOUT_*`.
+
+- **Gatilho:** push de tags `v*` e `workflow_dispatch` (input `tag`,
+  também no formato `v*`).
+- **Build:** JDK 21 (Temurin) e `./gradlew :app:assembleDebug`. O Gradle
+  9.x do wrapper exige JVM 21; o bytecode do app continua Java 17.
+- **Asset:** o flavor `dev` (o `prod` aponta para `https://TBD/`). O
+  arquivo publicado se chama `BrainOut-<tag>-debug.apk` e é anexado à
+  GitHub Release dessa tag (`contents: write`). O `release-apk.yml`
+  segue publicando só o artifact do `.aab`.
 
 ### `codeql.yml`
 
@@ -406,6 +421,7 @@ echo "brainout.baseUrl.dev=http://10.0.2.2:8000/" >> ../local.properties
 | `compileDevDebugAndroidTestKotlin` falha com `Unresolved reference` | `MigrationTest`/`UserDaoInstrumentedTest` importam libs que estavam só em `testImplementation` | `core/data/build.gradle.kts` declara `androidTestImplementation(libs.truth)` e `androidTestImplementation(libs.kotlinx.coroutines.test)`; não remova essas linhas |
 | `connectedDevDebugAndroidTest` falha local     | Nenhum dispositivo/emulador visível              | `adb devices` vazio = suba o AVD (`Medium_Phone_API_37.0` nesta máquina). **O CI não executa esta tarefa** — não há runner com emulador no plano gratuito |
 | `detekt` falha no CI após um PR                | Nova regra ou código não compatível             | Corrigir o código manualmente: a correção automática está desativada no projeto (`autoCorrect = false` nos 8 módulos e nenhuma regra com `autoCorrect: true` no `detekt.yml`) |
+| Job `backend-integration` falha no step **Build backend stub image** com `504` em `auth.docker.io/token` | Docker Hub indisponível ao resolver `python:3.12-slim` (run 37994932426) | O step já repete o `docker build` até 5 vezes com espera crescente. Se as 5 falharem, o registry segue fora — rerodar o job quando o Hub voltar |
 | Job `backend-integration` falha                 | Backend stub não respondeu a tempo no loop de `/health` (30 tentativas × 2 s) | Aumentar as tentativas do loop no step **Run backend stub container** do `ci.yml`; verificar `docker logs brainout-api` |
 | `release-apk.yml` falha em `Validate signing secrets (P0-6)` | Secrets `BRAINOUT_*` ausentes | Cadastrar os 4 secrets (ver seção E3.7) |
 | `release-apk.yml` falha em `Decode keystore` | `BRAINOUT_KEYSTORE_BASE64` corrompido/incompleto (base64 inválido) | Recodificar: `base64 -w 0 brainout-release.jks` |

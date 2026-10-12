@@ -1,0 +1,83 @@
+# APK debug instalável, companheiro do release-apk.yml (AAB assinado, E3.7).
+# Não usa keystore: o build type debug já é assinado com a debug key do AGP.
+# O release-apk.yml permanece intocado.
+
+name: Release APK (debug)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag da release que recebe o APK (ex.: v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: assembleDebug
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve release tag
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          case "$TAG" in
+            v[0-9A-Za-z._+-]*) ;;
+            *)
+              echo "::error::A tag precisa corresponder a v* (recebido: ${TAG})."
+              exit 1
+              ;;
+          esac
+          if ! printf '%s' "$TAG" | grep -Eq '^[v][0-9A-Za-z._+-]+$'; then
+            echo "::error::A tag contém caracteres não permitidos: ${TAG}."
+            exit 1
+          fi
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: assembleDebug
+        run: chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --console=plain
+
+      - name: Rename APK
+        # Flavors `environment` (dev/prod) fazem o AGP gravar em
+        # app/build/outputs/apk/<flavor>/debug/, não em apk/debug/.
+        # Publicamos o devDebug: o prod aponta para https://TBD/ e não
+        # abre o stub. O nome do asset segue BrainOut-<tag>-debug.apk.
+        run: |
+          set -euo pipefail
+          mapfile -t apks < <(find app/build/outputs/apk -type f -path '*/dev/debug/*.apk' | sort)
+          if [ "${#apks[@]}" -ne 1 ]; then
+            echo "::error::Esperava exatamente 1 APK devDebug; achei ${#apks[@]}."
+            find app/build/outputs/apk -type f -name '*.apk' -print || true
+            exit 1
+          fi
+          cp "${apks[0]}" "BrainOut-${RELEASE_TAG}-debug.apk"
+          echo "APK: BrainOut-${RELEASE_TAG}-debug.apk (origem ${apks[0]})"
+
+      - name: Attach APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: BrainOut-${{ env.RELEASE_TAG }}-debug.apk
+          fail_on_unmatched_files: true
