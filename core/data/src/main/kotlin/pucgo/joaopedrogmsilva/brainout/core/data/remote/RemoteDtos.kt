@@ -58,6 +58,8 @@ data class TaskListDto(
  *   do domínio).
  * @property done Flag de conclusão do stub (mapeia para status DONE).
  * @property createdAt Instante de criação, ISO-8601 com sufixo `Z`.
+ * @property dueDate Prazo em ISO-8601, ou null.
+ * @property assigneeId Id do responsável, ou null.
  */
 @Serializable
 data class TaskDto(
@@ -73,6 +75,10 @@ data class TaskDto(
     val done: Boolean = false,
     @SerialName("created_at")
     val createdAt: String,
+    @SerialName("due_date")
+    val dueDate: String? = null,
+    @SerialName("assignee_id")
+    val assigneeId: String? = null,
 )
 
 /**
@@ -91,6 +97,10 @@ data class TaskCreateDto(
     val priority: Int = 0,
     @SerialName("done")
     val done: Boolean = false,
+    @SerialName("due_date")
+    val dueDate: String? = null,
+    @SerialName("assignee_id")
+    val assigneeId: String? = null,
 )
 
 /*

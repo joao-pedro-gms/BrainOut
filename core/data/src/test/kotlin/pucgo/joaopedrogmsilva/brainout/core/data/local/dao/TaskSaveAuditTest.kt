@@ -15,12 +15,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import java.time.Instant
 
@@ -154,11 +150,14 @@ class TaskSaveAuditTest {
         }
 
     // ------------------------------------------------------------------
-    // ACHADO 3 — payload de sync não transporta prazo nem responsável.
+    // ACHADO 3 (CORRIGIDO) — o payload de sync descartava prazo e
+    // responsável. Como o PUT do stub substitui a representação inteira,
+    // o primeiro PUT de uma tarefa com prazo zerava os dois campos no
+    // servidor. Agora a fila os carrega.
     // ------------------------------------------------------------------
 
     @Test
-    fun `ACHADO 3 payload de sync descarta dueDate e assigneeId`() =
+    fun `ACHADO 3 payload de sync carrega dueDate e assigneeId`() =
         runTest {
             projectDao.insert(sampleProject())
             val comPrazo =
@@ -170,26 +169,11 @@ class TaskSaveAuditTest {
                 )
             taskDao.insert(TaskEntity.fromDomain(comPrazo))
 
-            val op =
-                PendingOpEntity.enqueue(
-                    entityType = SyncEntityType.TASK,
-                    entityId = comPrazo.id,
-                    opType = SyncOpType.UPDATE,
-                    payloadObj =
-                        TaskSyncPayload(
-                            id = comPrazo.id,
-                            projectId = comPrazo.projectId,
-                            title = comPrazo.title,
-                            priority = comPrazo.priority.priorityCode,
-                            done = false,
-                        ),
-                )
+            repository().update(comPrazo)
 
-            val campos = op.payload
-            assertThat(campos).doesNotContain("due_date")
-            assertThat(campos).doesNotContain("assignee_id")
-            assertThat(campos).doesNotContain("2026-12-31")
-            assertThat(campos).doesNotContain("u-7")
+            val campos = pendingOpDao.nextBatch(10).single().payload
+            assertThat(campos).contains("\"due_date\":\"2026-12-31T00:00:00Z\"")
+            assertThat(campos).contains("\"assignee_id\":\"u-7\"")
         }
 
     // ------------------------------------------------------------------

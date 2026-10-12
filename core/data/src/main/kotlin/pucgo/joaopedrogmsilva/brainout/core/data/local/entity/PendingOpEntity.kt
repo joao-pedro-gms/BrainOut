@@ -151,6 +151,10 @@ data class TaskSyncPayload(
     val title: String,
     val priority: Int,
     val done: Boolean,
+    @kotlinx.serialization.SerialName("due_date")
+    val dueDate: String? = null,
+    @kotlinx.serialization.SerialName("assignee_id")
+    val assigneeId: String? = null,
 )
 
 /** Payload de tag enviado em CREATE/UPDATE (POST — cliente-supplied id, R6). */

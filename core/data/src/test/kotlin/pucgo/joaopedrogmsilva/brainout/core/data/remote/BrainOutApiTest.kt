@@ -173,7 +173,9 @@ class BrainOutApiTest {
                           "title": "Tarefa nova",
                           "priority": 2,
                           "done": false,
-                          "created_at": "2026-09-21T11:15:00Z"
+                          "created_at": "2026-09-21T11:15:00Z",
+                          "due_date": "2026-12-31T23:59:59Z",
+                          "assignee_id": "d4e5f67890a1b2c3d4e5f67890a1b2c3"
                         }
                         """.trimIndent(),
                     ),
@@ -188,6 +190,8 @@ class BrainOutApiTest {
 
             assertEquals("c3d4e5f67890a1b2c3d4e5f67890a1b2", created.id)
             assertEquals(2, created.priority)
+            assertEquals("2026-12-31T23:59:59Z", created.dueDate)
+            assertEquals("d4e5f67890a1b2c3d4e5f67890a1b2c3", created.assigneeId)
             val request = server.takeRequest()
             assertEquals("POST", request.method)
             assertEquals("/v1/tasks", request.path)
