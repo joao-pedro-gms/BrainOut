@@ -198,6 +198,8 @@ class RemoteDataSource(
         title: String,
         priority: Int,
         done: Boolean,
+        dueDate: String? = null,
+        assigneeId: String? = null,
     ): TaskDto =
         try {
             logDebug(TAG, "Chamando updateTask (PUT /v1/tasks/$taskId) done=$done")
@@ -210,6 +212,8 @@ class RemoteDataSource(
                         title = title,
                         priority = priority,
                         done = done,
+                        dueDate = dueDate,
+                        assigneeId = assigneeId,
                     ),
                 )
             logDebug(TAG, "updateTask($taskId) executado com sucesso")

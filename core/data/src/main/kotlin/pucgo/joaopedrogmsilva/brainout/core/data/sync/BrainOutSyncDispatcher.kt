@@ -109,6 +109,8 @@ class BrainOutSyncDispatcher
                                         title = payload.title,
                                         priority = payload.priority,
                                         done = payload.done,
+                                        dueDate = payload.dueDate,
+                                        assigneeId = payload.assigneeId,
                                     )
                                 }
                             }

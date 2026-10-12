@@ -78,7 +78,7 @@ class BrainOutSyncDispatcherTest {
         }
 
     @Test
-    fun `update de tarefa envia PUT com snake_case e done espelhado`() =
+    fun `update de tarefa envia PUT com snake_case, done, prazo e responsavel`() =
         runTest {
             server.enqueue(taskResponse())
 
@@ -89,6 +89,8 @@ class BrainOutSyncDispatcherTest {
                     title = "Estudar para a prova",
                     priority = 3,
                     done = false,
+                    dueDate = "2026-12-31T23:59:59Z",
+                    assigneeId = "44444444-4444-4444-8444-444444444444",
                 )
             val outcome =
                 dispatcher.send(
@@ -102,6 +104,10 @@ class BrainOutSyncDispatcherTest {
             val body = request.body.readUtf8()
             assertThat(body).contains("\"project_id\"")
             assertThat(body).contains("\"done\":false")
+            // Prazo e responsável viajam na fila; sem isso o servidor
+            // zeraria os dois campos no PUT seguinte.
+            assertThat(body).contains("\"due_date\":\"2026-12-31T23:59:59Z\"")
+            assertThat(body).contains("\"assignee_id\":\"44444444-4444-4444-8444-444444444444\"")
         }
 
     @Test

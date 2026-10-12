@@ -344,6 +344,8 @@ class TaskRepositoryImpl
                     title = task.title,
                     priority = task.priority.priorityCode,
                     done = task.status == TaskStatus.DONE,
+                    dueDate = task.dueDate?.toString(),
+                    assigneeId = task.assigneeId,
                 ),
         )
     }
