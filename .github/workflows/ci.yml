@@ -201,7 +201,25 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build backend stub image
-        run: docker build -t backend-stub:local ./backend-stub
+        # Run 37994932426 (2026-10-09, main) morreu aqui: o Docker Hub
+        # respondeu 504 em POST https://auth.docker.io/token ao resolver
+        # python:3.12-slim. O Dockerfile não mudou (o commit era só docs) e
+        # o run anterior no mesmo dia passou. O build é idempotente; repetir
+        # cobre o timeout do registry sem trocar a imagem de base.
+        run: |
+          set -euo pipefail
+          attempt=1
+          max=5
+          until docker build -t backend-stub:local ./backend-stub; do
+            if [ "$attempt" -ge "$max" ]; then
+              echo "::error::docker build falhou após ${max} tentativas (Docker Hub)."
+              exit 1
+            fi
+            wait_s=$((attempt * 15))
+            echo "docker build falhou (tentativa ${attempt}/${max}); nova tentativa em ${wait_s}s"
+            sleep "$wait_s"
+            attempt=$((attempt + 1))
+          done
 
       - name: Run backend stub container
         run: |
