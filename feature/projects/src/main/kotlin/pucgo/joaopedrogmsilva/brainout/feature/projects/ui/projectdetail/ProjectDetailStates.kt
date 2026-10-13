@@ -60,10 +60,14 @@ internal fun ProjectDetailLoadingState() {
 /**
  * Banner de erro com retry/dispensar (E2.8). Espelha `HomeErrorBanner`
  * em estrutura visual.
+ *
+ * DEF-26: a mensagem chega do ViewModel e passa por
+ * [resolveProjectDetailMessage] — o texto fixo de "falha ao carregar"
+ * escondia falha de escrita atrás de falha de leitura.
  */
 @Composable
 internal fun ProjectDetailErrorBanner(
-    @Suppress("UNUSED_PARAMETER") message: String,
+    message: String,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -85,7 +89,7 @@ internal fun ProjectDetailErrorBanner(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = stringResource(id = R.string.project_detail_error_load_failed),
+                text = resolveProjectDetailMessage(message),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
@@ -161,6 +165,11 @@ internal fun EmptyTasksCard() {
 internal fun resolveProjectDetailMessage(message: String): String {
     val limit = MAX_ACTIVE_TASKS_PER_PROJECT
     return when {
+        // DEF-26: antes o banner fixa "falha ao carregar" e descarta a
+        // mensagem — uma falha de escrita (título vazio, RN02) chegava
+        // ao usuário como se a lista do Room tivesse quebrado.
+        ProjectDetailViewModel.isLoadErrorMessage(message) ->
+            stringResource(id = R.string.project_detail_error_load_failed)
         message == ProjectDetailViewModel.ERROR_EMPTY_TITLE ->
             stringResource(id = R.string.project_detail_error_empty_title)
         message == ProjectDetailViewModel.ERROR_INVALID_TITLE ->
