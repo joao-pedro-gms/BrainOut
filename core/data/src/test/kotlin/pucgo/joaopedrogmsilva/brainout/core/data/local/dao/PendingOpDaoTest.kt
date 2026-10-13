@@ -29,6 +29,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
  * - `markAttempt` incrementa attempts na mesma transação.
  * - `observeCount` emite a contagem reativa.
  * - `deleteForEntity` remove só as ops da entidade informada.
+ * - `deleteForEntityAndOpType` remove só as ops do tipo informado
+ *   (coalescência da fila — DEF-18).
  * - Payloads round-trip (encode → decode) com os campos snake_case.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -149,6 +151,20 @@ class PendingOpDaoTest {
             val restantes = dao.nextBatch(10)
             assertThat(restantes).hasSize(2)
             assertThat(restantes.map { it.entityType }).containsExactly("PROJECT", "TASK")
+        }
+
+    @Test
+    fun `deleteForEntityAndOpType remove apenas as ops do mesmo tipo`() =
+        runTest {
+            dao.insert(op(entityId = "p-1", opType = SyncOpType.CREATE))
+            dao.insert(op(entityId = "p-1", opType = SyncOpType.UPDATE))
+            dao.insert(op(entityId = "p-2", opType = SyncOpType.UPDATE))
+
+            dao.deleteForEntityAndOpType(SyncEntityType.PROJECT.name, "p-1", SyncOpType.UPDATE.name)
+
+            val restantes = dao.nextBatch(10)
+            assertThat(restantes).hasSize(2)
+            assertThat(restantes.map { it.entityId }).containsExactly("p-1", "p-2")
         }
 
     @Test

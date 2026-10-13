@@ -63,6 +63,28 @@ interface PendingOpDao {
     )
 
     /**
+     * Remove as ops do mesmo tipo sobre a mesma entidade (coalescência
+     * da fila — DEF-18). O payload enfileirado é sempre integral, então
+     * a op mais recente descreve o estado final: as anteriores só
+     * repetiriam envio ao backend.
+     *
+     * shortcut: a coalescência é por **tipo** de op. Um CREATE seguido
+     * de UPDATE da mesma entidade ainda vira 2 ops — para PROJECT/TASK
+     * elas são o mesmo PUT upsert e poderiam virar 1, mas TAG/CREATE é
+     * POST e TAG/UPDATE é rejeitado pelo contrato, então mesclar por
+     * entidade sem olhar o tipo quebraria a fila de tags. Subir para
+     * coalescência por entidade quando TAG/UPDATE existir no contrato.
+     */
+    @Query(
+        "DELETE FROM pending_ops WHERE entity_type = :entityType AND entity_id = :entityId AND op_type = :opType",
+    )
+    suspend fun deleteForEntityAndOpType(
+        entityType: String,
+        entityId: String,
+        opType: String,
+    )
+
+    /**
      * Registra uma tentativa: incrementa [PendingOpEntity.attempts] e
      * regrava o payload (a op pode ter sido revalidada). Executa a
      * re-leitura e a escrita na mesma transação para evitar perder um
@@ -86,6 +108,10 @@ interface PendingOpDao {
      * operação sem o `PendingOpDao` conhecer os outros DAOs. Se
      * qualquer uma das duas escritas falhar, Room reverte ambas —
      * nunca há alteração local sem op pendente correspondente.
+     *
+     * A op substitui a pendência anterior do mesmo tipo sobre a mesma
+     * entidade ([deleteForEntityAndOpType]): edições repetidas offline
+     * colapsam em um envio só, com o estado final.
      */
     @Transaction
     suspend fun enqueueInTx(
@@ -93,6 +119,7 @@ interface PendingOpDao {
         write: suspend () -> Unit,
     ) {
         write()
+        deleteForEntityAndOpType(op.entityType, op.entityId, op.opType)
         insert(op)
     }
 }
