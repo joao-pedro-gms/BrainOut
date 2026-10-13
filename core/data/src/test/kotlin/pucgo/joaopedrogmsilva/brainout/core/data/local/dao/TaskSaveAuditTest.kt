@@ -219,12 +219,13 @@ class TaskSaveAuditTest {
         }
 
     // ------------------------------------------------------------------
-    // ACHADO 5 — fila de sync não coalesce: N edições da mesma tarefa
-    // viram N ops completas na fila.
+    // ACHADO 5 (CORRIGIDO — DEF-18) — a fila de sync não coalescia: N
+    // edições da mesma tarefa viravam N ops completas. Como o payload
+    // enfileirado é integral, só a última op descreve o estado final.
     // ------------------------------------------------------------------
 
     @Test
-    fun `ACHADO 5 edicoes repetidas enfileiram uma op por edicao`() =
+    fun `ACHADO 5 edicoes repetidas colapsam em uma op com o estado final`() =
         runTest {
             projectDao.insert(sampleProject())
             val base =
@@ -240,8 +241,8 @@ class TaskSaveAuditTest {
             repo.update(base.rename("Título 3"))
 
             val ops = pendingOpDao.nextBatch(limit = 50)
-            assertThat(ops).hasSize(3)
-            assertThat(ops.map { it.entityId }.distinct()).hasSize(1)
+            assertThat(ops).hasSize(1)
+            assertThat(ops.single().payload).contains("\"title\":\"Título 3\"")
         }
 
     // ------------------------------------------------------------------

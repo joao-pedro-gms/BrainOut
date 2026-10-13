@@ -259,6 +259,14 @@ class TagRepositoryImplTest {
             enqueued.removeAll { it.entityType == entityType && it.entityId == entityId }
         }
 
+        override suspend fun deleteForEntityAndOpType(
+            entityType: String,
+            entityId: String,
+            opType: String,
+        ) {
+            enqueued.removeAll { it.entityType == entityType && it.entityId == entityId && it.opType == opType }
+        }
+
         override suspend fun markAttempt(opId: Long) {
             val index = enqueued.indexOfFirst { it.id == opId }
             if (index >= 0) {
@@ -273,6 +281,7 @@ class TagRepositoryImplTest {
             write: suspend () -> Unit,
         ) {
             write()
+            deleteForEntityAndOpType(op.entityType, op.entityId, op.opType)
             insert(op)
         }
     }
