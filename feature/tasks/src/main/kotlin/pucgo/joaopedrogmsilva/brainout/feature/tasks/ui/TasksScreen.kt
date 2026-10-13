@@ -162,13 +162,23 @@ private fun TasksContent(
 /**
  * Banner de erro com retry (E2.8). Mesma estrutura visual do
  * `HomeErrorBanner` em `:feature:projects`.
+ *
+ * DEF-26: a mensagem do [TasksViewModel] é usada em vez do texto fixo
+ * — chave de erro conhecida vira recurso pt/en e o resto é exibida
+ * como veio, sem esconder a causa atrás de "falha ao carregar".
  */
 @Composable
-private fun TasksErrorBanner(
-    @Suppress("UNUSED_PARAMETER") message: String,
+internal fun TasksErrorBanner(
+    message: String,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val texto =
+        if (TasksViewModel.isLoadErrorMessage(message)) {
+            stringResource(id = R.string.tasks_error_load_failed)
+        } else {
+            message
+        }
     Surface(
         modifier =
             Modifier
@@ -187,7 +197,7 @@ private fun TasksErrorBanner(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = stringResource(id = R.string.tasks_error_load_failed),
+                text = texto,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
