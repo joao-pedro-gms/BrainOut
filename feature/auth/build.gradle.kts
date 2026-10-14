@@ -37,6 +37,9 @@ android {
 
     testOptions {
         unitTests {
+            // DEF-27: o teste de insets de IME usa Robolectric e precisa dos
+            // recursos Android (strings.xml) mesclados no classpath de teste.
+            isIncludeAndroidResources = true
             // ViewModels logam via android.util.Log; sem isso os testes
             // JVM puros falham com "Method d in android.util.Log not mocked".
             isReturnDefaultValues = true
@@ -109,6 +112,15 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+
+    // DEF-27: testes de UI Compose via Robolectric (createComposeRule roda
+    // em JVM com isIncludeAndroidResources) — validam os insets de IME e a
+    // rolagem dos formulários de login/cadastro.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.espresso.core)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
