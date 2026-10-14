@@ -102,7 +102,7 @@ jobs:
           echo "jarsigner OK: $AAB"
 
       - name: Upload do .aab assinado
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: brainout-release-aab-${{ github.ref_name }}
           path: app/build/outputs/bundle/
