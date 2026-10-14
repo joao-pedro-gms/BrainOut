@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -152,6 +153,14 @@ internal data class RegisterCallbacks(
     val onHaveAccountClicked: () -> Unit,
 )
 
+/**
+ * Conteúdo da tela de cadastro.
+ *
+ * [Modifier.imePadding] (DEF-27) vem **antes** do `verticalScroll` para que
+ * a altura do teclado entre nas restrições da área rolável: em edge-to-edge
+ * o IME não redimensiona a janela, então sem isso o último campo e o botão
+ * de envio ficariam atrás do teclado em paisagem ou em tela baixa.
+ */
 @Suppress("LongMethod")
 @Composable
 internal fun RegisterBody(
@@ -167,6 +176,7 @@ internal fun RegisterBody(
     Column(
         modifier =
             modifier
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 16.dp)
                 .testTag(RegisterTestTags.SCROLL),

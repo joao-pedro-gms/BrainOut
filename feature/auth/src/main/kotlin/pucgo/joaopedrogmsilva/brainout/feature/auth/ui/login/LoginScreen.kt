@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -123,6 +124,11 @@ fun LoginScreen(
 /**
  * Conteúdo da tela de login, isolado para manter a função public abaixo
  * do limite de linhas do detekt (LongMethod).
+ *
+ * [Modifier.imePadding] (DEF-27) vem **antes** do `verticalScroll` para que
+ * a altura do teclado entre nas restrições da área rolável: em edge-to-edge
+ * o IME não redimensiona a janela, então sem isso o campo de senha e o botão
+ * de envio ficariam atrás do teclado em paisagem ou em tela baixa.
  */
 @Suppress("LongMethod")
 @Composable
@@ -137,6 +143,7 @@ internal fun LoginBody(
     Column(
         modifier =
             modifier
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 16.dp)
                 .testTag(LoginTestTags.SCROLL),
