@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
@@ -110,6 +111,7 @@ private fun NotificationPermissionRequest(permissionStore: NotificationPermissio
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val deniedToast = stringResource(R.string.deadline_permission_denied_toast)
     val launcher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
@@ -119,7 +121,7 @@ private fun NotificationPermissionRequest(permissionStore: NotificationPermissio
                 Toast
                     .makeText(
                         context,
-                        context.getString(R.string.deadline_permission_denied_toast),
+                        deniedToast,
                         Toast.LENGTH_LONG,
                     ).show()
             }
