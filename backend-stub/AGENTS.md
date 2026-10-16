@@ -1,5 +1,10 @@
 # BrainOut — backend-stub
 
+> **Legado a retirar:** a decisão de 16/10/2026 adota produto totalmente
+> local. Veja [o plano de transição](../docs/TRANSICAO-LOCAL.md). O stub e o
+> job de integração ainda existem; preservar seus checks até a remoção dos
+> consumidores. Não ampliar o backend nem planejar hospedagem definitiva.
+
 ## OVERVIEW
 
 Stub FastAPI de dev + CI. Persistência em memória. Substituído pelo FastAPI hospedado (decisão E3.1, `docs/ARQUITETURA.md` §9). Único código não-Android do repo.

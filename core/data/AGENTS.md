@@ -1,6 +1,17 @@
 <!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
 # core/data — AGENTS
 
+## Direção aprovada — 16/10/2026
+
+O produto alvo é totalmente local; veja a
+[decisão e plano](../../docs/TRANSICAO-LOCAL.md). Rede e fila descritas abaixo
+ainda existem como legado a remover (#212), sem ampliar contratos remotos.
+Preservar transações Room, dados, sessão e segurança; remover a fila exige
+migração não destrutiva e testes. Backup portátil ainda não existe (#214).
+As afirmações antigas sobre `updated_at`/LWW abaixo não são contrato
+implementado: não há reconciliação por timestamp. O código e os schemas
+são a referência para a migração.
+
 ## OVERVIEW
 Camada de persistência (Room), rede (Retrofit), preferências (DataStore), sessão/segurança e sync; única origem do `BASE_URL`/`HOLIDAYS_BASE_URL` por flavor; gate Kover 60%.
 

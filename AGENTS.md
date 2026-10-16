@@ -1,5 +1,20 @@
 # Repository Guidelines
 
+## Approved product direction — 2026-10-16
+
+The owner approved a fully local Android product. Read
+[docs/TRANSICAO-LOCAL.md](docs/TRANSICAO-LOCAL.md) for the current inventory,
+transition backlog and review of open PRs. This direction takes precedence
+over older remote-product plans below. Network/sync code still exists;
+removal and portable backup are pending, not implemented. Preserve local
+data, authentication and deadline notifications during migration. Do not
+add remote features or describe the target architecture as already shipped.
+
+Use executable configuration as the version source: Kotlin 2.4.21, Compose
+BOM 2026.09.00, Gradle 9.8.1 and detekt 1.23.8 are currently configured.
+The subproject ktlint gate now uses `ignoreFailures = false` (DEF-10 fixed).
+Older version/gate descriptions below are historical until reconciled.
+
 Practical guide for AI assistants working on the **BrainOut** codebase. Verified against the current `main` tree (AGP 9.4.1, KGP 2.3.20, Gradle 9.7.1, JDK 17 bytecode, Compose BOM 2024.10.01).
 
 ## Project Overview

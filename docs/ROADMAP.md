@@ -1,5 +1,10 @@
 # BrainOut — Roadmap de implementação
 
+> **Replanejamento aprovado em 16/10/2026:** o produto alvo é totalmente
+> local. Para trabalho novo, seguir [TRANSICAO-LOCAL.md](TRANSICAO-LOCAL.md)
+> e o épico #211. Os ciclos e decisões remotas abaixo ficam como histórico;
+> sua presença não autoriza ampliar backend/sync nem comprova migração pronta.
+
 > Aplicativo Android nativo (Kotlin + Jetpack Compose) para gestão de projetos
 > e tarefas. Persistência local com Room, sincronização com serviço de
 > retaguarda, executável em dispositivo físico.
