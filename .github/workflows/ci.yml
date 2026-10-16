@@ -32,6 +32,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test release workflow validation
+        run: python3 -m unittest discover -s .github/tests -v
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -145,13 +148,11 @@ jobs:
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew :core:domain:koverHtmlReport :core:data:koverHtmlReport --no-daemon --console=plain
 
-      # P0-5: lint precisa ser por variante (lintDevDebug) para que
-      # `:app` e `:core:data` participem; sem isso a tarefa crua
-      # `lintDebug` pula os módulos flavor e o gate `MissingTranslation`
-      # fica invisível.
+      # DEF-40: lintDevDebug cobre :app/:core:data; lintDebug alcança
+      # as features e :core:ui, que não têm flavor próprio.
       - name: Run Android lint
         if: hashFiles('**/build.gradle*') != ''
-        run: ./gradlew lintDevDebug --no-daemon --console=plain
+        run: ./gradlew lintDevDebug lintDebug --no-daemon --console=plain
 
       - name: Publish unit test results
         if: hashFiles('**/build.gradle*') != ''

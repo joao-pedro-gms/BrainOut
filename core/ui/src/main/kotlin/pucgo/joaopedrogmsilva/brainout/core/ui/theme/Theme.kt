@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -154,6 +155,7 @@ fun BrainOutTheme(
  * possa ligar por engano: ligar exige chamar esta função.
  */
 @Composable
+@RequiresApi(Build.VERSION_CODES.S)
 private fun BrainOutDynamicTheme(
     darkTheme: Boolean,
     content: @Composable () -> Unit,

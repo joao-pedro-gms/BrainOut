@@ -46,8 +46,10 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
    flavor; é onde moram os contratos de token, tipografia e asset).
    Depois: `koverVerify`, o relatório HTML do Kover e o
    Android Lint
-   (`lintDevDebug` — a tarefa por variante é obrigatória para que `:app`
-   e `:core:data` participem). Publica relatório como artifact.
+   (`lintDevDebug lintDebug` — a primeira tarefa alcança `:app` e
+   `:core:data`; a segunda inclui as features e `:core:ui`, sem flavor).
+   Assim, os gates `MissingTranslation` declarados nas features também
+   executam na CI (DEF-40 / #178). Publica relatório como artifact.
 
    Os dois passos explícitos existem porque `testDevDebugUnitTest` só
    alcança `:app`, `:core:data` e (pelo wire-up do `projectsEvaluated`)
@@ -155,6 +157,14 @@ Companheiro do workflow acima. **Não substitui** o `.aab` assinado e
 
 - **Gatilho:** push de tags `v*` e `workflow_dispatch` (input `tag`,
   também no formato `v*`).
+- **Validação (DEF-41 / #179):** antes do checkout e do build, o primeiro
+  passo recebe o input em `env`, sem interpolá-lo como código shell.
+  Aceita `v` seguido de letras, números, ponto, sublinhado, `+` ou `-`;
+  rejeita espaços, quebras de linha e metacaracteres de shell. Em push,
+  usa `GITHUB_REF_NAME`. Só exporta `RELEASE_TAG` após validar o valor inteiro.
+  A CI executa `python3 -m unittest discover -s .github/tests -v`, que
+  cobre tags válidas, inputs inválidos e tentativas de injeção com o Bash
+  real do workflow. Os testes não disparam releases nem usam credenciais.
 - **Build:** JDK 21 (Temurin) e `./gradlew :app:assembleDebug`. O Gradle
   9.x do wrapper exige JVM 21; o bytecode do app continua Java 17.
 - **Asset:** o flavor `dev` (o `prod` aponta para `https://TBD/`). O
