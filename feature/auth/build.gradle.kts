@@ -18,7 +18,6 @@ android {
         // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
         // módulos não têm flavors próprios; fixam a dimensão `environment`
         // no `dev` para o match de variantes do Gradle.
-        missingDimensionStrategy("environment", "dev")
 
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
@@ -123,6 +122,7 @@ dependencies {
     testImplementation(libs.androidx.espresso.core)
 
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

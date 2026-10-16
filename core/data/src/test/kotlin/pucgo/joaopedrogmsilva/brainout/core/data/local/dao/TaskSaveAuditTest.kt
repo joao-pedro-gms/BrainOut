@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
@@ -35,7 +36,6 @@ class TaskSaveAuditTest {
     private lateinit var database: BrainOutDatabase
     private lateinit var projectDao: ProjectDao
     private lateinit var taskDao: TaskDao
-    private lateinit var pendingOpDao: PendingOpDao
 
     @Before
     fun setUp() {
@@ -47,7 +47,6 @@ class TaskSaveAuditTest {
                 .build()
         projectDao = database.projectDao()
         taskDao = database.taskDao()
-        pendingOpDao = database.pendingOpDao()
     }
 
     @After
@@ -55,7 +54,7 @@ class TaskSaveAuditTest {
         database.close()
     }
 
-    private fun repository() = TaskRepositoryImpl(taskDao, projectDao, pendingOpDao)
+    private fun repository() = TaskRepositoryImpl(taskDao, projectDao, RoomLocalTransaction(database))
 
     // ------------------------------------------------------------------
     // HIPÓTESE REFUTADA — `SUM(...)` devolve NULL quando a agregação
@@ -124,14 +123,8 @@ class TaskSaveAuditTest {
             assertThat(stats.doneThisWeekCount).isEqualTo(0)
         }
 
-    // ------------------------------------------------------------------
-    // ACHADO 2 (CORRIGIDO) — @Update do Room é no-op silencioso quando
-    // o id não existe. Antes da correção o repositório devolvia a
-    // entidade como persistida e ainda enfileirava a op de sync.
-    // ------------------------------------------------------------------
-
     @Test
-    fun `ACHADO 2 update de tarefa inexistente lanca e nao enfileira op`() =
+    fun `ACHADO 2 update de tarefa inexistente lanca sem criar registro`() =
         runTest {
             val fantasma =
                 pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
@@ -145,19 +138,10 @@ class TaskSaveAuditTest {
                 pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException::class.java,
             )
             assertThat(taskDao.findById(fantasma.id)).isNull()
-            // A fila fica limpa: o backend não cria uma tarefa órfã.
-            assertThat(pendingOpDao.count()).isEqualTo(0)
         }
 
-    // ------------------------------------------------------------------
-    // ACHADO 3 (CORRIGIDO) — o payload de sync descartava prazo e
-    // responsável. Como o PUT do stub substitui a representação inteira,
-    // o primeiro PUT de uma tarefa com prazo zerava os dois campos no
-    // servidor. Agora a fila os carrega.
-    // ------------------------------------------------------------------
-
     @Test
-    fun `ACHADO 3 payload de sync carrega dueDate e assigneeId`() =
+    fun `prazo e responsavel permanecem na persistencia local`() =
         runTest {
             projectDao.insert(sampleProject())
             val comPrazo =
@@ -171,9 +155,9 @@ class TaskSaveAuditTest {
 
             repository().update(comPrazo)
 
-            val campos = pendingOpDao.nextBatch(10).single().payload
-            assertThat(campos).contains("\"due_date\":\"2026-12-31T00:00:00Z\"")
-            assertThat(campos).contains("\"assignee_id\":\"u-7\"")
+            val saved = taskDao.findById(comPrazo.id)!!
+            assertThat(saved.dueDate).isEqualTo(comPrazo.dueDate)
+            assertThat(saved.assigneeId).isEqualTo("u-7")
         }
 
     // ------------------------------------------------------------------
@@ -198,8 +182,6 @@ class TaskSaveAuditTest {
             // A reidratação marca o projeto: zero tarefas ativas.
             assertThat(projectDao.findById("p-1")?.isCompleted).isTrue()
             assertThat(taskDao.countActiveByProject("p-1")).isEqualTo(0)
-            // Reparo puramente local — nada vai para a fila.
-            assertThat(pendingOpDao.count()).isEqualTo(0)
         }
 
     /**
@@ -218,14 +200,8 @@ class TaskSaveAuditTest {
             assertThat(projectDao.findById("p-1")?.isCompleted).isFalse()
         }
 
-    // ------------------------------------------------------------------
-    // ACHADO 5 (CORRIGIDO — DEF-18) — a fila de sync não coalescia: N
-    // edições da mesma tarefa viravam N ops completas. Como o payload
-    // enfileirado é integral, só a última op descreve o estado final.
-    // ------------------------------------------------------------------
-
     @Test
-    fun `ACHADO 5 edicoes repetidas colapsam em uma op com o estado final`() =
+    fun `edicoes locais repetidas preservam o estado final`() =
         runTest {
             projectDao.insert(sampleProject())
             val base =
@@ -240,9 +216,7 @@ class TaskSaveAuditTest {
             repo.update(base.rename("Título 2"))
             repo.update(base.rename("Título 3"))
 
-            val ops = pendingOpDao.nextBatch(limit = 50)
-            assertThat(ops).hasSize(1)
-            assertThat(ops.single().payload).contains("\"title\":\"Título 3\"")
+            assertThat(taskDao.findById(base.id)?.title).isEqualTo("Título 3")
         }
 
     // ------------------------------------------------------------------

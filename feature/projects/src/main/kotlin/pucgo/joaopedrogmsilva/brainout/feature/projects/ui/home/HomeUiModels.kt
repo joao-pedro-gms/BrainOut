@@ -25,18 +25,6 @@ sealed interface HomeUserState {
 }
 
 /**
- * Estado de conectividade/fila de sincronização consumido pela
- * [HomeScreen] para o banner offline e o indicador da fila (E3.4).
- */
-data class HomeSyncState(
-    val isOnline: Boolean = true,
-    val pendingOps: Int = 0,
-) {
-    /** Indica se o banner offline deve estar visível. */
-    val showOfflineBanner: Boolean get() = !isOnline
-}
-
-/**
  * Estado da lista de projetos (E2.1/E2.5/E2.6/E2.8) consumido pela
  * [HomeScreen].
  */

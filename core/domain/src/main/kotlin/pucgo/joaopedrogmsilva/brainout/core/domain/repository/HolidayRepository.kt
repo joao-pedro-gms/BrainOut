@@ -3,8 +3,8 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.repository
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Holiday
 
-/** Porta de consulta anual; implementação usa cache em memória, sem persistência. */
+/** Porta de consulta anual ao calendário local de feriados nacionais. */
 interface HolidayRepository {
-    /** Lista vazia em 200 sem itens ou 404; demais falhas e cancelamento são propagados. */
+    /** Consulta local determinística, sem I/O de rede. */
     suspend fun getHolidays(year: Int): List<Holiday>
 }

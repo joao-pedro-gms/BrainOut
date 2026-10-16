@@ -130,7 +130,6 @@ fun HomeScreen(
                     onTagFilterChange = viewModel::onTagFilterChange,
                     sortOrder = listState.sortOrder,
                     onSortOrderChange = viewModel::onSortOrderChange,
-                    syncState = viewModel.syncState.collectAsStateWithLifecycle().value,
                 )
             HomeTab.Tasks -> Unit
             HomeTab.Dashboard -> Unit

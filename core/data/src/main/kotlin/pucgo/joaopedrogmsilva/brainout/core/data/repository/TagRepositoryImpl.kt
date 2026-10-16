@@ -4,14 +4,10 @@ package pucgo.joaopedrogmsilva.brainout.core.data.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncEntityType
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.SyncOpType
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagSyncPayload
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -20,36 +16,14 @@ import javax.inject.Singleton
 
 private const val TAG = "BrainOut:TagRepo"
 
-/**
- * Implementação Room de [TagRepository] com **escrita dual**
- * offline-first (E3.3).
- *
- * Toda mutação grava no Room **e** enfileira a op em `pending_ops`
- * na mesma transação Room ([PendingOpDao.enqueueInTx]).
- *
- * Particularidade das tags no contrato do stub
- * (`backend-stub/server.py`): o `id` de tag é **gerado pelo servidor**
- * (vocabulário sem identidade local forte antes do upload). A op
- * CREATE carrega apenas `name`/`color`; a op DELETE usa o id local
- * e é idempotente (204 mesmo ausente) — se o CREATE ainda não
- * sincronizou, o DELETE descarta no servidor sem erro.
- *
- * O índice único `(owner_id, name)` no Room garante a invariante de
- * unicidade por usuário — colisões no `insert` propagam como
- * `SQLiteConstraintException` (estratégia `ABORT`) e serão
- * convertidas em erro de domínio quando um caso de uso específico
- * for adicionado (ex.: `CreateTagUseCase`).
- *
- * @property tagDao DAO de tags injetado pelo Hilt via `DataModule`.
- * @property pendingOpDao DAO da fila de sincronização (E3.3).
- */
+/** Persistência local de tag, com transações Room para escritas e cascatas. */
 @Singleton
 class TagRepositoryImpl
     @Inject
     constructor(
         private val tagDao: TagDao,
         private val projectDao: ProjectDao,
-        private val pendingOpDao: PendingOpDao,
+        private val localTransaction: LocalTransaction,
     ) : TagRepository {
         override fun observeForOwner(ownerId: String): Flow<List<Tag>> =
             tagDao.observeForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
@@ -68,47 +42,17 @@ class TagRepositoryImpl
         override suspend fun findByIds(ids: Collection<String>): List<Tag> =
             tagDao.findByIds(ids.toList()).map { it.toDomain() }
 
-        /**
-         * Cria a tag localmente e enfileira a op CREATE na mesma
-         * transação. Colisão de nome (índice único) reverte ambas as
-         * escritas — a fila nunca guarda op de tag que não existe.
-         */
         override suspend fun create(tag: Tag): Tag {
             logDebug(TAG, "Criando tag id=${tag.id}, name=${tag.name}, color=${tag.color}, ownerId=${tag.ownerId}")
-            pendingOpDao.enqueueInTx(
-                op =
-                    PendingOpEntity.enqueue(
-                        entityType = SyncEntityType.TAG,
-                        entityId = tag.id,
-                        opType = SyncOpType.CREATE,
-                        payloadObj =
-                            TagSyncPayload(
-                                id = tag.id,
-                                name = tag.name,
-                                color = tag.color,
-                            ),
-                    ),
-            ) {
+            localTransaction.run {
                 tagDao.insert(TagEntity.fromDomain(tag))
             }
             return tag
         }
 
-        /**
-         * Remove a tag localmente e enfileira a op DELETE na mesma
-         * transação. Associações em `project_tags` são removidas via
-         * `ON DELETE CASCADE`.
-         */
         override suspend fun delete(id: String) {
             logDebug(TAG, "Deletando tag id=$id")
-            pendingOpDao.enqueueInTx(
-                op =
-                    PendingOpEntity.enqueue(
-                        entityType = SyncEntityType.TAG,
-                        entityId = id,
-                        opType = SyncOpType.DELETE,
-                    ),
-            ) {
+            localTransaction.run {
                 tagDao.deleteById(id)
             }
         }

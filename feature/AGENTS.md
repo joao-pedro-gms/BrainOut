@@ -1,5 +1,10 @@
 # feature/ — Módulos de feature (Compose + Hilt + ViewModel + StateFlow)
 
+> Atualização #212: todos os módulos agora são locais e sem flavors.
+> Não usar missingDimensionStrategy nem tarefas DevDebug. ViewModels não
+> consomem ConnectivityObserver/PendingSyncMonitor; erros e retry locais
+> continuam válidos. As referências a flavors/sync abaixo são históricas.
+
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Convenção operacional dos 4 módulos :feature:* — referência operacional para
 // quem vai criar uma tela nova, um caso de uso novo ou um teste novo.

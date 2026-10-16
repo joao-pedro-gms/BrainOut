@@ -12,20 +12,19 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import pucgo.joaopedrogmsilva.brainout.core.data.BuildConfig
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_2_3
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_3_4
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_4_5
+import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ThemePreferencesRepositoryImpl
-import pucgo.joaopedrogmsilva.brainout.core.data.remote.HolidayRemoteDataSource
-import pucgo.joaopedrogmsilva.brainout.core.data.remote.RemoteDataSource
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.HolidayRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.ProjectRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
@@ -34,10 +33,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.AndroidConnectivityObserver
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.BrainOutSyncDispatcher
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.SyncDispatcher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
@@ -87,7 +82,7 @@ object DataModule {
             // ficam com `completed_at IS NULL`.
             // Migration v3 → v4 (E3.3): cria a tabela `pending_ops` da
             // fila de sincronização offline — não destrutiva.
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
 
     @Provides
@@ -103,7 +98,7 @@ object DataModule {
     fun provideTagDao(database: BrainOutDatabase): TagDao = database.tagDao()
 
     @Provides
-    fun providePendingOpDao(database: BrainOutDatabase): PendingOpDao = database.pendingOpDao()
+    fun provideLocalTransaction(impl: RoomLocalTransaction): LocalTransaction = impl
 
     @Provides
     @Singleton
@@ -114,24 +109,24 @@ object DataModule {
     fun provideProjectRepository(
         projectDao: ProjectDao,
         tagDao: TagDao,
-        pendingOpDao: PendingOpDao,
-    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, pendingOpDao)
+        localTransaction: LocalTransaction,
+    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, localTransaction)
 
     @Provides
     @Singleton
     fun provideTaskRepository(
         taskDao: TaskDao,
         projectDao: ProjectDao,
-        pendingOpDao: PendingOpDao,
-    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao, pendingOpDao)
+        localTransaction: LocalTransaction,
+    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
 
     @Provides
     @Singleton
     fun provideTagRepository(
         tagDao: TagDao,
         projectDao: ProjectDao,
-        pendingOpDao: PendingOpDao,
-    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, pendingOpDao)
+        localTransaction: LocalTransaction,
+    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, localTransaction)
 
     /**
      * Bind de [ListingPreferencesRepository] para a implementação
@@ -171,51 +166,7 @@ object DataModule {
     @Singleton
     fun provideSessionStore(dataStore: DataStore<Preferences>): SessionStore = SessionStore(dataStore = dataStore)
 
-    /**
-     * Fonte de dados remota (E3.2). A URL base vem do `BuildConfig`
-     * deste módulo, injetada por flavor (debug: backend-stub no host do
-     * emulador; release: placeholder documentado).
-     */
     @Provides
     @Singleton
-    fun provideRemoteDataSource(): RemoteDataSource =
-        RemoteDataSource(
-            baseUrl = BuildConfig.BASE_URL,
-            loggingEnabled = BuildConfig.DEBUG,
-        )
-
-    /**
-     * Despachante de sincronização (E3.3): envolve o cliente remoto
-     * com a tradução de erros IOException/5xx → retriable, 4xx →
-     * permanente. O `SyncWorker` (`:app`) drena a fila `pending_ops`
-     * através dele.
-     */
-    @Provides
-    @Singleton
-    fun provideSyncDispatcher(remote: RemoteDataSource): SyncDispatcher = BrainOutSyncDispatcher(remote)
-
-    /**
-     * Observador de conectividade reativo (E3.4): alimenta o banner
-     * "offline" da Home e do detalhe do projeto via callback de rede
-     * do sistema (sem polling).
-     */
-    @Provides
-    @Singleton
-    fun provideConnectivityObserver(impl: AndroidConnectivityObserver): ConnectivityObserver = impl
-
-    /**
-     * Fonte de dados remota do serviço público de feriados nacionais
-     * (E3.5). A URL vem do `BuildConfig.HOLIDAYS_BASE_URL` injetado
-     * por flavor (BrasilAPI — sem autenticação).
-     */
-    @Provides
-    @Singleton
-    fun provideHolidayRemoteDataSource(): HolidayRemoteDataSource =
-        HolidayRemoteDataSource(baseUrl = BuildConfig.HOLIDAYS_BASE_URL)
-
-    /** Bind de [HolidayRepository] para a implementação HTTP (E3.5). */
-    @Provides
-    @Singleton
-    fun provideHolidayRepository(remote: HolidayRemoteDataSource): HolidayRepository =
-        HolidayRepositoryImpl(remote = remote)
+    fun provideHolidayRepository(impl: HolidayRepositoryImpl): HolidayRepository = impl
 }

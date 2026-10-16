@@ -1,5 +1,33 @@
 # CI/CD — BrainOut
 
+## Operação atual após #212
+
+O produto e os builds são locais, sem flavors. A configuração executável é
+`.github/workflows/ci.yml`, com três jobs:
+
+1. `static-analysis`: regressão do workflow de release, ktlint e detekt.
+2. `unit-tests`: `testDebugUnitTest` (inclui domínio), suítes explícitas das
+   quatro features e core:ui, Kover >=60%, relatórios e `lintDebug`.
+3. `local-integration`: APK debug e compilação das suítes instrumentadas de
+   core:data e auth. Não executa emulador; os testes JVM de upgrade e
+   transação real rodam no job unit-tests. O manifesto final é verificado sem
+   permissões de rede. O APK de testes precisa conter AndroidJUnitRunner e
+   todos os schemas históricos, evitando o falso verde de suíte vazia.
+
+O job backend-integration, os containers e os testes HTTP foram removidos
+junto dos consumidores. Release debug publica `app/build/outputs/apk/debug`;
+AAB usa `bundleRelease`, sem keystore local versionado. O APK não contém
+permissões INTERNET/ACCESS_NETWORK_STATE; WorkManager permanece para
+lembretes locais e o upgrade cancela somente os trabalhos antigos de sync.
+
+Comandos atuais: `./gradlew ktlintCheck detekt testDebugUnitTest lintDebug`
+e `./gradlew :core:domain:koverVerify :core:data:koverVerify` em JDK21.
+As instruções de secrets/assinatura abaixo continuam aplicáveis; as seções
+antigas de flavors/backend/contagens são histórico a reconciliar em #208.
+
+## Registro histórico anterior à migração local
+
+
 > Documento de operação dos pipelines de GitHub Actions. Atualize quando
 > secrets ou workflows mudarem. Item desejável 5.1 do documento norteador
 > (não obrigatório, mas fortalece a rubrica de qualidade técnica).

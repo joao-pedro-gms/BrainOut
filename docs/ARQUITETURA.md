@@ -1,9 +1,9 @@
 # BrainOut — arquitetura
 
 > **Decisão posterior (16/10/2026): produto totalmente local.** Este texto
-> registra a arquitetura legada, ainda presente no código. A direção alvo,
+> registra a arquitetura legada, removida na implementação #212. A direção alvo,
 > as diferenças para a implementação e a ordem de migração estão em
-> [TRANSICAO-LOCAL.md](TRANSICAO-LOCAL.md). Backend/sync serão retirados;
+> [TRANSICAO-LOCAL.md](TRANSICAO-LOCAL.md). Backend/sync foram retirados;
 > backup manual ainda não foi implementado.
 
 > Documento de definição arquitetural. Atualizado ao fim de cada ciclo

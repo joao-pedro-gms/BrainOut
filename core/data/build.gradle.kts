@@ -1,40 +1,15 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Módulo :core:data — Room, DataStore, fontes remotas e implementações de repositório.
-
-import java.util.Properties
+// Módulo :core:data — Room, DataStore, calendário local e implementações de repositório.
 
 plugins {
     alias(libs.plugins.android.library)
     // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.detekt)
     // Kover (E4.7): cobertura de código para a camada de dados.
     alias(libs.plugins.kover)
 }
-
-// Override opcional da URL base por flavor (E3.2): lê `local.properties`
-// (não versionado). Sem o arquivo, vale o default do flavor.
-val localProperties =
-    Properties().apply {
-        val f = rootProject.file("local.properties")
-        if (f.exists()) {
-            f.inputStream().use { load(it) }
-        }
-    }
-
-// URL base do flavor `dev` com duas camadas de override (E3.2): a env var
-// `BASE_URL` (definida pelo job `backend-integration` do CI para apontar o
-// BuildConfig para o backend-stub dockerizado) tem prioridade sobre
-// `local.properties` (`brainout.baseUrl.dev`); sem env var, vale o override
-// local ou o default do flavor. Retrofit exige barra final na base —
-// normalizada aqui para qualquer origem.
-val devBaseUrlRaw: String =
-    System.getenv("BASE_URL")?.takeIf { it.isNotBlank() }
-        ?: localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")
-val devBaseUrl: String =
-    if (devBaseUrlRaw.endsWith("/")) devBaseUrlRaw else "$devBaseUrlRaw/"
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout.core.data"
@@ -51,46 +26,6 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
             arg("room.incremental", "true")
-        }
-    }
-
-    // Flavors de ambiente (E3.2): a URL base do serviço de retaguarda é
-    // injetada em BuildConfig por flavor. O host do flavor dev aponta para o
-    // backend-stub FastAPI no host do emulador (10.0.2.2); o de prod
-    // permanece placeholder até a hospedagem definitiva (decisão E3.1).
-    // O override por desenvolvedor vai em `local.properties`
-    // (brainout.baseUrl.dev — ver `local.properties.example`).
-    //
-    // E3.5: adiciona `HOLIDAYS_BASE_URL` para o serviço externo público
-    // de feriados nacionais (BrasilAPI). Por ser público e sem chave,
-    // não há override por local.properties — apenas o default do flavor.
-    flavorDimensions += "environment"
-    productFlavors {
-        create("dev") {
-            dimension = "environment"
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"$devBaseUrl\"",
-            )
-            buildConfigField(
-                "String",
-                "HOLIDAYS_BASE_URL",
-                "\"https://brasilapi.com.br/\"",
-            )
-        }
-        create("prod") {
-            dimension = "environment"
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"https://TBD/\"",
-            )
-            buildConfigField(
-                "String",
-                "HOLIDAYS_BASE_URL",
-                "\"https://brasilapi.com.br/\"",
-            )
         }
     }
 
@@ -134,18 +69,20 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.androidTest
+            ?.sources
+            ?.assets
+            ?.addStaticSourceDirectory("$projectDir/schemas")
+    }
+}
+
 dependencies {
     implementation(project(":core:domain"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
-
-    // Rede remota (E3.2): Retrofit + OkHttp + kotlinx-serialization.
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization.converter)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
-    implementation(libs.kotlinx.serialization.json)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -168,7 +105,6 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.okhttp.mockwebserver)
 
     // Deps dos testes INSTRUMENTADOS. `MigrationTest` e
     // `UserDaoInstrumentedTest` importam Truth e coroutines-test, mas
@@ -178,6 +114,7 @@ dependencies {
     // (nem local, nem no CI, que também não invoca
     // `connectedAndroidTest`).
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.truth)
     androidTestImplementation(libs.kotlinx.coroutines.test)

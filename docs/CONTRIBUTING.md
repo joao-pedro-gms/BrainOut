@@ -88,30 +88,18 @@ catálogo, não uma de memória.
 
 ## O que validar antes de abrir o PR
 
-O comando agregado do CI é `testDevDebugUnitTest`, mas ele **não**
-alcança os módulos sem flavor. Rodar só ele deixa passar uma suíte de
-`:feature/*` ou `:core:ui` quebrada. Reproduza localmente o que o CI
-faz:
+Todos os módulos Android são locais e sem flavor desde a #212. Em JDK21:
 
 ```bash
-./gradlew testDevDebugUnitTest \
-          :feature:projects:testDebugUnitTest :feature:tasks:testDebugUnitTest \
-          :feature:auth:testDebugUnitTest :feature:settings:testDebugUnitTest \
-          :core:ui:testDebugUnitTest
-
+./gradlew ktlintCheck detekt testDebugUnitTest lintDebug
 ./gradlew :core:domain:koverVerify :core:data:koverVerify
-./gradlew :app:lintDevDebug
+./gradlew :app:assembleDebug :core:data:assembleDebugAndroidTest :feature:auth:assembleDebugAndroidTest
+python3 -m unittest discover -s .github/tests -v
 ```
 
-Dois limites honestos do ambiente local:
-
-- **`detekt` não roda com o JBR 25** do Android Studio (rejeita o
-  `--jvm-target` derivado do JVM do Gradle). Ele roda no CI em Temurin
-  21 — uma falha de detekt local não é um reprovável seu.
-- **Testes instrumentados exigem emulador** (`connectedDevDebugAndroidTest`).
-  Eles compilam, mas o CI **não** os executa (não há runner com emulador
-  no plano gratuito). Se você mexer em migrações Room, rode o emulador
-  você mesmo — nada vai rodar isso por você.
+As suítes instrumentadas precisam de emulador/dispositivo para execução
+(`connectedDebugAndroidTest`). Sua compilação na CI não comprova execução.
+Não usar tarefas DevDebug/ProdDebug ou configurar BASE_URL; não há backend.
 
 ## Commits atômicos
 

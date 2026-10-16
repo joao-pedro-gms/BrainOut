@@ -5,12 +5,10 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import pucgo.joaopedrogmsilva.brainout.core.data.local.converter.InstantConverter
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
@@ -39,9 +37,8 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
         TaskEntity::class,
         TagEntity::class,
         ProjectTagCrossRef::class,
-        PendingOpEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)
@@ -57,9 +54,6 @@ abstract class BrainOutDatabase : RoomDatabase() {
 
     /** DAO de tags ([TagEntity]). */
     abstract fun tagDao(): TagDao
-
-    /** DAO da fila de sincronização ([PendingOpEntity]) — E3.3. */
-    abstract fun pendingOpDao(): PendingOpDao
 
     companion object {
         /** Nome do arquivo SQLite do banco (usado pelo [androidx.room.Room.databaseBuilder]). */
