@@ -7,11 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
@@ -88,44 +87,37 @@ class TagRepositoryImplTest {
         }
 
     @Test
-    fun `create persiste tag e enfileira op CREATE com id cliente-supplied`() =
+    fun `create persiste tag localmente com id cliente-supplied`() =
         runTest {
             val tagDao = FakeTagDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = newRepository(tagDao, localTransaction = localTransaction)
             val tag = sampleTag()
 
             repository.create(tag)
 
             assertThat(tagDao.tags[tag.id]?.toDomain()).isEqualTo(tag)
-            val op = pendingOpDao.enqueued.single()
-            assertThat(op.opType).isEqualTo("CREATE")
-            assertThat(op.entityType).isEqualTo("TAG")
-            assertThat(op.entityId).isEqualTo(tag.id)
-            // P0-4 (R6): o payload de CREATE carrega o id do cliente.
-            assertThat(op.payload).contains("\"id\":\"${tag.id}\"")
         }
 
     @Test
-    fun `delete remove tag e enfileira op DELETE`() =
+    fun `delete remove tag localmente`() =
         runTest {
             val tagDao = FakeTagDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = newRepository(tagDao, pendingOpDao = pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = newRepository(tagDao, localTransaction = localTransaction)
             val tag = sampleTag()
             tagDao.tags[tag.id] = TagEntity.fromDomain(tag)
 
             repository.delete(tag.id)
 
             assertThat(tagDao.tags).doesNotContainKey(tag.id)
-            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("DELETE")
         }
 
     private fun newRepository(
         tagDao: TagDao = FakeTagDao(),
         projectDao: ProjectDao = FakeProjectDao(),
-        pendingOpDao: PendingOpDao = FakePendingOpDao(),
-    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, pendingOpDao)
+        localTransaction: LocalTransaction = FakeLocalTransaction(),
+    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, localTransaction)
 
     private fun sampleTag(
         id: String = "t1",
@@ -226,63 +218,8 @@ class TagRepositoryImplTest {
         ) = Unit
     }
 
-    /** Fake mínimo de [PendingOpDao]. */
-    private class FakePendingOpDao : PendingOpDao {
-        val enqueued: MutableList<PendingOpEntity> = mutableListOf()
-        private var nextId = 1L
-
-        override suspend fun nextBatch(limit: Int): List<PendingOpEntity> = enqueued.take(limit)
-
-        override suspend fun count(): Int = enqueued.size
-
-        override fun observeCount(): Flow<Int> = MutableStateFlow(enqueued.size)
-
-        override suspend fun insert(op: PendingOpEntity): Long {
-            val withId = op.copy(id = nextId++)
-            enqueued += withId
-            return withId.id
-        }
-
-        override suspend fun update(op: PendingOpEntity) {
-            val index = enqueued.indexOfFirst { it.id == op.id }
-            if (index >= 0) enqueued[index] = op
-        }
-
-        override suspend fun deleteById(id: Long) {
-            enqueued.removeAll { it.id == id }
-        }
-
-        override suspend fun deleteForEntity(
-            entityType: String,
-            entityId: String,
-        ) {
-            enqueued.removeAll { it.entityType == entityType && it.entityId == entityId }
-        }
-
-        override suspend fun deleteForEntityAndOpType(
-            entityType: String,
-            entityId: String,
-            opType: String,
-        ) {
-            enqueued.removeAll { it.entityType == entityType && it.entityId == entityId && it.opType == opType }
-        }
-
-        override suspend fun markAttempt(opId: Long) {
-            val index = enqueued.indexOfFirst { it.id == opId }
-            if (index >= 0) {
-                enqueued[index] = enqueued[index].copy(attempts = enqueued[index].attempts + 1)
-            }
-        }
-
-        override suspend fun findById(id: Long): PendingOpEntity? = enqueued.firstOrNull { it.id == id }
-
-        override suspend fun enqueueInTx(
-            op: PendingOpEntity,
-            write: suspend () -> Unit,
-        ) {
-            write()
-            deleteForEntityAndOpType(op.entityType, op.entityId, op.opType)
-            insert(op)
-        }
+    /** Fake mínimo de [LocalTransaction]. */
+    private class FakeLocalTransaction : LocalTransaction {
+        override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 }

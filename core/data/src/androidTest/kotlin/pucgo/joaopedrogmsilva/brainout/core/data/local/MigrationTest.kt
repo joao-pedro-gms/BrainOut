@@ -258,6 +258,48 @@ class MigrationTest {
      * FK `tasks.project_id → projects.id` exige o pai presente, e
      * `tasks` só existe a partir da v2.
      */
+    @Test
+    fun migrate_4_para_5_preserva_tarefas_e_remove_a_fila_remota() {
+        val dbName = "migration-4-5.db"
+        helper.createDatabase(dbName, 4).use { db ->
+            seedProjectAndTask(db)
+            db.execSQL("INSERT INTO pending_ops VALUES(1,'TASK','t1','CREATE','{}',1000,0)")
+        }
+        helper.runMigrationsAndValidate(dbName, 5, true, MIGRATION_4_5).use { db ->
+            db.cursor("SELECT title FROM tasks WHERE id='t1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("Tarefa legada")
+            }
+            db.cursor("SELECT name FROM sqlite_master WHERE name='pending_ops'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isFalse()
+            }
+        }
+    }
+
+    @Test
+    fun migrate_4_para_5_repara_banco_atualizado_pela_antiga_migration() {
+        val dbName = "migration-legacy-4-5.db"
+        helper.createDatabase(dbName, 2).use { db ->
+            seedProjectAndTask(db)
+            // Reproduz a antiga 2→3, anterior à correção do DEFAULT NULL.
+            db.execSQL("ALTER TABLE tasks ADD COLUMN completed_at INTEGER")
+            MIGRATION_3_4.migrate(db)
+            db.execSQL("UPDATE tasks SET status='DONE', completed_at=4000 WHERE id='t1'")
+            db.version = 4
+        }
+        helper.runMigrationsAndValidate(dbName, 5, true, MIGRATION_4_5).use { db ->
+            db.cursor("SELECT title, status, completed_at FROM tasks WHERE id='t1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("Tarefa legada")
+                assertThat(cursor.getString(1)).isEqualTo("DONE")
+                assertThat(cursor.getLong(2)).isEqualTo(4000L)
+            }
+            db.cursor("PRAGMA foreign_key_check").use { cursor ->
+                assertThat(cursor.moveToFirst()).isFalse()
+            }
+        }
+    }
+
     private fun seedProjectAndTask(db: SupportSQLiteDatabase) {
         db.execSQL(
             "INSERT INTO projects(id, owner_id, name, description, created_at, is_completed) " +

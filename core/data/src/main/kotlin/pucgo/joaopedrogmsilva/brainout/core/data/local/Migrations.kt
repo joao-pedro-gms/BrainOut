@@ -129,7 +129,7 @@ val MIGRATION_1_2: Migration =
 val MIGRATION_2_3: Migration =
     object : Migration(2, 3) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER")
+            db.execSQL("ALTER TABLE `tasks` ADD COLUMN `completed_at` INTEGER DEFAULT NULL")
         }
     }
 
@@ -140,7 +140,7 @@ val MIGRATION_2_3: Migration =
  * sincronização. Não destrutiva: apenas `CREATE TABLE IF NOT EXISTS`
  * + índice; nenhum dado existente é tocado. A tabela não tem FK —
  * ops podem sobreviver à entidade referenciada (ver
- * [pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity]).
+ * tabela histórica `pending_ops`).
  * A forma textual casa com o schema exportado v4 (backticks, PK
  * autoincrement, índice `created_at`), então o `identityHash`
  * calculado durante o build bate com o esperado.
@@ -166,3 +166,48 @@ val MIGRATION_3_4: Migration =
             )
         }
     }
+
+/** v4 → v5: retira a fila e normaliza o default legado de conclusão, preservando os dados. */
+val MIGRATION_4_5: Migration =
+    object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS `pending_ops`")
+            repairLegacyCompletionDefault(db)
+        }
+    }
+
+/** Normaliza bases atualizadas pela antiga 2→3, sem perder registros ou metadados de tarefas. */
+private fun repairLegacyCompletionDefault(db: SupportSQLiteDatabase) {
+    val needsRepair =
+        db.query("PRAGMA table_info(`tasks`)").use { cursor ->
+            val nameIndex = cursor.getColumnIndexOrThrow("name")
+            val defaultIndex = cursor.getColumnIndexOrThrow("dflt_value")
+            var missingDefault = false
+            while (cursor.moveToNext()) {
+                if (cursor.getString(nameIndex) == "completed_at") missingDefault = cursor.isNull(defaultIndex)
+            }
+            missingDefault
+        }
+    if (!needsRepair) return
+    db.execSQL(
+        """
+        CREATE TABLE `tasks_local` (
+            `id` TEXT NOT NULL, `project_id` TEXT NOT NULL, `title` TEXT NOT NULL,
+            `priority_code` INTEGER NOT NULL, `status` TEXT NOT NULL, `assignee_id` TEXT,
+            `due_date` INTEGER, `created_at` INTEGER NOT NULL, `completed_at` INTEGER DEFAULT NULL,
+            PRIMARY KEY(`id`),
+            FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+        )
+        """.trimIndent(),
+    )
+    db.execSQL(
+        """
+        INSERT INTO `tasks_local` (id, project_id, title, priority_code, status, assignee_id, due_date, created_at, completed_at)
+        SELECT id, project_id, title, priority_code, status, assignee_id, due_date, created_at, completed_at FROM `tasks`
+        """.trimIndent(),
+    )
+    db.execSQL("DROP TABLE `tasks`")
+    db.execSQL("ALTER TABLE `tasks_local` RENAME TO `tasks`")
+    db.execSQL("CREATE INDEX `idx_tasks_project_id` ON `tasks` (`project_id`)")
+    db.execSQL("CREATE INDEX `idx_tasks_status` ON `tasks` (`status`)")
+}

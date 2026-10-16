@@ -10,15 +10,11 @@ import java.time.LocalDate
  * e pelo caso de uso
  * [pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CheckDeadlineUseCase].
  *
- * O repositório remoto (BrasilAPI, sem autenticação) já entrega datas
- * ISO-8601 (`YYYY-MM-DD`); aqui representamos como [LocalDate] para
- * evitar aritmética confusa de fusos quando o caso de uso compara com
- * o prazo de uma [Task] (também um instante "absoluto" UTC).
+ * O calendário local usa datas sem fuso para comparar com os prazos.
  *
  * @property date Data do feriado (sem fuso).
  * @property name Nome descritivo (ex.: "Natal").
- * @property type Categoria reportada pelo serviço externo ("national" hoje;
- *   mantido aberto para futuras categorias como "estadual" / "municipal").
+ * @property type Categoria do calendário local ("national").
  */
 data class Holiday(
     val date: LocalDate,

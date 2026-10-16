@@ -16,15 +16,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
@@ -65,18 +61,6 @@ data class ProjectDetailUiState(
 )
 
 /**
- * Estado de conectividade/fila para o banner offline do detalhe do
- * projeto (E3.4).
- */
-data class ProjectDetailSyncState(
-    val isOnline: Boolean = true,
-    val pendingOps: Int = 0,
-) {
-    /** Indica se o banner offline deve estar visível. */
-    val showOfflineBanner: Boolean get() = !isOnline
-}
-
-/**
  * ViewModel da [ProjectDetailScreen].
  *
  * Responsabilidades:
@@ -107,8 +91,6 @@ class ProjectDetailViewModel
         private val deleteProject: DeleteProjectUseCase,
         private val deleteTask: DeleteTaskUseCase,
         private val checkDeadline: CheckDeadlineUseCase,
-        private val connectivityObserver: ConnectivityObserver,
-        private val pendingSyncMonitor: PendingSyncMonitor,
     ) : ViewModel() {
         private val projectId: String =
             checkNotNull(savedStateHandle.get<String>(PROJECT_ID_ARG)) {
@@ -117,23 +99,6 @@ class ProjectDetailViewModel
 
         private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
         val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-        /**
-         * Estado de conectividade + fila pendente (E3.4) para o banner
-         * offline do detalhe do projeto. Mesma combinação da Home:
-         * callback de rede + contagem de `pending_ops`.
-         */
-        val syncState: StateFlow<ProjectDetailSyncState> =
-            combine(
-                connectivityObserver.observe(),
-                pendingSyncMonitor.observePendingCount(),
-            ) { connectivity: ConnectivityState, pending: Int ->
-                ProjectDetailSyncState(isOnline = connectivity.isOnline, pendingOps = pending)
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = ProjectDetailSyncState(),
-            )
 
         /**
          * Token de retry (E2.8). Cada chamada a [retry] incrementa este

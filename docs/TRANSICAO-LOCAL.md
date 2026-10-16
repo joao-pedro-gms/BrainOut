@@ -3,6 +3,29 @@
 Decisão aprovada pelo autor em **16/10/2026**. Base inspecionada:
 `main` em `e49181b`. Organização: [#210](https://github.com/joao-pedro-gms/BrainOut/issues/210).
 
+## Atualização de implementação — #212
+
+A camada de rede, o stub e a fila foram removidos. Todos os módulos Android
+usam variantes sem flavor. Room v5 migra a v4 removendo apenas `pending_ops`;
+`LocalTransaction` preserva escritas atômicas. Bases que passaram pela antiga
+2→3 também têm o default de `completed_at` normalizado sem perda de registros. O início do app cancela apenas
+os trabalhos antigos de sync; lembretes continuam locais. Banners e fontes
+de estado de sync foram retirados como consequência da remoção de seus
+consumidores. O acabamento de textos/estados da interface continua em #213.
+
+Feriados usam cálculo local pelas regras nacionais atuais, sem pontos
+facultativos/feriados regionais. A referência de datas de 2026 é o
+[calendário oficial do MGI](https://www.gov.br/gestao/pt-br/assuntos/noticias/2025/dezembro/confira-o-calendario-oficial-de-feriados-nacionais-e-pontos-facultativos-em-2026).
+Backup manual (#214) e a política do backup automático Android (#175) seguem
+pendentes. A CI troca backend-integration por build local e compilação das
+suítes instrumentadas; os testes JVM verificam upgrade e transações reais.
+
+## Registro da auditoria anterior à implementação
+
+O restante deste inventário descreve a base histórica `e49181b`. Suas afirmações
+sobre código ainda com rede e flavors não descrevem a implementação posterior
+à #212; preservam a rastreabilidade da decisão e da auditoria.
+
 ## Decisão e estado implementado
 
 O produto alvo é um aplicativo Android **totalmente local**, com Room,

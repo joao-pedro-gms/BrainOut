@@ -43,7 +43,6 @@ internal fun ProjectDetailBody(
     // corpo agora só abre o diálogo; o `ViewModel` recebe o título novo.
     onRenameTask: (Task) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
-    syncState: ProjectDetailSyncState,
 ) {
     Column(
         modifier =
@@ -62,10 +61,6 @@ internal fun ProjectDetailBody(
             text = stringResource(id = R.string.project_detail_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        ProjectDetailOfflineBanner(
-            syncState = syncState,
         )
 
         // DEF-22 — divisor com o token cheio: `outline` puro marca

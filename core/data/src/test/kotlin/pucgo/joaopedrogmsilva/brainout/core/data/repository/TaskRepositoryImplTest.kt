@@ -7,12 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.CompletionStatsRow
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PendingOpDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PriorityCountRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.PendingOpEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
@@ -27,7 +26,7 @@ import java.time.Instant
 /**
  * Testes diretos do [TaskRepositoryImpl] (gap Kover 60% do módulo).
  *
- * Cobre escrita dual (Room + `pending_ops`), a matriz de transições e
+ * Cobre persistência local, a matriz de transições e
  * as cascatas RN03 (E2.5) — incluindo o comportamento P0-2 de
  * `completeAndCascade`/`changeStatus` lançando [TaskNotFoundException]
  * em vez de `IllegalArgumentException` cru.
@@ -51,29 +50,24 @@ class TaskRepositoryImplTest {
         }
 
     @Test
-    fun `create persiste e enfileira op CREATE`() =
+    fun `create persiste localmente`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
             val task = sampleTask()
 
             repository.create(task)
 
             assertThat(taskDao.storage[task.id]?.toDomain()).isEqualTo(task)
-            val ops = pendingOpDao.enqueued
-            assertThat(ops).hasSize(1)
-            assertThat(ops.first().opType).isEqualTo("CREATE")
-            assertThat(ops.first().entityType).isEqualTo("TASK")
-            assertThat(ops.first().entityId).isEqualTo(task.id)
         }
 
     @Test
-    fun `update persiste e enfileira op UPDATE`() =
+    fun `update persiste localmente`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
             val task = sampleTask()
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
             val updated = task.copy(title = "Título novo")
@@ -81,7 +75,6 @@ class TaskRepositoryImplTest {
             repository.update(updated)
 
             assertThat(taskDao.storage[task.id]?.title).isEqualTo("Título novo")
-            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("UPDATE")
         }
 
     @Test
@@ -97,11 +90,11 @@ class TaskRepositoryImplTest {
         }
 
     @Test
-    fun `changeStatus aplica matriz e enfileira op UPDATE`() =
+    fun `changeStatus aplica matriz localmente`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
             val task = sampleTask(status = TaskStatus.DOING)
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
 
@@ -110,15 +103,14 @@ class TaskRepositoryImplTest {
             assertThat(updated.status).isEqualTo(TaskStatus.DONE)
             assertThat(updated.completedAt).isNotNull()
             assertThat(taskDao.storage[task.id]?.status).isEqualTo(TaskStatus.DONE.name)
-            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("UPDATE")
         }
 
     @Test
     fun `changeStatus rejeita transicao invalida sem enfileirar`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
@@ -127,18 +119,15 @@ class TaskRepositoryImplTest {
                     .exceptionOrNull()
 
             assertThat(thrown).isInstanceOf(InvalidStateTransitionException::class.java)
-            assertThat(pendingOpDao.enqueued).isEmpty()
         }
 
     @Test
     fun `delete de tarefa ausente e idempotente sem enfileirar`() =
         runTest {
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(FakeTaskDao(), FakeProjectDao(FakeTaskDao()), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(FakeTaskDao(), FakeProjectDao(FakeTaskDao()), localTransaction)
 
             repository.delete("ausente")
-
-            assertThat(pendingOpDao.enqueued).isEmpty()
         }
 
     @Test
@@ -146,15 +135,14 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val projectDao = FakeProjectDao(taskDao)
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, projectDao, pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
             val task = sampleTask(status = TaskStatus.DOING)
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
 
             repository.delete(task.id)
 
             assertThat(taskDao.storage).doesNotContainKey(task.id)
-            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("DELETE")
             assertThat(projectDao.deleteCalls).containsExactly(
                 DeleteCall(task.id, task.projectId, true),
             )
@@ -176,13 +164,12 @@ class TaskRepositoryImplTest {
     fun `completeAndCascade retorna no-op quando ja DONE`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
             assertThat(repository.completeAndCascade(done.id)).isEqualTo(done)
-            assertThat(pendingOpDao.enqueued).isEmpty()
         }
 
     @Test
@@ -190,15 +177,14 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val projectDao = FakeProjectDao(taskDao)
-            val pendingOpDao = FakePendingOpDao()
-            val repository = TaskRepositoryImpl(taskDao, projectDao, pendingOpDao)
+            val localTransaction = FakeLocalTransaction()
+            val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
             val todo = sampleTask(status = TaskStatus.TODO)
             taskDao.storage[todo.id] = TaskEntity.fromDomain(todo)
 
             repository.completeAndCascade(todo.id)
 
             assertThat(projectDao.completeCalls.map { it.taskId }).containsExactly(todo.id)
-            assertThat(pendingOpDao.enqueued.map { it.opType }).containsExactly("UPDATE")
         }
 
     @Test
@@ -274,7 +260,7 @@ class TaskRepositoryImplTest {
         }
 
     private fun newRepository(taskDao: TaskDao): TaskRepositoryImpl =
-        TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), FakePendingOpDao())
+        TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), FakeLocalTransaction())
 
     private fun sampleTask(
         status: TaskStatus = TaskStatus.TODO,
@@ -446,65 +432,10 @@ class TaskRepositoryImplTest {
     }
 
     /**
-     * Fake de [PendingOpDao] que captura a ordem de enfileiramento
+     * Fake de [LocalTransaction] que captura a ordem de enfileiramento
      * para validar a escrita dual.
      */
-    private class FakePendingOpDao : PendingOpDao {
-        val enqueued: MutableList<PendingOpEntity> = mutableListOf()
-        private var nextId = 1L
-
-        override suspend fun nextBatch(limit: Int): List<PendingOpEntity> = enqueued.take(limit)
-
-        override suspend fun count(): Int = enqueued.size
-
-        override fun observeCount(): Flow<Int> = MutableStateFlow(enqueued.size)
-
-        override suspend fun insert(op: PendingOpEntity): Long {
-            val withId = op.copy(id = nextId++)
-            enqueued += withId
-            return withId.id
-        }
-
-        override suspend fun update(op: PendingOpEntity) {
-            val index = enqueued.indexOfFirst { it.id == op.id }
-            if (index >= 0) enqueued[index] = op
-        }
-
-        override suspend fun deleteById(id: Long) {
-            enqueued.removeAll { it.id == id }
-        }
-
-        override suspend fun deleteForEntity(
-            entityType: String,
-            entityId: String,
-        ) {
-            enqueued.removeAll { it.entityType == entityType && it.entityId == entityId }
-        }
-
-        override suspend fun deleteForEntityAndOpType(
-            entityType: String,
-            entityId: String,
-            opType: String,
-        ) {
-            enqueued.removeAll { it.entityType == entityType && it.entityId == entityId && it.opType == opType }
-        }
-
-        override suspend fun markAttempt(opId: Long) {
-            val index = enqueued.indexOfFirst { it.id == opId }
-            if (index >= 0) {
-                enqueued[index] = enqueued[index].copy(attempts = enqueued[index].attempts + 1)
-            }
-        }
-
-        override suspend fun findById(id: Long): PendingOpEntity? = enqueued.firstOrNull { it.id == id }
-
-        override suspend fun enqueueInTx(
-            op: PendingOpEntity,
-            write: suspend () -> Unit,
-        ) {
-            write()
-            deleteForEntityAndOpType(op.entityType, op.entityId, op.opType)
-            insert(op)
-        }
+    private class FakeLocalTransaction : LocalTransaction {
+        override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 }

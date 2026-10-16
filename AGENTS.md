@@ -5,8 +5,13 @@
 The owner approved a fully local Android product. Read
 [docs/TRANSICAO-LOCAL.md](docs/TRANSICAO-LOCAL.md) for the current inventory,
 transition backlog and review of open PRs. This direction takes precedence
-over older remote-product plans below. Network/sync code still exists;
-removal and portable backup are pending, not implemented. Preserve local
+over older remote-product plans below. Network/sync code was removed in #212; portable backup is still pending (#214).
+Room v5 removes only the legacy queue; LocalTransaction replaces enqueueInTx.
+All Android modules are unflavored: use testDebugUnitTest, lintDebug,
+:app:assembleDebug and :core:data:assembleDebugAndroidTest. The legacy flavor,
+network and dual-write instructions below are historical and must not be
+reintroduced. WorkManager remains for deadline notifications; LegacySyncCleanup
+cancels only old sync jobs. Preserve local
 data, authentication and deadline notifications during migration. Do not
 add remote features or describe the target architecture as already shipped.
 

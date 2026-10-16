@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Módulo :app — entry point do BrainOut (Application + MainActivity + NavHost).
 
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     // `kotlin-android` removido: AGP 9 ativa built-in Kotlin automaticamente.
@@ -27,28 +25,6 @@ val hasReleaseSigning: Boolean =
         !brainoutKeyAlias.isNullOrBlank() &&
         !brainoutKeyPassword.isNullOrBlank()
 
-// Carrega APP_ENV e a URL base por flavor do `local.properties` para expor
-// via BuildConfig. `local.properties` é ignorado pelo controle de versão
-// (ver .gitignore).
-val localProperties =
-    Properties().apply {
-        val f = rootProject.file("local.properties")
-        if (f.exists()) {
-            f.inputStream().use { load(it) }
-        }
-    }
-val appEnv: String = localProperties.getProperty("APP_ENV", "dev")
-
-// URL base do flavor `dev` — mesma resolução de `:core:data`: a env var
-// `BASE_URL` (CI, apontando para o backend-stub dockerizado) tem prioridade
-// sobre `local.properties` (`brainout.baseUrl.dev`); sem env var, vale o
-// override local ou o default do flavor. Retrofit exige barra final na base.
-val devBaseUrlRaw: String =
-    System.getenv("BASE_URL")?.takeIf { it.isNotBlank() }
-        ?: localProperties.getProperty("brainout.baseUrl.dev", "http://10.0.2.2:8000/")
-val devBaseUrl: String =
-    if (devBaseUrlRaw.endsWith("/")) devBaseUrlRaw else "$devBaseUrlRaw/"
-
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout"
     compileSdk = 37
@@ -62,8 +38,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-
-        buildConfigField("String", "APP_ENV", "\"$appEnv\"")
     }
 
     signingConfigs {
@@ -74,31 +48,6 @@ android {
                 keyAlias = brainoutKeyAlias
                 keyPassword = brainoutKeyPassword
             }
-        }
-    }
-
-    // Flavors de ambiente (E3.2): alinhados com :core:data. A URL base do
-    // serviço de retaguarda é injetada por flavor em BuildConfig — dev
-    // aponta para o backend-stub FastAPI no host do emulador (10.0.2.2),
-    // prod permanece placeholder até a hospedagem definitiva (E3.1).
-    // Override por desenvolvedor: brainout.baseUrl.dev em local.properties.
-    flavorDimensions += "environment"
-    productFlavors {
-        create("dev") {
-            dimension = "environment"
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"$devBaseUrl\"",
-            )
-        }
-        create("prod") {
-            dimension = "environment"
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"https://TBD/\"",
-            )
         }
     }
 
@@ -232,11 +181,11 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.mockk)
-    // E3.3 — SyncWorkerTest: banco Room em memória + MockWebServer.
+    // Testes locais de WorkManager e banco Room em memória.
     testImplementation(libs.androidx.room.runtime)
-    testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.espresso.core)
 
     // Robolectric (E4.6 — smoke test de i18n: R.string não vazio em pt e en).

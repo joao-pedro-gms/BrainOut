@@ -61,7 +61,6 @@ fun ProjectDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -135,7 +134,6 @@ fun ProjectDetailScreen(
             onChangeStatus = viewModel::changeStatus,
             onDeleteTask = viewModel::deleteTask,
             onRenameTask = { renameTask = it },
-            syncState = syncState,
             onChangePriority = { task, _ ->
                 // RN02 — defesa em profundidade: a UI também bloqueia
                 // tarefas DONE via DropdownMenuItem(enabled = false).

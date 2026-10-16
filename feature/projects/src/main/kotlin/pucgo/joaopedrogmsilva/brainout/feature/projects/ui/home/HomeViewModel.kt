@@ -17,13 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityObserver
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.ConnectivityState
-import pucgo.joaopedrogmsilva.brainout.core.data.sync.PendingSyncMonitor
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
@@ -54,8 +50,6 @@ class HomeViewModel
         private val tagRepository: TagRepository,
         private val activeUserProvider: ActiveUserProvider,
         private val listingPreferences: ListingPreferencesRepository,
-        private val connectivityObserver: ConnectivityObserver,
-        private val pendingSyncMonitor: PendingSyncMonitor,
         private val createProject: CreateProjectUseCase,
         private val updateProject: UpdateProjectUseCase,
         private val deleteProject: DeleteProjectUseCase,
@@ -71,19 +65,6 @@ class HomeViewModel
                     started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
                     initialValue = HomeUserState.Loading,
                 )
-
-        /** Estado de conectividade + fila pendente (E3.4). */
-        val syncState: StateFlow<HomeSyncState> =
-            combine(
-                connectivityObserver.observe(),
-                pendingSyncMonitor.observePendingCount(),
-            ) { connectivity: ConnectivityState, pending: Int ->
-                HomeSyncState(isOnline = connectivity.isOnline, pendingOps = pending)
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = HomeSyncState(),
-            )
 
         private val _upgradeDialogVisible: MutableStateFlow<Boolean> = MutableStateFlow(false)
         val upgradeDialogVisible: StateFlow<Boolean> = _upgradeDialogVisible.asStateFlow()

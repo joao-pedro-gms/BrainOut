@@ -51,7 +51,6 @@ internal fun HomeProjectsContent(
     onTagFilterChange: (String?) -> Unit,
     sortOrder: SortOrder,
     onSortOrderChange: (SortOrder) -> Unit,
-    syncState: HomeSyncState,
 ) {
     Column(
         modifier =
@@ -61,12 +60,6 @@ internal fun HomeProjectsContent(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // E3.4 — banner persistente de conectividade + contagem da
-        // fila de sincronização. Fica acima da busca: é estado global
-        // da tela, não da lista. Sempre visível quando offline.
-        HomeOfflineBanner(
-            syncState = syncState,
-        )
         // E2.6 — barra de busca textual. `OutlinedTextField` com ícone
         // de limpar (X) à direita quando o texto não está vazio. O
         // placeholder vem de `values/strings.xml` para manter a regra

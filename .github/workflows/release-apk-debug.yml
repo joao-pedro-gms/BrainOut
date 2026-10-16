@@ -56,15 +56,12 @@ jobs:
         run: chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --console=plain
 
       - name: Rename APK
-        # Flavors `environment` (dev/prod) fazem o AGP gravar em
-        # app/build/outputs/apk/<flavor>/debug/, não em apk/debug/.
-        # Publicamos o devDebug: o prod aponta para https://TBD/ e não
-        # abre o stub. O nome do asset segue BrainOut-<tag>-debug.apk.
+        # APK local da variante debug.
         run: |
           set -euo pipefail
-          mapfile -t apks < <(find app/build/outputs/apk -type f -path '*/dev/debug/*.apk' | sort)
+          mapfile -t apks < <(find app/build/outputs/apk -type f -path '*/debug/*.apk' | sort)
           if [ "${#apks[@]}" -ne 1 ]; then
-            echo "::error::Esperava exatamente 1 APK devDebug; achei ${#apks[@]}."
+            echo "::error::Esperava exatamente 1 APK debug; achei ${#apks[@]}."
             find app/build/outputs/apk -type f -name '*.apk' -print || true
             exit 1
           fi

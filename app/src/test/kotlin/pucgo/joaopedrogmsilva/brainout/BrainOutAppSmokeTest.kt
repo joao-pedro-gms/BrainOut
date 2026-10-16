@@ -21,13 +21,6 @@ class BrainOutAppSmokeTest {
     }
 
     @Test
-    fun `BASE_URL is loaded from local properties at build time`() {
-        // O valor default no app/build.gradle.kts é http://10.0.2.2:8000/
-        // (coberto quando local.properties não define BASE_URL).
-        assertThat(BuildConfig.BASE_URL).startsWith("http")
-    }
-
-    @Test
     fun `nav routes expose the expected top level destinations`() {
         // Garante que o conjunto de rotas exposto em BrainOutRoutes está
         // alinhado com as 6 telas exigidas pelo marco E1.3 do ROADMAP.
