@@ -1,5 +1,10 @@
 # BrainOut
 
+> **Direção aprovada em 16/10/2026: aplicativo totalmente local.** A remoção
+> de rede/sync e o backup exportável ainda estão pendentes. As seções abaixo
+> descrevem a implementação legada; veja a [decisão, inventário e sequência
+> de migração](docs/TRANSICAO-LOCAL.md) antes de planejar trabalho novo.
+
 Gerenciador de projetos e tarefas para uso individual.
 Aplicativo Android nativo escrito em **Kotlin** com **Jetpack Compose**,
 persistência local com **Room** e sincronização com serviço de retaguarda

@@ -1,5 +1,11 @@
 # BrainOut — arquitetura
 
+> **Decisão posterior (16/10/2026): produto totalmente local.** Este texto
+> registra a arquitetura legada, ainda presente no código. A direção alvo,
+> as diferenças para a implementação e a ordem de migração estão em
+> [TRANSICAO-LOCAL.md](TRANSICAO-LOCAL.md). Backend/sync serão retirados;
+> backup manual ainda não foi implementado.
+
 > Documento de definição arquitetural. Atualizado ao fim de cada ciclo
 > (ver `ROADMAP.md`, marcos E3.1 e E5.1). Insumo direto para o item 2 da N1 e
 > item 2 da N2 do documento norteador.
