@@ -11,7 +11,11 @@ usam variantes sem flavor. Room v5 migra a v4 removendo apenas `pending_ops`;
 2→3 também têm o default de `completed_at` normalizado sem perda de registros. O início do app cancela apenas
 os trabalhos antigos de sync; lembretes continuam locais. Banners e fontes
 de estado de sync foram retirados como consequência da remoção de seus
-consumidores. O acabamento de textos/estados da interface continua em #213.
+consumidores. A #213 alinha os textos de abertura, contas locais,
+configurações e falhas do cálculo de feriados em pt/en, remove tags de
+banners legados e preserva erros/retry locais. Evidências e limites de QA
+estão em [LOCAL-02](qa/LOCAL-02.md); bugs de interface permanecem rastreados
+nas issues originais.
 
 Feriados usam cálculo local pelas regras nacionais atuais, sem pontos
 facultativos/feriados regionais. A referência de datas de 2026 é o

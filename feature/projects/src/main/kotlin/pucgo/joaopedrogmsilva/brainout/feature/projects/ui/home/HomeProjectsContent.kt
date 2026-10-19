@@ -1,5 +1,5 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Conteúdo da aba "Projetos" da Home: banner offline, busca, filtro
+// Conteúdo da aba "Projetos" da Home: busca, filtro
 // por tag, seção estrutural, filtro Ativos/Concluídos com menu de
 // ordenação, e a lista de cards. A escolha entre erro/loader/empty
 // state/lista é feita aqui (E2.8) — o orchestrator só decide qual

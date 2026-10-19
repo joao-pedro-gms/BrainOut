@@ -5,12 +5,12 @@
 
     <!-- Splash (E1.3) -->
     <string name="splash_title">BrainOut</string>
-    <string name="splash_tagline">Organize projects and tasks with your team, online and offline.</string>
+    <string name="splash_tagline">Organize your projects and tasks on this device.</string>
     <string name="splash_cta">Get started</string>
 
     <!-- Login (esqueleto, validação fica em E1.6) -->
     <string name="login_title">Sign in</string>
-    <string name="login_subtitle">Access your account to continue.</string>
+    <string name="login_subtitle">Sign in to an account on this device.</string>
     <string name="login_email_label">Email</string>
     <string name="login_email_placeholder">you@email.com</string>
     <string name="login_password_label">Password</string>
@@ -20,7 +20,7 @@
 
     <!-- Register (esqueleto, validação fica em E1.6) -->
     <string name="register_title">Create account</string>
-    <string name="register_subtitle">Fill in your details to get started.</string>
+    <string name="register_subtitle">Create an account on this device to get started.</string>
     <string name="register_name_label">Name</string>
     <string name="register_name_placeholder">Your full name</string>
     <string name="register_email_label">Email</string>
@@ -56,7 +56,7 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Preferences for your account and the app.</string>
+    <string name="settings_subtitle">Local account and app preferences.</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_session">Session</string>

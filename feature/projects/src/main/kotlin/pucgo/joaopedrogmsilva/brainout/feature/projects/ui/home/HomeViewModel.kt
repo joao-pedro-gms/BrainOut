@@ -1,6 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Orquestrador da Home (E1.7/E2.1/E2.6/E2.8): mantém o estado de
-// sessão/conectividade e roteia intenções da UI para os use cases de
+// sessão local e roteia intenções da UI para os use cases de
 // domínio. O pipeline de listagem vive em HomeListingPipeline.kt; os
 // mappers em HomeMappers.kt; os modelos de estado em HomeUiModels.kt;
 // os bodies das ações CRUD/preferências em HomeActions.kt.

@@ -1,6 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Coluna do corpo da ProjectDetail (E2.2/E2.8): cabeçalho (id,
-// descrição), banner offline, divisória, título da seção de tarefas e
+// descrição), divisória, título da seção de tarefas e
 // a área da lista com as branches loading/empty/error/list (LazyColumn).
 // Rotas os callbacks do ViewModel recebidos do orquestrador.
 

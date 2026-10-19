@@ -39,7 +39,5 @@ object ProjectDetailTestTags {
     const val ERROR_RETRY: String = "project_detail_error_retry"
     const val ERROR_DISMISS: String = "project_detail_error_dismiss"
 
-    // E3.4 — banner offline + contagem da fila de sincronização.
-    const val OFFLINE_BANNER: String = "project_detail_offline_banner"
     const val TASK_LIST: String = "project_detail_task_list"
 }
