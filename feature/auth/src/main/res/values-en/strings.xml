@@ -4,12 +4,12 @@
     <!-- Splash -->
     <string name="splash_title">BrainOut</string>
     <string name="splash_monogram">B</string>
-    <string name="splash_tagline">Organize projects and tasks with your team, online and offline.</string>
+    <string name="splash_tagline">Organize your projects and tasks on this device.</string>
     <string name="splash_cta">Get started</string>
 
     <!-- Login (E1.6 — formulários funcionais) -->
     <string name="login_title">Sign in</string>
-    <string name="login_subtitle">Access your account to continue.</string>
+    <string name="login_subtitle">Sign in to an account on this device.</string>
     <string name="login_email_label">Email</string>
     <string name="login_email_placeholder">you@email.com</string>
     <string name="login_pwd_label">Password</string>
@@ -24,7 +24,7 @@
 
     <!-- Register (E1.6 — formulários funcionais) -->
     <string name="register_title">Create account</string>
-    <string name="register_subtitle">Fill in your details to get started.</string>
+    <string name="register_subtitle">Create an account on this device to get started.</string>
     <string name="register_name_label">Name</string>
     <string name="register_name_placeholder">Your full name</string>
     <string name="register_email_label">Email</string>
@@ -36,7 +36,7 @@
     <string name="register_cta">Sign up</string>
     <string name="register_have_account">I already have an account</string>
     <string name="register_role_owner">Owner</string>
-    <string name="register_role_owner_help">Creates and manages team projects.</string>
+    <string name="register_role_owner_help">Creates and manages projects on this device.</string>
     <string name="register_role_member">Member</string>
     <string name="register_role_member_help">Tracks project tasks.</string>
     <string name="register_visibility_show">Show</string>

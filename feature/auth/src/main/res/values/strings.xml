@@ -4,12 +4,12 @@
     <!-- Splash -->
     <string name="splash_title">BrainOut</string>
     <string name="splash_monogram">B</string>
-    <string name="splash_tagline">Organize projetos e tarefas com a sua equipe, online e offline.</string>
+    <string name="splash_tagline">Organize seus projetos e tarefas neste aparelho.</string>
     <string name="splash_cta">Começar</string>
 
     <!-- Login (E1.6 — formulários funcionais) -->
     <string name="login_title">Entrar</string>
-    <string name="login_subtitle">Acesse sua conta para continuar.</string>
+    <string name="login_subtitle">Entre em uma conta deste aparelho.</string>
     <string name="login_email_label">E-mail</string>
     <string name="login_email_placeholder">seu@email.com</string>
     <string name="login_pwd_label">Senha</string>
@@ -24,7 +24,7 @@
 
     <!-- Register (E1.6 — formulários funcionais) -->
     <string name="register_title">Criar conta</string>
-    <string name="register_subtitle">Preencha os dados para começar.</string>
+    <string name="register_subtitle">Crie uma conta neste aparelho para começar.</string>
     <string name="register_name_label">Nome</string>
     <string name="register_name_placeholder">Seu nome completo</string>
     <string name="register_email_label">E-mail</string>
@@ -36,7 +36,7 @@
     <string name="register_cta">Cadastrar</string>
     <string name="register_have_account">Já tenho conta</string>
     <string name="register_role_owner">Owner</string>
-    <string name="register_role_owner_help">Cria e gerencia projetos da equipe.</string>
+    <string name="register_role_owner_help">Cria e gerencia projetos neste aparelho.</string>
     <string name="register_role_member">Member</string>
     <string name="register_role_member_help">Acompanha tarefas dos projetos.</string>
     <string name="register_visibility_show">Exibir</string>

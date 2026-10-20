@@ -3,7 +3,7 @@
 <resources>
     <!-- Settings -->
     <string name="settings_title">Configurações</string>
-    <string name="settings_subtitle">Preferências da sua conta e do aplicativo.</string>
+    <string name="settings_subtitle">Conta local e preferências do aplicativo.</string>
     <string name="settings_section_account">Conta</string>
     <string name="settings_section_appearance">Aparência</string>
     <string name="settings_section_session">Sessão</string>

@@ -3,7 +3,7 @@
 <resources>
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Preferences for your account and the app.</string>
+    <string name="settings_subtitle">Local account and app preferences.</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_session">Session</string>

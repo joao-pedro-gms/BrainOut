@@ -174,9 +174,6 @@ object HomeTestTags {
     const val ERROR_RETRY: String = "home_error_retry"
     const val ERROR_DISMISS: String = "home_error_dismiss"
 
-    // E3.4 — banner offline + contagem da fila de sincronização.
-    const val OFFLINE_BANNER: String = "home_offline_banner"
-
     // E2.6 — busca + filtro por tag + ordenação.
     const val SEARCH_FIELD: String = "home_search_field"
     const val SEARCH_CLEAR: String = "home_search_clear"

@@ -37,8 +37,8 @@
     <string name="project_detail_new_task_due_date_format">MM/dd/yyyy</string>
     <!-- E3.5: inline hint when a national holiday falls in the deadline window. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Next holiday: %1$s (%2$s) before the deadline</string>
-    <!-- E3.5: shown when the holidays lookup fails (no network, 5xx, etc.). -->
-    <string name="deadline_holidays_unavailable">Holiday lookup unavailable — check your connection.</string>
+    <!-- A local holiday calculation failure does not prevent saving the deadline. -->
+    <string name="deadline_holidays_unavailable">Could not calculate holidays for this date.</string>
     <!-- E3.5: highlights that the deadline lands on a weekend or a holiday. -->
     <string name="deadline_not_business_day">Heads up: this deadline falls on a non-business day.</string>
     <string name="project_detail_new_task_save">Save</string>
@@ -65,7 +65,7 @@
 
     <!-- Home (E1.7 — papel exibido + gate do FAB) -->
     <string name="home_role_member_dialog_title">Available for Owners only</string>
-    <string name="home_role_member_dialog_body">Upgrade to Owner to create projects.</string>
+    <string name="home_role_member_dialog_body">To create projects, sign in to a local account with the Owner role.</string>
     <string name="home_role_member_dialog_ack">Got it</string>
     <string name="home_fab_disabled_owner">Create project (coming soon)</string>
 

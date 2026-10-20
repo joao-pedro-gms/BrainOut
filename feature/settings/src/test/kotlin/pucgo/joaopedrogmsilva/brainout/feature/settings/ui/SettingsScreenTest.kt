@@ -50,7 +50,7 @@ class SettingsScreenTest {
         // do Robolectric, então cada asserção rola até o nó.
         composeRule.onNodeWithText("Configurações").assertIsDisplayed()
         composeRule
-            .onNodeWithText("Preferências da sua conta e do aplicativo.")
+            .onNodeWithText("Conta local e preferências do aplicativo.")
             .performScrollTo()
             .assertIsDisplayed()
         // Os títulos de seção são renderizados em caixa alta pela própria
