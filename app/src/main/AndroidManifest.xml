@@ -15,10 +15,28 @@
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
+    <!--
+      Backup automático do Android (issue #175 — DEF-37) DESLIGADO.
+
+      O backup do Google levaria junto o `brainout.db` (com o hash das
+      senhas) e o `auth_prefs.preferences_pb` (com o id do usuário
+      logado) — a senha de cada conta foi derivada com o pepper do
+      Android Keystore, então o hash não funciona em outro aparelho, e
+      a sessão nem deveria sair do dispositivo.
+
+      A transferência de dados é feita pelo backup manual, cifrado e
+      sob controle do usuário (issue #214 — `docs/BACKUP.md`).
+      `dataExtractionRules` cobre o Android 12+ (nuvem e transferência
+      entre aparelhos) e `fullBackupContent="false"` cobre as versões
+      anteriores.
+    -->
+
 
     <application
         android:name=".BrainOutApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

@@ -11,4 +11,34 @@
     <string name="settings_option_notifications">Notificações</string>
     <string name="settings_option_theme">Tema</string>
     <string name="settings_option_signout">Sair</string>
+
+    <!-- Backup local (issue #214 — LOCAL-03) -->
+    <string name="settings_section_backup">Backup</string>
+    <string name="settings_option_export_backup">Exportar backup</string>
+    <string name="settings_option_restore_backup">Restaurar backup</string>
+    <string name="settings_backup_description">Copia os dados deste aparelho para um arquivo cifrado. O arquivo é protegido por senha e não é enviado para nenhum servidor.</string>
+    <string name="settings_backup_export_dialog_title">Proteger o backup</string>
+    <string name="settings_backup_export_dialog_message">Escolha uma senha para cifrar o arquivo. Ela será a senha das contas restauradas neste aparelho.</string>
+    <string name="settings_backup_restore_dialog_title">Abrir o backup</string>
+    <string name="settings_backup_restore_dialog_message">Informe a senha usada na exportação. As contas que ainda não existirem neste aparelho passam a usar esta senha.</string>
+    <string name="settings_backup_replace_title">Substituir os dados locais?</string>
+    <string name="settings_backup_replace_message">A restauração apaga os projetos, as tarefas e as contas deste aparelho e substitui tudo pelo conteúdo do arquivo. Não há como desfazer.</string>
+    <string name="settings_backup_pwd_label">Senha do backup</string>
+    <string name="settings_backup_pwd_confirm_label">Confirmar senha</string>
+    <string name="settings_backup_visibility_show">Mostrar a senha</string>
+    <string name="settings_backup_visibility_hide">Ocultar a senha</string>
+    <string name="settings_backup_cta_confirm">Confirmar</string>
+    <string name="settings_backup_cta_cancel">Cancelar</string>
+    <string name="settings_backup_cta_dismiss">Fechar</string>
+    <string name="settings_backup_error_invalid_file">Este arquivo não é um backup do BrainOut.</string>
+    <string name="settings_backup_error_unsupported_version">Este backup foi criado por uma versão mais nova do aplicativo.</string>
+    <string name="settings_backup_error_integrity">Senha incorreta ou arquivo corrompido.</string>
+    <string name="settings_backup_error_too_large">O arquivo é grande demais para ser restaurado.</string>
+    <string name="settings_backup_error_restore_failed">Não foi possível restaurar o backup. Nada foi alterado.</string>
+    <string name="settings_backup_error_export_failed">Não foi possível exportar o backup.</string>
+    <string name="settings_backup_error_unexpected">Não foi possível concluir a operação. Tente novamente.</string>
+    <string name="settings_backup_error_short_pwd">A senha deve ter pelo menos 8 caracteres.</string>
+    <string name="settings_backup_error_pwd_mismatch">As senhas não coincidem.</string>
+    <string name="settings_backup_success_exported">Backup exportado com sucesso.</string>
+    <string name="settings_backup_success_restored">Backup restaurado. Entre com a sua senha para continuar.</string>
 </resources>

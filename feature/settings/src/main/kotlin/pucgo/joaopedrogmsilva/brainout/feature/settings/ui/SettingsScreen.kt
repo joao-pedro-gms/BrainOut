@@ -46,12 +46,17 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.R
  *  Recebe o [SettingsActionType] correspondente. O `NavHost` decide o que
  *  fazer — no E1.3 apenas `SignOut` tem efeito (limpar backstack e voltar
  *  para `login`); os demais ficam reservados para E2.x.
+ * @param backupContent área reservada à seção de backup local
+ *  (issue #214 — LOCAL-03). Fica como *slot* para que a tela continue
+ *  sem depender do ViewModel de backup — a própria [BackupSection]
+ *  resolve o seu.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onOptionClicked: (SettingsActionType) -> Unit,
     modifier: Modifier = Modifier,
+    backupContent: @Composable () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -121,15 +126,18 @@ fun SettingsScreen(
                 }
             }
 
+            backupContent()
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-private fun SettingsRow(
+internal fun SettingsRow(
     option: SettingsOption,
     onClick: () -> Unit,
+    testTag: String = "settings_option_${option.type.name.lowercase()}",
 ) {
     val label = stringResource(id = option.labelRes)
     val isSignOut = option.type == SettingsActionType.SignOut
@@ -152,7 +160,7 @@ private fun SettingsRow(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onClick)
-                .testTag("settings_option_${option.type.name.lowercase()}")
+                .testTag(testTag)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

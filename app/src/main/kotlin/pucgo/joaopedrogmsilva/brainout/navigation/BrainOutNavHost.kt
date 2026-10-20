@@ -24,6 +24,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register.RegisterScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash.SplashScreen
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home.HomeScreen
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.ProjectDetailScreen
+import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.BackupSection
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
@@ -191,10 +192,28 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
                     SettingsActionType.Profile,
                     SettingsActionType.Notifications,
                     SettingsActionType.Theme,
+                    SettingsActionType.ExportBackup,
+                    SettingsActionType.RestoreBackup,
                     -> {
                         // Sub-telas não fazem parte do E1.6 — placeholder.
+                        // As linhas de backup são tratadas pela própria
+                        // `BackupSection` (que abre o seletor de arquivos
+                        // do sistema), não por este `when`.
                     }
                 }
+            },
+            backupContent = {
+                BackupSection(
+                    onRestoreCompleted = {
+                        // A restauração substitui as contas do aparelho e
+                        // invalida a sessão — o usuário precisa entrar de
+                        // novo com a senha do backup (issue #214).
+                        Log.d(TAG, "Navegando: Settings -> Login (backup restaurado)")
+                        navController.navigate(BrainOutRoutes.Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
             },
         )
     }

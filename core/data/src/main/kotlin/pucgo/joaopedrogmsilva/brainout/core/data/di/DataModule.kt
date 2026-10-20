@@ -12,6 +12,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import pucgo.joaopedrogmsilva.brainout.core.data.backup.BackupRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
@@ -33,6 +34,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
@@ -169,4 +171,14 @@ object DataModule {
     @Provides
     @Singleton
     fun provideHolidayRepository(impl: HolidayRepositoryImpl): HolidayRepository = impl
+
+    /**
+     * Bind de [BackupRepository] para a implementação Room do backup
+     * local exportável (issue #214 — LOCAL-03). A implementação usa
+     * Room, DataStore e o hasher de senhas — todos já Provided
+     * acima.
+     */
+    @Provides
+    @Singleton
+    fun provideBackupRepository(impl: BackupRepositoryImpl): BackupRepository = impl
 }
