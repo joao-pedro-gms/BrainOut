@@ -68,6 +68,23 @@ class SessionStore(
     }
 
     /**
+     * Encerra **apenas** a sessão, preservando a marca de permissão de
+     * notificação.
+     *
+     * Usado pela restauração de backup (issue #214 — LOCAL-03): o
+     * backup substitui as contas do aparelho, então a sessão persistida
+     * pode apontar para um registro que não existe mais. A permissão de
+     * notificação é independente da sessão e continua válida — pedir a
+     * permissão de novo seria um transtorno desnecessário.
+     */
+    suspend fun clearSession() {
+        logDebug(TAG, "Limpando apenas a sessão no DataStore (restauração de backup)")
+        dataStore.edit { prefs ->
+            prefs.remove(USER_ID_KEY)
+        }
+    }
+
+    /**
      * `true` se a permissão `POST_NOTIFICATIONS` já foi pedida alguma
      * vez (marco E3.6). Independente da sessão: sobrevive a logout.
      * Removida apenas em [clear] (reset total do DataStore).

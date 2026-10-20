@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  João Pedro G M Silva - PUC Goiás ADS - 20251012000740
+
+  Regras de extração de dados do Android 12+ (API 31) — issue #175
+  (DEF-37) e issue #214 (LOCAL-03).
+
+  O backup automático do Android (nuvem do Google e transferência entre
+  aparelhos) está DESLIGADO: nada do app sai do aparelho sem a ação
+  explícita do usuário.
+
+  Motivos:
+  - `brainout.db` guarda o hash das senhas. O hash foi derivado com o
+    pepper do Android Keystore, que é por instalação — o hash não
+    funciona em outro aparelho e não deve circular.
+  - `auth_prefs.preferences_pb` guarda o id do usuário autenticado: é
+    sessão, e sessão não é transferida.
+  - A transferência prevista é o backup manual, cifrado com a senha do
+    usuário (ver `docs/BACKUP.md`).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>

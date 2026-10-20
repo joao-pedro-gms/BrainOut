@@ -11,4 +11,34 @@
     <string name="settings_option_notifications">Notifications</string>
     <string name="settings_option_theme">Theme</string>
     <string name="settings_option_signout">Sign out</string>
+
+    <!-- Local backup (issue #214 — LOCAL-03) -->
+    <string name="settings_section_backup">Backup</string>
+    <string name="settings_option_export_backup">Export backup</string>
+    <string name="settings_option_restore_backup">Restore backup</string>
+    <string name="settings_backup_description">Copies this device\'s data into an encrypted file. The file is protected by a password and is never sent to a server.</string>
+    <string name="settings_backup_export_dialog_title">Protect the backup</string>
+    <string name="settings_backup_export_dialog_message">Choose a password to encrypt the file. It will become the password of the accounts restored on this device.</string>
+    <string name="settings_backup_restore_dialog_title">Open the backup</string>
+    <string name="settings_backup_restore_dialog_message">Enter the password used when exporting. Accounts that do not exist on this device yet will use this password.</string>
+    <string name="settings_backup_replace_title">Replace local data?</string>
+    <string name="settings_backup_replace_message">Restoring erases this device\'s projects, tasks and accounts and replaces everything with the file\'s content. This cannot be undone.</string>
+    <string name="settings_backup_pwd_label">Backup password</string>
+    <string name="settings_backup_pwd_confirm_label">Confirm password</string>
+    <string name="settings_backup_visibility_show">Show password</string>
+    <string name="settings_backup_visibility_hide">Hide password</string>
+    <string name="settings_backup_cta_confirm">Confirm</string>
+    <string name="settings_backup_cta_cancel">Cancel</string>
+    <string name="settings_backup_cta_dismiss">Close</string>
+    <string name="settings_backup_error_invalid_file">This file is not a BrainOut backup.</string>
+    <string name="settings_backup_error_unsupported_version">This backup was created by a newer version of the app.</string>
+    <string name="settings_backup_error_integrity">Wrong password or corrupted file.</string>
+    <string name="settings_backup_error_too_large">The file is too large to be restored.</string>
+    <string name="settings_backup_error_restore_failed">The backup could not be restored. Nothing was changed.</string>
+    <string name="settings_backup_error_export_failed">The backup could not be exported.</string>
+    <string name="settings_backup_error_unexpected">The operation could not be completed. Try again.</string>
+    <string name="settings_backup_error_short_pwd">The password must have at least 8 characters.</string>
+    <string name="settings_backup_error_pwd_mismatch">The passwords do not match.</string>
+    <string name="settings_backup_success_exported">Backup exported successfully.</string>
+    <string name="settings_backup_success_restored">Backup restored. Sign in with your password to continue.</string>
 </resources>

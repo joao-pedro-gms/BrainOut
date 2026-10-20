@@ -46,6 +46,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Issue #201 (DEF-63): `java.time` (Instant/LocalDate) e
+        // `java.util.Base64` são usados neste módulo e exigem API 26
+        // — sem desugaring, o app quebra em API 24/25 e o lint
+        // reportaria NewApi em cada uso. O mesmo mecanismo já é usado
+        // em `:app`; aqui ele fecha a dívida registrada no módulo.
+        isCoreLibraryDesugaringEnabled = true
     }
     // AGP 9 built-in Kotlin: `kotlinOptions` foi removido; usamos o bloco
     // `kotlin { compilerOptions {} }` introduzido pelo plugin Compose
@@ -57,14 +63,17 @@ android {
         }
     }
 
-    // E4.6 — regressão de tradução: chave em `values/` sem tradução em
-    // `values-en/` é erro fatal. Diferente dos módulos feature/app, aqui
-    // NÃO promovemos `MissingTranslation` nem endurecemos outras checagens:
-    // `./gradlew lintDebug` neste módulo já falha por 8 erros [NewApi]
-    // pré-existentes (java.time / java.util.Base64 com minSdk 24, aguardando
-    // coreLibraryDesugaring) — fora do escopo de E4.6.
+    // Issue #201 (DEF-63): com o `coreLibraryDesugaring` habilitado
+    // (ver `compileOptions`), o módulo não tem mais nenhum erro
+    // [NewApi] — o gate de lint volta a ser rígido, como nos demais
+    // módulos. A dívida de `java.time`/`java.util.Base64` sem
+    // desugaring (que mantinha `abortOnError = false`) está fechada.
+    //
+    // `MissingTranslation` continua NÃO promovido: este módulo não
+    // tem strings de interface (E4.6 trata apenas os módulos que
+    // têm `values/` e `values-en/`).
     lint {
-        abortOnError = false
+        abortOnError = true
         checkReleaseBuilds = false
     }
 }
@@ -83,6 +92,10 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Issue #201 (DEF-63) — desugaring de `java.time`/`java.util.Base64`
+    // para API 24/25 (ver `compileOptions` acima).
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // Room
     implementation(libs.androidx.room.runtime)

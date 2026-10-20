@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import pucgo.joaopedrogmsilva.brainout.core.data.local.converter.InstantConverter
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.BackupDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
@@ -54,6 +55,9 @@ abstract class BrainOutDatabase : RoomDatabase() {
 
     /** DAO de tags ([TagEntity]). */
     abstract fun tagDao(): TagDao
+
+    /** DAO de operações em massa do backup local (issue #214). */
+    abstract fun backupDao(): BackupDao
 
     companion object {
         /** Nome do arquivo SQLite do banco (usado pelo [androidx.room.Room.databaseBuilder]). */

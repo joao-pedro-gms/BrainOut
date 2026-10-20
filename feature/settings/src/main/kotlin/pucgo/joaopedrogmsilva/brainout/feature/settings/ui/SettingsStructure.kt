@@ -14,6 +14,10 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.R
  *
  * - [Profile]/[Notifications]/[Theme] são placeholders navegáveis —
  *   não abrem sub-telas no E1.3 (ficam para E2.x).
+ * - [ExportBackup]/[RestoreBackup] pertencem à seção de backup local
+ *   (issue #214 — LOCAL-03): as linhas são renderizadas por
+ *   [BackupSection], que trata o seletor de arquivos do sistema e os
+ *   diálogos de senha.
  * - [SignOut] é a única ação que efetivamente troca a rota raiz
  *   (`settings → login` com `popUpTo(home) { inclusive = true }`).
  */
@@ -21,6 +25,8 @@ enum class SettingsActionType {
     Profile,
     Notifications,
     Theme,
+    ExportBackup,
+    RestoreBackup,
     SignOut,
 }
 

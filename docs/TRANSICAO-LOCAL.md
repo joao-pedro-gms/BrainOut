@@ -17,11 +17,35 @@ banners legados e preserva erros/retry locais. Evidências e limites de QA
 estão em [LOCAL-02](qa/LOCAL-02.md); bugs de interface permanecem rastreados
 nas issues originais.
 
+## Atualização de implementação — #214
+
+O backup local exportável existe e é manual: Configurações → Backup →
+Exportar/Restaurar, via Storage Access Framework, sem serviço remoto. O
+contrato do arquivo (formato versionado, cifragem AES-256-GCM com
+PBKDF2, limite de 20 MiB, política de contas, reconciliação de lembretes)
+está em [BACKUP](BACKUP.md); as evidências de QA em [LOCAL-03](qa/LOCAL-03.md).
+
+Duas decisões merecem destaque:
+
+- **Nenhum material do Keystore sai do aparelho.** O hash de senha é
+  derivado com o pepper, que é por instalação — a senha do backup é a
+  credencial de cifragem e vira a senha das contas que ainda não existirem
+  no aparelho de destino. A conta que já existe mantém o hash local.
+- **O backup automático do Android foi desligado** (#175 / DEF-37):
+  `allowBackup=false`, `fullBackupContent=false` e `dataExtractionRules`
+  excluindo tudo. O hash de senha e o id de sessão não circulam.
+
+Como efeito colateral, `coreLibraryDesugaring` passou a ser habilitado em
+`:core:data` (#201 / DEF-63) — o módulo usa `java.time` e
+`java.util.Base64` com `minSdk 24`. Os 11 erros [NewApi] do módulo
+desapareceram e o gate de lint voltou a ser rígido; os quatro módulos
+`feature/*` habilitam o mesmo mecanismo, como exige o metadado do AAR do
+AGP.
+
 Feriados usam cálculo local pelas regras nacionais atuais, sem pontos
 facultativos/feriados regionais. A referência de datas de 2026 é o
 [calendário oficial do MGI](https://www.gov.br/gestao/pt-br/assuntos/noticias/2025/dezembro/confira-o-calendario-oficial-de-feriados-nacionais-e-pontos-facultativos-em-2026).
-Backup manual (#214) e a política do backup automático Android (#175) seguem
-pendentes. A CI troca backend-integration por build local e compilação das
+A CI troca backend-integration por build local e compilação das
 suítes instrumentadas; os testes JVM verificam upgrade e transações reais.
 
 ## Registro da auditoria anterior à implementação

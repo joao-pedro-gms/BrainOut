@@ -49,6 +49,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Issue #201 (DEF-63): `:core:data` usa `java.time`/`java.util.Base64`
+        // e exige desugaring; todo módulo que o consome precisa habilitar
+        // o mesmo mecanismo (o metadado do AAR do AGP exige consistência).
+        isCoreLibraryDesugaringEnabled = true
     }
     // AGP 9 built-in Kotlin: ver nota em :app/build.gradle.kts.
     kotlin {
@@ -74,6 +78,9 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
+
+    // Issue #201 (DEF-63) — desugaring exigido por :core:data (ver compileOptions).
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(libs.androidx.core.ktx)
     implementation(platform(libs.androidx.compose.bom))
