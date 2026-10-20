@@ -65,7 +65,17 @@ subprojects {
         // por ferramenta ou não tem lógica — nunca uma classe de produção
         // exercitada por teste (DEF-14).
         //
-        // - *_Impl / *_Impl$*: implementações geradas pelo Room
+        // - *Dao_Impl / *Dao_Impl$* e *Database_Impl / *Database_Impl$*:
+        //   implementações **geradas pelo Room** (UserDao_Impl,
+        //   BrainOutDatabase_Impl e suas classes internas). O padrão
+        //   antigo "*_Impl" (qualquer nome terminado em _Impl) foi
+        //   estreitado em #215 (DEF-64): ele não pegava as
+        //   implementações de produção — `ProjectRepositoryImpl` e
+        //   `PasswordHasherImpl` nunca tiveram sublinhado e sempre
+        //   ficaram no denominador — mas passaria a capturar de
+        //   surpresa qualquer classe renomeada para `Algo_Impl`. O
+        //   verificador `.github/scripts/verify_coverage_scope.py`
+        //   impede a volta do padrão amplo.
         // - *_Factory / Hilt_* / dagger.hilt.* / *_HiltModules: artefatos
         //   do Hilt/Dagger
         // - *Dto / *Dto$*: data classes de contrato (RemoteDtos.kt,
@@ -85,8 +95,10 @@ subprojects {
         // - *.BuildConfig / *.PackageMarker: constantes geradas
         val koverExclusions =
             listOf(
-                "*_Impl",
-                "*_Impl\$*",
+                "*Dao_Impl",
+                "*Dao_Impl\$*",
+                "*Database_Impl",
+                "*Database_Impl\$*",
                 "*_Factory",
                 "*_Factory\$*",
                 "*_*Factory",
