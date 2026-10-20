@@ -79,6 +79,24 @@ O que mudou nesta issue:
 
 Evidências e limites em [LOCAL-04](qa/LOCAL-04.md).
 
+## Atualização de implementação — #208
+
+O ledger `docs/DEFEITOS.md` foi reconciliado com o código: as 42 linhas
+DEF-28 a DEF-70 (DEF-34 nunca existiu) entraram a partir das issues
+`[DEF-NN]`, com a origem no vocabulário da seção 2 do próprio ledger
+(`Revisão (<área>)` — todas as issues foram registradas por leitura de
+código) e a severidade classificada pela seção 1 (`Crit.` ou `Men.`; a
+Seção 1 não tem nível intermediário). As cinco linhas cuja correção já
+estava integrada (DEF-37 e DEF-63 pelo PR #221; DEF-64 e DEF-67 pelo
+PR #222; DEF-70 por este) estão como `CORRIGIDO` com o PR.
+
+Os documentos que afirmavam coisas que o código não faz foram
+corrigidos: `docs/DISPOSITIVOS.md` não diz mais `compileSdk/targetSdk =
+35` nem fala em login e sincronização contra o backend (o app é local),
+e o `README.md` descreve o backup manual como entregue e o backup
+automático do Android como desligado. O stub e os documentos que o
+descreviam sumiram com a remoção da rede (#212).
+
 ## Registro da auditoria anterior à implementação
 
 O restante deste inventário descreve a base histórica `e49181b`. Suas afirmações
