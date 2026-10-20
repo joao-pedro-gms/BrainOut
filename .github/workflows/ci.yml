@@ -35,6 +35,15 @@ jobs:
       - name: Test release workflow validation
         run: python3 -m unittest discover -s .github/tests -v
 
+      # Issue #205 (DEF-67): os dois verificadores documentais do
+      # projeto — paridade light/dark e contraste dos tokens, e
+      # integridade do roadmap — rodavam só "quando alguém lembra".
+      - name: Verify design tokens
+        run: python3 docs/design/verify_tokens.py
+
+      - name: Verify roadmap integrity
+        run: python3 docs/design/verify_roadmap.py
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -133,6 +142,17 @@ jobs:
       - name: Generate Kover coverage report
         if: hashFiles('**/build.gradle*') != ''
         run: ./gradlew :core:domain:koverHtmlReport :core:data:koverHtmlReport --no-daemon --console=plain
+
+      # Issue #202 (DEF-64): o bound de 60% só vale se o denominador
+      # medir a lógica que importa. O verificador exige que as
+      # implementações de produção de :core:data (repositorios,
+      # hasher, session store) estejam no relatório — e que o padrão
+      # amplo "*_Impl" não volte às exclusões do Kover.
+      - name: Verify coverage scope
+        if: hashFiles('**/build.gradle*') != ''
+        run: |
+          ./gradlew :core:data:koverXmlReport --no-daemon --console=plain
+          python3 .github/scripts/verify_coverage_scope.py
 
       # Todos os módulos Android usam a variante debug, sem flavors remotos.
       - name: Run Android lint

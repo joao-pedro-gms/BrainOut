@@ -45,8 +45,39 @@ AGP.
 Feriados usam cálculo local pelas regras nacionais atuais, sem pontos
 facultativos/feriados regionais. A referência de datas de 2026 é o
 [calendário oficial do MGI](https://www.gov.br/gestao/pt-br/assuntos/noticias/2025/dezembro/confira-o-calendario-oficial-de-feriados-nacionais-e-pontos-facultativos-em-2026).
-A CI troca backend-integration por build local e compilação das
-suítes instrumentadas; os testes JVM verificam upgrade e transações reais.
+
+## Atualização de implementação — #215
+
+A validação do upgrade local e os gates de CI foram fechadas. O job
+`backend-integration` já não existe (a #212 trocou por
+`local-integration`: build local + compilação da instrumentação +
+verificação do manifesto e do APK de testes), e as suítes
+instrumentadas rodaram de verdade no AVD Android 37 — sete testes de
+dados e migrations e três de login, zero falhas.
+
+O que mudou nesta issue:
+
+- **Verificadores documentais na CI** (#205 / DEF-67):
+  `docs/design/verify_tokens.py` e `docs/design/verify_roadmap.py`
+  rodam no job `static-analysis` — paridade light/dark, contraste,
+  links, ids de tarefa, ordenação e aciclicidade do plano deixam de
+  depender de alguém lembrar.
+- **Escopo de cobertura auditado** (#202 / DEF-64): o padrão de
+  exclusão `*_Impl` do Kover foi estreitado para `*Dao_Impl*` e
+  `*Database_Impl*` (as classes geradas pelo Room). A premissa do
+  defeito — que `*_Impl` esconderia `ProjectRepositoryImpl` e
+  `PasswordHasherImpl` — não se confirmava: o padrão exige
+  sublinhado, e essas classes sempre estiveram no denominador. O
+  verificador `.github/scripts/verify_coverage_scope.py` falha a CI
+  se uma implementação de produção sumir do relatório ou se o padrão
+  amplo voltar.
+- **Jornada local ponta a ponta**:
+  `core/data/src/test/.../backup/LocalBackupJourneyTest.kt` cobre
+  CRUD → exportação → restauração em outra instalação → login com a
+  senha do backup → sessão invalidada → lembrete reagendado, sem
+  nenhuma chamada de rede.
+
+Evidências e limites em [LOCAL-04](qa/LOCAL-04.md).
 
 ## Registro da auditoria anterior à implementação
 
