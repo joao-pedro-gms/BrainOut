@@ -59,18 +59,18 @@ adb shell wm size && adb shell wm density   # resolução e densidade
 
 # 3. Checklist de compatibilidade do 2º dispositivo
 
-O app BrainOut compila com `compileSdk = 35`, `minSdk = 24` e
-`targetSdk = 35` (ver `app/build.gradle.kts`, `defaultConfig`).
+O app BrainOut compila com `compileSdk = 37`, `minSdk = 24` e
+`targetSdk = 37` (ver `app/build.gradle.kts`, `defaultConfig`).
 
 | Item de verificação                                              | Como conferir / comando | Resultado |
 |------------------------------------------------------------------|-------------------------|-----------|
 | 3.1 API level do aparelho ≥ `minSdk` (24)                        | `adb shell getprop ro.build.version.sdk` → ≥ 24 | ⏳ |
 | 3.2 API level do aparelho ≥ 26 (canais de notificação, exigidos a partir do Android 8.0) | `adb shell getprop ro.build.version.sdk` → ≥ 26 | ⏳ |
-| 3.3 `targetSdk` do app (35) instalável no aparelho                | Instalação bem-sucedida no passo 5.2 | ⏳ |
+| 3.3 `targetSdk` do app (37) instalável no aparelho                | Instalação bem-sucedida no passo 5.2 | ⏳ |
 | 3.4 Permissão de notificações concedida (Android 13+, API 33+)    | Diálogo na 1ª execução ou Configurações → Aplicativos → BrainOut → Notificações | ⏳ |
 | 3.5 Espaço livre suficiente para o APK/AAB (≥ 200 MB recomendado) | Configurações → Armazenamento | ⏳ |
 | 3.6 Instalação via adb (release assinado)                        | Passo 5.2 deste documento | ⏳ |
-| 3.7 Login e sincronização contra o backend no 2º dispositivo      | Passo 5.3 deste documento | ⏳ |
+| 3.7 Login local e uso offline no 2º dispositivo                  | Passo 5.3 deste documento | ⏳ |
 | 3.8 Modo avião: app continua utilizável offline                  | Passo 5.4 deste documento | ⏳ |
 
 # 4. Instalação do release assinado
@@ -113,15 +113,15 @@ de cada passo nas colunas "Primário" e "Secundário".
 |---|-------------------------------------------------------------------------------------------|-------------------|------------|
 | 5.1 | Habilitar Opções do desenvolvedor e depuração USB; conectar por USB; `adb devices` mostra o aparelho | ⏳ | ⏳ |
 | 5.2 | Instalar o release assinado: `java -jar bundletool.jar install-apks --apks=brainout.apks` (ou `adb install -r app-release.apk`) | ⏳ | ⏳ |
-| 5.3 | Abrir o app; conceder POST_NOTIFICATIONS (Android 13+); fazer login com as credenciais de teste; verificar que o login é aceito e os dados sincronizam contra o backend | ⏳ | ⏳ |
-| 5.4 | Ativar o modo avião; verificar que o app continua utilizável e exibe o estado offline; desativar o modo avião e verificar que a sincronização retoma | ⏳ | ⏳ |
+| 5.3 | Abrir o app; conceder POST_NOTIFICATIONS (Android 13+); fazer login com as credenciais de teste; verificar que o login local é aceito e que os dados gravados no aparelho estão disponíveis | ⏳ | ⏳ |
+| 5.4 | Ativar o modo avião; verificar que o app continua utilizável e que os lembretes de prazo continuam agendados; desativar o modo avião | ⏳ | ⏳ |
 | 5.5 | Rodar Accessibility Scanner na tela inicial e na navegação principal; salvar relatório; registrar observações | ⏳ | ⏳ |
 
 Resultado esperado: ambos os aparelhos instalam e executam o mesmo
-`.aab` assinado; login e sync funcionam nos dois; modo avião e
-acessibilidade verificados. Marcar cada linha com ✔/✘ e uma observação
-curta. Qualquer ✘ deve gerar uma issue no repositório antes do
-encerramento do Ciclo 4.
+`.aab` assinado; o login local e o uso offline funcionam nos dois; modo
+avião e acessibilidade verificados. Marcar cada linha com ✔/✘ e uma
+observação curta. Qualquer ✘ deve gerar uma issue no repositório antes
+do encerramento do Ciclo 4.
 
 ---
 

@@ -20,8 +20,9 @@ externas e não solicita permissões de internet.
 - [Documento norteador](Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf)
 
 Os relatórios e planos anteriores preservam o histórico acadêmico. As seções
-sobre backend/sync nesses documentos não descrevem o produto atual; sua
-reconciliação final é acompanhada na issue #208.
+sobre backend/sync nesses documentos não descrevem o produto atual; a
+reconciliação final com o código foi feita na issue #208 (ledger
+`docs/DEFEITOS.md` e guias de dispositivos, backup e transição).
 
 ## Build local
 
@@ -85,10 +86,14 @@ Os avisos de feriados usam um calendário nacional calculado no aparelho,
 conforme as regras atuais. Não incluem feriados estaduais/municipais nem
 pontos facultativos. Mudanças futuras dessas regras exigem atualização do app.
 
-**Backup manual exportável/restaurável ainda não foi implementado** (#214).
-A configuração de backup automático Android continua sendo uma pendência
-separada (#175); não use cópia do banco como garantia de portabilidade de
-contas, pois o pepper de senhas depende do Android Keystore.
+**Backup manual exportável/restaurável** existe (#214): Configurações →
+Backup → Exportar/Restaurar, pelo seletor de arquivos do sistema, com
+arquivo cifrado (AES-256-GCM) e senha do usuário. O contrato do arquivo
+está em [docs/BACKUP.md](docs/BACKUP.md). O backup automático do Android
+está **desligado** (#175): `allowBackup=false` e regras de extração que
+excluem tudo — o hash de senha e o id de sessão não circulam. Não use
+cópia do banco como garantia de portabilidade de contas, pois o pepper
+de senhas depende do Android Keystore.
 
 ## Releases
 
