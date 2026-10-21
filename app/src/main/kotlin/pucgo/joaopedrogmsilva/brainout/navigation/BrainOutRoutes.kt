@@ -11,6 +11,11 @@ package pucgo.joaopedrogmsilva.brainout.navigation
  * roadmap; novos destinos serão acrescentados em iterações futuras.
  */
 object BrainOutRoutes {
+    const val MainGraph: String = "main"
+    const val ProjectsGraph: String = "projects_graph"
+    const val TasksGraph: String = "tasks_graph"
+    const val DashboardGraph: String = "dashboard_graph"
+    const val SettingsGraph: String = "settings_graph"
     const val Splash: String = "splash"
     const val Login: String = "login"
     const val Register: String = "register"

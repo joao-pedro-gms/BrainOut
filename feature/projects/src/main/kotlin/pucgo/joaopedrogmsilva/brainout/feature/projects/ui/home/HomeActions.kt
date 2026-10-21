@@ -29,6 +29,7 @@ internal fun runCreateProject(
     description: String?,
     tagIds: List<String>,
     errorSink: MutableStateFlow<String?>,
+    onSuccess: () -> Unit = {},
 ) {
     scope.launch {
         try {
@@ -39,6 +40,7 @@ internal fun runCreateProject(
                 description = description,
                 tagIds = tagIds,
             )
+            onSuccess()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {

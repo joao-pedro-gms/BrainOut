@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -92,6 +93,27 @@ class ProjectDetailViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `formulario fecha apenas depois da gravacao e permanece aberto se ela falhar`() =
+        runTest {
+            val persisted = kotlinx.coroutines.CompletableDeferred<Task>()
+            coEvery { createTask.invoke(any(), any(), any(), any(), any()) } coAnswers { persisted.await() }
+            val vm = viewModel()
+            var closed = false
+            vm.addTask("Nova tarefa", onSuccess = { closed = true })
+            runCurrent()
+            assertThat(closed).isFalse()
+            persisted.complete(Task.create(projectId = projectId, title = "Nova tarefa"))
+            advanceUntilIdle()
+            assertThat(closed).isTrue()
+            closed = false
+            coEvery { createTask.invoke(any(), any(), any(), any(), any()) } throws java.io.IOException("Falha local")
+            vm.addTask("Preservar texto", onSuccess = { closed = true })
+            advanceUntilIdle()
+            assertThat(closed).isFalse()
+            assertThat(vm.errorMessage.value).isNotNull()
+        }
 
     @Test
     fun `addTask dispara CreateTaskUseCase com projectId correto`() =

@@ -7,10 +7,12 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,8 +47,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoStatusChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
@@ -120,41 +126,32 @@ private fun TasksContent(
     onDismissError: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+    LazyColumn(
+        modifier = modifier.fillMaxSize().neoContentWidth().padding(horizontal = LocalNeoWindowInfo.current.margin),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(vertical = 12.dp),
     ) {
-        // DEF-22 — o título saiu daqui e foi para a `TasksTopBar`.
-        // Repetir o mesmo texto no corpo faria o TalkBack anunciar
-        // "Tarefas" duas vezes e a tela mostrar o título duas vezes.
-        // LoginScreen e SettingsScreen já eram o padrão do projeto:
-        // o título pertence à barra, o corpo traz o conteúdo.
-        //
-        // Divisor com o token cheio: `outline` puro dá 16.10:1 (claro)
-        // e 15.95:1 (escuro). Com `alpha = 0.3f` caía para 1.93:1 /
-        // 2.59:1, abaixo do mínimo de 3:1 do WCAG §1.4.11.
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-
-        // E2.8 — prioridade ao banner de erro, depois loader, depois
-        // empty state. Esta ordem evita que um Room falho mostre
-        // simultaneamente spinner e empty state.
-        when {
-            state.errorMessage != null ->
-                TasksErrorBanner(
-                    message = state.errorMessage,
-                    onRetry = onRetry,
-                    onDismiss = onDismissError,
-                )
-            state.isLoading -> TasksLoading()
-            state.rows.isEmpty() -> TasksEmptyState(modifier = Modifier.fillMaxWidth())
-            else ->
-                TasksList(
-                    rows = state.rows,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+        item { NeoPriorityLegend() }
+        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
+        item {
+            when {
+                state.errorMessage != null -> TasksErrorBanner(state.errorMessage, onRetry, onDismissError)
+                state.isLoading -> CircularProgressIndicator()
+                state.rows.isEmpty() -> TasksEmptyState(Modifier.fillMaxWidth())
+            }
+        }
+        if (!state.isLoading && state.errorMessage == null) {
+            items(items = state.rows, key = { it.task.id }) { row ->
+                Box(
+                    Modifier.animateItem(
+                        fadeInSpec = tween(NeoMotion.selection),
+                        fadeOutSpec = tween(NeoMotion.selection),
+                        placementSpec = tween(NeoMotion.selection),
+                    ),
+                ) {
+                    TaskCard(row)
+                }
+            }
         }
     }
 }
@@ -226,19 +223,6 @@ internal fun TasksErrorBanner(
 }
 
 @Composable
-private fun TasksLoading() {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(top = 48.dp),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(48.dp))
-    }
-}
-
-@Composable
 private fun TasksEmptyState(modifier: Modifier = Modifier) {
     // DEF-22 — o cartão ganha **fronteira** em vez de(alpha).
     // `surfaceVariant.copy(alpha = 0.4f)` sobre o fundo dava 1.06:1;
@@ -248,7 +232,7 @@ private fun TasksEmptyState(modifier: Modifier = Modifier) {
     // é a borda: `outline` puro marca 16.10:1 (claro) / 15.95:1 (escuro).
     // O texto dentro (`onSurfaceVariant`) fica em 6.56:1 / 9.26:1.
     Surface(
-        modifier = modifier.height(280.dp),
+        modifier = modifier.heightIn(min = 160.dp),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
@@ -278,22 +262,6 @@ private fun TasksEmptyState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TasksList(
-    rows: List<TaskRow>,
-    modifier: Modifier = Modifier,
-) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 4.dp),
-    ) {
-        items(items = rows, key = { it.task.id }) { row ->
-            TaskCard(row = row)
-        }
-    }
-}
-
-@Composable
 private fun TaskCard(row: TaskRow) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -318,9 +286,9 @@ private fun TaskCard(row: TaskRow) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 PriorityChip(priority = row.task.priority)
                 StatusChip(status = row.task.status)
@@ -329,81 +297,20 @@ private fun TaskCard(row: TaskRow) {
     }
 }
 
-/** Chip de prioridade da tarefa. Cores derivadas do MaterialTheme. */
 @Composable
 private fun PriorityChip(priority: TaskPriority) {
-    val (labelRes, containerColor, contentColor) =
-        when (priority) {
-            TaskPriority.LOW ->
-                Triple(
-                    R.string.task_priority_low,
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            TaskPriority.MEDIUM ->
-                Triple(
-                    R.string.task_priority_medium,
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            TaskPriority.HIGH ->
-                Triple(
-                    R.string.task_priority_high,
-                    MaterialTheme.colorScheme.tertiaryContainer,
-                    MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            TaskPriority.URGENT ->
-                Triple(
-                    R.string.task_priority_urgent,
-                    MaterialTheme.colorScheme.secondaryContainer,
-                    MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            TaskPriority.CRITICAL ->
-                Triple(
-                    R.string.task_priority_critical,
-                    MaterialTheme.colorScheme.errorContainer,
-                    MaterialTheme.colorScheme.onErrorContainer,
-                )
-        }
-    // DEF-22 — `NeoInfoChip`, não `AssistChip`: o chip aqui rotula, não
-    // age. Com `onClick = { }` o TalkBack o anunciava como botão e o
-    // alvo de toque interceptava o clique que abriria o card.
-    NeoInfoChip(
-        label = stringResource(id = labelRes),
-        containerColor = containerColor,
-        labelColor = contentColor,
-    )
+    NeoPriorityIndicator(priority.priorityCode)
 }
 
-/** Chip de status da tarefa. Cores derivadas do MaterialTheme. */
 @Composable
 private fun StatusChip(status: TaskStatus) {
-    val (labelRes, containerColor, contentColor) =
+    val label =
         when (status) {
-            TaskStatus.TODO ->
-                Triple(
-                    R.string.task_status_todo,
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            TaskStatus.DOING ->
-                Triple(
-                    R.string.task_status_doing,
-                    MaterialTheme.colorScheme.primaryContainer,
-                    MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            TaskStatus.DONE ->
-                Triple(
-                    R.string.task_status_done,
-                    MaterialTheme.colorScheme.tertiaryContainer,
-                    MaterialTheme.colorScheme.onTertiaryContainer,
-                )
+            TaskStatus.TODO -> R.string.task_status_todo
+            TaskStatus.DOING -> R.string.task_status_doing
+            TaskStatus.DONE -> R.string.task_status_done
         }
-    NeoInfoChip(
-        label = stringResource(id = labelRes),
-        containerColor = containerColor,
-        labelColor = contentColor,
-    )
+    NeoStatusChip(stringResource(label), completed = status == TaskStatus.DONE, inProgress = status == TaskStatus.DOING)
 }
 
 // --- Previews ---------------------------------------------------------

@@ -60,10 +60,17 @@ internal val expectedIconAssets: Map<String, Boolean> =
         "neo_ic_folder" to false,
         "neo_ic_logout" to true,
         "neo_ic_more_vert" to false,
+        "neo_ic_search" to false,
         "neo_ic_settings" to false,
         "neo_ic_sort" to true,
         "neo_ic_visibility" to false,
         "neo_ic_visibility_off" to false,
+        "neo_ic_check" to false,
+        "neo_ic_priority_low" to false,
+        "neo_ic_priority_medium" to false,
+        "neo_ic_priority_high" to false,
+        "neo_ic_priority_urgent" to false,
+        "neo_ic_priority_critical" to false,
     )
 
 /** Arte geométrica original (splash + três empty states), Q28. */

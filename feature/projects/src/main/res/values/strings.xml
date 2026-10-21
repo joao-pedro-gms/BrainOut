@@ -17,8 +17,7 @@
     <string name="bottom_tab_settings">Configurações</string>
 
     <!-- Project detail -->
-    <string name="project_detail_title">Projeto Demo</string>
-    <string name="project_detail_description">Aplicativo Android para gestão de projetos e tarefas, em Kotlin e Jetpack Compose.</string>
+    <string name="project_detail_title">Detalhes do projeto</string>
     <string name="project_detail_tasks_title">Tarefas</string>
     <string name="project_detail_new_task">Nova tarefa</string>
     <string name="project_detail_delete_project">Excluir projeto</string>
@@ -90,7 +89,6 @@
     <string name="project_detail_error_invalid_title">Título inválido</string>
     <string name="project_detail_error_invalid_transition">Transição de status inválida</string>
     <string name="project_detail_error_empty_title">Título da tarefa não pode ser vazio</string>
-    <string name="project_detail_id_label">ID: %1$s</string>
 
     <!-- E2.8 — estados de erro e carregamento (ProjectDetail) -->
     <string name="project_detail_loading_aria_label">Carregando tarefas</string>

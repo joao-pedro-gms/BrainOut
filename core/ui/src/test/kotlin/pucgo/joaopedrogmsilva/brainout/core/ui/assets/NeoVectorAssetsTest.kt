@@ -1,5 +1,5 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// NB-05: ícones Material Symbols e arte geométrica como vetores locais.
+// Ícones Lucide e arte geométrica como vetores locais.
 
 package pucgo.joaopedrogmsilva.brainout.core.ui.assets
 
@@ -12,26 +12,15 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Contrato de asset vetorial (NB-05, itens 3 e 4):
- *
- *  1. o manifesto de drawables é fechado — os 16 ícones usados pelo app e as
- *     4 artes originais, nada mais, nada menos (adicionar um asset exige
- *     atualizar o manifesto, que é a especificação);
- *  2. todo ícone é Material Symbols Outlined local em viewport 960 (o
- *     viewBox `0 -960 960 960` do SVG é deslocado por um `group`), sem
- *     cor remota e com espelhamento idêntico ao `AutoMirrored` do código;
- *  3. a arte é geométrica, com no máximo três cores da paleta A, traço
- *     literal de 6 unidades, um único offset de sombra de (+8,+8) e nada
- *     que não seja vetor: sem texto rasterizado, sem imagem e sem rede
- *     (Q28: ≤ 1 MB comprimido).
- *
- * O XML é lido do disco porque é exatamente o que o AGP empacota.
+ * Inventário fechado de ícones Lucide locais (viewport 24, traço 2),
+ * quatro artes originais e orçamento total de 1 MB. O XML verificado
+ * é o mesmo que o AGP empacota; licenças e origens estão em ASSETS/LUCIDE.
  */
 class NeoVectorAssetsTest {
     private val drawableDir: File = coreUiRes().resolve("drawable")
 
     @Test
-    fun `o manifesto de drawables tem os 16 icones e as 4 artes`() {
+    fun `o manifesto de drawables tem os icones Lucide e as 4 artes`() {
         val names =
             drawableDir
                 .listFiles { file -> file.extension == "xml" }
@@ -45,7 +34,7 @@ class NeoVectorAssetsTest {
     }
 
     @Test
-    fun `todo icone e um VectorDrawable 24dp com viewport 960 e path literal`() {
+    fun `todo icone e um VectorDrawable 24dp com viewport 24 e path literal`() {
         expectedIconAssets.keys.forEach { name ->
             val vector = parseVector(drawableDir.resolve("$name.xml"))
 
@@ -54,14 +43,16 @@ class NeoVectorAssetsTest {
             assertThat(vector.attr("height")).isEqualTo("24dp")
             assertThat(vector.attr("viewportWidth")).isEqualTo(ICON_VIEWPORT)
             assertThat(vector.attr("viewportHeight")).isEqualTo(ICON_VIEWPORT)
-            assertThat(vector.groups()).isNotEmpty()
-            assertThat(vector.groupAttr(0, "translateY")).isEqualTo(ICON_VIEWPORT)
+            assertThat(vector.groups()).isEmpty()
 
             val paths = vector.paths()
             assertThat(paths).isNotEmpty()
             paths.forEach { path ->
                 assertThat(path.attr("pathData")).isNotEmpty()
-                assertThat(path.attr("fillColor")).matches(HEX_COLOR)
+                assertThat(path.attr("fillColor")).isEqualTo(TRANSPARENT_FILL)
+                assertThat(path.attr("strokeColor")).isEqualTo("#FF000000")
+                assertThat(path.attr("strokeWidth")).isEqualTo("2")
+                assertThat(path.attr("strokeLineCap")).isEqualTo("round")
             }
         }
     }
@@ -237,11 +228,10 @@ class NeoVectorAssetsTest {
     }
 }
 
-private const val ICON_VIEWPORT = "960"
+private const val ICON_VIEWPORT = "24"
 private const val ART_VIEWPORT = "120"
 private const val MIN_ART_PATHS = 4
 private const val MAX_ART_COLORS = 3
-private const val HEX_COLOR = "#[0-9A-F]{8}"
 private const val AUTHOR_HEADER =
     "<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->"
 
@@ -298,11 +288,6 @@ private fun Document.groups(): List<Element> =
     getElementsByTagName("group").let { list ->
         (0 until list.length).map { list.item(it) as Element }
     }
-
-private fun Document.groupAttr(
-    index: Int,
-    name: String,
-): String = groups()[index].attr(name)
 
 /** Caixa envolvente de um `pathData` poligonal (`left, top, right, bottom`). */
 private data class Box(

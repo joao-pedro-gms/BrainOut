@@ -8,8 +8,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,8 +18,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Barra superior das abas globais com `navigationIcon` de voltar.
@@ -52,7 +52,7 @@ internal fun TasksTopBar(
                 modifier = Modifier.testTag(TasksTestTags.BACK_BUTTON),
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    painter = painterResource(UiR.drawable.neo_ic_arrow_back),
                     contentDescription = stringResource(id = R.string.common_back),
                 )
             }

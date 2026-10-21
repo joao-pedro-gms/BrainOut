@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +53,7 @@ internal fun CreateProjectDialog(
     onDismiss: () -> Unit,
     onCreateTag: (name: String, color: String) -> Unit,
     onCreateProject: (name: String, description: String?, tagIds: List<String>) -> Unit,
+    errorMessage: String? = null,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
@@ -69,22 +72,26 @@ internal fun CreateProjectDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(id = R.string.home_create_project_title)) },
         text = {
-            CreateProjectDialogBody(
-                name = name,
-                onNameChange = {
-                    name = it
-                    // E2.8 — limpa o erro assim que o usuário
-                    // começa a digitar, evitando mensagem fixa no
-                    // campo enquanto a interação continua.
-                    if (nameError != null) nameError = null
-                },
-                nameError = nameError,
-                description = description,
-                onDescriptionChange = { description = it },
-                availableTags = availableTags,
-                selectedTagIds = selectedTagIds,
-                onShowAddTag = { showAddTag = true },
-            )
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
+
+                CreateProjectDialogBody(
+                    name = name,
+                    onNameChange = {
+                        name = it
+                        // E2.8 — limpa o erro assim que o usuário
+                        // começa a digitar, evitando mensagem fixa no
+                        // campo enquanto a interação continua.
+                        if (nameError != null) nameError = null
+                    },
+                    nameError = nameError,
+                    description = description,
+                    onDescriptionChange = { description = it },
+                    availableTags = availableTags,
+                    selectedTagIds = selectedTagIds,
+                    onShowAddTag = { showAddTag = true },
+                )
+            }
         },
         confirmButton = {
             TextButton(

@@ -5,11 +5,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @Composable
@@ -25,43 +22,13 @@ internal fun HomeFloatingActionButton(
     onCreateProjectClicked: () -> Unit,
     onMemberFabClicked: () -> Unit,
 ) {
-    ExtendedFloatingActionButton(
-        onClick = {
-            if (isOwner) {
-                onCreateProjectClicked()
-            } else {
-                onMemberFabClicked()
-            }
-        },
-        icon = {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(id = R.string.home_fab_create),
-            )
-        },
-        text = {
-            Text(
-                text =
-                    if (isOwner) {
-                        stringResource(id = R.string.home_fab_create)
-                    } else {
-                        stringResource(id = R.string.home_fab_disabled_owner)
-                    },
-                style = MaterialTheme.typography.labelLarge,
-            )
-        },
+    NeoCreateActionButton(
+        label = stringResource(if (isOwner) R.string.home_fab_create else R.string.home_fab_disabled_owner),
+        onClick = { if (isOwner) onCreateProjectClicked() else onMemberFabClicked() },
         containerColor =
-            if (isOwner) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
+            if (isOwner) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         contentColor =
-            if (isOwner) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
+            if (isOwner) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.testTag(HomeTestTags.FAB),
     )
 }

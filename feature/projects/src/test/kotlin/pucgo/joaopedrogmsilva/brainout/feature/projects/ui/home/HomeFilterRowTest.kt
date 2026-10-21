@@ -83,6 +83,24 @@ class HomeFilterRowTest {
             .config
 
     @Test
+    fun `fonte dupla mantem ordenacao acessivel em largura de 320dp`() {
+        composeRule.setContent {
+            val density = androidx.compose.ui.platform.LocalDensity.current.density
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides
+                    androidx.compose.ui.unit
+                        .Density(density, 2f),
+            ) {
+                BrainOutTheme {
+                    HomeProjectFilterRow(HomeProjectFilter.Active, {}, SortOrder.NameAsc, {})
+                }
+            }
+        }
+        composeRule.onNodeWithTag(HomeTestTags.SORT_MENU_BUTTON).assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag(HomeTestTags.SORT_MENU).assertExists()
+    }
+
+    @Test
     fun `o rotulo de acessibilidade nao renderiza texto na tela`() {
         setRow()
 

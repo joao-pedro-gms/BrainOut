@@ -4,9 +4,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -17,8 +14,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +35,7 @@ internal fun ProjectDetailTopBar(
         navigationIcon = {
             IconButton(onClick = onBackClicked) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    painter = painterResource(UiR.drawable.neo_ic_arrow_back),
                     contentDescription = stringResource(id = R.string.common_back),
                 )
             }
@@ -47,7 +46,7 @@ internal fun ProjectDetailTopBar(
                 modifier = Modifier.testTag(ProjectDetailTestTags.DELETE_PROJECT_BUTTON),
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Delete,
+                    painter = painterResource(UiR.drawable.neo_ic_delete),
                     contentDescription = stringResource(id = R.string.project_detail_delete_project),
                 )
             }

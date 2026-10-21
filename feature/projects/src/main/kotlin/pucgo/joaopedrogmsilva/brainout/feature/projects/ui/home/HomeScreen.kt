@@ -19,38 +19,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 
-/**
- * Tela Home do BrainOut — agora com usuário real (E1.7), badge de
- * papel colorido por role, e FAB gated pelo papel (Owner habilita,
- * Member abre diálogo explicativo).
- *
- * A bottom bar tem 3 destinos, todos como navegação externa (E2.6):
- * - [HomeTab.Projects] é a aba inicial; alterna o conteúdo do
- *   Scaffold (estado salvo via [rememberSaveable]).
- * - [HomeTab.Tasks] e [HomeTab.Settings] disparam callbacks
- *   ([onOpenTasks], [onOpenSettings]) que vivem no `BrainOutNavHost`
- *   em :app. O destino "Tarefas" mora em :feature:tasks
- *   (`TasksRoutes.TASKS`).
- *
- * @param onOpenProject chamado quando o usuário toca em um card de
- *  projeto (não dispara no E1.6 porque a lista está vazia; reservado
- *  para E2.1).
- * @param onOpenSettings chamado quando o usuário seleciona a tab
- *  "Configurações" da bottom bar — dispara `navigate(settings)` no
- *  `NavHost` externo.
- * @param onOpenTasks chamado quando o usuário seleciona a tab
- *  "Tarefas" da bottom bar — dispara `navigate(tasks)` no `NavHost`
- *  externo (rota `TasksRoutes.TASKS` em :feature:tasks).
- * @param viewModel injetado pelo Hilt; pode ser substituído por um
- *  fake nos `@Preview`/testes.
- */
-@Suppress("LongMethod") // Orquestrador: coleta 5 flows e roteia 4 abas.
+/** Lista de projetos; navegação global pertence ao shell do app. */
 @Composable
 fun HomeScreen(
     onOpenProject: (projectId: String) -> Unit = {},
-    onOpenSettings: () -> Unit,
-    onOpenTasks: () -> Unit = {},
-    onOpenDashboard: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -63,7 +35,6 @@ fun HomeScreen(
     // de escrita ficam invisíveis na UI.
     val actionError by viewModel.errorMessage.collectAsStateWithLifecycle()
 
-    var currentTab by rememberSaveable { mutableStateOf(HomeTab.Projects) }
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
     val homeUser: HomeUser =
@@ -84,19 +55,6 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(user = homeUser)
         },
-        bottomBar = {
-            HomeBottomBar(
-                currentTab = currentTab,
-                onSelectTab = { selected ->
-                    when (selected) {
-                        HomeTab.Settings -> onOpenSettings()
-                        HomeTab.Tasks -> onOpenTasks()
-                        HomeTab.Dashboard -> onOpenDashboard()
-                        HomeTab.Projects -> currentTab = selected
-                    }
-                },
-            )
-        },
         floatingActionButton = {
             HomeFloatingActionButton(
                 isOwner = isOwner,
@@ -106,45 +64,34 @@ fun HomeScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        // Apenas a aba "Projetos" tem conteúdo interno. As outras duas
-        // (Tarefas, Configurações) disparam navegação externa via
-        // callback — quando ela termina, a `HomeScreen` deixa de
-        // existir na pilha. Esta branch existe apenas para satisfazer
-        // a exaustividade do `when`.
-        when (currentTab) {
-            HomeTab.Projects ->
-                HomeProjectsContent(
-                    contentPadding = innerPadding,
-                    onOpenProject = onOpenProject,
-                    projects = listState.projects,
-                    isLoading = listState.isLoading,
-                    currentFilter = currentFilter,
-                    onSelectFilter = viewModel::setProjectFilter,
-                    errorMessage = actionError ?: listState.errorMessage,
-                    onRetry = viewModel::retry,
-                    onDismissError = viewModel::clearError,
-                    availableTags = listState.availableTags,
-                    searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
-                    onSearchQueryChange = viewModel::onSearchQueryChange,
-                    selectedTagId = listState.selectedTagId,
-                    onTagFilterChange = viewModel::onTagFilterChange,
-                    sortOrder = listState.sortOrder,
-                    onSortOrderChange = viewModel::onSortOrderChange,
-                )
-            HomeTab.Tasks -> Unit
-            HomeTab.Dashboard -> Unit
-            HomeTab.Settings -> Unit
-        }
+        HomeProjectsContent(
+            contentPadding = innerPadding,
+            onOpenProject = onOpenProject,
+            projects = listState.projects,
+            isLoading = listState.isLoading,
+            currentFilter = currentFilter,
+            onSelectFilter = viewModel::setProjectFilter,
+            errorMessage = actionError ?: listState.errorMessage,
+            onRetry = viewModel::retry,
+            onDismissError = viewModel::clearError,
+            availableTags = listState.availableTags,
+            searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
+            onSearchQueryChange = viewModel::onSearchQueryChange,
+            selectedTagId = listState.selectedTagId,
+            onTagFilterChange = viewModel::onTagFilterChange,
+            sortOrder = listState.sortOrder,
+            onSortOrderChange = viewModel::onSortOrderChange,
+        )
     }
 
     if (showCreateDialog) {
         CreateProjectDialog(
+            errorMessage = actionError?.let { resolveHomeErrorMessage(it) },
             availableTags = listState.availableTags,
             onDismiss = { showCreateDialog = false },
             onCreateTag = { name, color -> viewModel.createTag(name, color) },
             onCreateProject = { name, description, tagIds ->
-                viewModel.createProject(name, description, tagIds)
-                showCreateDialog = false
+                viewModel.createProject(name, description, tagIds) { showCreateDialog = false }
             },
         )
     }
@@ -193,5 +140,5 @@ object HomeTestTags {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
-    HomeScreen(onOpenSettings = {}, onOpenTasks = {})
+    HomeScreen()
 }

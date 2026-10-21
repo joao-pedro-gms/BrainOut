@@ -1,5 +1,16 @@
 # Especificação — componentes, fluxos e migração
 
+> Atualização aprovada em 21/10/2026: quatro abas inferiores persistem em toda
+> a área autenticada, inclusive detalhes e tablets; teclado oculta a barra e
+> modais a cobrem. Em largura <600dp e fonte >130%, as quatro abas se organizam
+> em duas linhas para preservar rótulos legíveis. Esta decisão substitui as propostas anteriores de rail,
+> quinta aba Agenda e detalhe sem barra. Ver [ADR](../adr/0001-navegacao-inferior-persistente.md).
+> Prioridade nos cards usa cinco símbolos Lucide com descrição acessível e
+> legenda consultável; status e seletores preservam nomes. Ícones e licença:
+> [LUCIDE](LUCIDE.md). Motion usa tempos de 80/120/160/220/240ms e escala Android.
+
+
+
 **Proposta de 01/10/2026**, complementar ao [DESIGN.md](../../DESIGN.md). Razão de existir: permitir que cada feature seja migrada com contratos claros, sem inventar funcionalidades para preencher o novo visual.
 
 ## 1. Contratos dos componentes
@@ -30,7 +41,7 @@ Focus e press são independentes: pressionar não apaga foco; focus ring tem ár
 | `BrainOutProjectCard` | Nome 18sp/26, descrição 14sp/22, tags com swatch; padding 16dp; raio 8dp; borda 2dp; sombra small quando clicável; sem min-height rígida arbitrária. Não mostrar métricas sem dados disponíveis |
 | `BrainOutTaskRow` | Título 16sp/24 ou 18sp/26, duas receitas status/prioridade separadas, prazo se disponível, menu 48dp. Sem sombra por linha; contorno 1dp ou divisor; padding 16dp; metadados quebram linha |
 | Top app bar | Base neutra, título Archivo 22sp/28, Back nativo 48dp e menu; separação 2dp. Nome longo de projeto tem resumo/truncamento seguro e texto completo na área de conteúdo |
-| Navegação | **Quatro** destinos hoje (`HomeTab` em `:feature:projects`); **cinco** no alvo deste redesign (Q13 acrescenta Agenda). Ícone 24dp e label 14sp; selecionado amarelo/ink, check/indicador e selected semantics. Min-height proposta 80dp + inset inferior, cresce com fonte. No médio/expandido usar rail. Não repetir bottom bar no detalhe/subtelas |
+| Navegação | **Quatro** destinos hoje (`HomeTab` em `:feature:projects`); **quatro** nesta evolução (Agenda fora do escopo). Ícone 24dp e label 14sp; selecionado amarelo/ink, check/indicador e selected semantics. Min-height proposta 80dp + inset inferior, cresce com fonte. Manter bottom bar também no médio/expandido e no detalhe; ver ADR 0001 |
 | Menu | Superfície opaca, raio 8dp, contorno 2dp; linha ≥48dp e label ≥14sp. Separar ações destrutivas; retorno de foco ao acionador; respeitar Back/outside dismiss |
 | Dialog | Superfície opaca, raio 16dp, contorno 2dp; largura máxima 480dp; padding 24dp; título 22sp/28; ações empilham quando não couberem. Sem sombras gigantes; scrim preto 56%; foco modal e scroll interno |
 | Sheet de formulário | **Evolução proposta** para formulário longo em janela curta, não requisito de trocar todos os dialogs. Raio superior 16dp, contorno, handles não são única forma de fechar; IME e ações acessíveis. Usar componente modal nativo com Back |

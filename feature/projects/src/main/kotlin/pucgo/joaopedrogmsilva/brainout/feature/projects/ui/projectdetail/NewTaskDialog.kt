@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,8 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,6 +43,7 @@ internal fun NewTaskDialog(
     onDismiss: () -> Unit,
     onConfirm: (title: String, priority: TaskPriority, dueDate: Instant?) -> Unit,
     evaluateDeadline: suspend (Instant?) -> DeadlineInfo,
+    errorMessage: String? = null,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
@@ -58,63 +59,59 @@ internal fun NewTaskDialog(
             Text(text = stringResource(id = R.string.project_detail_new_task_dialog_title))
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(text = stringResource(id = R.string.project_detail_new_task_title_label)) },
-                    placeholder = {
-                        Text(text = stringResource(id = R.string.project_detail_new_task_title_placeholder))
-                    },
-                    singleLine = true,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
-                )
-                Box {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
-                        value = stringResource(id = priority.labelRes()),
-                        onValueChange = { /* read-only */ },
-                        readOnly = true,
-                        label = { Text(text = stringResource(id = R.string.project_detail_new_task_priority_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    // Overlay transparente para abrir o menu ao tocar.
-                    Surface(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text(text = stringResource(id = R.string.project_detail_new_task_title_label)) },
+                        placeholder = {
+                            Text(text = stringResource(id = R.string.project_detail_new_task_title_placeholder))
+                        },
+                        singleLine = true,
                         modifier =
                             Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(4.dp))
-                                .testTag("project_detail_new_task_priority_field"),
-                        color = Color.Transparent,
-                        content = {},
-                        onClick = { priorityMenuExpanded = true },
+                                .fillMaxWidth()
+                                .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
                     )
-                    DropdownMenu(
-                        expanded = priorityMenuExpanded,
-                        onDismissRequest = { priorityMenuExpanded = false },
-                    ) {
-                        TaskPriority.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(text = stringResource(id = option.labelRes())) },
-                                onClick = {
-                                    priority = option
-                                    priorityMenuExpanded = false
-                                },
+                    Box {
+                        OutlinedButton(
+                            onClick = { priorityMenuExpanded = true },
+                            modifier = Modifier.fillMaxWidth().testTag("project_detail_new_task_priority_field"),
+                        ) {
+                            Text(
+                                text =
+                                    stringResource(R.string.project_detail_new_task_priority_label) + ": " +
+                                        stringResource(priority.labelRes()),
                             )
                         }
+                        DropdownMenu(
+                            expanded = priorityMenuExpanded,
+                            onDismissRequest = { priorityMenuExpanded = false },
+                        ) {
+                            TaskPriority.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(id = option.labelRes())) },
+                                    onClick = {
+                                        priority = option
+                                        priorityMenuExpanded = false
+                                    },
+                                )
+                            }
+                        }
                     }
+                    DeadlineField(
+                        dueDate = dueDate,
+                        onDateChange = {
+                            dueDateMillis =
+                                @Suppress("NewApi")
+                                it?.toEpochMilli()
+                        },
+                        evaluateDeadline = evaluateDeadline,
+                    )
                 }
-                DeadlineField(
-                    dueDate = dueDate,
-                    onDateChange = {
-                        dueDateMillis =
-                            @Suppress("NewApi")
-                            it?.toEpochMilli()
-                    },
-                    evaluateDeadline = evaluateDeadline,
-                )
             }
         },
         confirmButton = {

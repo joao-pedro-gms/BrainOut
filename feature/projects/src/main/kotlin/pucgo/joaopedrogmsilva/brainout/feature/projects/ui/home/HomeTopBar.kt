@@ -22,8 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -40,7 +42,8 @@ internal fun HomeTopBar(user: HomeUser) {
                 Box(
                     modifier =
                         Modifier
-                            .size(40.dp)
+                            .size(40.dp * LocalDensity.current.fontScale.coerceAtLeast(1f))
+                            .clearAndSetSemantics {}
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,

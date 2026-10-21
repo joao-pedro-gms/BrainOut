@@ -137,6 +137,7 @@ class HomeViewModel
             name: String,
             description: String?,
             tagIds: List<String>,
+            onSuccess: () -> Unit = {},
         ) {
             Log.d(TAG, "createProject acionado: name=$name, tagsCount=${tagIds.size}")
             runCreateProject(
@@ -147,6 +148,7 @@ class HomeViewModel
                 description,
                 tagIds,
                 _errorMessage,
+                onSuccess,
             )
         }
 

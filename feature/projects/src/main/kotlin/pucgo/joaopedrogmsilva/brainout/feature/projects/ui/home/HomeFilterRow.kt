@@ -3,10 +3,10 @@
 // (E2.6). O valor ativo do menu recebe leading check para que o
 // usuário saiba qual opção está selecionada.
 //
-// DEF-22 — o marcador de "selecionado" era `Icons.Filled.Add` (mais),
+// DEF-22 — o marcador de "selecionado" era `painterResource(UiR.drawable.neo_ic_add)` (mais),
 // que o usuário lê como "adicionar" — o oposto do que o KDoc desta
 // função prometia e o oposto do que o check comunica. Passou a ser
-// `Icons.Filled.Check`, com `stateDescription` para o TalkBack.
+// `painterResource(UiR.drawable.neo_ic_check)`, com `stateDescription` para o TalkBack.
 //
 // DEF-23b — `home_filter_aria_label` era um `Text` que o comentário
 // chamava de "rótulo oculto" mas que **nada escondia**: sem
@@ -22,13 +22,9 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,9 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +48,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +76,7 @@ internal fun HomeProjectFilterRow(
     // oposto do que §6 quer.
     val groupLabel = stringResource(id = R.string.home_filter_aria_label)
     val selectedFilterLabel = stringResource(id = current.labelRes)
-    Row(
+    FlowRow(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -89,7 +86,7 @@ internal fun HomeProjectFilterRow(
                     stateDescription = selectedFilterLabel
                 },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         HomeProjectFilter.entries.forEach { option ->
             FilterChip(
@@ -113,7 +110,6 @@ internal fun HomeProjectFilterRow(
                         .heightIn(min = 48.dp),
             )
         }
-        Spacer(modifier = Modifier.weight(1f))
         // DEF-23b — o rótulo saiu daqui. Ele virou `contentDescription`
         // do `Row` acima; mantê-lo aqui o renderizaria de novo.
         // E2.6 — menu de ordenação (Nome A→Z / Z→A / Mais recentes /
@@ -129,7 +125,7 @@ internal fun HomeProjectFilterRow(
 
 /**
  * Menu dropdown de ordenação (E2.6). Acionado pelo ícone de sort
- * (`Icons.Outlined.Sort`) à direita da linha de filtros estruturais.
+ * (`painterResource(UiR.drawable.neo_ic_sort)`) à direita da linha de filtros estruturais.
  * O item ativo recebe um leading check via `leadingIcon`; sem isso,
  * o usuário teria que adivinhar qual opção está selecionada.
  */
@@ -153,7 +149,7 @@ internal fun HomeSortMenu(
                     .heightIn(min = 48.dp),
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                painter = painterResource(UiR.drawable.neo_ic_sort),
                 contentDescription = stringResource(id = R.string.home_sort_aria_label),
             )
         }
@@ -170,16 +166,16 @@ internal fun HomeSortMenu(
                         onSelect(order)
                         expanded = false
                     },
-                    // DEF-22 — era `Icons.Filled.Add`, que o usuário lê
+                    // DEF-22 — era `painterResource(UiR.drawable.neo_ic_add)`, que o usuário lê
                     // como "adicionar", não como "opção selecionada" — o
                     // oposto do que o marcador deveria dizer, e o oposto
                     // do que o KDoc desta função prometia ("leading
-                    // checkmark"). `Icons.Filled.Check` marca a seleção.
+                    // checkmark"). `painterResource(UiR.drawable.neo_ic_check)` marca a seleção.
                     leadingIcon =
                         if (isSelected) {
                             {
                                 Icon(
-                                    imageVector = Icons.Filled.Check,
+                                    painter = painterResource(UiR.drawable.neo_ic_check),
                                     contentDescription = null,
                                 )
                             }

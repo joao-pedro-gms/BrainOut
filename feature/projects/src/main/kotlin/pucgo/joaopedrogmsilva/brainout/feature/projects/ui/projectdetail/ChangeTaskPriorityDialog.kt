@@ -9,12 +9,16 @@
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +39,7 @@ internal fun ChangeTaskPriorityDialog(
     currentPriority: TaskPriority,
     onDismiss: () -> Unit,
     onConfirm: (TaskPriority) -> Unit,
+    errorMessage: String? = null,
 ) {
     var selected by rememberSaveable(currentPriority) { mutableStateOf(currentPriority) }
     AlertDialog(
@@ -43,26 +48,30 @@ internal fun ChangeTaskPriorityDialog(
             Text(text = stringResource(id = R.string.project_detail_task_priority_dialog_title))
         },
         text = {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TaskPriority.entries.forEach { option ->
-                    FilterChip(
-                        selected = option == selected,
-                        onClick = { selected = option },
-                        label = {
-                            Text(text = stringResource(id = option.labelRes()))
-                        },
-                        modifier =
-                            Modifier
-                                .testTag(
-                                    ProjectDetailTestTags.TASK_PRIORITY_CHIP_OPTION_PREFIX +
-                                        option.priorityCode.toString(),
-                                )
-                                // E4.4: 48dp mínimo WCAG 2.5.5.
-                                .heightIn(min = 48.dp),
-                    )
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TaskPriority.entries.forEach { option ->
+                        FilterChip(
+                            selected = option == selected,
+                            onClick = { selected = option },
+                            label = {
+                                Text(text = stringResource(id = option.labelRes()))
+                            },
+                            modifier =
+                                Modifier
+                                    .testTag(
+                                        ProjectDetailTestTags.TASK_PRIORITY_CHIP_OPTION_PREFIX +
+                                            option.priorityCode.toString(),
+                                    )
+                                    // E4.4: 48dp mínimo WCAG 2.5.5.
+                                    .heightIn(min = 48.dp),
+                        )
+                    }
                 }
             }
         },

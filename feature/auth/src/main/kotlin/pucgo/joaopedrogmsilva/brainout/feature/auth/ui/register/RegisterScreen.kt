@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
@@ -178,7 +180,8 @@ internal fun RegisterBody(
             modifier
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .neoContentWidth(form = true)
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp)
                 .testTag(RegisterTestTags.SCROLL),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
