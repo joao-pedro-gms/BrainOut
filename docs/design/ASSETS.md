@@ -14,9 +14,9 @@ Inventário entregue em `core/ui/src/main/res/`:
 | Conjunto | Arquivos | Bytes | Licença |
 |---|---:|---:|---|
 | Fontes estáticas (`res/font/`) | 5 `.ttf` | 276 184 | SIL OFL 1.1 |
-| Ícones (`res/drawable/neo_ic_*.xml`) | 16 | 18 092 | Apache-2.0 |
+| Ícones (`res/drawable/neo_ic_*.xml`) | 23 | 20 666 | ISC (Lucide) |
 | Arte original (`res/drawable/neo_art_*.xml`) | 4 | 5 187 | obra do projeto |
-| **Total (teto Q28 = 1 MB)** | **25** | **299 463** | — |
+| **Total (teto Q28 = 1 MB)** | **32** | **302 037** | — |
 
 O teto é verificado por `NeoVectorAssetsTest` (`a soma de fontes e
 drawables cabe no teto de 1 MB`), que falha se o total passar de
@@ -126,87 +126,14 @@ escopo do recorte foi documentado).
 
 ---
 
-## 2. Ícones — Material Symbols Outlined locais
+## 2. Ícones Lucide — vetores locais
 
-### 2.1 Origem
-
-- Repositório: `google/material-design-icons` @
-  `737e3324305806514d7909874fa1818ae1808232` (02/10/2026) — commit fixado,
-  não `master`.
-- Licença: Apache-2.0, texto em
-  `core/ui/licenses/Apache-2.0-Material-Symbols.txt`.
-- Variante: **`<ícone>_wght500_24px.svg`** — peso visual 500 e opção 24,
-  como manda `DESIGN.md` §5. Sem o token `fill1` e sem `grad*` no nome do
-  arquivo: um só peso, um só estilo.
-- Padrão de URL:
-  `raw.githubusercontent.com/google/material-design-icons/<commit>/symbols/web/<ícone>/materialsymbolsoutlined/<ícone>_wght500_24px.svg`
-
-Só o que o app usa está exportado — não há fonte de símbolos completa nem
-catálogo inteiro no APK.
-
-### 2.2 Manifesto (manifesto fechado: mudar exige atualizar o teste)
-
-| Recurso Android | Símbolo | Uso atual no código | `autoMirrored` |
-|---|---|---|---|
-| `neo_ic_add` | `add` | `Icons.Filled.Add` (FAB, novo projeto/tarefa) | não |
-| `neo_ic_arrow_back` | `arrow_back` | `Icons.AutoMirrored.Outlined.ArrowBack` | **sim** |
-| `neo_ic_assignment` | `assignment` | `Icons.AutoMirrored.Outlined.Assignment` (aba Tarefas) | **sim** |
-| `neo_ic_bar_chart` | `bar_chart` | `Icons.Outlined.BarChart` (aba Painel) | não |
-| `neo_ic_chevron_right` | `chevron_right` | `Icons.Outlined.ChevronRight` | não |
-| `neo_ic_close` | `close` | `Icons.Filled.Clear` (limpar busca) | não |
-| `neo_ic_cloud_off` | `cloud_off` | `Icons.Outlined.CloudOff` | não |
-| `neo_ic_cloud_sync` | `cloud_sync` | `Icons.Outlined.CloudSync` | não |
-| `neo_ic_delete` | `delete` | `Icons.Outlined.Delete` | não |
-| `neo_ic_folder` | `folder` | `Icons.Outlined.Folder` (aba Projetos) | não |
-| `neo_ic_logout` | `logout` | `Icons.AutoMirrored.Outlined.Logout` | **sim** |
-| `neo_ic_more_vert` | `more_vert` | `Icons.Outlined.MoreVert` | não |
-| `neo_ic_settings` | `settings` | `Icons.Outlined.Settings` (aba Ajustes) | não |
-| `neo_ic_sort` | `sort` | `Icons.Outlined.Sort` / `Icons.AutoMirrored.Outlined.Sort` | **sim** |
-| `neo_ic_visibility` | `visibility` | `Icons.Filled.Visibility` (senha) | não |
-| `neo_ic_visibility_off` | `visibility_off` | `Icons.Filled.VisibilityOff` | não |
-
-Duas notas de nomenclatura:
-
-- `Icons.Filled.Clear` **não** existe como `symbols/web/clear`: o símbolo
-  equivalente é `close`, mesmo glifo X. Por isso o recurso chama-se
-  `neo_ic_close`.
-- Espelhar só o que o código atual marca como `AutoMirrored` — símbolo de
-  estado (`folder`, `settings`, `bar_chart`…) não é espelhado
-  indiscriminadamente (`DESIGN.md` §5).
-
-### 2.3 Regra de conversão SVG → VectorDrawable
-
-Os SVGs oficiais usam `viewBox="0 -960 960 960"`; `VectorDrawable` não
-tem origem deslocável, então o deslocamento é feito por grupo:
-
-```xml
-<vector android:width="24dp" android:height="24dp"
-    android:viewportWidth="960" android:viewportHeight="960"
-    android:autoMirrored="true">        <!-- só nos quatro da tabela -->
-    <group android:translateY="960">    <!-- -(-960) -->
-        <path android:pathData="…" android:fillColor="#FF000000" />
-    </group>
-</vector>
-```
-
-- `pathData` é o atributo `d` do SVG **copiado sem redesenho**;
-- `fillColor` é literal preto: quem aplica cor é o tint do Compose;
-- todos os 16 SVGs têm um único `<path>` e nenhum declara `fill-rule`, então
-  não há `fillType` a preservar;
-- comandos usados: `M m L l H h V v Q q T t Z` — todos suportados pelo
-  parser de `VectorDrawable`.
-
-Verificação de proveniência de um ícone (substitua `<ícone>`):
-
-```bash
-curl -s "https://raw.githubusercontent.com/google/material-design-icons/737e3324305806514d7909874fa1818ae1808232/symbols/web/<ícone>/materialsymbolsoutlined/<ícone>_wght500_24px.svg" \
-  | grep -o 'd="[^"]*"' | sed 's/^d="//; s/"$//' > /tmp/svg-d.txt
-grep -o 'android:pathData="[^"]*"' core/ui/src/main/res/drawable/neo_ic_<ícone>.xml \
-  | sed 's/.*pathData="//; s/"$//' > /tmp/xml-d.txt
-diff /tmp/svg-d.txt /tmp/xml-d.txt && echo "pathData idêntico"
-```
-
----
+Os símbolos Material anteriores foram substituídos por traços Lucide de 2 unidades,
+viewport 24 e tamanho 24dp. Veja [origem fixada e correspondência de cada SVG](LUCIDE.md)
+e a [licença integral](../../LICENSES/lucide.txt). A conversão mantém caminhos,
+linhas, círculos e retângulos como paths vetoriais; não há bitmap nem código remoto.
+A cor é aplicada pelo tema em execução. Setas de navegação seguem espelhamento RTL;
+prioridades são símbolos informativos sem espelhamento.
 
 ## 3. Arte geométrica original (poster estático)
 

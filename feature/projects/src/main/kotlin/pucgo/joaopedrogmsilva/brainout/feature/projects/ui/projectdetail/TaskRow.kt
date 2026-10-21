@@ -9,12 +9,11 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -32,14 +31,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 @Composable
 internal fun TaskRow(
@@ -109,7 +111,7 @@ private fun TaskRowHeader(
         )
         IconButton(onClick = onMenuClicked) {
             Icon(
-                imageVector = Icons.Outlined.MoreVert,
+                painter = painterResource(UiR.drawable.neo_ic_more_vert),
                 // E4.4: descreve a ação do botão para TalkBack; o rótulo
                 // textual do menu é anunciado quando o dropdown abre,
                 // mas o botão em si precisa de descrição própria.
@@ -124,10 +126,10 @@ private fun TaskRowChips(
     status: TaskStatus,
     priority: TaskPriority,
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         StatusChip(status = status)
         PriorityChip(priority = priority)
@@ -233,42 +235,18 @@ private fun TaskRowMenu(
 
 @Composable
 private fun StatusChip(status: TaskStatus) {
-    val (label, container, content) =
+    val label =
         when (status) {
-            TaskStatus.TODO ->
-                Triple(
-                    stringResource(id = R.string.task_status_todo),
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            TaskStatus.DOING ->
-                Triple(
-                    stringResource(id = R.string.task_status_doing),
-                    MaterialTheme.colorScheme.tertiaryContainer,
-                    MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            TaskStatus.DONE ->
-                Triple(
-                    stringResource(id = R.string.task_status_done),
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.onPrimary,
-                )
+            TaskStatus.TODO -> R.string.task_status_todo
+            TaskStatus.DOING -> R.string.task_status_doing
+            TaskStatus.DONE -> R.string.task_status_done
         }
-    // DEF-22 — ver [NeoInfoChip]: o chip rotula, não age. `onClick = { }`
-    // fazia o TalkBack anunciar "botão" e o alvo de toque engolia o
-    // toque no menu "mais opções" da própria linha.
-    NeoInfoChip(
-        label = label,
-        containerColor = container,
-        labelColor = content,
-    )
+    NeoStatusChip(stringResource(label), completed = status == TaskStatus.DONE, inProgress = status == TaskStatus.DOING)
 }
 
 @Composable
 private fun PriorityChip(priority: TaskPriority) {
-    NeoInfoChip(
-        label = stringResource(id = priority.labelRes()),
-    )
+    NeoPriorityIndicator(priority.priorityCode)
 }
 
 /** Helper para mapear [TaskPriority] ao recurso de string correspondente. */

@@ -48,8 +48,6 @@
     <string name="bottom_tab_settings">Configurações</string>
 
     <!-- Project detail -->
-    <string name="project_detail_title">Projeto Demo</string>
-    <string name="project_detail_description">Aplicativo Android para gestão de projetos e tarefas, em Kotlin e Jetpack Compose.</string>
     <string name="project_detail_tasks_title">Tarefas</string>
     <string name="project_detail_new_task">Nova tarefa</string>
     <string name="project_detail_back">Voltar</string>

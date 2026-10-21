@@ -21,6 +21,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
@@ -106,7 +109,8 @@ internal fun DashboardContent(
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .neoContentWidth()
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // DEF-22 — o título saiu daqui e foi para a `TasksTopBar`.
@@ -141,18 +145,30 @@ private fun DashboardBody(state: DashboardUiState) {
         DashboardEmptyState(modifier = Modifier.fillMaxWidth())
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ProjectStateCard(
-            activeProjects = state.activeProjects,
-            completedProjects = state.completedProjects,
-        )
-        PriorityChart(
-            counts = state.priorityCounts,
-        )
-        CompletionRateCards(
-            weeklyPercent = state.weeklyCompletionPercent,
-            overallPercent = state.overallCompletionPercent,
-        )
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        maxItemsInEachRow =
+            if (LocalNeoWindowInfo.current.isWide &&
+                !LocalNeoWindowInfo.current.forceSingleColumn
+            ) {
+                2
+            } else {
+                1
+            },
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ProjectStateCard(
+                activeProjects = state.activeProjects,
+                completedProjects = state.completedProjects,
+            )
+            CompletionRateCards(state.weeklyCompletionPercent, state.overallCompletionPercent)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            PriorityChart(
+                counts = state.priorityCounts,
+            )
+        }
     }
 }
 

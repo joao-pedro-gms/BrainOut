@@ -9,6 +9,11 @@
 package pucgo.joaopedrogmsilva.brainout.navigation
 
 import android.util.Log
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.LoginScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register.RegisterScreen
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash.SplashScreen
@@ -27,9 +33,10 @@ import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.Project
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.BackupSection
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
-import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.dashboardGraph
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.tasksGraph
+
+private const val NAVIGATION_SLIDE_DIVISOR = 12
 
 private const val TAG = "BrainOut:Nav"
 
@@ -51,26 +58,42 @@ fun BrainOutNavHost(
     activeUserProvider: ActiveUserProvider,
     startDestination: String = BrainOutRoutes.Splash,
 ) {
-    Log.d(TAG, "Montando BrainOutNavHost com startDestination=$startDestination")
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-    ) {
-        addSplashRoute(navController)
-        addLoginRoute(navController)
-        addRegisterRoute(navController)
-        addHomeRoute(navController)
-        addProjectDetailRoute(navController)
-        addSettingsRoute(navController, activeUserProvider)
-        // Marco E2.6 do ROADMAP — registra a tela "Tarefas" como
-        // destino de navegação global (aba "Tarefas" da bottom bar).
-        // DEF-22 — `navController` é passado para as duas abas globais
-        // porque elas passaram a ter `Scaffold` com botão de voltar;
-        // o destino de retorno é `popBackStack()`.
-        tasksGraph(navController)
-        // Marco E2.7 do ROADMAP — registra o Painel (Dashboard) como
-        // destino de navegação global (aba "Painel" da bottom bar).
-        dashboardGraph(navController)
+    BrainOutShell(navController) { modifier ->
+        NavHost(
+            navController = navController,
+            startDestination =
+                if (startDestination ==
+                    BrainOutRoutes.Home
+                ) {
+                    BrainOutRoutes.MainGraph
+                } else {
+                    startDestination
+                },
+            modifier = modifier,
+            enterTransition = {
+                fadeIn(tween(NeoMotion.navigation)) +
+                    slideInHorizontally(tween(NeoMotion.navigation)) { it / NAVIGATION_SLIDE_DIVISOR }
+            },
+            exitTransition = { fadeOut(tween(NeoMotion.navigation)) },
+            popEnterTransition = { fadeIn(tween(NeoMotion.navigation)) },
+            popExitTransition = {
+                fadeOut(tween(NeoMotion.navigation)) +
+                    slideOutHorizontally(tween(NeoMotion.navigation)) { it / NAVIGATION_SLIDE_DIVISOR }
+            },
+        ) {
+            addSplashRoute(navController)
+            addLoginRoute(navController)
+            addRegisterRoute(navController)
+            mainDestinations(
+                projects = {
+                    addHomeRoute(navController)
+                    addProjectDetailRoute(navController)
+                },
+                tasks = { tasksGraph(navController) },
+                dashboard = { dashboardGraph(navController) },
+                settings = { addSettingsRoute(navController, activeUserProvider) },
+            )
+        }
     }
 }
 
@@ -92,8 +115,8 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: Nav
         LoginScreen(
             onLoginSubmit = {
                 Log.d(TAG, "Navegando: Login -> Home")
-                navController.navigate(BrainOutRoutes.Home) {
-                    popUpTo(BrainOutRoutes.Login) { inclusive = true }
+                navController.navigate(BrainOutRoutes.MainGraph) {
+                    popUpTo(0) { inclusive = true }
                 }
             },
             onCreateAccountClicked = {
@@ -109,8 +132,8 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: 
         RegisterScreen(
             onRegisterSubmit = {
                 Log.d(TAG, "Navegando: Register -> Home")
-                navController.navigate(BrainOutRoutes.Home) {
-                    popUpTo(BrainOutRoutes.Login) { inclusive = true }
+                navController.navigate(BrainOutRoutes.MainGraph) {
+                    popUpTo(0) { inclusive = true }
                 }
             },
             onHaveAccountClicked = {
@@ -127,18 +150,6 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(navController: NavH
             onOpenProject = { projectId ->
                 Log.d(TAG, "Navegando: Home -> ProjectDetail($projectId)")
                 navController.navigate(BrainOutRoutes.projectDetail(projectId))
-            },
-            onOpenSettings = {
-                Log.d(TAG, "Navegando: Home -> Settings")
-                navController.navigate(BrainOutRoutes.Settings)
-            },
-            onOpenTasks = {
-                Log.d(TAG, "Navegando: Home -> Tasks")
-                navController.navigate(TasksRoutes.TASKS)
-            },
-            onOpenDashboard = {
-                Log.d(TAG, "Navegando: Home -> Dashboard")
-                navController.navigate(TasksRoutes.DASHBOARD)
             },
         )
     }
@@ -184,6 +195,7 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
                         // a escrita concluir — evita sessão órfã no próximo
                         lifecycleOwner.lifecycleScope.launch {
                             activeUserProvider.signOut()
+                            navController.clearMainBackStacks()
                             navController.navigate(BrainOutRoutes.Login) {
                                 popUpTo(0) { inclusive = true }
                             }
@@ -209,6 +221,7 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
                         // invalida a sessão — o usuário precisa entrar de
                         // novo com a senha do backup (issue #214).
                         Log.d(TAG, "Navegando: Settings -> Login (backup restaurado)")
+                        navController.clearMainBackStacks()
                         navController.navigate(BrainOutRoutes.Login) {
                             popUpTo(0) { inclusive = true }
                         }

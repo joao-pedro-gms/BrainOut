@@ -48,8 +48,6 @@
     <string name="bottom_tab_settings">Settings</string>
 
     <!-- Project detail -->
-    <string name="project_detail_title">Demo Project</string>
-    <string name="project_detail_description">Android app for project and task management, in Kotlin and Jetpack Compose.</string>
     <string name="project_detail_tasks_title">Tasks</string>
     <string name="project_detail_new_task">New task</string>
     <string name="project_detail_back">Back</string>

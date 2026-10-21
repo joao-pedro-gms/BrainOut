@@ -6,6 +6,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,18 +19,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @Suppress("LongParameterList") // 12 params: roteia estado + callbacks do orquestrador.
 @Composable
 internal fun ProjectDetailBody(
-    projectId: String,
     tasks: List<Task>,
     isLoading: Boolean,
     errorMessage: String?,
@@ -44,70 +47,51 @@ internal fun ProjectDetailBody(
     onRenameTask: (Task) -> Unit,
     onChangePriority: (Task, TaskPriority) -> Unit,
 ) {
-    Column(
+    LazyColumn(
         modifier =
             Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .neoContentWidth()
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 88.dp),
     ) {
-        Text(
-            text = stringResource(id = R.string.project_detail_id_label, projectId),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = stringResource(id = R.string.project_detail_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
-        // DEF-22 — divisor com o token cheio: `outline` puro marca
-        // 16.10:1 (claro) / 15.95:1 (escuro). Com `alpha = 0.3f` o
-        // divisor caía para 1.93:1 / 2.59:1, abaixo do mínimo de 3:1
-        // do WCAG §1.4.11 — a separação entre cabeçalho e lista
-        // simplesmente não existia para quem tem baixa visão.
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                Text(
+                    text = stringResource(id = R.string.project_detail_tasks_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
 
-        Text(
-            text = stringResource(id = R.string.project_detail_tasks_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
-            ProjectDetailErrorBanner(
-                message = errorMessage,
-                onRetry = onRetry,
-                onDismiss = onDismissError,
-            )
-        } else if (tasks.isEmpty() && isLoading) {
-            ProjectDetailLoadingState()
-        } else if (tasks.isEmpty()) {
-            EmptyTasksCard()
-        } else {
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .weight(1f)
-                        .testTag(ProjectDetailTestTags.TASK_LIST),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 80.dp),
+                NeoPriorityLegend()
+            }
+        }
+        item {
+            if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
+                ProjectDetailErrorBanner(
+                    message = errorMessage,
+                    onRetry = onRetry,
+                    onDismiss = onDismissError,
+                )
+            } else if (tasks.isEmpty() && isLoading) {
+                ProjectDetailLoadingState()
+            } else if (tasks.isEmpty()) {
+                EmptyTasksCard()
+            }
+        }
+        items(items = tasks, key = { it.id }) { task ->
+            androidx.compose.foundation.layout.Box(
+                Modifier.animateItem(
+                    fadeInSpec = tween(NeoMotion.selection),
+                    fadeOutSpec = tween(NeoMotion.selection),
+                    placementSpec = tween(NeoMotion.selection),
+                ),
             ) {
-                items(
-                    items = tasks,
-                    key = { it.id },
-                ) { task ->
-                    TaskRow(
-                        task = task,
-                        onChangeStatus = onChangeStatus,
-                        onDeleteTask = onDeleteTask,
-                        onChangePriority = onChangePriority,
-                        onRenameTask = onRenameTask,
-                    )
-                }
+                TaskRow(task, onChangeStatus, onDeleteTask, onChangePriority, onRenameTask)
             }
         }
     }

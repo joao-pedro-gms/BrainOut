@@ -17,9 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,10 +51,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Tela de login — formulário funcional (E1.6).
@@ -145,7 +146,8 @@ internal fun LoginBody(
             modifier
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .neoContentWidth(form = true)
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp)
                 .testTag(LoginTestTags.SCROLL),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -376,11 +378,11 @@ internal fun PasswordField(
                         },
             ) {
                 Icon(
-                    imageVector =
+                    painter =
                         if (passwordVisible) {
-                            Icons.Filled.VisibilityOff
+                            painterResource(UiR.drawable.neo_ic_visibility_off)
                         } else {
-                            Icons.Filled.Visibility
+                            painterResource(UiR.drawable.neo_ic_visibility)
                         },
                     contentDescription =
                         if (passwordVisible) {

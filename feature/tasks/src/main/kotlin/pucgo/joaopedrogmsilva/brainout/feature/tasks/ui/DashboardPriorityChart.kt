@@ -5,10 +5,12 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 private const val BAR_TO_SLOT_RATIO: Float = 0.55f
@@ -105,6 +108,14 @@ private fun PriorityBarsCanvas(
     maxCount: Int,
     chartDescription: String,
 ) {
+    val proportions =
+        counts.map { count ->
+            animateFloatAsState(
+                count.toFloat() / maxCount,
+                tween(NeoMotion.confirmation),
+                label = "confirmedPriorityCount",
+            )
+        }
     Canvas(
         modifier =
             Modifier
@@ -114,8 +125,8 @@ private fun PriorityBarsCanvas(
     ) {
         val slotWidth = size.width / counts.size
         val barWidth = slotWidth * BAR_TO_SLOT_RATIO
-        counts.forEachIndexed { index, count ->
-            val barHeight = size.height * (count.toFloat() / maxCount)
+        proportions.forEachIndexed { index, proportion ->
+            val barHeight = size.height * proportion.value
             val topLeft =
                 Offset(
                     x = slotWidth * index + (slotWidth - barWidth) / 2f,
@@ -134,9 +145,10 @@ private fun PriorityBarsCanvas(
 /** Legenda numérica sob as barras do gráfico (contagem por nível). */
 @Composable
 private fun PriorityBarsLegend(counts: List<Int>) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         counts.forEachIndexed { index, count ->
             Column(
@@ -149,7 +161,16 @@ private fun PriorityBarsLegend(counts: List<Int>) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = priorityShortLabel(index),
+                    text =
+                        stringResource(
+                            when (index) {
+                                0 -> R.string.task_priority_low
+                                1 -> R.string.task_priority_medium
+                                2 -> R.string.task_priority_high
+                                3 -> R.string.task_priority_urgent
+                                else -> R.string.task_priority_critical
+                            },
+                        ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -157,17 +178,3 @@ private fun PriorityBarsLegend(counts: List<Int>) {
         }
     }
 }
-
-/**
- * Rótulo curto (1 letra) por nível de prioridade — mantém as colunas
- * do gráfico compactas em pt e en.
- */
-@Composable
-private fun priorityShortLabel(index: Int): String =
-    when (index) {
-        0 -> stringResource(id = R.string.dashboard_priority_short_low)
-        1 -> stringResource(id = R.string.dashboard_priority_short_medium)
-        2 -> stringResource(id = R.string.dashboard_priority_short_high)
-        3 -> stringResource(id = R.string.dashboard_priority_short_urgent)
-        else -> stringResource(id = R.string.dashboard_priority_short_critical)
-    }

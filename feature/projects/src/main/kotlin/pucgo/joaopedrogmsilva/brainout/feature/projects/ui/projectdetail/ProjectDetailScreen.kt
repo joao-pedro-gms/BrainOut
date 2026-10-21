@@ -7,16 +7,11 @@
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -95,7 +91,7 @@ fun ProjectDetailScreen(
     var renameTask by remember { mutableStateOf<Task?>(null) }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag("project_detail_$projectId"),
         topBar = {
             ProjectDetailTopBar(
                 onBackClicked = onBackClicked,
@@ -103,16 +99,9 @@ fun ProjectDetailScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            NeoCreateActionButton(
                 onClick = { showCreateDialog = true },
-                icon = {
-                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                },
-                text = {
-                    Text(text = stringResource(id = R.string.project_detail_new_task))
-                },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                label = stringResource(R.string.project_detail_new_task),
                 modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_FAB),
             )
         },
@@ -124,7 +113,6 @@ fun ProjectDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         ProjectDetailBody(
-            projectId = projectId,
             tasks = state.tasks,
             isLoading = state.isLoading,
             errorMessage = state.errorMessage,
@@ -146,10 +134,10 @@ fun ProjectDetailScreen(
 
     if (showCreateDialog) {
         NewTaskDialog(
+            errorMessage = resolvedMessage,
             onDismiss = { showCreateDialog = false },
             onConfirm = { title, priority, dueDate ->
-                viewModel.addTask(title, priority, dueDate)
-                showCreateDialog = false
+                viewModel.addTask(title, priority, dueDate) { showCreateDialog = false }
             },
             evaluateDeadline = { deadline -> viewModel.evaluateDeadline(deadline) },
         )
@@ -168,27 +156,23 @@ fun ProjectDetailScreen(
     val priorityTarget = priorityDialogTask
     if (priorityTarget != null) {
         ChangeTaskPriorityDialog(
+            errorMessage = resolvedMessage,
             currentPriority = priorityTarget.priority,
             onDismiss = { priorityDialogTask = null },
             onConfirm = { newPriority ->
-                viewModel.changeTaskPriority(priorityTarget, newPriority)
-                priorityDialogTask = null
+                viewModel.changeTaskPriority(priorityTarget, newPriority) { priorityDialogTask = null }
             },
         )
     }
 
-    // DEF-22 — o diálogo fecha antes de confirmar: `renameTask` grava
-    // e o erro (título vazio, falha de persistência) chega pelo
-    // snackbar de `errorMessage`, que é o mesmo caminho das demais
-    // validações desta tela.
     val renameTarget = renameTask
     if (renameTarget != null) {
         RenameTaskDialog(
+            errorMessage = resolvedMessage,
             initialTitle = renameTarget.title,
             onDismiss = { renameTask = null },
             onConfirm = { newTitle ->
-                viewModel.renameTask(renameTarget, newTitle)
-                renameTask = null
+                viewModel.renameTask(renameTarget, newTitle) { renameTask = null }
             },
         )
     }

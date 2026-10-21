@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,10 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Tela de configurações.
@@ -83,7 +84,8 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .neoContentWidth()
+                    .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
@@ -176,13 +178,13 @@ internal fun SettingsRow(
         ) {
             if (isSignOut) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    painter = painterResource(UiR.drawable.neo_ic_logout),
                     contentDescription = null,
                     tint = iconColor,
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
+                    painter = painterResource(UiR.drawable.neo_ic_chevron_right),
                     contentDescription = null,
                     tint = iconColor,
                 )

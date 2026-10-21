@@ -28,6 +28,13 @@ class I18nStringsSmokeTest {
         context.createConfigurationContext(Configuration().apply { setLocale(locale) })
 
     @Test
+    fun `titulo do detalhe nao e sobrescrito por texto de demonstracao do app`() {
+        val resource = pucgo.joaopedrogmsilva.brainout.feature.projects.R.string.project_detail_title
+        assertThat(contextFor(Locale("pt", "BR")).getString(resource)).isEqualTo("Detalhes do projeto")
+        assertThat(contextFor(Locale("en")).getString(resource)).isEqualTo("Project details")
+    }
+
+    @Test
     fun `app_name resolves non-empty in default locale pt`() {
         val name = context.getString(R.string.app_name)
         assertThat(name).isNotEmpty()

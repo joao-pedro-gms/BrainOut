@@ -12,8 +12,12 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +42,7 @@ internal fun RenameTaskDialog(
     initialTitle: String,
     onDismiss: () -> Unit,
     onConfirm: (newTitle: String) -> Unit,
+    errorMessage: String? = null,
 ) {
     var title by rememberSaveable(initialTitle) { mutableStateOf(initialTitle) }
 
@@ -47,16 +52,20 @@ internal fun RenameTaskDialog(
             Text(text = stringResource(id = R.string.project_detail_task_rename_dialog_title))
         },
         text = {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text(text = stringResource(id = R.string.project_detail_new_task_title_label)) },
-                singleLine = true,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .testTag(ProjectDetailTestTags.RENAME_TASK_TITLE_FIELD),
-            )
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
+
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(text = stringResource(id = R.string.project_detail_new_task_title_label)) },
+                    singleLine = true,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .testTag(ProjectDetailTestTags.RENAME_TASK_TITLE_FIELD),
+                )
+            }
         },
         confirmButton = {
             TextButton(

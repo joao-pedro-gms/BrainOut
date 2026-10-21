@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<resources>
+    <string name="neo_tab_projects">Projects</string>
+    <string name="neo_tab_tasks">Tasks</string>
+    <string name="neo_tab_dashboard">Dashboard</string>
+    <string name="neo_tab_settings">Settings</string>
+    <string name="neo_priority_low">Low</string>
+    <string name="neo_priority_medium">Medium</string>
+    <string name="neo_priority_high">High</string>
+    <string name="neo_priority_urgent">Urgent</string>
+    <string name="neo_priority_critical">Critical</string>
+    <string name="neo_priority_description">Priority: %1$s</string>
+    <string name="neo_priority_legend">Priority legend</string>
+    <string name="neo_expanded">Expanded</string>
+    <string name="neo_collapsed">Collapsed</string>
+</resources>

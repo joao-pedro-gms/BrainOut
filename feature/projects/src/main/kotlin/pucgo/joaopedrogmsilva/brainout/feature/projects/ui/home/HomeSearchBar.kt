@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -24,9 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Chave estável do chip "Todas" no [HomeTagFilterRow]. Mantida como
@@ -56,7 +55,7 @@ internal fun HomeSearchBar(
         placeholder = { Text(text = stringResource(id = R.string.home_search_placeholder)) },
         leadingIcon = {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                painter = painterResource(UiR.drawable.neo_ic_search),
                 contentDescription = null,
             )
         },
@@ -71,7 +70,7 @@ internal fun HomeSearchBar(
                             .heightIn(min = 48.dp),
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Clear,
+                        painter = painterResource(UiR.drawable.neo_ic_close),
                         contentDescription = stringResource(id = R.string.home_search_clear),
                     )
                 }

@@ -7,9 +7,10 @@
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPressFeedback
 
 internal const val MAX_TAG_CHIPS_PREVIEW: Int = 4
 
@@ -42,12 +44,17 @@ internal fun ProjectCard(
     item: ProjectCardItem,
     onClick: () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(HomeTestTags.PROJECT_CARD)
-                .clickable(onClick = onClick),
+                .clickable(
+                    interactionSource = interaction,
+                    indication = androidx.compose.foundation.LocalIndication.current,
+                    onClick = onClick,
+                ).neoPressFeedback(interaction),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -72,7 +79,7 @@ internal fun ProjectCard(
                 )
             }
             if (item.tags.isNotEmpty()) {
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item.tags.take(MAX_TAG_CHIPS_PREVIEW).forEach { chip ->

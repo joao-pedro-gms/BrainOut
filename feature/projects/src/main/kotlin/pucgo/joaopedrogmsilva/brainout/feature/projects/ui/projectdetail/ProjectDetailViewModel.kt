@@ -198,6 +198,7 @@ class ProjectDetailViewModel
             title: String,
             priority: TaskPriority = TaskPriority.MEDIUM,
             dueDate: Instant? = null,
+            onSuccess: () -> Unit = {},
         ) {
             val trimmed = title.trim()
             if (trimmed.isEmpty()) {
@@ -213,6 +214,7 @@ class ProjectDetailViewModel
                         priority = priority,
                         dueDate = dueDate,
                     )
+                    onSuccess()
                 } catch (e: ProjectTaskLimitReachedException) {
                     @Suppress("SwallowedException")
                     val message = e.message ?: taskLimitMessage()
@@ -292,6 +294,7 @@ class ProjectDetailViewModel
         fun changeTaskPriority(
             task: Task,
             newPriority: TaskPriority,
+            onSuccess: () -> Unit = {},
         ) {
             Log.d(TAG, "changeTaskPriority: taskId=${task.id}, newPriority=$newPriority")
             val updated =
@@ -308,6 +311,7 @@ class ProjectDetailViewModel
             viewModelScope.launch {
                 try {
                     updateTask.invoke(updated)
+                    onSuccess()
                 } catch (e: TaskPriorityChangeForbiddenException) {
                     // Persistência indica DONE (bypass via copy).
                     Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
@@ -327,13 +331,22 @@ class ProjectDetailViewModel
         fun renameTask(
             task: Task,
             newTitle: String,
+            onSuccess: () -> Unit = {},
         ) {
             val trimmed = newTitle.trim()
-            if (trimmed.isEmpty() || trimmed == task.title) return
+            if (trimmed.isEmpty()) {
+                _errorMessage.update { ERROR_EMPTY_TITLE }
+                return
+            }
+            if (trimmed == task.title) {
+                onSuccess()
+                return
+            }
             Log.d(TAG, "renameTask: taskId=${task.id}, newTitle=$trimmed")
             viewModelScope.launch {
                 try {
                     updateTask.invoke(task.rename(trimmed))
+                    onSuccess()
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                     _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
                 } catch (e: CancellationException) {
