@@ -11,7 +11,7 @@ import java.util.UUID
  * Tarefa pertencente a um [Project].
  *
  * Entidade imutável: mutações retornam novas instâncias via [copy] ou
- * métodos de domínio ([transitionTo], [changePriority], [reassign]).
+ * métodos de domínio ([transitionTo], [changePriority], [rename]).
  *
  * Regras de domínio aplicadas em [init] e métodos:
  * - [title] entre 1 e 200 caracteres após trim.
@@ -159,22 +159,10 @@ data class Task(
         return copy(priority = newPriority)
     }
 
-    /** Atribui ou remove (atribuindo null) o responsável pela tarefa. */
-    fun reassign(newAssigneeId: String?): Task {
-        if (newAssigneeId == assigneeId) return this
-        return copy(assigneeId = newAssigneeId)
-    }
-
     /** Atualiza o título, validando invariantes. */
     fun rename(newTitle: String): Task {
         requireValidTitle(newTitle)
         if (newTitle == title) return this
         return copy(title = newTitle)
-    }
-
-    /** Atualiza a data limite (pode ser null para remover). */
-    fun changeDueDate(newDueDate: Instant?): Task {
-        if (newDueDate == dueDate) return this
-        return copy(dueDate = newDueDate)
     }
 }

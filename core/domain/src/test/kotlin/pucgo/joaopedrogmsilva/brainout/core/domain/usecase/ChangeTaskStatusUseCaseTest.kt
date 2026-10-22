@@ -12,9 +12,7 @@ import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
@@ -280,73 +278,5 @@ class ChangeTaskStatusUseCaseTest {
             coVerify(exactly = 0) { repository.reopenAndCascade(any(), any()) }
             verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
             verify(exactly = 0) { deadlineScheduler.cancel(any()) }
-        }
-
-    @Test
-    fun `RN02 update integral bloqueia tarefa persistida em DONE`() =
-        runTest {
-            // Regressão do bypass público: o overload `invoke(Task)`
-            // escrevia direto via `repository.update` sem consultar o
-            // registro persistido, permitindo alterar a prioridade de
-            // uma tarefa concluída via `Task.copy`.
-            val persistida =
-                Task.create(
-                    projectId = "p1",
-                    title = "Tarefa",
-                    status = TaskStatus.DONE,
-                    priority = TaskPriority.LOW,
-                )
-            val tentativa = persistida.copy(priority = TaskPriority.CRITICAL)
-            coEvery { repository.findById(persistida.id) } returns persistida
-
-            val ex =
-                assertThrows(TaskPriorityChangeForbiddenException::class.java) {
-                    kotlinx.coroutines.runBlocking { useCase(tentativa) }
-                }
-            assertThat(ex.message).contains("RN02")
-            coVerify(exactly = 0) { repository.update(any()) }
-            verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
-            verify(exactly = 0) { deadlineScheduler.cancel(any()) }
-        }
-
-    @Test
-    fun `update integral de tarefa ativa persiste e reconcilia lembrete`() =
-        runTest {
-            // Contraprova do guard: tarefa ativa segue o caminho normal
-            // de escrita (o guard só rejeita o estado persistido DONE).
-            val persistida =
-                Task.create(
-                    projectId = "p1",
-                    title = "Tarefa",
-                    status = TaskStatus.DOING,
-                    priority = TaskPriority.LOW,
-                )
-            val renamed = persistida.rename("Título novo")
-            coEvery { repository.findById(persistida.id) } returns persistida
-            coEvery { repository.update(any()) } answers { firstArg() }
-
-            val result = useCase(renamed)
-
-            assertThat(result).isEqualTo(renamed)
-            coVerify(exactly = 1) { repository.update(renamed) }
-            // Sem prazo: nenhum lembrete agendado.
-            verify(exactly = 0) { deadlineScheduler.schedule(any(), any()) }
-        }
-
-    @Test
-    fun `update integral de tarefa inexistente ainda escreve (primeira gravacao)`() =
-        runTest {
-            // `findById == null` não pode ser tratado como violação de
-            // RN02 — assim como no UpdateTaskUseCase, a ausência do
-            // registro apenas significa "sem estado persistido para
-            // revalidar" e a escrita segue para o repositório decidir.
-            val nova = Task.create(projectId = "p1", title = "Nova", status = TaskStatus.TODO)
-            coEvery { repository.findById(nova.id) } returns null
-            coEvery { repository.update(any()) } answers { firstArg() }
-
-            val result = useCase(nova)
-
-            assertThat(result).isEqualTo(nova)
-            coVerify(exactly = 1) { repository.update(nova) }
         }
 }

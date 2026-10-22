@@ -11,8 +11,8 @@ import java.util.UUID
  * com [UUID.randomUUID]; construção direta e [copy] não exigem formato UUID.
  *
  * O nome armazenado tem 1..30 caracteres, sem espaços nas pontas, e a cor
- * segue o formato #RRGGBB. [create] e [rename] normalizam o nome; construção
- * direta e [copy] rejeitam valores que violem essas invariantes.
+ * segue o formato #RRGGBB. [create] normaliza o nome; construção direta e
+ * [copy] rejeitam valores que violem essas invariantes.
  */
 data class Tag(
     val id: String,
@@ -27,8 +27,6 @@ data class Tag(
         requireValidName(name)
         requireValidColor(color)
     }
-
-    fun rename(newName: String): Tag = copy(name = newName.trim())
 
     companion object {
         const val MAX_NAME_LENGTH: Int = 30

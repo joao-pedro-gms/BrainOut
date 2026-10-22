@@ -2,9 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
@@ -22,7 +19,6 @@ import java.util.UUID
  * - Round-trip User ↔ UserEntity via `findByEmail`/`findById`.
  * - `save` lança [DuplicateEmailException] quando o DAO simula
  *   violação de `UNIQUE`.
- * - `observeById`/`observeByEmail` propagam `null` quando ausente.
  * - Trim do e-mail nas buscas.
  */
 class UserRepositoryImplTest {
@@ -109,33 +105,6 @@ class UserRepositoryImplTest {
             assertThat(repository.findByEmail("  joao@example.com  ")).isEqualTo(user)
         }
 
-    @Test
-    fun `observeById emits null then user`() =
-        runTest {
-            val dao = FakeUserDao()
-            val repository = UserRepositoryImpl(dao)
-            val user = sampleUser()
-
-            // Emite null antes de qualquer inserção (snapshot do Flow).
-            assertThat(repository.observeById(user.id).first()).isNull()
-
-            dao.simulateInsert(user)
-            assertThat(repository.observeById(user.id).first()).isEqualTo(user)
-        }
-
-    @Test
-    fun `observeByEmail emits user after insertion`() =
-        runTest {
-            val dao = FakeUserDao()
-            val repository = UserRepositoryImpl(dao)
-            val user = sampleUser(email = "joao@example.com")
-
-            assertThat(repository.observeByEmail("joao@example.com").first()).isNull()
-
-            dao.simulateInsert(user)
-            assertThat(repository.observeByEmail("joao@example.com").first()).isEqualTo(user)
-        }
-
     private fun sampleUser(
         id: String = UUID.randomUUID().toString(),
         name: String = "João",
@@ -154,33 +123,17 @@ class UserRepositoryImplTest {
 
     /**
      * Implementação fake de [UserDao] suficiente para exercitar o
-     * repositório sem precisar do Room/Robolectric. Assegura
-     * equivalência por id/email e mantém os `Flow`s sincronizados
-     * com o `storage`.
+     * repositório sem precisar do Room/Robolectric.
      */
     private class FakeUserDao : UserDao {
         val storage: MutableMap<String, UserEntity> = mutableMapOf()
-        val flows: MutableMap<String, MutableStateFlow<UserEntity?>> = mutableMapOf()
 
         var nextInsertError: Throwable? = null
-
-        override fun observeById(id: String): Flow<UserEntity?> =
-            flows.getOrPut("byId:$id") { MutableStateFlow(storage[id]) }
-
-        override fun observeByEmail(email: String): Flow<UserEntity?> {
-            val key = "byEmail:${email.lowercase()}"
-            return flows.getOrPut(key) {
-                MutableStateFlow(storage.values.firstOrNull { it.email.equals(email, ignoreCase = true) })
-            }
-        }
 
         override suspend fun findById(id: String): UserEntity? = storage[id]
 
         override suspend fun findByEmail(email: String): UserEntity? =
             storage.values.firstOrNull { it.email.equals(email, ignoreCase = true) }
-
-        override suspend fun countByEmail(email: String): Int =
-            storage.values.count { it.email.equals(email, ignoreCase = true) }
 
         override suspend fun insert(user: UserEntity) {
             nextInsertError?.let {
@@ -189,45 +142,6 @@ class UserRepositoryImplTest {
             }
             check(!storage.containsKey(user.id)) { "duplicate id" }
             storage[user.id] = user
-            notifyFlowsChanged(user)
-        }
-
-        override suspend fun upsert(user: UserEntity) {
-            storage[user.id] = user
-            notifyFlowsChanged(user)
-        }
-
-        override suspend fun update(user: UserEntity) {
-            storage[user.id] = user
-            notifyFlowsChanged(user)
-        }
-
-        override suspend fun delete(user: UserEntity) {
-            storage.remove(user.id)
-            notifyFlowsChanged(user.copy(id = user.id))
-        }
-
-        override suspend fun deleteById(id: String): Int = if (storage.remove(id) != null) 1 else 0
-
-        override suspend fun count(): Int = storage.size
-
-        override suspend fun deleteAll() {
-            val removed = storage.keys.toList()
-            storage.clear()
-            removed.forEach { id ->
-                flows["byId:$id"]?.value = null
-            }
-        }
-
-        private fun notifyFlowsChanged(user: UserEntity) {
-            flows["byId:${user.id}"]?.value = storage[user.id]
-            flows["byEmail:${user.email.lowercase()}"]?.value = storage[user.id]
-        }
-
-        /** Helper de teste: persiste um User atualizando os Flows. */
-        fun simulateInsert(user: User) {
-            storage[user.id] = UserEntity.fromDomain(user)
-            notifyFlowsChanged(UserEntity.fromDomain(user))
         }
 
         companion object {

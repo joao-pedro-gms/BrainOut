@@ -14,18 +14,14 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
  * @property selectedRole papel selecionado durante o Cadastro (Owner/Member).
  * @property isLoading indica que uma submissão está em andamento
  *  (desabilita os controles para evitar duplo submit).
- * @property emailError mensagem de erro específica do e-mail (`null`
- *  quando o valor atual é válido).
- * @property passwordError mensagem de erro específica da senha (`null`
- *  quando válida).
- * @property nameError mensagem de erro específica do nome (`null`
- *  quando válido).
- * @property passwordConfirmationError mensagem de erro específica da
- *  confirmação de senha (`null` quando válida).
+ * @property emailError erro específico do e-mail (`null` quando o valor
+ *  atual é válido).
+ * @property passwordError erro específico da senha (`null` quando válida).
+ * @property nameError erro específico do nome (`null` quando válido).
+ * @property passwordConfirmationError erro específico da confirmação de
+ *  senha (`null` quando válida).
  * @property errorMessage erro geral do fluxo (credenciais inválidas,
  *  e-mail duplicado, falha de IO). É exibido em destaque na tela.
- * @property success sinaliza que a submissão foi concluída com sucesso
- *  e a UI deve navegar para `home`.
  */
 data class AuthUiState(
     val email: String = "",
@@ -34,10 +30,9 @@ data class AuthUiState(
     val passwordConfirmation: String = "",
     val selectedRole: UserRole = UserRole.OWNER,
     val isLoading: Boolean = false,
-    val emailError: String? = null,
-    val passwordError: String? = null,
-    val nameError: String? = null,
-    val passwordConfirmationError: String? = null,
-    val errorMessage: String? = null,
-    val success: Boolean = false,
+    val emailError: AuthErrorType? = null,
+    val passwordError: AuthErrorType? = null,
+    val nameError: AuthErrorType? = null,
+    val passwordConfirmationError: AuthErrorType? = null,
+    val errorMessage: AuthErrorType? = null,
 )

@@ -21,6 +21,7 @@ import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
@@ -31,14 +32,14 @@ import java.time.Instant
  * Testes unitários do [AuthViewModel] cobrindo os fluxos exigidos pelo
  * roadmap E1.6:
  *
- * - Cadastro feliz — usa caso de uso é chamado, sessão é persistida,
- *   estado `success = true` é emitido.
- * - Cadastro com e-mail duplicado — estado expõe erro inline de e-mail
- *   e mensagem geral.
+ * - Cadastro feliz — caso de uso é chamado, sessão é persistida e o
+ *   evento [AuthEvent.NavigateHome] é emitido.
+ * - Cadastro com e-mail duplicado — estado expõe erro inline de e-mail.
  * - Login errado — caso de uso lança [InvalidCredentialsException] e o
- *   estado expõe a mensagem canônica em `errorMessage`/`passwordError`.
- * - Login após registro — encadeamento `CreateUserUseCase` →
- *   `AuthenticateUserUseCase` é respeitado pelo caller.
+ *   estado expõe o erro no campo de senha.
+ * - Erros de domínio e inesperados — viram erros generalizados
+ *   ([AuthErrorType.DomainRejected] / [AuthErrorType.Unexpected]) em vez
+ *   de vazar mensagem técnica.
  *
  * Os casos de uso e o [SessionStore] são mocks do MockK. O dispatcher
  * é o `StandardTestDispatcher` que o `runTest` configura por padrão —
@@ -74,7 +75,7 @@ class AuthViewModelTest {
         )
 
     @Test
-    fun `submitRegister happy path persists session and emits success`() =
+    fun `submitRegister happy path persists session and emits navigate event`() =
         runTest {
             val createUser = mockk<CreateUserUseCase>()
             val authenticate = mockk<AuthenticateUserUseCase>()
@@ -103,11 +104,15 @@ class AuthViewModelTest {
             assertThat(ready.name).isEqualTo("João Pedro")
             assertThat(ready.password).isEqualTo("fixture-pwd-AAA")
 
-            viewModel.submitRegister()
-            advanceUntilIdle()
+            viewModel.events.test {
+                viewModel.submitRegister()
+                advanceUntilIdle()
+
+                assertThat(awaitItem()).isEqualTo(AuthEvent.NavigateHome)
+                cancelAndIgnoreRemainingEvents()
+            }
 
             val finalState = viewModel.state.value
-            assertThat(finalState.success).isTrue()
             assertThat(finalState.isLoading).isFalse()
 
             coVerifyOrder {
@@ -139,8 +144,7 @@ class AuthViewModelTest {
 
             val state = viewModel.state.value
             assertThat(state.isLoading).isFalse()
-            assertThat(state.success).isFalse()
-            assertThat(state.emailError).isEqualTo(AuthViewModel.DUPLICATE_EMAIL_MESSAGE)
+            assertThat(state.emailError).isEqualTo(AuthErrorType.DuplicateEmail)
             coVerify(exactly = 0) { sessionStore.saveUserId(any()) }
         }
 
@@ -159,8 +163,7 @@ class AuthViewModelTest {
 
             val state = viewModel.state.value
             assertThat(state.isLoading).isFalse()
-            assertThat(state.success).isFalse()
-            assertThat(state.emailError).isEqualTo(AuthViewModel.INVALID_EMAIL_MESSAGE)
+            assertThat(state.emailError).isEqualTo(AuthErrorType.InvalidEmail)
         }
 
     @Test
@@ -177,8 +180,7 @@ class AuthViewModelTest {
             advanceUntilIdle()
 
             val state = viewModel.state.value
-            assertThat(state.passwordError).isEqualTo(AuthViewModel.SHORT_PASSWORD_MESSAGE)
-            assertThat(state.success).isFalse()
+            assertThat(state.passwordError).isEqualTo(AuthErrorType.ShortPassword)
         }
 
     @Test
@@ -196,7 +198,62 @@ class AuthViewModelTest {
 
             val state = viewModel.state.value
             assertThat(state.passwordConfirmationError)
-                .isEqualTo(AuthViewModel.PASSWORD_MISMATCH_MESSAGE)
+                .isEqualTo(AuthErrorType.PasswordMismatch)
+        }
+
+    @Test
+    fun `submitRegister with empty name shows validation error`() =
+        runTest {
+            val viewModel = newViewModel()
+
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
+
+            viewModel.submitRegister()
+            advanceUntilIdle()
+
+            assertThat(viewModel.state.value.nameError).isEqualTo(AuthErrorType.EmptyName)
+        }
+
+    @Test
+    fun `submitRegister with domain error surfaces generic domain error`() =
+        runTest {
+            val createUser = mockk<CreateUserUseCase>()
+            coEvery { createUser(any(), any(), any(), any()) } throws InvalidModelException("nome inválido")
+
+            val viewModel = newViewModel(createUser = createUser)
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onNameChange("João Pedro")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
+
+            viewModel.submitRegister()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.errorMessage).isEqualTo(AuthErrorType.DomainRejected)
+        }
+
+    @Test
+    fun `submitRegister with unexpected error surfaces unexpected error`() =
+        runTest {
+            val createUser = mockk<CreateUserUseCase>()
+            coEvery { createUser(any(), any(), any(), any()) } throws RuntimeException("disco cheio")
+
+            val viewModel = newViewModel(createUser = createUser)
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onNameChange("João Pedro")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
+
+            viewModel.submitRegister()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.errorMessage).isEqualTo(AuthErrorType.Unexpected)
         }
 
     @Test
@@ -213,12 +270,15 @@ class AuthViewModelTest {
             viewModel.onEmailChange("joao@example.com")
             viewModel.onPasswordChange("fixture-pwd-AAA")
 
-            viewModel.submitLogin()
-            advanceUntilIdle()
+            viewModel.events.test {
+                viewModel.submitLogin()
+                advanceUntilIdle()
 
-            val state = viewModel.state.value
-            assertThat(state.success).isTrue()
-            assertThat(state.isLoading).isFalse()
+                assertThat(awaitItem()).isEqualTo(AuthEvent.NavigateHome)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertThat(viewModel.state.value.isLoading).isFalse()
             coVerify { authenticate("joao@example.com", "fixture-pwd-AAA") }
             coVerify { sessionStore.saveUserId(user.id) }
         }
@@ -238,8 +298,7 @@ class AuthViewModelTest {
 
             val state = viewModel.state.value
             assertThat(state.isLoading).isFalse()
-            assertThat(state.success).isFalse()
-            assertThat(state.passwordError).isEqualTo(AuthViewModel.INVALID_CREDENTIALS_MESSAGE)
+            assertThat(state.passwordError).isEqualTo(AuthErrorType.InvalidCredentials)
         }
 
     @Test
@@ -252,7 +311,7 @@ class AuthViewModelTest {
             advanceUntilIdle()
 
             val state = viewModel.state.value
-            assertThat(state.emailError).isEqualTo(AuthViewModel.EMPTY_EMAIL_MESSAGE)
+            assertThat(state.emailError).isEqualTo(AuthErrorType.EmptyEmail)
             assertThat(state.isLoading).isFalse()
         }
 
@@ -277,8 +336,8 @@ class AuthViewModelTest {
 
             // Após o cadastro, o caller tipicamente chama
             // `AuthenticateUserUseCase` para confirmar. Aqui validamos
-            // que o ViewModel não pula essa etapa — o estado success
-            // é alcançado apenas após `saveUserId` ser chamado.
+            // que o ViewModel não pula essa etapa — a sessão só é
+            // persistida depois que o caso de uso de cadastro retorna.
             coVerifyOrder {
                 createUser(any(), any(), any(), any())
                 sessionStore.saveUserId(any())
@@ -301,24 +360,6 @@ class AuthViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
-        }
-
-    @Test
-    fun `reset clears the state`() =
-        runTest {
-            val viewModel = newViewModel()
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            assertThat(viewModel.state.value.email).isEqualTo("joao@example.com")
-            viewModel.reset()
-            val state = viewModel.state.value
-            assertThat(state.email).isEmpty()
-            assertThat(state.password).isEmpty()
-            assertThat(state.name).isEmpty()
-            assertThat(state.passwordConfirmation).isEmpty()
         }
 
     @Test

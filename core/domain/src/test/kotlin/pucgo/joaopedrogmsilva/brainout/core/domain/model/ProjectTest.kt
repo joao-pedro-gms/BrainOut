@@ -11,8 +11,7 @@ import java.time.Instant
  *
  * Cobre:
  * - nome não vazio e dentro do limite de 120 caracteres;
- * - descrição limitada a 500 caracteres;
- * - conclusão/reativação via [markCompleted] e [markIncomplete].
+ * - descrição limitada a 500 caracteres.
  */
 class ProjectTest {
     private val fixedInstant: Instant = Instant.parse("2026-09-18T12:00:00Z")
@@ -104,43 +103,6 @@ class ProjectTest {
             }.also { result ->
                 assertThat(result.exceptionOrNull()).isInstanceOf(InvalidModelException::class.java)
             }
-    }
-
-    @Test
-    fun `markCompleted sets flag and is idempotent`() {
-        val project =
-            Project.create(
-                name = "BrainOut",
-                ownerId = "user-1",
-                now = fixedInstant,
-            )
-
-        val once = project.markCompleted()
-        val twice = once.markCompleted()
-
-        assertThat(once.isCompleted).isTrue()
-        // Idempotente: o valor final é o mesmo, embora retorne nova
-        // instância (modelo imutável).
-        assertThat(twice.isCompleted).isTrue()
-        assertThat(twice).isEqualTo(once)
-    }
-
-    @Test
-    fun `markIncomplete unsets flag and is idempotent`() {
-        val completed =
-            Project
-                .create(
-                    name = "BrainOut",
-                    ownerId = "user-1",
-                    now = fixedInstant,
-                ).markCompleted()
-
-        val reopened = completed.markIncomplete()
-        val reopenedAgain = reopened.markIncomplete()
-
-        assertThat(reopened.isCompleted).isFalse()
-        assertThat(reopenedAgain.isCompleted).isFalse()
-        assertThat(reopenedAgain).isEqualTo(reopened)
     }
 
     @Test

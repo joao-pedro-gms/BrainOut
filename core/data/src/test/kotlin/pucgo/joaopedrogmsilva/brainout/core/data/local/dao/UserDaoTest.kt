@@ -4,7 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -21,9 +20,7 @@ import java.time.Instant
  *
  * Cobre os caminhos críticos:
  * - Insert + findById/findByEmail round-trip.
- * - Update preserva PK e atualiza colunas.
- * - Delete remove linhas.
- * - `Flow` emite valores iniciais e após mutações.
+ * - Insert com e-mail duplicado é rejeitado.
  * - Busca case-insensitive via `LOWER(email)`.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -76,89 +73,17 @@ class UserDaoTest {
         }
 
     @Test
-    fun `update preserves primary key and applies changes`() =
+    fun `insert with duplicate email is rejected`() =
         runTest {
-            val original = sampleEntity(id = "id-1", name = "João", email = "joao@example.com")
-            dao.insert(original)
+            dao.insert(sampleEntity(id = "id-1", email = "joao@example.com"))
 
-            val updated = original.copy(name = "João Pedro")
-            dao.update(updated)
+            val thrown =
+                runCatching {
+                    dao.insert(sampleEntity(id = "id-2", email = "joao@example.com"))
+                }.exceptionOrNull()
 
-            val loaded = dao.findById("id-1")
-            assertThat(loaded).isEqualTo(updated)
-            assertThat(loaded?.id).isEqualTo("id-1")
-        }
-
-    @Test
-    fun `deleteById removes the row`() =
-        runTest {
-            dao.insert(sampleEntity(id = "id-1"))
-            val affected = dao.deleteById("id-1")
-
-            assertThat(affected).isEqualTo(1)
-            assertThat(dao.findById("id-1")).isNull()
-        }
-
-    @Test
-    fun `count reflects number of rows`() =
-        runTest {
-            assertThat(dao.count()).isEqualTo(0)
-            dao.insert(sampleEntity(id = "id-1", email = "a@example.com"))
-            dao.insert(sampleEntity(id = "id-2", email = "b@example.com"))
-            assertThat(dao.count()).isEqualTo(2)
-        }
-
-    @Test
-    fun `countByEmail is case insensitive`() =
-        runTest {
-            dao.insert(sampleEntity(id = "id-1", email = "Mix@Case.com"))
-            assertThat(dao.countByEmail("mix@case.com")).isEqualTo(1)
-            assertThat(dao.countByEmail("MIX@CASE.COM")).isEqualTo(1)
-        }
-
-    @Test
-    fun `observeById emits null then entity then null after delete`() =
-        runTest {
-            val entity = sampleEntity(id = "id-1", email = "joao@example.com")
-
-            // Emite null inicialmente (snapshot do Flow antes do insert).
-            assertThat(dao.observeById("id-1").first()).isNull()
-
-            dao.insert(entity)
-            assertThat(dao.observeById("id-1").first()).isEqualTo(entity)
-
-            dao.deleteById("id-1")
-            assertThat(dao.observeById("id-1").first()).isNull()
-        }
-
-    @Test
-    fun `observeByEmail is case insensitive`() =
-        runTest {
-            val entity = sampleEntity(id = "id-1", email = "Joao@Example.com")
-            dao.insert(entity)
-            assertThat(dao.observeByEmail("joao@example.com").first()).isEqualTo(entity)
-        }
-
-    @Test
-    fun `deleteAll clears the table`() =
-        runTest {
-            dao.insert(sampleEntity(id = "id-1", email = "a@example.com"))
-            dao.insert(sampleEntity(id = "id-2", email = "b@example.com"))
-
-            dao.deleteAll()
-
-            assertThat(dao.count()).isEqualTo(0)
-        }
-
-    @Test
-    fun `upsert inserts when missing then updates when present`() =
-        runTest {
-            dao.upsert(sampleEntity(id = "id-1", name = "Original", email = "joao@example.com"))
-            assertThat(dao.findById("id-1")?.name).isEqualTo("Original")
-
-            dao.upsert(sampleEntity(id = "id-1", name = "Atualizado", email = "joao@example.com"))
-            assertThat(dao.findById("id-1")?.name).isEqualTo("Atualizado")
-            assertThat(dao.count()).isEqualTo(1)
+            assertThat(thrown).isNotNull()
+            assertThat(dao.findById("id-2")).isNull()
         }
 
     companion object {

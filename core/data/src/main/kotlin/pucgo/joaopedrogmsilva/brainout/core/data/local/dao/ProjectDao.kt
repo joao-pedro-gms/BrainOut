@@ -12,7 +12,6 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 
 /**
@@ -100,20 +99,6 @@ interface ProjectDao {
     /** Busca pontual por `id`. Retorna `null` se não existir. */
     @Query("SELECT * FROM projects WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): ProjectEntity?
-
-    /**
-     * Observa as [TagEntity]s associadas ao projeto via JOIN com a
-     * tabela de junção `project_tags`. Ordena pelo nome da tag.
-     */
-    @Query(
-        """
-        SELECT t.* FROM tags t
-        INNER JOIN project_tags pt ON pt.tag_id = t.id
-        WHERE pt.project_id = :projectId
-        ORDER BY t.name
-        """,
-    )
-    fun observeTagsFor(projectId: String): Flow<List<TagEntity>>
 
     // --- Writes ---
 

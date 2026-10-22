@@ -126,9 +126,8 @@ object DataModule {
     @Singleton
     fun provideTagRepository(
         tagDao: TagDao,
-        projectDao: ProjectDao,
         localTransaction: LocalTransaction,
-    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, localTransaction)
+    ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
 
     /**
      * Bind de [ListingPreferencesRepository] para a implementação

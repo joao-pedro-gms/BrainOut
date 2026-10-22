@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
+import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DomainException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
@@ -25,13 +27,6 @@ import javax.inject.Inject
 
 private const val TAG = "BrainOut:AuthVM"
 
-/** Mascara e-mail para log: `jo***@exemplo.com` (evita PII no logcat). */
-private fun String.maskEmail(): String {
-    val at = indexOf('@')
-    if (at <= 0) return "***"
-    return take(2) + "***" + substring(at)
-}
-
 /**
  * ViewModel único para os fluxos de Login e Cadastro (E1.6).
  *
@@ -41,13 +36,12 @@ private fun String.maskEmail(): String {
  *
  * Após login/cadastro bem-sucedido, o id é persistido em [SessionStore]
  * para que `MainActivity` possa restaurar a sessão no próximo start
- * (E1.8).
+ * (E1.8). A navegação é disparada pelo evento [AuthEvent.NavigateHome];
+ * o estado **não** carrega um sinal de sucesso redundante.
  *
  * A persistência da sessão é responsabilidade do ViewModel porque ele
- * é o único ponto que conhece o `User` recém-criado/autenticado. A
- * tela apenas observa `state.success` e navega.
+ * é o único ponto que conhece o `User` recém-criado/autenticado.
  */
-@Suppress("TooManyFunctions", "SwallowedException")
 @HiltViewModel
 class AuthViewModel
     @Inject
@@ -108,15 +102,14 @@ class AuthViewModel
             if (current.isLoading) return
             Log.d(TAG, "Submetendo login para e-mail: ${current.email.maskEmail()}")
             val errors = validateLoginFields(current)
-            if (errors != null) {
-                Log.w(TAG, "Validação de login falhou: campo=${errors.firstInvalidField}")
-                val (emailErrorValue, passwordErrorValue) = splitLoginErrors(errors)
+            if (errors.hasError) {
+                Log.w(TAG, "Validação de login falhou: ${errors.failedFields}")
                 // `errorMessage` (banner) — o erro já aparece no campo.
                 // O banner fica reservado para erros de domínio não-campo.
                 _state.update {
                     it.copy(
-                        emailError = emailErrorValue,
-                        passwordError = passwordErrorValue,
+                        emailError = errors.email,
+                        passwordError = errors.password,
                         isLoading = false,
                     )
                 }
@@ -132,32 +125,28 @@ class AuthViewModel
                         )
                     Log.d(TAG, "Autenticação bem-sucedida para userId=${user.id}")
                     persistSessionAndNavigate(user)
+                } catch (error: CancellationException) {
+                    throw error
                 } catch (error: InvalidCredentialsException) {
                     Log.w(TAG, "Credenciais inválidas para o e-mail: ${current.email.maskEmail()}")
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            passwordError = INVALID_CREDENTIALS_MESSAGE,
+                            passwordError = AuthErrorType.InvalidCredentials,
                         )
                     }
                 } catch (error: DomainException) {
                     Log.w(TAG, "Exceção de domínio em submitLogin: ${error.message}")
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
-                } catch (
-                    @Suppress("TooGenericExceptionCaught") error: Throwable,
-                ) {
+                    _state.update {
+                        it.copy(isLoading = false, errorMessage = AuthErrorType.DomainRejected)
+                    }
+                } catch (error: Exception) {
                     // Exceções inesperadas (ex.: IOException, SQLite) não devem
                     // propagar para a UI; exibimos uma mensagem canônica e
                     // logamos a stack trace para diagnóstico.
-                    @Suppress("SwallowedException")
-                    val swallowed = error
-                    Log.e(
-                        TAG,
-                        "Falha inesperada em submitLogin",
-                        swallowed,
-                    )
+                    Log.e(TAG, "Falha inesperada em submitLogin", error)
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = UNEXPECTED_ERROR_MESSAGE)
+                        it.copy(isLoading = false, errorMessage = AuthErrorType.Unexpected)
                     }
                 }
             }
@@ -173,16 +162,15 @@ class AuthViewModel
             if (current.isLoading) return
             Log.d(TAG, "Submetendo cadastro com role=${current.selectedRole}, e-mail=${current.email.maskEmail()}")
             val errors = validateRegisterFields(current)
-            if (errors != null) {
-                Log.w(TAG, "Validação de cadastro falhou: campo=${errors.firstInvalidField}")
-                val split = splitRegisterErrors(errors)
+            if (errors.hasError) {
+                Log.w(TAG, "Validação de cadastro falhou: ${errors.failedFields}")
                 // para o campo; o banner fica para erros de domínio não-campo.
                 _state.update {
                     it.copy(
-                        nameError = split.name,
-                        emailError = split.email,
-                        passwordError = split.password,
-                        passwordConfirmationError = split.passwordConfirmation,
+                        nameError = errors.name,
+                        emailError = errors.email,
+                        passwordError = errors.password,
+                        passwordConfirmationError = errors.passwordConfirmation,
                         isLoading = false,
                     )
                 }
@@ -205,46 +193,35 @@ class AuthViewModel
                         )
                     Log.d(TAG, "Cadastro bem-sucedido para userId=${user.id}")
                     persistSessionAndNavigate(user)
+                } catch (error: CancellationException) {
+                    throw error
                 } catch (error: DuplicateEmailException) {
                     Log.w(TAG, "E-mail duplicado ao cadastrar: ${current.email.maskEmail()}")
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            emailError = DUPLICATE_EMAIL_MESSAGE,
+                            emailError = AuthErrorType.DuplicateEmail,
                         )
                     }
                 } catch (error: DomainException) {
                     Log.w(TAG, "Exceção de domínio em submitRegister: ${error.message}")
-                    _state.update { it.copy(isLoading = false, errorMessage = error.message) }
-                } catch (
-                    @Suppress("TooGenericExceptionCaught") error: Throwable,
-                ) {
-                    Log.e(
-                        TAG,
-                        "Falha inesperada em submitRegister",
-                        error,
-                    )
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = UNEXPECTED_ERROR_MESSAGE)
+                        it.copy(isLoading = false, errorMessage = AuthErrorType.DomainRejected)
+                    }
+                } catch (error: Exception) {
+                    Log.e(TAG, "Falha inesperada em submitRegister", error)
+                    _state.update {
+                        it.copy(isLoading = false, errorMessage = AuthErrorType.Unexpected)
                     }
                 }
             }
-        }
-
-        /**
-         * Limpa o estado. Útil quando a tela é desfeita (logout) ou quando
-         * o usuário volta da tela de Cadastro para Login (evita que o nome
-         * digitado persista na próxima abertura da tela de Login).
-         */
-        fun reset() {
-            _state.value = AuthUiState()
         }
 
         // --- Internals ------------------------------------------------------
 
         private suspend fun persistSessionAndNavigate(user: User) {
             sessionStore.saveUserId(user.id)
-            _state.update { it.copy(isLoading = false, success = true) }
+            _state.update { it.copy(isLoading = false) }
             _events.send(AuthEvent.NavigateHome)
         }
 
@@ -254,139 +231,96 @@ class AuthViewModel
          * `User.requireValidEmail` no caso de uso — esta função apenas
          * decide se a submissão deve prosseguir ou se devemos exibir
          * erro inline.
-         *
-         * @return um [LoginValidationResult] carregando a mensagem geral
-         *  e o [firstInvalidField], ou `null` se o estado é válido.
          */
-        @Suppress("ReturnCount")
-        private fun validateLoginFields(state: AuthUiState): LoginValidationResult? {
+        private fun validateLoginFields(state: AuthUiState): FieldErrors {
             val emailError = validateEmailFormat(state.email)
-            if (emailError != null) {
-                return LoginValidationResult(emailError, AuthField.Email)
-            }
             val passwordError = validatePasswordLength(state.password)
-            if (passwordError != null) {
-                return LoginValidationResult(passwordError, AuthField.Password)
+            return when {
+                emailError != null -> FieldErrors(email = emailError)
+                passwordError != null -> FieldErrors(password = passwordError)
+                else -> FieldErrors()
             }
-            return null
         }
 
         /**
-         * Dado o resultado da validação, deriva os pares `(campo, mensagem)`
-         * para popular os campos específicos do estado. Usado por
-         * [submitLogin] para re-aplicar a mensagem no campo certo depois
-         * que `validateLoginFields` decidiu onde está o erro.
+         * Mesma regra de [validateLoginFields] para o formulário de
+         * cadastro, que acrescenta nome e confirmação de senha. O
+         * primeiro campo inválido na ordem (nome, e-mail, senha,
+         * confirmação) define o erro exibido.
          */
-        private fun splitLoginErrors(errors: LoginValidationResult): Pair<String?, String?> =
-            when (errors.firstInvalidField) {
-                AuthField.Email -> errors.general to null
-                AuthField.Password -> null to errors.general
-                else -> null to null
-            }
-
-        @Suppress("ReturnCount")
-        private fun validateRegisterFields(state: AuthUiState): LoginValidationResult? {
+        private fun validateRegisterFields(state: AuthUiState): FieldErrors {
             val nameError = validateName(state.name)
-            if (nameError != null) {
-                return LoginValidationResult(nameError, AuthField.Name)
-            }
             val emailError = validateEmailFormat(state.email)
-            if (emailError != null) {
-                return LoginValidationResult(emailError, AuthField.Email)
-            }
             val passwordError = validatePasswordLength(state.password)
-            if (passwordError != null) {
-                return LoginValidationResult(passwordError, AuthField.Password)
-            }
             val confirmationError = validatePasswordConfirmation(state.password, state.passwordConfirmation)
-            if (confirmationError != null) {
-                return LoginValidationResult(confirmationError, AuthField.PasswordConfirmation)
+            return when {
+                nameError != null -> FieldErrors(name = nameError)
+                emailError != null -> FieldErrors(email = emailError)
+                passwordError != null -> FieldErrors(password = passwordError)
+                confirmationError != null -> FieldErrors(passwordConfirmation = confirmationError)
+                else -> FieldErrors()
             }
-            return null
         }
 
-        private fun splitRegisterErrors(errors: LoginValidationResult): RegisterErrorSplit =
-            when (errors.firstInvalidField) {
-                AuthField.Name -> RegisterErrorSplit(name = errors.general)
-                AuthField.Email -> RegisterErrorSplit(email = errors.general)
-                AuthField.Password -> RegisterErrorSplit(password = errors.general)
-                AuthField.PasswordConfirmation -> RegisterErrorSplit(passwordConfirmation = errors.general)
-                else -> RegisterErrorSplit()
-            }
-
-        @Suppress("ReturnCount")
-        private fun validateEmailFormat(email: String): String? {
+        private fun validateEmailFormat(email: String): AuthErrorType? {
             val trimmed = email.trim()
             return when {
-                trimmed.isEmpty() -> EMPTY_EMAIL_MESSAGE
-                !User.EMAIL_REGEX.matches(trimmed) -> INVALID_EMAIL_MESSAGE
+                trimmed.isEmpty() -> AuthErrorType.EmptyEmail
+                !User.EMAIL_REGEX.matches(trimmed) -> AuthErrorType.InvalidEmail
                 else -> null
             }
         }
 
-        @Suppress("ReturnCount")
-        private fun validatePasswordLength(password: String): String? =
+        private fun validatePasswordLength(password: String): AuthErrorType? =
             when {
-                password.isEmpty() -> EMPTY_PASSWORD_MESSAGE
-                password.length < MIN_PASSWORD_LENGTH -> SHORT_PASSWORD_MESSAGE
+                password.isEmpty() -> AuthErrorType.EmptyPassword
+                password.length < MIN_PASSWORD_LENGTH -> AuthErrorType.ShortPassword
                 else -> null
             }
 
-        @Suppress("ReturnCount")
-        private fun validateName(name: String): String? {
+        private fun validateName(name: String): AuthErrorType? {
             val trimmed = name.trim()
             return when {
-                trimmed.isEmpty() -> EMPTY_NAME_MESSAGE
-                trimmed.length > User.MAX_NAME_LENGTH -> LONG_NAME_MESSAGE
+                trimmed.isEmpty() -> AuthErrorType.EmptyName
+                trimmed.length > User.MAX_NAME_LENGTH -> AuthErrorType.LongName
                 else -> null
             }
         }
 
-        @Suppress("ReturnCount")
         private fun validatePasswordConfirmation(
             password: String,
             confirmation: String,
-        ): String? =
+        ): AuthErrorType? =
             when {
-                confirmation.isEmpty() -> EMPTY_PASSWORD_CONFIRMATION_MESSAGE
-                password != confirmation -> PASSWORD_MISMATCH_MESSAGE
+                confirmation.isEmpty() -> AuthErrorType.EmptyPasswordConfirmation
+                password != confirmation -> AuthErrorType.PasswordMismatch
                 else -> null
             }
 
         /**
-         * Resultado de uma validação que falhou. Carrega a mensagem geral
-         * (a ser exibida em destaque) e o primeiro campo inválido (para
-         * mover o foco).
+         * Erros de validação por campo — `null` significa "campo válido".
+         *
+         * A validação devolve **o erro já no campo a que pertence**, o
+         * que dispensa uma segunda passagem para redistribuí-lo.
          */
-        private data class LoginValidationResult(
-            val general: String,
-            val firstInvalidField: AuthField,
-        )
+        private data class FieldErrors(
+            val name: AuthErrorType? = null,
+            val email: AuthErrorType? = null,
+            val password: AuthErrorType? = null,
+            val passwordConfirmation: AuthErrorType? = null,
+        ) {
+            val hasError: Boolean
+                get() = name != null || email != null || password != null || passwordConfirmation != null
 
-        companion object {
-            // Mensagens embutidas no ViewModel em vez de strings.xml —
-            // são frases de validação técnica que não dependem de
-            // localização para funcionar; a camada de UI substitui se
-            // necessário. Manter aqui evita inflar `Context` em testes
-            // JVM e simplifica o contrato do ViewModel.
-            const val EMPTY_EMAIL_MESSAGE: String = "Informe seu e-mail."
-            const val INVALID_EMAIL_MESSAGE: String = "E-mail inválido."
-            const val EMPTY_PASSWORD_MESSAGE: String = "Informe sua senha."
-            const val SHORT_PASSWORD_MESSAGE: String =
-                "A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres."
-            const val INVALID_CREDENTIALS_MESSAGE: String =
-                "E-mail ou senha incorretos."
-            const val DUPLICATE_EMAIL_MESSAGE: String =
-                "Já existe uma conta cadastrada com este e-mail."
-            const val EMPTY_NAME_MESSAGE: String = "Informe seu nome."
-            const val LONG_NAME_MESSAGE: String =
-                "O nome deve ter no máximo ${User.MAX_NAME_LENGTH} caracteres."
-            const val EMPTY_PASSWORD_CONFIRMATION_MESSAGE: String =
-                "Confirme sua senha."
-            const val PASSWORD_MISMATCH_MESSAGE: String =
-                "As senhas não coincidem."
-            const val UNEXPECTED_ERROR_MESSAGE: String =
-                "Não foi possível concluir a operação. Tente novamente."
+            /** Campos com erro — usado apenas no log de diagnóstico. */
+            val failedFields: String
+                get() =
+                    listOfNotNull(
+                        name?.let { "name" },
+                        email?.let { "email" },
+                        password?.let { "password" },
+                        passwordConfirmation?.let { "passwordConfirmation" },
+                    ).joinToString(",")
         }
     }
 
@@ -398,18 +332,3 @@ sealed interface AuthEvent {
     /** Dispara a navegação para a tela inicial. */
     data object NavigateHome : AuthEvent
 }
-
-/** Identifica um campo do formulário para focar / sinalizar erro. */
-enum class AuthField { Email, Password, Name, PasswordConfirmation }
-
-/**
- * Resultado da [pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel.splitRegisterErrors]
- * — distribui a mensagem de erro de validação para o campo correto
- * (name, email, password ou passwordConfirmation).
- */
-internal data class RegisterErrorSplit(
-    val name: String? = null,
-    val email: String? = null,
-    val password: String? = null,
-    val passwordConfirmation: String? = null,
-)

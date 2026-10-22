@@ -81,7 +81,7 @@ data class TaskEntity(
     /**
      * Converte a linha para o modelo imutável de domínio [Task].
      *
-     * Usa [TaskPriority.fromCodeOrThrow] para que prioridade fora da
+     * Usa [TaskPriority.fromCode] para que prioridade fora da
      * faixa válida (0..4) falhe explicitamente em vez de retornar null
      * — protege contra corrupção do banco.
      */
@@ -90,7 +90,7 @@ data class TaskEntity(
             id = id,
             projectId = projectId,
             title = title,
-            priority = TaskPriority.fromCodeOrThrow(priorityCode),
+            priority = TaskPriority.fromCode(priorityCode),
             status = TaskStatus.valueOf(status),
             assigneeId = assigneeId,
             dueDate = dueDate,

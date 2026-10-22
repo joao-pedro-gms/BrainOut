@@ -54,6 +54,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
+import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
@@ -187,8 +189,8 @@ internal fun LoginBody(
                 ),
         )
 
-        uiState.errorMessage?.let { message ->
-            val resolvedMessage = resolveAuthMessage(message)
+        uiState.errorMessage?.let { errorType ->
+            val resolvedMessage = errorType.text()
             Text(
                 text = resolvedMessage,
                 style = MaterialTheme.typography.bodyMedium,
@@ -252,42 +254,6 @@ internal fun LoginBody(
     }
 }
 
-/**
- * Resolve a mensagem vinda do `AuthViewModel` para a versão
- * localizada em `strings.xml` quando ela casar com uma chave conhecida;
- * caso contrário devolve a própria mensagem. Isso permite que a UI
- * use `stringResource` para mensagens canônicas e mantém compatibilidade
- * caso o VM evolua para emitir erros que ainda não tenham entrada no
- * `strings.xml`.
- */
-@Composable
-internal fun resolveAuthMessage(message: String): String =
-    when (message) {
-        AuthViewModel.EMPTY_EMAIL_MESSAGE ->
-            stringResource(id = R.string.auth_error_empty_email)
-        AuthViewModel.INVALID_EMAIL_MESSAGE ->
-            stringResource(id = R.string.auth_error_invalid_email)
-        AuthViewModel.EMPTY_PASSWORD_MESSAGE ->
-            stringResource(id = R.string.auth_error_empty_pwd)
-        AuthViewModel.SHORT_PASSWORD_MESSAGE ->
-            stringResource(id = R.string.auth_error_short_pwd)
-        AuthViewModel.INVALID_CREDENTIALS_MESSAGE ->
-            stringResource(id = R.string.auth_error_invalid_credentials)
-        AuthViewModel.DUPLICATE_EMAIL_MESSAGE ->
-            stringResource(id = R.string.auth_error_duplicate_email)
-        AuthViewModel.EMPTY_NAME_MESSAGE ->
-            stringResource(id = R.string.auth_error_empty_name)
-        AuthViewModel.LONG_NAME_MESSAGE ->
-            stringResource(id = R.string.auth_error_long_name)
-        AuthViewModel.EMPTY_PASSWORD_CONFIRMATION_MESSAGE ->
-            stringResource(id = R.string.auth_error_empty_pwd_confirmation)
-        AuthViewModel.PASSWORD_MISMATCH_MESSAGE ->
-            stringResource(id = R.string.auth_error_pwd_mismatch)
-        AuthViewModel.UNEXPECTED_ERROR_MESSAGE ->
-            stringResource(id = R.string.auth_error_unexpected)
-        else -> message
-    }
-
 /** Identificadores usados por testes Compose. */
 object LoginTestTags {
     const val SCROLL: String = "login_scroll"
@@ -318,7 +284,7 @@ internal data class LoginCallbacks(
 @Composable
 internal fun PasswordField(
     value: String,
-    errorMessage: String?,
+    errorMessage: AuthErrorType?,
     onValueChange: (String) -> Unit,
     focusRequester: FocusRequester,
     imeAction: ImeAction,
@@ -359,8 +325,8 @@ internal fun PasswordField(
             ),
         isError = errorMessage != null,
         supportingText =
-            errorMessage?.let { msg ->
-                { Text(text = resolveAuthMessage(msg)) }
+            errorMessage?.let { errorType ->
+                { Text(text = errorType.text()) }
             },
         trailingIcon = {
             IconButton(
@@ -422,7 +388,7 @@ internal data class PasswordFieldTags(
 @Composable
 internal fun EmailField(
     value: String,
-    errorMessage: String?,
+    errorMessage: AuthErrorType?,
     onValueChange: (String) -> Unit,
     focusRequester: FocusRequester,
     imeAction: ImeAction,
@@ -442,8 +408,8 @@ internal fun EmailField(
         singleLine = true,
         isError = errorMessage != null,
         supportingText =
-            errorMessage?.let { msg ->
-                { Text(text = resolveAuthMessage(msg)) }
+            errorMessage?.let { errorType ->
+                { Text(text = errorType.text()) }
             },
         keyboardOptions =
             KeyboardOptions(

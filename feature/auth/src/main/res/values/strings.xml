@@ -54,4 +54,5 @@
     <string name="auth_error_empty_pwd_confirmation">Confirme sua senha.</string>
     <string name="auth_error_pwd_mismatch">As senhas não coincidem.</string>
     <string name="auth_error_unexpected">Não foi possível concluir a operação. Tente novamente.</string>
+    <string name="auth_error_domain">Não foi possível validar os dados informados.</string>
 </resources>

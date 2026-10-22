@@ -60,7 +60,7 @@ class UpdateTaskUseCaseTest {
                     title = "Tarefa",
                     dueDate = Instant.now().plus(java.time.Duration.ofHours(6)),
                 )
-            val taskSemPrazo = task.changeDueDate(null)
+            val taskSemPrazo = task.copy(dueDate = null)
             coEvery { repository.findById(task.id) } returns task
             coEvery { repository.update(any()) } answers { firstArg() }
 
@@ -100,8 +100,8 @@ class UpdateTaskUseCaseTest {
                     dueDate = Instant.now().plus(java.time.Duration.ofHours(6)),
                 )
             val taskNoPassado =
-                taskPersistida.changeDueDate(
-                    Instant.now().minus(java.time.Duration.ofHours(2)),
+                taskPersistida.copy(
+                    dueDate = Instant.now().minus(java.time.Duration.ofHours(2)),
                 )
             coEvery { repository.findById(taskPersistida.id) } returns taskPersistida
             coEvery { repository.update(any()) } answers { firstArg() }

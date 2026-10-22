@@ -11,7 +11,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import javax.inject.Inject
@@ -47,20 +46,14 @@ class ProjectRepositoryImpl
 
         override suspend fun findById(id: String): Project? = projectDao.findById(id)?.toDomain()
 
-        override fun observeTagsFor(projectId: String): Flow<List<Tag>> =
-            projectDao.observeTagsFor(projectId).map { rows -> rows.map { it.toDomain() } }
-
         override suspend fun create(
             project: Project,
             tagIds: List<String>,
         ): Project {
             logDebug(TAG, "Criando projeto id=${project.id}, name=${project.name}, tags=${tagIds.size}")
-            localTransaction.run {
+            return persistProject(project, tagIds) {
                 projectDao.insert(ProjectEntity.fromDomain(project))
-                validateTagOwnership(tagIds, project.ownerId)
-                projectDao.replaceProjectTags(project.id, tagIds)
             }
-            return project
         }
 
         override suspend fun update(
@@ -68,12 +61,9 @@ class ProjectRepositoryImpl
             tagIds: List<String>,
         ): Project {
             logDebug(TAG, "Atualizando projeto id=${project.id}, name=${project.name}, tagsCount=${tagIds.size}")
-            localTransaction.run {
+            return persistProject(project, tagIds) {
                 projectDao.update(ProjectEntity.fromDomain(project))
-                validateTagOwnership(tagIds, project.ownerId)
-                projectDao.replaceProjectTags(project.id, tagIds)
             }
-            return project
         }
 
         override suspend fun delete(id: String) {
@@ -81,6 +71,25 @@ class ProjectRepositoryImpl
             localTransaction.run {
                 projectDao.deleteById(id)
             }
+        }
+
+        /**
+         * Grava o projeto e substitui o conjunto de tags na **mesma**
+         * transação: ou a entidade e as associações são persistidas, ou
+         * nada é. [writeEntity] faz a escrita da entidade — `insert` na
+         * criação, `update` na edição.
+         */
+        private suspend fun persistProject(
+            project: Project,
+            tagIds: List<String>,
+            writeEntity: suspend () -> Unit,
+        ): Project {
+            localTransaction.run {
+                writeEntity()
+                validateTagOwnership(tagIds, project.ownerId)
+                projectDao.replaceProjectTags(project.id, tagIds)
+            }
+            return project
         }
 
         private suspend fun validateTagOwnership(

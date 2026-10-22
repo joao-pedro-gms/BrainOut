@@ -14,7 +14,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
@@ -367,8 +366,6 @@ class TaskRepositoryImplTest {
         ): Flow<List<ProjectEntity>> = MutableStateFlow(emptyList())
 
         override suspend fun findById(id: String): ProjectEntity? = projects[id]
-
-        override fun observeTagsFor(projectId: String): Flow<List<TagEntity>> = MutableStateFlow(emptyList())
 
         override suspend fun insert(project: ProjectEntity) {
             projects[project.id] = project

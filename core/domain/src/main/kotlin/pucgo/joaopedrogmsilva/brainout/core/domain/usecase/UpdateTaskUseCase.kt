@@ -5,8 +5,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbi
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.reconcileTaskReminder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
-import java.time.Instant
 import javax.inject.Inject
 
 /**
@@ -22,18 +22,12 @@ import javax.inject.Inject
  * não regra de modelo.
  *
  * Caso o chamador já tenha aplicado as invariantes do domínio via
- * [Task.rename], [Task.changePriority], [Task.reassign],
- * [Task.changeDueDate] e deseje confiar nelas, ainda assim o
- * carregamento aqui é necessário para garantir atomicidade com o
+ * [Task.rename] e [Task.changePriority] e deseje confiar nelas, ainda
+ * assim o carregamento aqui é necessário para garantir atomicidade com o
  * estado em disco.
  *
  * Sempre que o prazo ([Task.dueDate]) ou o status mudam, o lembrete
- * de prazo (marco E3.6) é reconciliado:
- * - Tarefa **DONE** → lembrete cancelado.
- * - Tarefa ativa com prazo futuro → (re)agendado para
- *   `dueDate - [DeadlineNotificationScheduler.REMINDER_LEAD]`.
- * - Tarefa ativa sem prazo ou com prazo no passado → sem lembrete
- *   (cancela qualquer agendamento remanescente).
+ * de prazo (marco E3.6) é reconciliado por [reconcileTaskReminder].
  */
 class UpdateTaskUseCase
     @Inject
@@ -54,20 +48,7 @@ class UpdateTaskUseCase
                 throw TaskPriorityChangeForbiddenException(task.id)
             }
             val updated = repository.update(task)
-            reconcileReminder(updated)
+            deadlineScheduler.reconcileTaskReminder(updated.id, updated.status, updated.dueDate)
             return updated
-        }
-
-        private fun reconcileReminder(task: Task) {
-            if (task.status == TaskStatus.DONE) {
-                deadlineScheduler.cancel(task.id)
-                return
-            }
-            val triggerAt = task.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
-            if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
-                deadlineScheduler.schedule(task.id, triggerAt)
-            } else {
-                deadlineScheduler.cancel(task.id)
-            }
         }
     }

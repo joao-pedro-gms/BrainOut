@@ -173,15 +173,6 @@ class TaskTest {
     }
 
     @Test
-    fun `reassign to null clears assignee`() {
-        val task = sample(assigneeId = "user-1")
-        val updated = task.reassign(null)
-
-        assertThat(updated.assigneeId).isNull()
-        assertThat(task.assigneeId).isEqualTo("user-1")
-    }
-
-    @Test
     fun `rename trims validation and keeps new value`() {
         val task = sample(title = "Old")
         val updated = task.rename("  New name  ")
@@ -195,22 +186,6 @@ class TaskTest {
         kotlin.runCatching { task.rename("   ") }.also {
             assertThat(it.exceptionOrNull()).isInstanceOf(InvalidModelException::class.java)
         }
-    }
-
-    @Test
-    fun `changeDueDate to same value is a no-op`() {
-        val task = sample(dueDate = due)
-        val same = task.changeDueDate(due)
-        assertThat(same).isEqualTo(task)
-        assertThat(same).isSameInstanceAs(task)
-    }
-
-    @Test
-    fun `changeDueDate to null removes due date`() {
-        val task = sample(dueDate = due)
-        val updated = task.changeDueDate(null)
-
-        assertThat(updated.dueDate).isNull()
     }
 
     @Test

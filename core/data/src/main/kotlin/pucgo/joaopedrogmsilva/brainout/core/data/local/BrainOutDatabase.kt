@@ -62,8 +62,5 @@ abstract class BrainOutDatabase : RoomDatabase() {
     companion object {
         /** Nome do arquivo SQLite do banco (usado pelo [androidx.room.Room.databaseBuilder]). */
         const val DATABASE_NAME: String = "brainout.db"
-
-        /** Alias curto para [DATABASE_NAME] — preferido em código novo. */
-        const val NAME: String = DATABASE_NAME
     }
 }
