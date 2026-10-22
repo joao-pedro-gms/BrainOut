@@ -15,8 +15,8 @@ Inventário entregue em `core/ui/src/main/res/`:
 |---|---:|---:|---|
 | Fontes estáticas (`res/font/`) | 5 `.ttf` | 276 184 | SIL OFL 1.1 |
 | Ícones (`res/drawable/neo_ic_*.xml`) | 23 | 20 666 | ISC (Lucide) |
-| Arte original (`res/drawable/neo_art_*.xml`) | 4 | 5 187 | obra do projeto |
-| **Total (teto Q28 = 1 MB)** | **32** | **302 037** | — |
+| Arte original (`res/drawable/neo_art_*.xml`) | 5 | 6 282 | obra do projeto |
+| **Total (teto Q28 = 1 MB)** | **33** | **303 132** | — |
 
 O teto é verificado por `NeoVectorAssetsTest` (`a soma de fontes e
 drawables cabe no teto de 1 MB`), que falha se o total passar de
@@ -137,7 +137,7 @@ prioridades são símbolos informativos sem espelhamento.
 
 ## 3. Arte geométrica original (poster estático)
 
-Quatro artes autorais, nenhuma de terceiro (sem asset de logo, mascote ou
+Cinco artes autorais, nenhuma de terceiro (sem asset de logo, mascote ou
 ilustração de biblioteca — `DESIGN.md` §5 proíbe reutilizar material de
 terceiros):
 
@@ -147,6 +147,7 @@ terceiros):
 | `neo_art_empty_projects` | estado vazio de Projetos (pasta) | 1 129 |
 | `neo_art_empty_tasks` | estado vazio de Tarefas (ficha) | 1 517 |
 | `neo_art_empty_dashboard` | estado vazio do Painel (barras) | 1 365 |
+| `neo_art_app_logo` | marca do app — ícone do launcher e tela de abertura | 1 095 |
 
 Regras aplicadas (todas verificadas por `NeoVectorAssetsTest`):
 
@@ -166,6 +167,25 @@ adicional e este poster continua sendo o fallback.
 
 Cores literais nos XMLs porque `VectorDrawable` não lê tokens Kotlin; o
 mapeamento para os papéis semânticos está em `DESIGN.md` §3.
+
+### 3.1 Marca do app e ícone do launcher
+
+A quinta arte, `neo_art_app_logo`, não é um estado de tela: é a **marca do
+produto**. A mesma figura é o ícone do launcher, e por isso vive num SVG
+único (`brand/brainout-icon.svg`) convertido nos formatos que o Android
+consome por `brand/generate_icons.py` — nenhum recurso é desenhado duas
+vezes:
+
+| Destino | Arquivo | Grade |
+|---|---|---:|
+| Arte dentro do app (`:core:ui`) | `core/ui/src/main/res/drawable/neo_art_app_logo.xml` | 120 |
+| Adaptive icon — foreground | `app/src/main/res/drawable/ic_launcher_foreground.xml` | 108 |
+| Adaptive icon — background | `app/src/main/res/drawable/ic_launcher_background.xml` | 108 |
+| Ícone temático (Android 13+) | `app/src/main/res/drawable/ic_launcher_monochrome.xml` | 108 |
+| Ícone legado (API 24/25) | `app/src/main/res/mipmap-*/ic_launcher{,_round}.png` | 48–192 |
+
+Proveniência, regras de geometria e regeneração:
+[`brand/README.md`](../../brand/README.md).
 
 ---
 
@@ -206,7 +226,7 @@ Casos de teste que sustentam as afirmações deste documento:
 | Teste | O que prova |
 |---|---|
 | `NeoFontAssetsTest` | cinco arquivos certos, instância estática sem `fvar`, peso real, cobertura pt-BR/EN, não-ASCII das `strings.xml` do app salvo as exceções documentadas, licenças OFL presentes |
-| `NeoVectorAssetsTest` | manifesto fechado de 16+4, viewport/`autoMirrored`/`pathData` literais, três cores, traço de 6, sombra única +8,+8, ausência de texto/imagem/rede, teto de 1 MB, cabeçalho de autoria |
+| `NeoVectorAssetsTest` | manifesto fechado de 16+5, viewport/`autoMirrored`/`pathData` literais, três cores, traço de 6, sombra única +8,+8, ausência de texto/imagem/rede, teto de 1 MB, cabeçalho de autoria |
 | `NeoDrawableInflationTest` | os 20 vetores inflam com o `PathParser` real do Android (Robolectric) e as 5 fontes existem como recurso empacotado |
 | `NeoTypographyContractTest` | os 15 estilos batem com a tabela do `DESIGN.md` §4, tudo em `sp`, nenhuma família padrão, papéis de erro/ação/prazo ≥14sp, todo peso existe como arquivo |
 | `NeoDocumentedAssetsTest` | os números publicados neste documento batem com o disco: contagens e bytes do inventário (§1), bytes e sha256 da §1.3 e os quatro tamanhos da §3 |

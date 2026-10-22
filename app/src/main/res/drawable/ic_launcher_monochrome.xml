@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!-- Camada monocromática do ícone do BrainOut (ícone temático do Android 13+): só o contorno da ficha e a marca de conclusão, sem preenchimento — o sistema pinta com a cor do tema. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34.2,34.2 H73.8 V73.8 H34.2 Z"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="5.4" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M45,50.4 L52.2,57.6 L63,43.2"
+        android:strokeColor="#FF181818"
+        android:strokeWidth="5.4" />
+</vector>

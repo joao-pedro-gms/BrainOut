@@ -73,13 +73,14 @@ internal val expectedIconAssets: Map<String, Boolean> =
         "neo_ic_priority_critical" to false,
     )
 
-/** Arte geométrica original (splash + três empty states), Q28. */
+/** Arte geométrica original (splash + três empty states + marca do app), Q28. */
 internal val expectedArtAssets: List<String> =
     listOf(
         "neo_art_splash_poster",
         "neo_art_empty_projects",
         "neo_art_empty_tasks",
         "neo_art_empty_dashboard",
+        "neo_art_app_logo",
     )
 
 /** Cores da paleta A admitidas na arte (DESIGN.md §3). */

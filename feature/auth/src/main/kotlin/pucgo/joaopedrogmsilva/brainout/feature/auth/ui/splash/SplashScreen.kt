@@ -5,6 +5,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,19 +13,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Tela inicial do app.
@@ -49,20 +51,16 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Box(
+            // A marca do app: a mesma arte que é o ícone do launcher
+            // (`brand/brainout-icon.svg`), aqui sobre o fundo do tema.
+            Image(
+                painter = painterResource(UiR.drawable.neo_art_app_logo),
+                contentDescription = null,
                 modifier =
                     Modifier
-                        .size(96.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.splash_monogram),
-                    style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+                        .size(160.dp)
+                        .testTag(SplashScreenTestTags.LOGO),
+            )
             Text(
                 text = stringResource(id = R.string.splash_title),
                 style = MaterialTheme.typography.headlineLarge,
@@ -86,6 +84,15 @@ fun SplashScreen(
             }
         }
     }
+}
+
+/**
+ * Tags de teste da tela de abertura.
+ *
+ * `LOGO` marca a marca do app — o mesmo glifo que é o ícone do launcher.
+ */
+object SplashScreenTestTags {
+    const val LOGO: String = "splash_logo"
 }
 
 @Preview(showBackground = true, showSystemUi = true)
