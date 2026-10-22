@@ -1,17 +1,11 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,13 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.ThemeMode
@@ -58,11 +48,14 @@ private const val TAG = "BrainOut:MainActivity"
  *   inicia em `home` — pulando Splash/Login.
  * - Caso contrário, mantém o comportamento original (Splash → Login).
  *
- * Permissão de notificações (E3.6): na primeira composição da Home
+ * Permissão de notificações (E3.6): a **primeira composição da Home**
  * pede `POST_NOTIFICATIONS` (Android 13+) uma única vez — a flag
  * "já pedido" é persistida em [NotificationPermissionStore]
  * (SessionStore/DataStore). Negativa mostra um toast explicativo e
- * não insiste nas próximas entradas.
+ * não insiste nas próximas entradas. O pedido mora no destino Home do
+ * NavHost, e não na raiz: em instalação limpa, a primeira composição
+ * da árvore é a tela de splash, e o diálogo do sistema aparecia
+ * antes do login (DEF-45).
  *
  * O NavController é criado via `rememberNavController()` para sobreviver
  * a recomposições enquanto a Activity existir; cada destino individual
@@ -113,9 +106,7 @@ class MainActivity : ComponentActivity() {
                         MainRoot(
                             navController = navController,
                             activeUserProvider = activeUserProvider,
-                        )
-                        NotificationPermissionRequest(
-                            permissionStore = notificationPermissionStore,
+                            notificationPermissionStore = notificationPermissionStore,
                         )
                     }
                 }
@@ -140,59 +131,6 @@ private fun LoadingIndicator() {
 }
 
 /**
- * Pede a permissão `POST_NOTIFICATIONS` uma única vez (E3.6).
- *
- * Regras:
- * - Só dispara no Android 13+ (API < 33 não exige pedido runtime).
- * - Pergunta ao [NotificationPermissionStore] se já pedimos; se sim,
- *   não pede novamente (não insistir após negativa).
- * - Negativa → toast explicativo com o texto do E3.6.
- */
-@Composable
-private fun NotificationPermissionRequest(permissionStore: NotificationPermissionStore) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val deniedToast = stringResource(R.string.deadline_permission_denied_toast)
-    val launcher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            Log.d(TAG, "Resultado da permissão POST_NOTIFICATIONS: concedida=$granted")
-            if (!granted) {
-                Toast
-                    .makeText(
-                        context,
-                        deniedToast,
-                        Toast.LENGTH_LONG,
-                    ).show()
-            }
-            (context as? ComponentActivity)?.lifecycleScope?.launch {
-                permissionStore.markAsked()
-            }
-        }
-
-    LaunchedEffect(Unit) {
-        val alreadyGranted =
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) == PackageManager.PERMISSION_GRANTED
-        if (alreadyGranted) {
-            Log.d(TAG, "Permissão POST_NOTIFICATIONS já concedida previamente")
-            return@LaunchedEffect
-        }
-        val askedBefore = permissionStore.wasAsked()
-        if (!askedBefore) {
-            Log.d(TAG, "Solicitando permissão POST_NOTIFICATIONS...")
-            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            Log.d(TAG, "Permissão POST_NOTIFICATIONS negada anteriormente; não solicitando novamente")
-        }
-    }
-}
-
-/**
  * Resolve a rota inicial antes de montar o `NavHost` e delega para
  * [BrainOutNavHost] quando pronta. Mostra um spinner enquanto a
  * leitura do `DataStore` está em voo.
@@ -201,6 +139,7 @@ private fun NotificationPermissionRequest(permissionStore: NotificationPermissio
 private fun MainRoot(
     navController: androidx.navigation.NavHostController,
     activeUserProvider: ActiveUserProvider,
+    notificationPermissionStore: NotificationPermissionStore,
 ) {
     var startDestination by remember { mutableStateOf<String?>(null) }
 
@@ -229,6 +168,7 @@ private fun MainRoot(
             BrainOutNavHost(
                 navController = navController,
                 activeUserProvider = activeUserProvider,
+                notificationPermissionStore = notificationPermissionStore,
                 startDestination = current,
             )
     }

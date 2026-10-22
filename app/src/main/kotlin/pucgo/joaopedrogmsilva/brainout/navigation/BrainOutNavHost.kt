@@ -35,6 +35,8 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.dashboardGraph
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.tasksGraph
+import pucgo.joaopedrogmsilva.brainout.notifications.NotificationPermissionRequest
+import pucgo.joaopedrogmsilva.brainout.notifications.NotificationPermissionStore
 
 private const val NAVIGATION_SLIDE_DIVISOR = 12
 
@@ -56,6 +58,7 @@ private const val TAG = "BrainOut:Nav"
 fun BrainOutNavHost(
     navController: NavHostController,
     activeUserProvider: ActiveUserProvider,
+    notificationPermissionStore: NotificationPermissionStore,
     startDestination: String = BrainOutRoutes.Splash,
 ) {
     BrainOutShell(navController) { modifier ->
@@ -79,7 +82,7 @@ fun BrainOutNavHost(
             addRegisterRoute(navController)
             mainDestinations(
                 projects = {
-                    addHomeRoute(navController)
+                    addHomeRoute(navController, notificationPermissionStore)
                     addProjectDetailRoute(navController)
                 },
                 tasks = { tasksGraph(navController) },
@@ -137,7 +140,10 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: 
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addHomeRoute(navController: NavHostController) {
+private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
+    navController: NavHostController,
+    notificationPermissionStore: NotificationPermissionStore,
+) {
     composable(route = BrainOutRoutes.Home) {
         HomeScreen(
             onOpenProject = { projectId ->
@@ -145,6 +151,11 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(navController: NavH
                 navController.navigate(BrainOutRoutes.projectDetail(projectId))
             },
         )
+        // DEF-45 — o pedido da permissão vive **dentro** da Home: na
+        // raiz da Activity ele disparava na primeira composição da
+        // árvore, que em instalação limpa é a tela de splash — o
+        // diálogo do sistema aparecia antes do login.
+        NotificationPermissionRequest(permissionStore = notificationPermissionStore)
     }
 }
 
