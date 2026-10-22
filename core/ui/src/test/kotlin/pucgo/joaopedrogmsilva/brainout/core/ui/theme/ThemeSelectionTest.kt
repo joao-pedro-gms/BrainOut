@@ -16,16 +16,15 @@ import org.robolectric.annotation.Config
  * alternância segue a configuração do sistema."
  *
  * Estes testes afirmam que:
- *  1. A função pura `resolveBrainOutStaticColorScheme(darkTheme)`
- *     mapeia `true → BrainOutDarkColors` e `false → BrainOutLightColors`,
- *     sem efeitos colaterais — a única fonte de verdade é o parâmetro.
- *  2. As paletas clara/escura têm tokens invertidos (background e
- *     primary contrastam), evitando cópias acidentais que fariam os
- *     dois modos serem visualmente idênticos.
+ *  1. A resolução do tema é uma função pura: `darkTheme = true` entrega
+ *     o tema Neo escuro e `false` o claro, sem efeitos colaterais.
+ *  2. Os dois temas têm tokens invertidos (background e primary
+ *     contrastam), evitando cópias acidentais que fariam os dois modos
+ *     serem visualmente idênticos.
  *  3. A flag consumida por `BrainOutTheme` (via `isSystemInDarkTheme`)
  *     é exatamente o bit `Configuration.UI_MODE_NIGHT_*` — quem chama
  *     o tema sem override confia na configuração do sistema.
- *  4. `BrainOutShapes` cobre os 5 slots documentados pelo Material 3.
+ *  4. `NeoShapes` cobre os 5 slots documentados pelo Material 3.
  *
  * Por que Robolectric e não Compose UI test: o módulo :core:ui ainda
  * não declara `androidx.compose.ui:ui-test-junit4`, e a regra E4.5
@@ -40,29 +39,29 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class ThemeSelectionTest {
     // ------------------------------------------------------------------
-    // 1. Resolução estática do ColorScheme
+    // 1. Resolução estática do tema
     // ------------------------------------------------------------------
 
     @Test
-    fun `darkTheme true yields the BrainOutDarkColors palette`() {
-        val scheme = resolveBrainOutStaticColorScheme(darkTheme = true)
+    fun `darkTheme true yields the Neo dark theme`() {
+        val theme = resolveNeoThemeSpec(darkTheme = true)
 
-        assertThat(scheme).isSameInstanceAs(BrainOutDarkColors)
+        assertThat(theme).isSameInstanceAs(NeoDarkTheme)
     }
 
     @Test
-    fun `darkTheme false yields the BrainOutLightColors palette`() {
-        val scheme = resolveBrainOutStaticColorScheme(darkTheme = false)
+    fun `darkTheme false yields the Neo light theme`() {
+        val theme = resolveNeoThemeSpec(darkTheme = false)
 
-        assertThat(scheme).isSameInstanceAs(BrainOutLightColors)
+        assertThat(theme).isSameInstanceAs(NeoLightTheme)
     }
 
     @Test
-    fun `light and dark palettes are distinct instances`() {
-        // Os dois ColorSchemes têm tokens invertidos (surface, primary,
+    fun `light and dark themes are distinct instances`() {
+        // Os dois temas têm tokens invertidos (surface, primary,
         // background, etc.). Garante que não houve cópia acidental que
         // faria dark e light serem o mesmo objeto.
-        assertThat(BrainOutLightColors).isNotSameInstanceAs(BrainOutDarkColors)
+        assertThat(NeoLightTheme).isNotSameInstanceAs(NeoDarkTheme)
     }
 
     // ------------------------------------------------------------------
@@ -70,17 +69,19 @@ class ThemeSelectionTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `dark palette background is darker than light palette background`() {
-        // Background dark: 0xFF1C1B1F (luminância muito baixa).
-        // Background light: 0xFFFFFBFE (luminância quase 1).
-        assertThat(BrainOutDarkColors.background.red).isLessThan(BrainOutLightColors.background.red)
+    fun `dark theme background is darker than light theme background`() {
+        // Background dark: `night` (luminância muito baixa).
+        // Background light: `paper` (luminância quase 1).
+        assertThat(NeoDarkTheme.colorScheme.background.red)
+            .isLessThan(NeoLightTheme.colorScheme.background.red)
     }
 
     @Test
-    fun `dark palette primary is lighter than light palette primary`() {
-        // Light primary: 0xFF6750A4 (roxo escuro).
-        // Dark primary: 0xFFD0BCFF (roxo claro).
-        assertThat(BrainOutDarkColors.primary.red).isGreaterThan(BrainOutLightColors.primary.red)
+    fun `dark theme primary is lighter than light theme primary`() {
+        // Light primary: `ochre` (0xFF544500).
+        // Dark primary: `yellow` (0xFFF9D94A).
+        assertThat(NeoDarkTheme.colorScheme.primary.red)
+            .isGreaterThan(NeoLightTheme.colorScheme.primary.red)
     }
 
     // ------------------------------------------------------------------
@@ -88,7 +89,7 @@ class ThemeSelectionTest {
     // ------------------------------------------------------------------
 
     @Test
-    fun `system night mode YES maps to BrainOutDarkColors`() {
+    fun `system night mode YES maps to the Neo dark theme`() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
         val nightConfig =
             Configuration(app.resources.configuration).apply {
@@ -105,12 +106,12 @@ class ThemeSelectionTest {
             (nightConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         assertThat(wouldPickDark).isTrue()
-        assertThat(resolveBrainOutStaticColorScheme(darkTheme = wouldPickDark))
-            .isSameInstanceAs(BrainOutDarkColors)
+        assertThat(resolveNeoThemeSpec(darkTheme = wouldPickDark))
+            .isSameInstanceAs(NeoDarkTheme)
     }
 
     @Test
-    fun `system night mode NO maps to BrainOutLightColors`() {
+    fun `system night mode NO maps to the Neo light theme`() {
         val app = ApplicationProvider.getApplicationContext<android.app.Application>()
         val dayConfig =
             Configuration(app.resources.configuration).apply {
@@ -122,19 +123,19 @@ class ThemeSelectionTest {
             (dayConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         assertThat(wouldPickDark).isFalse()
-        assertThat(resolveBrainOutStaticColorScheme(darkTheme = wouldPickDark))
-            .isSameInstanceAs(BrainOutLightColors)
+        assertThat(resolveNeoThemeSpec(darkTheme = wouldPickDark))
+            .isSameInstanceAs(NeoLightTheme)
     }
 
     // ------------------------------------------------------------------
-    // 4. BrainOutShapes é único e centralizado
+    // 4. NeoShapes é único e centralizado
     // ------------------------------------------------------------------
 
     @Test
-    fun `BrainOutShapes has the documented five token slots`() {
+    fun `NeoShapes has the documented five token slots`() {
         // Material 3 Shapes: extraSmall/small/medium/large/extraLarge.
-        // Garante que BrainOutShapes não caiu no default vazio.
-        val s = BrainOutShapes
+        // Garante que NeoShapes não caiu no default vazio.
+        val s = NeoShapes
         assertThat(s.extraSmall).isNotNull()
         assertThat(s.small).isNotNull()
         assertThat(s.medium).isNotNull()

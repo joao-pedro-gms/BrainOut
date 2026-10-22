@@ -1,7 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Marco E4.4 do ROADMAP.md — acessibilidade AA.
-// Testes automatizados do contraste WCAG 2.1 dos tokens do tema
-// (Material 3 color scheme) em ambos os modos (claro/escuro).
+// Testes automatizados do contraste WCAG 2.1 dos tokens do tema Neo
+// (paleta A) em ambos os modos (claro/escuro).
 //
 // O algoritmo sRGB + luminância relativa + razão de contraste vem
 // de https://www.w3.org/TR/WCAG21/#dfn-relative-luminance e
@@ -10,12 +10,16 @@
 //  - texto grande / gráfico (ícone, contorno, divider): >= 3.0:1
 //    (nível AA para "Non-text Contrast", WCAG 1.4.11).
 //
+// O alvo é o `ColorScheme` que o app **renderiza** (`toMaterialColorScheme`),
+// não a paleta crua: é o esquema mapeado que o Material 3 consome.
+//
 // Estes testes rodam em JVM puro (sem Robolectric) porque os tokens
-// são `Color`/`Long`/`Int` e o algoritmo é matemática — não precisamos
-// do ciclo de vida do Android para validar a razão.
+// são `Color` e o algoritmo é matemática — não precisamos do ciclo de
+// vida do Android para validar a razão.
 
 package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import com.google.common.truth.Truth.assertThat
@@ -32,13 +36,16 @@ private const val TEXT_RATIO_MIN: Double = 4.5
 private const val GRAPHIC_RATIO_MIN: Double = 3.0
 
 class ContrastRatioTest {
+    private val light: ColorScheme = NeoColors.Light.toMaterialColorScheme()
+    private val dark: ColorScheme = NeoColors.Dark.toMaterialColorScheme()
+
     // --- Light theme ----------------------------------------------------
 
     @Test
     fun light_onPrimary_on_primary_meets_aa() {
         assertRatio(
-            fg = BrainOutOnPrimary,
-            bg = BrainOutPrimary,
+            fg = light.onPrimary,
+            bg = light.primary,
             min = TEXT_RATIO_MIN,
             label = "light onPrimary/primary",
         )
@@ -47,8 +54,8 @@ class ContrastRatioTest {
     @Test
     fun light_onPrimaryContainer_on_primaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutOnPrimaryContainer,
-            bg = BrainOutPrimaryContainer,
+            fg = light.onPrimaryContainer,
+            bg = light.primaryContainer,
             min = TEXT_RATIO_MIN,
             label = "light onPrimaryContainer/primaryContainer",
         )
@@ -57,8 +64,8 @@ class ContrastRatioTest {
     @Test
     fun light_onSecondary_on_secondary_meets_aa() {
         assertRatio(
-            fg = BrainOutOnSecondary,
-            bg = BrainOutSecondary,
+            fg = light.onSecondary,
+            bg = light.secondary,
             min = TEXT_RATIO_MIN,
             label = "light onSecondary/secondary",
         )
@@ -67,8 +74,8 @@ class ContrastRatioTest {
     @Test
     fun light_onSecondaryContainer_on_secondaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutOnSecondaryContainer,
-            bg = BrainOutSecondaryContainer,
+            fg = light.onSecondaryContainer,
+            bg = light.secondaryContainer,
             min = TEXT_RATIO_MIN,
             label = "light onSecondaryContainer/secondaryContainer",
         )
@@ -77,8 +84,8 @@ class ContrastRatioTest {
     @Test
     fun light_onTertiary_on_tertiary_meets_aa() {
         assertRatio(
-            fg = BrainOutOnTertiary,
-            bg = BrainOutTertiary,
+            fg = light.onTertiary,
+            bg = light.tertiary,
             min = TEXT_RATIO_MIN,
             label = "light onTertiary/tertiary",
         )
@@ -87,8 +94,8 @@ class ContrastRatioTest {
     @Test
     fun light_onTertiaryContainer_on_tertiaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutOnTertiaryContainer,
-            bg = BrainOutTertiaryContainer,
+            fg = light.onTertiaryContainer,
+            bg = light.tertiaryContainer,
             min = TEXT_RATIO_MIN,
             label = "light onTertiaryContainer/tertiaryContainer",
         )
@@ -97,8 +104,8 @@ class ContrastRatioTest {
     @Test
     fun light_onError_on_error_meets_aa() {
         assertRatio(
-            fg = BrainOutOnError,
-            bg = BrainOutError,
+            fg = light.onError,
+            bg = light.error,
             min = TEXT_RATIO_MIN,
             label = "light onError/error",
         )
@@ -107,8 +114,8 @@ class ContrastRatioTest {
     @Test
     fun light_onErrorContainer_on_errorContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutOnErrorContainer,
-            bg = BrainOutErrorContainer,
+            fg = light.onErrorContainer,
+            bg = light.errorContainer,
             min = TEXT_RATIO_MIN,
             label = "light onErrorContainer/errorContainer",
         )
@@ -117,8 +124,8 @@ class ContrastRatioTest {
     @Test
     fun light_onBackground_on_background_meets_aa() {
         assertRatio(
-            fg = BrainOutOnBackground,
-            bg = BrainOutBackground,
+            fg = light.onBackground,
+            bg = light.background,
             min = TEXT_RATIO_MIN,
             label = "light onBackground/background",
         )
@@ -127,8 +134,8 @@ class ContrastRatioTest {
     @Test
     fun light_onSurface_on_surface_meets_aa() {
         assertRatio(
-            fg = BrainOutOnSurface,
-            bg = BrainOutSurface,
+            fg = light.onSurface,
+            bg = light.surface,
             min = TEXT_RATIO_MIN,
             label = "light onSurface/surface",
         )
@@ -137,8 +144,8 @@ class ContrastRatioTest {
     @Test
     fun light_onSurfaceVariant_on_surfaceVariant_meets_aa() {
         assertRatio(
-            fg = BrainOutOnSurfaceVariant,
-            bg = BrainOutSurfaceVariant,
+            fg = light.onSurfaceVariant,
+            bg = light.surfaceVariant,
             min = TEXT_RATIO_MIN,
             label = "light onSurfaceVariant/surfaceVariant",
         )
@@ -149,8 +156,8 @@ class ContrastRatioTest {
         // outline é componente gráfico (divider, borda de campo); usa
         // o limiar gráfico (3.0:1) e não o de texto.
         assertRatio(
-            fg = BrainOutOutline,
-            bg = BrainOutBackground,
+            fg = light.outline,
+            bg = light.background,
             min = GRAPHIC_RATIO_MIN,
             label = "light outline/background (graphic)",
         )
@@ -161,8 +168,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onPrimary_on_primary_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnPrimary,
-            bg = BrainOutDarkPrimary,
+            fg = dark.onPrimary,
+            bg = dark.primary,
             min = TEXT_RATIO_MIN,
             label = "dark onPrimary/primary",
         )
@@ -171,8 +178,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onPrimaryContainer_on_primaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnPrimaryContainer,
-            bg = BrainOutDarkPrimaryContainer,
+            fg = dark.onPrimaryContainer,
+            bg = dark.primaryContainer,
             min = TEXT_RATIO_MIN,
             label = "dark onPrimaryContainer/primaryContainer",
         )
@@ -181,8 +188,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onSecondary_on_secondary_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnSecondary,
-            bg = BrainOutDarkSecondary,
+            fg = dark.onSecondary,
+            bg = dark.secondary,
             min = TEXT_RATIO_MIN,
             label = "dark onSecondary/secondary",
         )
@@ -191,8 +198,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onSecondaryContainer_on_secondaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnSecondaryContainer,
-            bg = BrainOutDarkSecondaryContainer,
+            fg = dark.onSecondaryContainer,
+            bg = dark.secondaryContainer,
             min = TEXT_RATIO_MIN,
             label = "dark onSecondaryContainer/secondaryContainer",
         )
@@ -201,8 +208,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onTertiary_on_tertiary_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnTertiary,
-            bg = BrainOutDarkTertiary,
+            fg = dark.onTertiary,
+            bg = dark.tertiary,
             min = TEXT_RATIO_MIN,
             label = "dark onTertiary/tertiary",
         )
@@ -211,8 +218,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onTertiaryContainer_on_tertiaryContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnTertiaryContainer,
-            bg = BrainOutDarkTertiaryContainer,
+            fg = dark.onTertiaryContainer,
+            bg = dark.tertiaryContainer,
             min = TEXT_RATIO_MIN,
             label = "dark onTertiaryContainer/tertiaryContainer",
         )
@@ -221,8 +228,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onError_on_error_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnError,
-            bg = BrainOutDarkError,
+            fg = dark.onError,
+            bg = dark.error,
             min = TEXT_RATIO_MIN,
             label = "dark onError/error",
         )
@@ -231,8 +238,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onErrorContainer_on_errorContainer_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnErrorContainer,
-            bg = BrainOutDarkErrorContainer,
+            fg = dark.onErrorContainer,
+            bg = dark.errorContainer,
             min = TEXT_RATIO_MIN,
             label = "dark onErrorContainer/errorContainer",
         )
@@ -241,8 +248,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onBackground_on_background_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnBackground,
-            bg = BrainOutDarkBackground,
+            fg = dark.onBackground,
+            bg = dark.background,
             min = TEXT_RATIO_MIN,
             label = "dark onBackground/background",
         )
@@ -251,8 +258,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onSurface_on_surface_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnSurface,
-            bg = BrainOutDarkSurface,
+            fg = dark.onSurface,
+            bg = dark.surface,
             min = TEXT_RATIO_MIN,
             label = "dark onSurface/surface",
         )
@@ -261,8 +268,8 @@ class ContrastRatioTest {
     @Test
     fun dark_onSurfaceVariant_on_surfaceVariant_meets_aa() {
         assertRatio(
-            fg = BrainOutDarkOnSurfaceVariant,
-            bg = BrainOutDarkSurfaceVariant,
+            fg = dark.onSurfaceVariant,
+            bg = dark.surfaceVariant,
             min = TEXT_RATIO_MIN,
             label = "dark onSurfaceVariant/surfaceVariant",
         )
@@ -271,8 +278,8 @@ class ContrastRatioTest {
     @Test
     fun dark_outline_on_background_meets_graphic_aa() {
         assertRatio(
-            fg = BrainOutDarkOutline,
-            bg = BrainOutDarkBackground,
+            fg = dark.outline,
+            bg = dark.background,
             min = GRAPHIC_RATIO_MIN,
             label = "dark outline/background (graphic)",
         )

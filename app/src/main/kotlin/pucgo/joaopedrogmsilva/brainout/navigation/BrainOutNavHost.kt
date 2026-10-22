@@ -61,14 +61,7 @@ fun BrainOutNavHost(
     BrainOutShell(navController) { modifier ->
         NavHost(
             navController = navController,
-            startDestination =
-                if (startDestination ==
-                    BrainOutRoutes.Home
-                ) {
-                    BrainOutRoutes.MainGraph
-                } else {
-                    startDestination
-                },
+            startDestination = startDestination,
             modifier = modifier,
             enterTransition = {
                 fadeIn(tween(NeoMotion.navigation)) +

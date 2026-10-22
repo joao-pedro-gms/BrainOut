@@ -7,6 +7,7 @@ package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -187,18 +188,22 @@ class NeoThemeActivationTest {
     }
 
     @Test
-    fun `o scheme Neo e visualmente distinto do legado nos dois modos`() {
-        // Se alguém religar `resolveBrainOutStaticColorScheme` no wrapper,
-        // o scheme do tema volta a ser o roxo do Material. Comparar os
-        // fundos e os primários pega isso sem precisar montar Compose.
+    fun `o scheme Neo nao usa a paleta roxa do Material legado`() {
+        // A paleta legada (roxo `#6750A4` do Material 3) foi removida do
+        // módulo. A regressão que importa agora é o resíduo: se alguém
+        // religar um esquema padrão do Material, o `primary` volta a ser
+        // esse roxo. Comparar fundos e primários pega isso sem precisar
+        // montar Compose.
+        val legacyPrimary = Color(0xFF6750A4)
+        val legacyBackground = Color(0xFFFFFBFE)
         assertThat(NeoLightTheme.colorScheme.background)
-            .isNotEqualTo(BrainOutLightColors.background)
+            .isNotEqualTo(legacyBackground)
         assertThat(NeoDarkTheme.colorScheme.background)
-            .isNotEqualTo(BrainOutDarkColors.background)
+            .isNotEqualTo(legacyBackground)
         assertThat(NeoLightTheme.colorScheme.primary)
-            .isNotEqualTo(BrainOutLightColors.primary)
+            .isNotEqualTo(legacyPrimary)
         assertThat(NeoDarkTheme.colorScheme.primary)
-            .isNotEqualTo(BrainOutDarkColors.primary)
+            .isNotEqualTo(legacyPrimary)
     }
 
     // ------------------------------------------------------------------
@@ -269,10 +274,11 @@ class NeoThemeActivationTest {
 
     @Test
     fun `o tema Neo nao herda o arredondamento de 28dp da identidade legada`() {
+        val legacyExtraLarge = RoundedCornerShape(28.dp)
         assertThat(NeoLightTheme.shapes.extraLarge)
-            .isNotEqualTo(BrainOutShapes.extraLarge)
+            .isNotEqualTo(legacyExtraLarge)
         assertThat(NeoDarkTheme.shapes.extraLarge)
-            .isNotEqualTo(BrainOutShapes.extraLarge)
+            .isNotEqualTo(legacyExtraLarge)
     }
 }
 

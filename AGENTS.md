@@ -20,11 +20,11 @@ BOM 2026.09.00, Gradle 9.8.1 and detekt 1.23.8 are currently configured.
 The subproject ktlint gate now uses `ignoreFailures = false` (DEF-10 fixed).
 Older version/gate descriptions below are historical until reconciled.
 
-Practical guide for AI assistants working on the **BrainOut** codebase. Verified against the current `main` tree (AGP 9.4.1, KGP 2.3.20, Gradle 9.7.1, JDK 17 bytecode, Compose BOM 2024.10.01).
+Practical guide for AI assistants working on the **BrainOut** codebase. Verified against the current `main` tree (AGP 9.4.1, KGP 2.4.21, Gradle 9.8.1, JDK 17 bytecode, Compose BOM 2026.09.00).
 
 ## Project Overview
 
-BrainOut is a **personal project/task manager** Android app — Kotlin + Jetpack Compose + Material 3, offline-first with Room + WorkManager sync, backend driven by a FastAPI stub at `/v1/*`. Built as the PUC Goiás ADS 2026/2 *Projeto Integrador* (author: João Pedro G M Silva, matrícula `20251012000740`). Single developer; Kover 60% coverage gate on `:core:domain` and `:core:data`.
+BrainOut is a **personal project/task manager** Android app — Kotlin + Jetpack Compose + Material 3, **fully local**: Room + DataStore for persistence, WorkManager for deadline notifications. No backend, no network layer, no sync queue. Built as the PUC Goiás ADS 2026/2 *Projeto Integrador* (author: João Pedro G M Silva, matrícula `20251012000740`). Single developer; Kover 60% coverage gate on `:core:domain` and `:core:data`.
 
 ## Architecture & Data Flow
 
@@ -37,11 +37,11 @@ Strict multi-module graph (no cycles). Dependencies only point downward:
               └─→  :core:domain
 ```
 
-- **`:app`** — orchestrator: `BrainOutApplication` (`@HiltAndroidApp`, `Configuration.Provider` for HiltWorkerFactory), `MainActivity` (`@AndroidEntryPoint` + Compose), `BrainOutNavHost`. Holds WorkManager workers (`SyncWorker`, `DeadlineWorker`) and `WorkManagerDeadlineScheduler` (impl of the domain port).
+- **`:app`** — orchestrator: `BrainOutApplication` (`@HiltAndroidApp`, `Configuration.Provider` for HiltWorkerFactory), `MainActivity` (`@AndroidEntryPoint` + Compose), `BrainOutNavHost`. Holds the WorkManager workers of deadline notification (`DeadlineWorker`, `CompleteTaskWorker`) and `WorkManagerDeadlineScheduler` (impl of the domain port).
 - **`:core:domain`** — pure **Kotlin JVM** (no Android, no Hilt, no Compose). Only `kotlinx-coroutines-core` + `javax.inject` (`@Inject`). Holds repository interfaces, use cases (`CreateUserUseCase`, `ChangeTaskStatusUseCase`, …), domain models, and the `DeadlineNotificationScheduler` port.
-- **`:core:data`** — Android library with **flavors** `environment`/`dev`+`prod`; `BaseUrl` from `BuildConfig.BASE_URL`. Room (`BrainOutDatabase` v4, exported schemas), Retrofit (`BrainOutApi`), DataStore Preferences, kotlinx-serialization, Hilt. DI wiring lives mostly in `DataModule` (`@InstallIn(SingletonComponent::class)`), com uma exceção (ver *Conventions*).
-- **`:core:ui`** — Compose-only module (Material 3 theme, tokens, cores, formas, tipografia). No Hilt, no Room, no DataStore. Sem flavors **e sem** `missingDimensionStrategy` — é a única lib Android do grafo que não consome `:core:data`, logo não precisa fixar a dimensão `environment`.
-- **`:feature:*`** — each owns its `*Routes.kt` + ViewModels + Compose screens + test tags. All depend on `:core:domain` + `:core:data` + `:core:ui`. Each declares `missingDimensionStrategy("environment", "dev")` to match `:core:data` flavors.
+- **`:core:data`** — Android library **sem flavors**. Room (`BrainOutDatabase` v5, exported schemas), DataStore Preferences, Hilt. **Sem Retrofit, sem HTTP, sem conectividade e sem fila de sync.** DI wiring lives mostly in `DataModule` (`@InstallIn(SingletonComponent::class)`), com uma exceção (ver *Conventions*).
+- **`:core:ui`** — Compose-only module (Material 3 theme, tokens, cores, formas, tipografia). No Hilt, no Room, no DataStore. Sem flavors **e sem** `missingDimensionStrategy`.
+- **`:feature:*`** — each owns its screens + ViewModels + test tags. All depend on `:core:domain` + `:core:data` + `:core:ui`.
 
 **Data flow per request** (canonical example — see `ProjectDetailViewModel`):
 
@@ -51,26 +51,25 @@ Compose Screen
         → use case (:core:domain)
             → repository (:core:data)
                 → DAO (Room) — emits via Flow
-                → enqueues PendingOpEntity in same Room transaction (offline-first)
+                → LocalTransaction.run { … } (uma transação Room por escrita)
     ← StateFlow<UiState> (stateIn with WhileSubscribed(5_000))
 ```
 
 Async patterns:
 - `Flow` from DAOs → `.map { rows -> rows.map { it.toDomain() } }` → ViewModel `.stateIn(viewModelScope, WhileSubscribed(5_000), initial)` exposed as immutable `data class XxxUiState(...)`.
 - Retry pattern: `_retryToken: MutableStateFlow<Int>` + `flatMapLatest` discards prior Flow and re-subscribes after failures (see `ProjectDetailViewModel`, `DashboardViewModel`).
-- Connectivity via `AndroidConnectivityObserver`; cross-cutting `PendingSyncMonitor` combined into per-screen sync state.
 - **Dispatchers:** os repositórios de `:core:data` **não** fazem `withContext(Dispatchers.IO)` — `grep 'Dispatchers.IO' core/data/src/main` retorna **zero** ocorrências. O I/O dos DAOs `suspend` roda no dispatcher interno do Room, e o `Dispatchers.IO` explícito só aparece em `MainActivity` (resolução da start-destination) e em `DeadlineReceiver`. Isole a camada com `suspend`/`Flow`, não com troca de dispatcher.
 
 Navigation (estado real, não o ideal):
-- **Duas fontes de verdade de rotas.** Em uso: `BrainOutRoutes` (`app/src/main/.../navigation/BrainOutRoutes.kt`) para Splash/Login/Register/Home/Settings/ProjectDetail, e `TasksRoutes` (`:feature:tasks`) para Tasks/Dashboard. **Não usados em produção:** `AuthRoutes`, `ProjectsRoutes` e `SettingsRoutes` existem nos respectivos módulos mas são consumidos **apenas pelos próprios testes** (`*RoutesTest.kt`) — o `NavHost` não os importa. Ao adicionar rota, edite `BrainOutRoutes` (ou o `*Routes` da feature que a expõe) e não crie um terceiro objeto.
-- **Só `:feature:tasks` expõe extensões de grafo:** `NavGraphBuilder.tasksGraph()` e `dashboardGraph()`. Splash/Login/Register/Home/ProjectDetail/Settings são montados por funções **privadas** em `BrainOutNavHost.kt` (`addSplashRoute`, `addLoginRoute`, …), que instanciam os composables das features diretamente.
+- **Uma fonte de verdade de rotas.** `BrainOutRoutes` (`app/src/main/.../navigation/BrainOutRoutes.kt`) é o registro central do `NavHost` (Splash/Login/Register/MainGraph/ProjectsGraph/TasksGraph/DashboardGraph/SettingsGraph/ProjectDetail). `TasksRoutes` (`:feature:tasks`) é a **única** feature que expõe extensões de grafo (`NavGraphBuilder.tasksGraph()` e `dashboardGraph()`), então é dona das rotas que usa — e esses valores não existem em `BrainOutRoutes`. As features `auth`, `projects` e `settings` **não** têm objeto de rotas: um objeto desconectado do `NavHost` nasce morto. Ao adicionar rota, edite `BrainOutRoutes` (ou o `*Routes` da feature que expõe grafo) e não crie um terceiro objeto.
+- Splash/Login/Register/Home/ProjectDetail/Settings são montados por funções **privadas** em `BrainOutNavHost.kt` (`addSplashRoute`, `addLoginRoute`, …), que instanciam os composables das features diretamente.
 - Mesmo assim, **nunca hardcode string de rota**: use `object XxxRoutes` + helper `fun xRoute(args)`.
 - Sign-out: `activeUserProvider.signOut()` then `navigate(login) { popUpTo(0) { inclusive = true } }`.
 
-Sync (offline-first):
-- Mutations call `pendingOpDao.enqueueInTx(op) { ... }` in one Room transaction (see `TaskRepositoryImpl`).
-- `SyncWorker` (`@HiltWorker` + `CoroutineWorker`) drains `pending_ops` with batch size 50; 4xx → discard (`Result.success`), 5xx/IOException → retry (`Result.retry`).
-- **Onde o glue de sync mora (duas camadas):** `app/src/main/.../sync/` tem `SyncWorker`, `SyncScheduler`, `SyncConnectivityWatcher` e `SyncModule` (trabalho periódico do WorkManager). A fila/offline em si fica em `:core:data`: `sync/SyncDispatcher.kt` (a interface), `BrainOutSyncDispatcher.kt`, `PendingSyncMonitor.kt`, `ConnectivityObserver.kt`. Não há `SyncDispatcher.kt` em `:app`.
+Persistência local:
+- Toda escrita dos repositórios passa por `LocalTransaction.run { … }` — a transação Room que garante que entidade e associações são persistidas juntas (`core/data/.../local/LocalTransaction.kt`). A antiga fila `pending_ops` foi removida na migração 4→5.
+- Cascatas usam métodos `@Transaction` do DAO (`cascadeCompleteTask`, `cascadeReopenTask`).
+- O lembrete de prazo tem **uma** regra, `reconcileTaskReminder` (`core/domain/.../notification/ReminderReconciler.kt`), usada por criar, editar e mudar status — o agendamento nunca diverge do estado da tarefa.
 
 ## Key Directories
 
@@ -79,51 +78,48 @@ Sync (offline-first):
 | `app/src/main/kotlin/.../BrainOutApplication.kt` | Hilt bootstrap + WorkManager Configuration provider. |
 | `app/src/main/kotlin/.../MainActivity.kt` | Compose host, start-destination resolution, `POST_NOTIFICATIONS` request (Tiramisu+). |
 | `app/src/main/kotlin/.../navigation/BrainOutNavHost.kt` | Root NavHost; funções privadas por destino + `tasksGraph()`/`dashboardGraph()`. |
-| `app/src/main/kotlin/.../navigation/BrainOutRoutes.kt` | Rotas raiz em uso (Splash→Login→Home→ProjectDetail/Settings). |
-| `app/src/main/kotlin/.../sync/` | `SyncWorker`, `SyncScheduler`, `SyncConnectivityWatcher`, `SyncModule` (glue WorkManager). |
-| `app/src/main/kotlin/.../notifications/` | `WorkManagerDeadlineScheduler` (impl of domain port), `DeadlineWorker`, `DeadlineReceiver`, `CompleteTaskWorker`, `NotificationModule`. |
+| `app/src/main/kotlin/.../navigation/BrainOutRoutes.kt` | Registro central de rotas do NavHost (Splash→Login→Home→ProjectDetail/Settings). |
+| `app/src/main/kotlin/.../notifications/` | `WorkManagerDeadlineScheduler` (impl of domain port), `DeadlineWorker`, `DeadlineReceiver`, `CompleteTaskWorker`, `DeadlineKeys`, `DeadlineNotificationId`, `NotificationDismissal`, `NotificationPermissionStore`. |
 | `core/domain/src/main/kotlin/.../usecase/` | Use cases. Kover 60% gate — every new use case needs a test under `src/test/`. |
 | `core/domain/src/main/kotlin/.../notification/DeadlineNotificationScheduler.kt` | Port interface; Android-free. |
-| `core/data/src/main/kotlin/.../local/BrainOutDatabase.kt` | Room DB v4; `pending_ops` table is the sync queue. Schemas in `core/data/schemas/`. |
-| `core/data/src/main/kotlin/.../remote/BrainOutApi.kt` | Retrofit interface; all `suspend`. |
+| `core/domain/src/main/kotlin/.../notification/ReminderReconciler.kt` | Regra única de agendamento/cancelamento do lembrete de prazo. |
+| `core/data/src/main/kotlin/.../local/BrainOutDatabase.kt` | Room DB v5. Schemas in `core/data/schemas/`. |
+| `core/data/src/main/kotlin/.../local/LocalTransaction.kt` | Transação Room que envolve toda escrita dos repositórios. |
 | `core/data/src/main/kotlin/.../di/DataModule.kt` | DI wiring principal do `:core:data`. `PepperProvider.Factory` fica **fora**, no próprio arquivo de `security/`. |
 | `core/data/src/main/kotlin/.../security/PepperProvider.kt` | Pepper + `@Module object Factory` (segundo módulo Hilt do módulo). |
-| `core/data/src/main/kotlin/.../repository/` | Repository impls; each delegates mutations to `pendingOpDao.enqueueInTx`. |
-| `core/data/src/main/kotlin/.../sync/` | `SyncDispatcher` (interface), `BrainOutSyncDispatcher`, `PendingSyncMonitor`, `ConnectivityObserver`. |
-| `core/ui/src/main/kotlin/.../theme/` | Material 3 base (`Color/Shape/Theme/Type`) **+ identidade Neo**: `NeoColor.kt`, `NeoTokens.kt`, `NeoTypography.kt` (que declara `object NeoFonts`), `BrainOutNeoTheme.kt`. `BrainOutTheme` já delega para o tema Neo. |
-| `core/ui/src/main/res/` | `font/` com **5 fontes** locais (3× Archivo — bold/extra bold/semi bold — e 2× Public Sans — regular/semi bold) e `drawable/` com **21 drawables `neo_*`** (ícones/vetores da identidade). |
+| `core/data/src/main/kotlin/.../repository/` | Repository impls; cada escrita passa por `LocalTransaction`. |
+| `core/ui/src/main/kotlin/.../theme/` | Identidade Neo: `NeoColor.kt`, `NeoTokens.kt`, `NeoTypography.kt` (que declara `object NeoFonts`), `NeoColor.kt` (papéis → `ColorScheme`), `BrainOutNeoTheme.kt`, `Shape.kt` (`NeoShapes`), `Type.kt` (`NeoMaterialTypography`). `BrainOutTheme` delega para o tema Neo; **não existe mais paleta legada**. |
+| `core/ui/src/main/res/` | `font/` com **5 fontes** locais (3× Archivo — bold/extra bold/semi bold — e 2× Public Sans — regular/semi bold) e `drawable/` com **28 drawables `neo_*`** (ícones/vetores da identidade). |
 | `brand/` | Fonte da marca do app: `brainout-icon.svg` (fonte única do ícone), `generate_icons.py` (gera arte do `:core:ui`, adaptive icon e PNGs legados) e `README.md` com a proveniência. Regerar com `python brand/generate_icons.py` — nunca editar os recursos derivados à mão. |
 | `feature/<x>/src/main/kotlin/.../ui/` | Screens + `*TestTags` objects for Compose UI tests. |
 | `feature/<x>/src/main/kotlin/.../viewmodel/` or `ui/<x>/` | `@HiltViewModel` + `data class XxxUiState`. |
-| `feature/<x>/src/main/kotlin/.../navigation/*Routes.kt` | Constantes de rota por feature; ver *Navigation* acima (uso desigual). |
+| `feature/tasks/src/main/kotlin/.../navigation/TasksRoutes.kt` | Única feature que expõe extensões de grafo — dona das rotas que usa. |
 | `backend-stub/server.py` | FastAPI stub — source of truth for `/v1/*` contract. |
 | `docs/ROADMAP.md`, `docs/ARQUITETURA.md`, `docs/CI-CD.md`, `docs/CONTRIBUTING.md` | Requirements R1–R14, E1.x–E5.x cycles, pipeline, conventional commits. |
 | `Documentos/` | Deliverable PDFs only — never edit. |
 
 ## Development Commands
 
-All Gradle commands from repo root. The build is verified on JDK 21 (what `ci.yml` and `release-apk.yml` provision). With a standalone JDK 21+: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`; with no standalone JDK, the Android Studio JBR works too (`export JAVA_HOME=/opt/android-studio/jbr`). Gradle 9.7.1/AGP 9.4.1 accept a floor of 17; bytecode target stays Java 17.
+All Gradle commands from repo root. The build is verified on JDK 21 (what `ci.yml` and `release-apk.yml` provision). With a standalone JDK 21+: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`; with no standalone JDK, the Android Studio JBR works too (`export JAVA_HOME=/opt/android-studio/jbr`). Gradle 9.8.1/AGP 9.4.1 accept a floor of 17; bytecode target stays Java 17.
 
 ```bash
 # Build
-./gradlew :app:assembleDevDebug              # daily dev build
-./gradlew :app:assembleProdDebug             # prod build (BASE_URL placeholder https://TBD/)
+./gradlew :app:assembleDebug                 # daily build (sem flavors)
 ./gradlew :app:assembleRelease               # unsigned unless BRAINOUT_* secrets are set
 
 # Unit tests (includes :core:domain via gradle.projectsEvaluated wire-up)
-./gradlew testDevDebugUnitTest               # what CI runs for flavored modules (:app, :core:data)
-./gradlew testDebugUnitTest                  # un-flavored Android modules (:feature:*, :core:ui)
+./gradlew testDebugUnitTest                  # what CI runs — todos os módulos Android
 ./gradlew :core:domain:test                  # pure JVM tests
-./gradlew :core:data:testDevDebugUnitTest    # Robolectric + MockWebServer
+./gradlew :core:data:testDebugUnitTest       # Robolectric
 ./gradlew :core:ui:testDebugUnitTest         # tokens/tema Neo (Robolectric, recursos Android)
 ./gradlew :feature:auth:testDebugUnitTest    # ViewModel tests (R2)
 ./gradlew :feature:projects:testDebugUnitTest
 ./gradlew :feature:tasks:testDebugUnitTest
 ./gradlew :feature:settings:testDebugUnitTest
-./gradlew :app:testDevDebugUnitTest          # smoke + WorkManager + sync tests
+./gradlew :app:testDebugUnitTest              # smoke + WorkManager + notificação
 
 # Instrumented tests (emulator) — compilam; rodam em `connected*`
-./gradlew :core:data:assembleDevDebugAndroidTest    # MigrationTest + UserDaoInstrumentedTest
+./gradlew :core:data:assembleDebugAndroidTest    # MigrationTest + UserDaoInstrumentedTest
 ./gradlew :feature:auth:assembleDebugAndroidTest   # LoginScreenTest
 
 # Coverage (60% bound, core only)
@@ -132,31 +128,27 @@ All Gradle commands from repo root. The build is verified on JDK 21 (what `ci.ym
 
 # Static analysis (CI runs these together)
 ./gradlew ktlintCheck detekt
-./gradlew :app:lintDevDebug                  # Android lint — i18n MissingTranslation gate
-
-# Backend stub (Python 3.12)
-cd backend-stub && python -m venv .venv && source .venv/bin/activate \
-  && pip install -r requirements.txt \
-  && python -m uvicorn server:app --host 0.0.0.0 --port 8000
+./gradlew :app:lintDebug                     # Android lint — i18n MissingTranslation gate
 ```
 
-> **Task names dependem do flavor.** Só `:app` e `:core:data` declaram `dev`/`prod`; as features e o `:core:ui` **não têm flavor próprio** e apenas fixam a dimensão, então a task delas é `testDebugUnitTest` (`assembleDebugAndroidTest`), **não** `testDevDebugUnitTest`. O CI roda `testDevDebugUnitTest` + `:core:ui:testDebugUnitTest` explicitamente.
+O backend stub em `backend-stub/` e o diretorio `backend-stub/` sao **historicos**: a camada de rede foi removida no #212 e o produto e local. Nao reintroduza `BASE_URL`, `BuildConfig.BASE_URL` nem flavors.
 
-Override dev URL via env var `BASE_URL` (precedence, used by CI) or `local.properties` (key `brainout.baseUrl.dev`). Emulator reaches host at `http://10.0.2.2:8000/`.
+> **Nenhum modulo declara flavor.** Todas as tasks Android sao `testDebugUnitTest` / `assembleDebug` / `lintDebug` - nao existe `testDevDebugUnitTest`. O CI roda `testDebugUnitTest` (cobre os 8 modulos) mais os gates de Kover.
 
 ## Code Conventions & Common Patterns
 
 - **Author header** — every `.kt`/`.kts`/`.xml` file starts with `// João Pedro G M Silva - PUC Goiás ADS - 20251012000740`.
 - **Packages** lowercase only; strings `snake_case` with screen/feature prefix (`login_`, `home_`, `task_`, `project_detail_`, `bottom_tab_`, `common_`). Detekt `PackageNaming` enforces.
-- **i18n gate** — `values/strings.xml` and `values-en/strings.xml` must stay in sync. `:app`, `:feature:auth`, `:feature:projects`, `:feature:settings` enforce `MissingTranslation = error` + `lint { abortOnError = true }`. **Dois módulos estão relaxados e isso é conhecido, não intencional:** `:feature:tasks` (`Instant#parse` em `@Preview`) e `:core:data` (8 erros `[NewApi]` pendentes de `java.time`/`java.util.Base64` com minSdk 24, aguardando `coreLibraryDesugaring`) usam `abortOnError = false`. Nos módulos rígidos, nunca suprima — traduza.
-- **AGP 9 built-in Kotlin** — `kotlin-android` plugin is **removed** from the version catalog. Do not re-add. Remaining Kotlin plugins: `kotlin-jvm` (only `:core:domain`), `kotlin-compose`, `kotlin-serialization` (`:core:data`).
+- **i18n gate** — `values/strings.xml` and `values-en/strings.xml` must stay in sync. `:app`, `:feature:auth`, `:feature:projects`, `:feature:settings` e `:core:data` enforce `MissingTranslation = error` + `lint { abortOnError = true }`. **Um módulo está relaxado e isso é conhecido, não intencional:** `:feature:tasks` (`Instant#parse` em `@Preview`) usa `abortOnError = false`. Nos módulos rígidos, nunca suprima — traduza.
+- **AGP 9 built-in Kotlin** — `kotlin-android` plugin is **removed** from the version catalog. Do not re-add. Remaining Kotlin plugins: `kotlin-jvm` (only `:core:domain`) and `kotlin-compose`.
 - **Bytecode target** — Java 17 in all 8 modules (`jvmTarget.set(JvmTarget.JVM_17)`); build JDK is 21 (CI + release provision Temurin 21; JBR via `JAVA_HOME` locally). Use `kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }` — `kotlinOptions` is gone in AGP 9.
-- **Flavors** — `dev` (BASE_URL `http://10.0.2.2:8000/`, overridable via env var `BASE_URL` — CI points it at the dockerized stub — or `local.properties`) and `prod` (placeholder `https://TBD/`, decision E3.1). Only `:app` and `:core:data` declare flavors; every `:feature:*` fixes `missingDimensionStrategy("environment", "dev")`. `:core:ui` não consome `:core:data` e não precisa da dimensão.
+- **Sem flavors** — nenhum módulo declara `productFlavors`; não existe `missingDimensionStrategy`, `BuildConfig.BASE_URL` nem tarefa `*DevDebug*`. A direção é produto local (ver `docs/TRANSICAO-LOCAL.md`).
 - **DI** — Hilt everywhere; ViewModels via `@HiltViewModel` + `@Inject` constructor. Domain layer may use `javax.inject.Inject` only. New `:core:data` bindings go in `DataModule` **ou** em um `@Module` dedicado quando o binding for de um componente autocontido — hoje são exatamente dois: `di/DataModule.kt` e o `PepperProvider.Factory` (`security/PepperProvider.kt:77-83`), que fornece o pepper ao hasher.
 - **State management** — immutable `data class XxxUiState(...)` (per-screen error slots as nullable fields, no sealed class); expose `val uiState: StateFlow<XxxUiState>` via `stateIn(viewModelScope, WhileSubscribed(5_000), initial)`. One-shot events via `Channel`/`SharedFlow` or `MutableStateFlow<String>` for errorMessage + retry pattern with `_retryToken` + `flatMapLatest`.
-- **Module marker** — `PackageMarker.kt` (`internal const val <MODULE>_PACKAGE: String`) existe em **6 dos 8** módulos. **Lacuna conhecida:** falta em `:app` e em `:core:ui` — o Kover exclui `*.PackageMarker` por padrão, então a ausência não quebra nada, mas padronize ao criar arquivo novo nesses dois módulos.
-- **Repository mutations** — always go through `pendingOpDao.enqueueInTx(op) { ... }` inside one Room transaction (offline-first dual-write, E3.3). Cascade ops use `@Transaction` DAO methods (`cascadeCompleteTask`, `cascadeReopenTask`).
-- **Navigation** — never hardcode route strings; use `object XxxRoutes` constants + helper `fun xRoute(args)` builders. Só `:feature:tasks` expõe extensões `NavGraphBuilder.*Graph()` (registradas por `:app`); as demais features são registradas por funções privadas do `BrainOutNavHost`, que conhece os composables. Ao padronizar, beware das duas fontes de verdade de rotas descritas em *Navigation*.
+- **Erros na UI são tipados, nunca texto solto** — o ViewModel emite um **enum** de erro (ex.: `AuthErrorType`) e a camada de UI escolhe o `stringResource`. O caminho antigo — ViewModel emitindo string em português e a UI fazendo `when` por casamento de texto — vazava português cru e quebrava silenciosamente em qualquer erro novo.
+- **Module marker** — `PackageMarker.kt` (`internal const val <MODULE>_PACKAGE: String`) existe nos **8** módulos. O Kover exclui `*.PackageMarker` por padrão.
+- **Repository mutations** — toda escrita passa por `LocalTransaction.run { … }` (uma transação Room). Cascade ops use `@Transaction` DAO methods (`cascadeCompleteTask`, `cascadeReopenTask`).
+- **Navigation** — never hardcode route strings; use `object XxxRoutes` constants + helper `fun xRoute(args)` builders. Só `:feature:tasks` expõe extensões `NavGraphBuilder.*Graph()` (registradas por `:app`); as demais features são registradas por funções privadas do `BrainOutNavHost`, que conhece os composables. `BrainOutRoutes` é o registro central — não crie um objeto de rotas paralelo (ver *Navigation*).
 - **Compose test tags** — colocated `object XxxTestTags` per screen (e.g. `project_detail_new_task_fab`); snake_case, screen-prefixed. Used by Robolectric + Compose UI tests via `onNodeWithTag`.
 - **Domain errors** — `DomainException` é a **raiz única** de `core.domain.error.*` e estende `IllegalArgumentException` (contrato de `kotlin.require()` nos modelos, coberto por testes). `BusinessRuleException` também estende `DomainException` (hierarquia única — um `catch (DomainException)` agora captura violações de RN). Filhos: `InvalidModelException`, `DuplicateEmailException`, `InvalidCredentialsException`, `InvalidStateTransitionException`, `TaskNotFoundException`, `ProjectNotFoundException`, `TagOwnershipException`, `TagNotFoundException`. Repositories throw domain exceptions; ViewModels catch and surface into `errorMessage`.
 - **No commented-out code** (`CONTRIBUTING.md`, R12). Delete dead code; don't disable with comments.
@@ -170,16 +162,16 @@ Override dev URL via env var `BASE_URL` (precedence, used by CI) or `local.prope
 | `settings.gradle.kts` | 8-module list; `FAIL_ON_PROJECT_REPOS`; google()+mavenCentral() only. |
 | `build.gradle.kts` (root) | Plugin declarations; `gradle.projectsEvaluated` wire-up; Kover 60% em `:core:domain` + `:core:data` com filtros de classes geradas; `koverMergedHtmlReport`; **ktlint aplicado a todos os subprojetos** (ver *Static Analysis*). |
 | `gradle/libs.versions.toml` | Version catalog — **single source of truth for dependencies**. No inline versions. |
-| `gradle/wrapper/gradle-wrapper.properties` | Gradle 9.7.1. |
+| `gradle/wrapper/gradle-wrapper.properties` | Gradle 9.8.1. |
 | `gradle.properties` | `-Xmx4g`, parallel + caching enabled, `useAndroidX=true`, `nonTransitiveRClass=true`. |
-| `app/build.gradle.kts` | Flavors, `BuildConfig.BASE_URL`, `coreLibraryDesugaring`, signing from env vars, lint gate. |
-| `core/data/build.gradle.kts` | Flavors + `BuildConfig.HOLIDAYS_BASE_URL` (BrasilAPI), Room `schemaLocation`, `testInstrumentationRunner`, Kover, `lint { abortOnError = false }`. |
+| `app/build.gradle.kts` | `coreLibraryDesugaring`, signing from env vars, lint gate. Sem flavors, sem `BuildConfig.BASE_URL`. |
+| `core/data/build.gradle.kts` | Room `schemaLocation`, `testInstrumentationRunner`, `coreLibraryDesugaring`, Kover, `lint { abortOnError = true }`. Sem flavors. |
 | `core/domain/build.gradle.kts` | Pure Kotlin JVM; Jacoco + Kover; no Android. |
 | `core/ui/build.gradle.kts` | Lib Android sem flavor e **sem** `missingDimensionStrategy`; `isIncludeAndroidResources = true` (necessário para o teste Robolectric do `ColorScheme`). |
 | `config/detekt/detekt.yml` | Single detekt config. `build.maxIssues=0`. Ignores `@Composable`/`@Preview`/`@HiltAndroidApp`/`@AndroidEntryPoint` for `FunctionNaming`. |
 | `backend-stub/server.py` | FastAPI stub — contract is authoritative (idempotent upsert, client UUIDs). |
 | `backend-stub/tests/test_contract.py` | Suíte pytest do contrato (`/v1/*`). |
-| `.github/workflows/ci.yml` | 3 jobs: `static-analysis` → `unit-tests` (incl. Kover 60%) → `backend-integration` (docker stub + pytest + JVM sync). Roda `ktlintCheck`, `detekt`, `testDevDebugUnitTest`, `:core:ui:testDebugUnitTest`, `koverVerify`, `lintDevDebug`. |
+| `.github/workflows/ci.yml` | Jobs de análise estática, testes unitários (incl. Kover 60%) e lint. Roda `ktlintCheck`, `detekt`, `testDebugUnitTest`, `koverVerify`, `lintDebug`. |
 | `.github/workflows/release-apk.yml` | Tag-triggered signed `.aab` build (4 secrets). |
 | `.github/CODEOWNERS` | Single approver. |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Requires `Refs: R#` and forbids commented code. |
@@ -187,18 +179,18 @@ Override dev URL via env var `BASE_URL` (precedence, used by CI) or `local.prope
 
 ## Static Analysis
 
-- **ktlint é aplicado a todos os subprojetos.** Antes o plugin vivia só na raiz, o que fazia `ktlintCheck` inspecionar 2 arquivos de build e **zero** dos 221 `.kt` versionados; hoje o root faz `subprojects { apply(plugin = ktlint); android = true }`. Consequência: a engine 1.x do ktlint 14 sinaliza violações cosméticas pré-existentes (registradas como DEF-10 em `docs/DEFEITOS.md`), então `ignoreFailures` está em `true` até a passada de reformatação. Não comente isso como "ktlint está desligado" — o gate **inspeciona** tudo e **não bloqueia** por enquanto.
+- **ktlint é aplicado a todos os subprojetos.** O root faz `subprojects { apply(plugin = ktlint); android = true }`, então `ktlintCheck` inspeciona **todos** os arquivos `.kt` versionados. O gate **bloqueia**: `ignoreFailures = false` (DEF-10 corrigido). Não comente isso como "ktlint está desligado" — se `ktlintCheck` falha, o build falha.
 - **detekt** é aplicado por módulo (no `build.gradle.kts` de cada um) com config centralizada em `config/detekt/detekt.yml`. Roda com `build.maxIssues = 0`.
 - **`.editorconfig` na raiz** — `ktlint_code_style = ktlint_official` (o estilo que o código segue de fato; `android_studio` foi testado e rejeitado por pedir reformatação massiva) e `ktlint_function_naming_ignore_when_annotated_with = Composable`, que espelha o `FunctionNaming.ignoreAnnotated` do detekt (`config/detekt/detekt.yml:82-88`) para as funções `@Composable` em PascalCase. É aditivo: não substitui detekt nem o catálogo de regras.
-- **Android lint** — gate rígido de i18n em `:app`, `:feature:auth`, `:feature:projects`, `:feature:settings`; relaxado em `:feature:tasks` e `:core:data` (ver *i18n gate*).
+- **Android lint** — gate rígido de i18n em `:app`, `:feature:auth`, `:feature:projects`, `:feature:settings` e `:core:data`; relaxado em `:feature:tasks` (ver *i18n gate*).
 
 ## Runtime / Tooling Preferences
 
-- **Android SDK**: `compileSdk 37`, `targetSdk 37` (só em `:app`), `minSdk 24` em todos os módulos Android. **`coreLibraryDesugaring` está ligado só em `:app`** (`desugar_jdk_libs 2.1.5`), o que é verdade — mas o estado real é mais nuançado: `:core:data` usa `java.time.Instant`/`LocalDate` (`InstantConverter`, entidades, `HolidayRemoteDataSource`, `TaskRepositoryImpl`) e `java.util.Base64` (`PasswordHasherImpl`) com `minSdk 24` **sem** desugaring próprio, e por isso carrega 8 erros `[NewApi]` pendentes com `lint { abortOnError = false }`. O desugaring de `:core:data` está fora de escopo (comentado no `build.gradle.kts` do módulo) e é dívida conhecida — não trate `abortOnError = false` como configuração sadia. O platform instalado é `android-37.0` (Android 17, final — não é preview). `buildToolsVersion` não é declarado de propósito; o AGP 9.4.1 escolhe.
-- **JDK**: bytecode target Java 17. CI (`ci.yml`) e release (`release-apk.yml`) provisionam **Temurin 21** (Gradle 9.7.1 roda em JVM 17–27 e o piso do AGP 9.4.1 é 17 — 21 é o padrão unificado do projeto). Localmente: `export JAVA_HOME=/opt/android-studio/jbr` (JBR 25 do Android Studio) antes de `./gradlew`. `local.properties` precisa de `sdk.dir`.
-- **No package manager other than Gradle** for the Android side. **Python 3.12 + pip + venv** for the backend stub (also shipped as Docker image `python:3.12-slim` in `backend-stub/Dockerfile`).
+- **Android SDK**: `compileSdk 37`, `targetSdk 37` (só em `:app`), `minSdk 24` em todos os módulos Android. `coreLibraryDesugaring` está ligado em `:app` **e** em `:core:data` (`desugar_jdk_libs 2.1.5`) — o que fecha a dívida de `java.time`/`java.util.Base64` com `minSdk 24`; `:core:data` hoje roda com `lint { abortOnError = true }`. O platform instalado é `android-37.0` (Android 17, final — não é preview). `buildToolsVersion` não é declarado de propósito; o AGP 9.4.1 escolhe.
+- **JDK**: bytecode target Java 17. CI (`ci.yml`) e release (`release-apk.yml`) provisionam **Temurin 21** (Gradle 9.8.1 roda em JVM 17–27 e o piso do AGP 9.4.1 é 17 — 21 é o padrão unificado do projeto). Localmente: `export JAVA_HOME=/opt/android-studio/jbr` (JBR 25 do Android Studio) antes de `./gradlew`. `local.properties` precisa de `sdk.dir`.
+- **No package manager other than Gradle** for the Android side. **Python 3.12 + pip + venv** só para o `backend-stub/` histórico (ver *Development Commands*).
 - **Android Studio / lint / ktlint / detekt** are the only static analysis tools. No Checkstyle, no Spotless, no Sonar.
-- **Kover 0.9.9** only on `:core:domain` and `:core:data`; everywhere else is exempt.
+- **Kover 0.9.11** only on `:core:domain` and `:core:data`; everywhere else is exempt.
 
 ## Delivery Workflow (commit / push / PR / merge)
 
@@ -231,7 +223,7 @@ Standing rule — applies automatically at the end of every development task, wi
 - **Never commit changes to files this task did not author.** If the working tree already had unrelated modifications before the task started, leave them unstaged and say so.
 - **Never merge a PR whose CI is red.** If CI is still running, either wait for it or report the pending state — a pending check is not a green check.
 
-**Local check limitation.** `detekt` cannot run locally with the Android Studio JBR (25): detekt 1.23.7 derives `--jvm-target` from the Gradle JVM and rejects `25`. It runs fine in CI on Temurin 21, so a *local* detekt failure is not a red gate — run `ktlintCheck`, `testDevDebugUnitTest`, and `koverVerify`, which do work locally. Do not add per-module detekt workarounds to silence this.
+**Local check limitation.** `detekt` deriva `--jvm-target` do JVM do daemon Gradle e **rejeita `25`** (o JBR 25 do Android Studio). Ele roda bem em JDK 21 — localmente, aponte o daemon para um JDK 21 (`gradle/gradle-daemon-jvm.properties` fixa o critério do daemon; `toolchainVersion=21` resolve) e rode `detekt` junto de `ktlintCheck`, `testDebugUnitTest` e `koverVerify`. Não adicione workarounds por módulo para silenciar isso.
 
 ## Testing & QA
 
@@ -244,44 +236,44 @@ Frameworks (all from `gradle/libs.versions.toml`):
 - **Turbine** (1.2.0) — every ViewModel test uses `app.cash.turbine.test`.
 - **kotlinx-coroutines-test** (1.9.0) — `runTest { ... }`.
 - **Compose UI Test** (JUnit4 runner, BOM-pinned) — `createComposeRule`, `onNodeWithTag`, `assertIsDisplayed`.
-- **MockWebServer** (4.12.0) — Retrofit contract tests + `:app/.../sync/SyncWorkerTest`.
+- **MockWebServer** (4.12.0) — usado só pelo `backend-stub/` histórico; não há mais cliente HTTP no app.
 
 How to run:
 
 ```bash
-./gradlew testDevDebugUnitTest                   # modules com flavor (:app, :core:data)
-./gradlew testDebugUnitTest                      # :feature:* e :core:ui (sem flavor)
+./gradlew testDebugUnitTest                      # todos os módulos Android
 ./gradlew :core:domain:test                      # pure JVM, fast
 ./gradlew :core:domain:koverVerify :core:data:koverVerify   # 60% gate
 ./gradlew koverMergedHtmlReport                  # aggregated HTML
-./gradlew connectedDevDebugAndroidTest           # :core:data instrumented (migrations + DAO) — emulador
-./gradlew connectedDebugAndroidTest              # :feature:auth instrumented
+./gradlew connectedDebugAndroidTest              # instrumented — emulador
 ```
 
-Suite instrumentada de `:core:data` (`src/androidTest/`): **`MigrationTest`** cobre as 3 migrations — `MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, cada uma individualmente e a cadeia 1→4 — e **`UserDaoInstrumentedTest`** faz CRUD real. As duas compilam (`:core:data:assembleDevDebugAndroidTest`); execução exige emulador.
+Suite instrumentada de `:core:data` (`src/androidTest/`): **`MigrationTest`** cobre as 4 migrations — `MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, `MIGRATION_4_5` — cada uma individualmente e a cadeia 1→5 — e **`UserDaoInstrumentedTest`** faz CRUD real. As duas compilam (`:core:data:assembleDebugAndroidTest`); execução exige emulador.
 
 Coverage expectations:
 - **Kover 60% line bound** enforced on `:core:domain` and `:core:data` only.
 - Class exclusions centralized in root `build.gradle.kts` (`*_Impl`, `Hilt_*`, `*.di.*`, `*.remote.*`, `*.PackageMarker`).
 - `gradle.projectsEvaluated` in root makes every `test*UnitTest` Android task depend on `:core:domain:test` — do not remove; without it, CI won't run domain tests when invoked via an Android module.
 - New `:core:domain/usecase/` requires a test in `:core:domain/src/test/.../usecase/` (`XxxUseCaseTest`).
-- New repository impl in `:core:data` follows the `Fake*Dao` pattern (`FakeProjectDao`, `FakePendingOpDao`, `FakeTagDao` private classes inside the test) — no MockK for DAOs.
-- Test naming: backtick-quoted Portuguese descriptive sentences (e.g. `fun \`atualizar tarefa valida erro de titulo vazio\``).
+- New repository impl in `:core:data` follows the `Fake*Dao` pattern (`FakeProjectDao`, `FakeTagDao` private classes inside the test) — no MockK for DAOs.
+- Test naming: backtick-quoted Portuguese descriptive sentences (e.g. `fun \`atualizar tarefa valida erro de titulo vazio\``). **Sem `:` no nome** — o KSP gera stub Java do método e `:` vira identificador JVM inválido (`Name contains illegal characters`).
 
 Correções recentes que valem como contrato de teste (não reverta sem atualizar o teste):
 - `PasswordHasherImpl.verify` **lê as iterações do próprio hash armazenado** (`alg$iter$salt$hash`) em vez de usar uma constante fixa, e valida a faixa em `pbkdf2`. Hash gravado com iterações diferentes verifica corretamente.
 - `SortOrder.toStorageKey()` emite a grafia `snake_case` (`name_asc`, `name_desc`, `created_desc`, `created_asc`) — exatamente a que a ordenação dinâmica de `ProjectDao.searchProjects` compara em SQL. `fromStorageKey` ainda aceita a grafia concatenada legada (`nameasc`) para preferências já gravadas.
 - Hierarquia única de exceções: `BusinessRuleException : DomainException`, então `catch (DomainException)` captura violações de RN. Contrato fixado por `DomainExceptionHierarchyTest`.
+- `TaskPriority.fromCode` é a única conversão de código de prioridade; a faixa válida vive em `TaskPriority.VALID_RANGE`.
+- `reconcileTaskReminder` é a única regra de lembrete de prazo: concluída cancela, ativa com prazo futuro agenda, ativa sem prazo futuro cancela.
 
 Anti-patterns (do NOT):
 - Do not add Android/Room/Hilt dependencies to `:core:domain`.
 - Do not commit `local.properties`, `keystore.properties`, `*.jks`, or any keystore file (all gitignored). CI uses `BRAINOUT_KEYSTORE_BASE64`.
-- Do not write `fallbackToDestructiveMigration`; write a hand-rolled `Migration` and add it to `DataModule` (existing: `MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`).
-- Do not hard-code URLs anywhere — always `BuildConfig.BASE_URL`.
+- Do not write `fallbackToDestructiveMigration`; write a hand-rolled `Migration` and add it to `DataModule` (existing: `MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, `MIGRATION_4_5`).
+- Do not reintroduce a camada de rede — nem `BASE_URL`, nem Retrofit, nem flavors, nem fila de sync.
 - Do not leave commented-out code.
 - Do not suppress `MissingTranslation`; add the `values-en/` translation.
 - Do not add a new `withContext(Dispatchers.IO)` to `:core:data` — the Room DAO suspend already runs off the main thread.
-- Do not introduce a third route source of truth; extend `BrainOutRoutes` / the feature's `*Routes`.
+- Do not introduce a second route source of truth; extend `BrainOutRoutes` (ou o `*Routes` da única feature que expõe grafo).
 - Do not edit `Documentos/`, `.omo/`, `docs/ATAS/`.
 - Do not run `assembleRelease` locally expecting signed output without the 4 env vars set.
 
@@ -290,7 +282,7 @@ Anti-patterns (do NOT):
 Honest inventory so an agent does not assume the docs are complete:
 
 - **`:core:ui` não tem `AGENTS.md`.** Só `:core:domain`, `:core:data` e `feature/` têm sub-guia; `:app` também não tem. As regras de `:core:ui` (tokens Neo, fontes, drawables, `isIncludeAndroidResources`) vivem apenas na seção *Key Directories* acima.
-- **`:app` não tem `AGENTS.md`.** Suas regras (workers de sync/notificação, NavHost, flavors, lint rígido) estão só no root.
-- **Rotas duplicadas** (`AuthRoutes`/`ProjectsRoutes`/`SettingsRoutes` vs `BrainOutRoutes`) — documentadas acima, não unificadas.
-- **`PackageMarker.kt` ausente** em `:app` e `:core:ui`.
-- **ktlint com `ignoreFailures = true`** até a reformatação DEF-10.
+- **`:app` não tem `AGENTS.md`.** Suas regras (workers de notificação, NavHost, lint rígido) estão só no root.
+- **`:feature:projects`, `:feature:tasks` e `:feature:settings` não têm `AGENTS.md` próprio** — só `feature/AGENTS.md` cobre as regras comuns das features.
+- **A camada de backup local (#214) ainda tem dívida**: `BackupSection.kt` é grande e concentra UI, diálogo e estado; uma extração por bloco é trabalho em aberto.
+- **O `HomeListingPipeline` ainda combina muitos fluxos** (`combine` de projetos, tags, busca e ordenação); a simplificação em curso é substituir `flowOf(inputs)` por uma estrutura de entrada explícita.

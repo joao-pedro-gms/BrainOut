@@ -4,6 +4,12 @@
 > Não usar missingDimensionStrategy nem tarefas DevDebug. ViewModels não
 > consomem ConnectivityObserver/PendingSyncMonitor; erros e retry locais
 > continuam válidos. As referências a flavors/sync abaixo são históricas.
+>
+> Limpeza #226: `AuthRoutes`, `ProjectsRoutes` e `SettingsRoutes` foram
+> removidos — só os próprios testes os usavam. `BrainOutRoutes` (em
+> `:app`) é o registro central; `TasksRoutes` (em `:feature:tasks`) é a
+> única feature que expõe extensões de grafo e, portanto, dona das
+> rotas que usa.
 
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Convenção operacional dos 4 módulos :feature:* — referência operacional para
@@ -16,11 +22,9 @@ implementa um recorte funcional da UI em Compose + Material 3, consumindo
 `:core:domain`, `:core:data` e `:core:ui`. Mesmo template, mesma política de
 testes, mesmo par de idiomas.
 
-Nenhum dos 4 tem flavor próprio: cada um fixa
-`missingDimensionStrategy("environment", "dev")` para casar com a dimensão
-`environment` de `:core:data`. **Consequência prática: a task de teste é
-`testDebugUnitTest` (e `assembleDebugAndroidTest`), não `testDevDebugUnitTest`
-como em `:app`/`:core:data`.**
+Nenhum dos 4 tem flavor — e nenhum precisa: não existe dimensão
+`environment` para casar. **Consequência prática: a task de teste é
+`testDebugUnitTest` (e `assembleDebugAndroidTest`), para os 4.**
 
 ## MODULE TEMPLATE
 
@@ -29,12 +33,12 @@ Layout canônico por módulo (a partir de `feature/<name>/src/`):
 ```
 main/kotlin/pucgo/joaopedrogmsilva/brainout/feature/<name>/
   PackageMarker.kt                 // marcador de convenção (não deletar)
-  navigation/<Name>Routes.kt       // constantes de rota (+ NavGraph só em :feature:tasks)
+  navigation/<Name>Routes.kt       // só :feature:tasks (constantes + NavGraph)
   ui/                              // uma pasta por tela: Screen.kt + opcional ViewModel.kt
   viewmodel/                       // SOMENTE :feature:auth usa este pacote
 main/res/values/strings.xml        // pt-BR
 main/res/values-en/strings.xml      // en — obrigatório, paridade chave a chave
-test/kotlin/.../...                // espelha main; *Test.kt / *RoutesTest / *ViewModelTest / *ScreenTest
+test/kotlin/.../...                // espelha main; *Test.kt / *ViewModelTest / *ScreenTest
 androidTest/kotlin/...             // só :feature:auth usa (LoginScreenTest)
 ```
 
@@ -57,30 +61,29 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
   `addHomeRoute`, `addProjectDetailRoute`, `addSettingsRoute`), que chamam
   `composable(...)` e instanciam os composables das features **diretamente**.
   Consequência: `:app` conhece os composables, não só as rotas.
-- **As constantes de rota de auth/projects/settings estão duplicadas.**
-  `AuthRoutes`, `ProjectsRoutes` e `SettingsRoutes` existem nos módulos, mas são
-  consumidos **apenas pelos próprios testes** (`*RoutesTest.kt`) — o `NavHost`
-  usa `BrainOutRoutes` (em `:app`) e `TasksRoutes` (real, usado em
-  `BrainOutNavHost` e em `HomeScreen`). `TasksRoutes` é a única fonte de rota de
-  feature efetivamente em produção.
-  Ao criar feature nova: exponha as rotas em `*Routes.kt` **e** registre o
-  destino — no estilo `tasksGraph()`, ou via função privada no `BrainOutNavHost`.
-  Um objeto de rotas desconectado do `NavHost` nasce morto.
+- **Não existe objeto de rotas em auth/projects/settings.** As rotas vivem
+  em `BrainOutRoutes` (em `:app`), que é o registro central do `NavHost`.
+  `TasksRoutes` é a única feature que expõe extensões de grafo — e por
+  isso é dona das rotas que usa; seus valores **não** existem em
+  `BrainOutRoutes`.
+  Ao criar feature nova: **não** crie um `*Routes.kt` desconectado do
+  `NavHost` — ele nasce morto. Se a feature expuser extensões de grafo,
+  registre-as no `NavHost` no mesmo PR (estilo `tasksGraph()`); senão,
+  use `BrainOutRoutes`.
 
 ## WHERE TO LOOK
 
 | Funcionalidade         | Telas                                                                 | ViewModel                | Rotas                | Notas                                                                              |
 |------------------------|-----------------------------------------------------------------------|--------------------------|----------------------|------------------------------------------------------------------------------------|
-| `:feature:auth` (R2)   | `ui/login/LoginScreen.kt`, `ui/register/RegisterScreen.kt`, `ui/splash/SplashScreen.kt` | `viewmodel/AuthViewModel.kt` + `AuthUiState.kt` | `navigation/AuthRoutes.kt` | Único módulo com `androidTest/` (LoginScreenTest). VMs em `viewmodel/`. `AuthRoutes` só usado pelo próprio teste. |
-| `:feature:projects` (R3–R5) | `ui/home/HomeScreen.kt` (+ HomeTab, HomeUser), `ui/projectdetail/ProjectDetailScreen.kt` (+ `DeadlineField.kt`) | `ui/home/HomeViewModel.kt`, `ui/projectdetail/ProjectDetailViewModel.kt` | `navigation/ProjectsRoutes.kt` | `DeadlineField.kt` é composable reutilizável de prazo; consome `CheckDeadlineUseCase` de `:core:domain`. `ProjectsRoutes` só usado pelo próprio teste. |
-| `:feature:tasks` (R7–R8) | `ui/TasksScreen.kt`, `ui/DashboardScreen.kt`                        | `ui/TasksViewModel.kt`, `ui/DashboardViewModel.kt` | `navigation/TasksRoutes.kt` | **Única feature com `*Graph()`** (`tasksGraph()`/`dashboardGraph()`) e única com `TasksRoutes` em produção. `DashboardScreenTest` roda em JVM via Robolectric (`@Config(qualifiers="pt-rBR")`). |
-| `:feature:settings` (R9) | `ui/SettingsScreen.kt` (+ `SettingsStructure.kt`)                   | — (sem VM)               | `navigation/SettingsRoutes.kt` | **Maior gap de VM:** sem ViewModel; cobertura é `RoutesTest` + `SettingsScreenTest`. `SettingsRoutes` só usado pelo próprio teste. |
+| `:feature:auth` (R2)   | `ui/login/LoginScreen.kt`, `ui/register/RegisterScreen.kt`, `ui/splash/SplashScreen.kt` | `viewmodel/AuthViewModel.kt` + `AuthUiState.kt` + `AuthErrorType.kt` | — (`BrainOutRoutes`) | Único módulo com `androidTest/` (LoginScreenTest). VMs em `viewmodel/`. Erros tipados por enum, traduzidos na UI. |
+| `:feature:projects` (R3–R5) | `ui/home/HomeScreen.kt` (+ HomeTab, HomeUser), `ui/projectdetail/ProjectDetailScreen.kt` (+ `DeadlineField.kt`) | `ui/home/HomeViewModel.kt`, `ui/projectdetail/ProjectDetailViewModel.kt` | — (`BrainOutRoutes`) | `DeadlineField.kt` é composable reutilizável de prazo; consome `CheckDeadlineUseCase` de `:core:domain`. |
+| `:feature:tasks` (R7–R8) | `ui/TasksScreen.kt`, `ui/DashboardScreen.kt`                        | `ui/TasksViewModel.kt`, `ui/DashboardViewModel.kt` | `navigation/TasksRoutes.kt` | **Única feature com `*Graph()`** (`tasksGraph()`/`dashboardGraph()`) — e por isso dona das rotas que usa. `DashboardScreenTest` roda em JVM via Robolectric (`@Config(qualifiers="pt-rBR")`). |
+| `:feature:settings` (R9) | `ui/SettingsScreen.kt` (+ `SettingsStructure.kt`)                   | — (sem VM)               | — (`BrainOutRoutes`) | **Maior gap de VM:** sem ViewModel; cobertura é `SettingsScreenTest` + `BackupSectionTest`. |
 
 ## CONVENTIONS
 
-- `defaultConfig.missingDimensionStrategy("environment", "dev")` em **todos** os
-  `build.gradle.kts` — herdam flavor do `:app` e `:core:data` fixando a
-  dimensão.
+- Nenhum módulo declara flavor e nenhum fixa `missingDimensionStrategy` —
+  não existe dimensão `environment` para casar.
 - Toda string nova vai em `values/strings.xml` **e** `values-en/strings.xml`,
   com a mesma chave. `:feature:auth`, `:feature:projects` e `:feature:settings`
   usam `lint { abortOnError = true; error += "MissingTranslation" }`, que falha
@@ -108,14 +111,17 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
 - **Não** importar diretamente outro `:feature/*` (acoplamento entre features).
   Dependência entre features só via portas em `:core:domain` (interfaces) +
   implementações expostas por `:core:data`.
-- **Não** duplicar `NavHost` dentro de uma feature. Cada feature expõe apenas
-  as rotas em `*Routes.kt`; o grafo raiz fica em
+- **Não** duplicar `NavHost` dentro de uma feature. O grafo raiz fica em
   `:app/navigation/BrainOutNavHost.kt`. Não registre `composable(...)` da sua
   própria feature de dentro dela — quem registra o destino é o NavHost (via
   `*Graph()` ou função privada).
-- **Não** criar um objeto de rotas que ninguém navega. Hoje `AuthRoutes`,
-  `ProjectsRoutes` e `SettingsRoutes` existem e só os testes usam; rotas novas
-  precisam ser conectadas ao `NavHost` ou nascem mortas.
+- **Não** criar um objeto de rotas que ninguém navega. As rotas de auth,
+  projects e settings vivem em `BrainOutRoutes` (em `:app`); `AuthRoutes`,
+  `ProjectsRoutes` e `SettingsRoutes` foram removidos exatamente por isso.
+  Só `:feature:tasks` tem `*Routes.kt`, porque expõe extensões de grafo.
+- **Não** emitir erro como texto solto do ViewModel. Emita um **enum** de
+  erro e deixe a UI escolher o `stringResource` — texto solto vaza
+  português cru e quebra em qualquer erro novo.
 - **Não** acessar `Context`/`Resources` direto do ViewModel para string —
   ViewModel emite estado, composable resolve `stringResource(...)`.
 - **Não** suprimir `MissingTranslation` nos módulos com lint rígido — adicione a
@@ -124,17 +130,18 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
 ## TESTES — pontos de atenção
 
 - Nomenclatura: `<Classe>Test.kt`. Tela Compose → `<Screen>ScreenTest.kt` (ex.:
-  `LoginScreenTest`, `DashboardScreenTest`). Rota → `<Feature>RoutesTest.kt`.
-- **Task de execução:** `./gradlew :feature:<name>:testDebugUnitTest` (módulos
-  sem flavor). `:feature:auth` ainda tem `androidTest/` →
+  `LoginScreenTest`, `DashboardScreenTest`). Não há mais `*RoutesTest.kt` — os
+  objetos de rota que só os testes usavam foram removidos.
+- **Task de execução:** `./gradlew :feature:<name>:testDebugUnitTest`.
+  `:feature:auth` ainda tem `androidTest/` →
   `assembleDebugAndroidTest` / `connectedDebugAndroidTest`.
 - Cobertura obrigatória de Kover (60%) só em `:core:domain` e `:core:data` —
   features **não** entram no gate.
 - `androidTest/` só em `:feature:auth` (gancho histórico para LoginScreenTest).
   Demais telas testam em JVM com Robolectric (`@Config(sdk=[34])`,
   `qualifiers="pt-rBR"` para garantir resolução de `values/`).
-- Gaps conhecidos: `:feature:settings` sem ViewModel (só `RoutesTest` +
-  `SettingsScreenTest`); `:feature:projects` e `:feature:tasks` sem Compose UI
+- Gaps conhecidos: `:feature:settings` sem ViewModel (só `SettingsScreenTest` +
+  `BackupSectionTest`); `:feature:projects` e `:feature:tasks` sem Compose UI
   test para `HomeScreen`, `ProjectDetailScreen` e `TasksScreen` (`:feature:tasks`
   cobre `DashboardScreen`, mas não `TasksScreen`). Cobertura Compose não é gate
   do CI; tratar antes do marco E5.1.

@@ -183,7 +183,7 @@ class EmptyStateContrastTest {
         return Color(r, g, b, alpha = 1f)
     }
 
-    private fun lightNeoColorScheme(): ColorScheme = NeoColors.Light.toMaterialColorScheme(dark = false)
+    private fun lightNeoColorScheme(): ColorScheme = NeoColors.Light.toMaterialColorScheme()
 
-    private fun darkNeoColorScheme(): ColorScheme = NeoColors.Dark.toMaterialColorScheme(dark = true)
+    private fun darkNeoColorScheme(): ColorScheme = NeoColors.Dark.toMaterialColorScheme()
 }
