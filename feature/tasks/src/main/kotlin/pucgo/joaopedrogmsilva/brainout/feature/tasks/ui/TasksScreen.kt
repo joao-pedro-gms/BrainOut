@@ -149,28 +149,35 @@ private fun TasksContent(
  * Banner de erro com retry (E2.8). Mesma estrutura visual do
  * `HomeErrorBanner` em `:feature:projects`.
  *
- * DEF-26: a mensagem do [TasksViewModel] é usada em vez do texto fixo
- * — chave de erro conhecida vira recurso pt/en e o resto é exibida
- * como veio, sem esconder a causa atrás de "falha ao carregar".
+ * DEF-26: o erro do [TasksViewModel] chega **tipado**
+ * ([TasksErrorType]) e o texto sai do recurso pt/en — a falha de
+ * escrita não é escondida atrás de "falha ao carregar".
  */
 @Composable
 internal fun TasksErrorBanner(
-    message: String,
+    message: TasksErrorType,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val texto =
-        if (TasksViewModel.isLoadErrorMessage(message)) {
-            stringResource(id = R.string.tasks_error_load_failed)
-        } else {
-            message
-        }
+    val texto = resolveTasksErrorMessage(message)
     NeoErrorBanner(
         message = texto,
         onRetry = onRetry,
         onDismiss = onDismiss,
     )
 }
+
+/**
+ * Resolve o erro do [TasksViewModel] para o texto localizado.
+ *
+ * O tipo é compartilhado com o Painel; o texto é de cada tela.
+ */
+@Composable
+private fun resolveTasksErrorMessage(error: TasksErrorType): String =
+    when (error) {
+        TasksErrorType.LoadFailed ->
+            stringResource(id = R.string.tasks_error_load_failed)
+    }
 
 @Composable
 private fun TasksEmptyState(modifier: Modifier = Modifier) {

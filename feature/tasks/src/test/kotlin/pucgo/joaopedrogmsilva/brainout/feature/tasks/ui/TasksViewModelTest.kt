@@ -186,12 +186,12 @@ class TasksViewModelTest {
             viewModel.uiState.test {
                 advanceUntilIdle()
                 val state = expectMostRecentItem()
-                assertThat(state.errorMessage).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.errorMessage).isEqualTo(TasksErrorType.LoadFailed)
                 assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
 
-            assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+            assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
         }
 
     /**
@@ -229,7 +229,7 @@ class TasksViewModelTest {
 
             viewModel.uiState.test {
                 advanceUntilIdle()
-                assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
 
                 // Reconfigura o mock para emitir lista vazia.
                 coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
@@ -269,7 +269,7 @@ class TasksViewModelTest {
 
             viewModel.uiState.test {
                 advanceUntilIdle()
-                assertThat(viewModel.errorMessage.value).isEqualTo(TasksViewModel.ERROR_LOAD_FAILED)
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
 
                 viewModel.clearError()
                 assertThat(viewModel.errorMessage.value).isNull()

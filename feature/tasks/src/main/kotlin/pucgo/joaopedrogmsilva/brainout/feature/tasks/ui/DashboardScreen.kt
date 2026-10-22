@@ -127,7 +127,7 @@ internal fun DashboardContent(
         when {
             state.errorMessage != null ->
                 DashboardErrorBanner(
-                    message = state.errorMessage,
+                    error = state.errorMessage,
                     onRetry = onRetry,
                     onDismiss = onDismissError,
                 )

@@ -13,32 +13,32 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 /**
  * Banner de erro do painel.
  *
- * A mensagem chega como a chave canônica do [DashboardViewModel]; a
- * tradução para o texto localizado acontece em
- * [resolveDashboardErrorMessage] — o mesmo caminho de Home, Detalhe de
- * Projeto e Tarefas.
+ * O erro chega **tipado** ([TasksErrorType]); a tradução para o texto
+ * localizado acontece em [resolveDashboardErrorMessage] — o mesmo
+ * caminho de Home, Detalhe de Projeto e Tarefas.
  */
 @Composable
 internal fun DashboardErrorBanner(
-    message: String,
+    error: TasksErrorType,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     NeoErrorBanner(
-        message = resolveDashboardErrorMessage(message),
+        message = resolveDashboardErrorMessage(error),
         onRetry = onRetry,
         onDismiss = onDismiss,
     )
 }
 
 /**
- * Resolve a chave canônica de erro do [DashboardViewModel] para a string
- * localizada. Mesma estratégia de `resolveHomeErrorMessage` em Home.
+ * Resolve o erro do [DashboardViewModel] para o texto localizado.
+ *
+ * O ViewModel entrega o **tipo** do erro ([TasksErrorType]); o texto é
+ * de cada tela — o do Painel é `dashboard_error_load_failed`.
  */
 @Composable
-internal fun resolveDashboardErrorMessage(message: String): String =
-    if (DashboardViewModel.isLoadErrorMessage(message)) {
-        stringResource(id = R.string.dashboard_error_load_failed)
-    } else {
-        message
+internal fun resolveDashboardErrorMessage(error: TasksErrorType): String =
+    when (error) {
+        TasksErrorType.LoadFailed ->
+            stringResource(id = R.string.dashboard_error_load_failed)
     }
