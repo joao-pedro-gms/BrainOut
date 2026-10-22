@@ -45,9 +45,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -86,8 +86,8 @@ internal fun HomeProjectFilterRow(
                     contentDescription = groupLabel
                     stateDescription = selectedFilterLabel
                 },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
     ) {
         HomeProjectFilter.entries.forEach { option ->
             FilterChip(

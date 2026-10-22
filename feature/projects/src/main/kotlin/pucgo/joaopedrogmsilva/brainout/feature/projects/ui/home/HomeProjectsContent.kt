@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
@@ -78,13 +79,13 @@ internal fun HomeProjectsContent(
                 .fillMaxSize()
                 .padding(contentPadding)
                 .neoContentWidth()
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
         contentPadding = PaddingValues(bottom = 88.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
                 // E2.6 — barra de busca textual. `OutlinedTextField` com ícone
                 // de limpar (X) à direita quando o texto não está vazio. O
                 // placeholder vem de `values/strings.xml` para manter a regra

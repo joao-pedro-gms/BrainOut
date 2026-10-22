@@ -21,7 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 
 /**
  * Banner de erro da identidade Neo.
@@ -58,15 +60,15 @@ fun NeoErrorBanner(
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
                 .testTag(NeoErrorBannerTestTags.BANNER),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(NeoRadii.modal),
         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(NeoSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -75,7 +77,7 @@ fun NeoErrorBanner(
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = messageTextAlign,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
                 TextButton(
                     onClick = onRetry,
                     modifier =

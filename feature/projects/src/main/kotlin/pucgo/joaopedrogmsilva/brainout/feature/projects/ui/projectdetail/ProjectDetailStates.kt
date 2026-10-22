@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -46,7 +48,7 @@ internal fun ProjectDetailLoadingState() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(modifier = Modifier.size(48.dp))
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(NeoSpacing.xs))
         Text(
             text = stringResource(id = R.string.project_detail_loading_aria_label),
             style = MaterialTheme.typography.bodySmall,
@@ -87,7 +89,7 @@ internal fun EmptyTasksCard() {
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(NeoRadii.modal),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
@@ -95,7 +97,7 @@ internal fun EmptyTasksCard() {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(NeoSpacing.lg),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -104,7 +106,7 @@ internal fun EmptyTasksCard() {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(NeoSpacing.xs))
             Text(
                 text = stringResource(id = R.string.project_detail_empty_body),
                 style = MaterialTheme.typography.bodyMedium,

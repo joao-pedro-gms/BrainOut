@@ -33,10 +33,10 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 
 /**
  * Rótulo visual de um atributo (status, prioridade, tag, papel).
@@ -83,7 +83,7 @@ fun NeoInfoChip(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = labelColor,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = NeoSpacing.xs, vertical = NeoSpacing.xxs),
             )
         }
     }

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -45,12 +46,12 @@ fun SplashScreen(
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = NeoSpacing.lg),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.mdPlus),
         ) {
             // A marca do app: a mesma arte que é o ícone do launcher
             // (`brand/brainout-icon.svg`), aqui sobre o fundo do tema.
@@ -76,7 +77,7 @@ fun SplashScreen(
             )
             Button(
                 onClick = onStartClicked,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = NeoSpacing.xs),
             ) {
                 Text(
                     text = stringResource(id = R.string.splash_cta),

@@ -32,10 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
@@ -64,7 +64,7 @@ internal fun NewTaskDialog(
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
 
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },

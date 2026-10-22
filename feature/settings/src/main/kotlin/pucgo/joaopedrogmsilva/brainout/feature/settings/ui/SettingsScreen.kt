@@ -104,8 +104,8 @@ fun SettingsScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
                     .neoContentWidth()
-                    .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         ) {
             SettingsIdentityHeader()
 
@@ -114,7 +114,7 @@ fun SettingsScreen(
                     text = stringResource(id = section.titleRes).uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(start = NeoSpacing.xxs, bottom = NeoSpacing.xxs),
                 )
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -157,7 +157,7 @@ fun SettingsScreen(
 
             backupContent()
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(NeoSpacing.lg))
         }
     }
 }
@@ -225,7 +225,7 @@ internal fun SettingsRow(
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(enabled = enabled, onClick = onClick)
                 .testTag(testTag)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = NeoSpacing.md, vertical = NeoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
