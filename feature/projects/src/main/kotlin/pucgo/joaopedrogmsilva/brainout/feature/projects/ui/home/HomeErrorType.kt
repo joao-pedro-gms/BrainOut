@@ -27,4 +27,12 @@ enum class HomeErrorType {
 
     /** Nome do projeto obrigatório — validação inline do diálogo. */
     NameRequired,
+
+    /**
+     * Já existe uma tag com esse nome para este usuário. O domínio
+     * traduz a violação do índice UNIQUE para
+     * [pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException]
+     * (DEF-61).
+     */
+    DuplicateTagName,
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
@@ -42,6 +43,11 @@ private fun runAction(
             block()
         } catch (e: CancellationException) {
             throw e
+        } catch (e: DuplicateTagNameException) {
+            // DEF-61 — nome de tag repetido: a tela diz exatamente o
+            // que houve, em vez da mensagem genérica de falha.
+            Log.w(TAG, "Nome de tag duplicado: " + e.name)
+            errorSink.value = HomeErrorType.DuplicateTagName
         } catch (e: Throwable) {
             Log.w(TAG, "Falha na acao da Home: " + e.message, e)
             errorSink.value = HomeErrorType.ActionFailed

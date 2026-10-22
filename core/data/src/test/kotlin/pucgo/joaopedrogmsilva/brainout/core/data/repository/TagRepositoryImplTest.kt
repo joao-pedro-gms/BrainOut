@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import java.time.Instant
@@ -103,6 +105,25 @@ class TagRepositoryImplTest {
         }
 
     @Test
+    fun `create traduz nome duplicado para DuplicateTagNameException`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            val repository = newRepository(tagDao)
+            repository.create(sampleTag(name = "Urgente"))
+
+            // DEF-61 — sem a tradução, a violação do índice UNIQUE
+            // subia crua e a tela só conseguia mostrar "não foi
+            // possível concluir a operação".
+            val failure =
+                runCatching {
+                    repository.create(sampleTag(id = "t2", name = "Urgente"))
+                }.exceptionOrNull()
+
+            assertThat(failure).isInstanceOf(DuplicateTagNameException::class.java)
+            assertThat((failure as DuplicateTagNameException).name).isEqualTo("Urgente")
+        }
+
+    @Test
     fun `delete remove tag localmente`() =
         runTest {
             val tagDao = FakeTagDao()
@@ -154,6 +175,11 @@ class TagRepositoryImplTest {
             )
 
         override suspend fun insert(tag: TagEntity): Long {
+            // O índice UNIQUE `(owner_id, name)` é o que o Room rejeita
+            // — o fake reproduz a mesma regra.
+            if (tags.values.any { it.ownerId == tag.ownerId && it.name == tag.name }) {
+                throw SQLiteConstraintException("UNIQUE constraint failed: tags.owner_id, tags.name")
+            }
             tags[tag.id] = tag
             return 1L
         }
