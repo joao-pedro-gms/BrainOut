@@ -38,6 +38,4 @@ object ProjectDetailTestTags {
     const val ERROR_BANNER: String = "project_detail_error_banner"
     const val ERROR_RETRY: String = "project_detail_error_retry"
     const val ERROR_DISMISS: String = "project_detail_error_dismiss"
-
-    const val TASK_LIST: String = "project_detail_task_list"
 }

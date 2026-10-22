@@ -100,8 +100,8 @@ data class TaskRow(
 class TasksViewModel
     @Inject
     constructor(
-        @Suppress("unused") private val taskRepository: TaskRepository,
-        @Suppress("unused") private val projectRepository: ProjectRepository,
+        private val taskRepository: TaskRepository,
+        private val projectRepository: ProjectRepository,
         private val activeUserProvider: ActiveUserProvider,
     ) : ViewModel() {
         /**
@@ -131,8 +131,14 @@ class TasksViewModel
                                         .observeAllForOwner(ownerId)
                                         .flatMapLatest { tasks ->
                                             projectRepository.observeAllForOwner(ownerId).map { projects ->
+                                                // O índice é montado uma vez por
+                                                // emissão: dentro do `map` de
+                                                // tarefas, um `associateBy` por
+                                                // linha custaria O(tarefas ×
+                                                // projetos).
+                                                val projectsById = projects.associateBy { it.id }
                                                 TasksUiState(
-                                                    rows = tasks.map { it.toRow(projects) },
+                                                    rows = tasks.map { it.toRow(projectsById) },
                                                     isLoading = false,
                                                 )
                                             }
@@ -183,13 +189,11 @@ class TasksViewModel
             _errorMessage.value = null
         }
 
-        private fun Task.toRow(projects: List<Project>): TaskRow {
-            val byId = projects.associateBy { it.id }
-            return TaskRow(
+        private fun Task.toRow(projectsById: Map<String, Project>): TaskRow =
+            TaskRow(
                 task = this,
-                projectName = byId[this.projectId]?.name ?: NO_PROJECT_LABEL,
+                projectName = projectsById[this.projectId]?.name ?: NO_PROJECT_LABEL,
             )
-        }
 
         companion object {
             private const val TAG = "BrainOut:TasksVM"

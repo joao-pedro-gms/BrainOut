@@ -10,12 +10,6 @@
     <string name="home_empty_body">Tap the “+” button to create your first project.</string>
     <string name="home_fab_create">Create new project</string>
 
-    <!-- Bottom navigation -->
-    <string name="bottom_tab_projects">Projects</string>
-    <string name="bottom_tab_tasks">Tasks</string>
-    <string name="bottom_tab_dashboard">Dashboard</string>
-    <string name="bottom_tab_settings">Settings</string>
-
     <!-- Project detail -->
     <string name="project_detail_title">Project details</string>
     <string name="project_detail_tasks_title">Tasks</string>
