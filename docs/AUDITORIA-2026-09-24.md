@@ -13,6 +13,20 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > a evidência (`arquivo:linha`) de cada correção. Onde um item de P1/P2
 > mudou de estado, ele está anotado no ponto em que aparece.
 
+> **⚠️ Estado em 22/10/2026.** A rodada de revisão de código fechou os
+> itens de P1/P2 que ainda dependiam só de decisão de execução, e o
+> *ledger* passou a ser a fonte da verdade do que está aberto:
+> [`docs/DEFEITOS.md`](DEFEITOS.md) (49 defeitos corrigidos; restam
+> DEF-02, que é operacional, DEF-24, que é decisão de design, e
+> DEF-36, que depende do modelo de participação do redesign). Desde
+> 08/10/2026, entre outras correções: o hash de senha saiu da thread
+> principal (DEF-71), a identidade da notificação de prazo deixou de
+> colidir (DEF-54), a Home parou de mostrar um usuário fake (DEF-72), os
+> diálogos passaram a ficar acima do teclado (DEF-46) e a barra inferior
+> virou abas de verdade, com o `when (currentTab)` morto removido. Os
+> alvos de decomposição de arquivos (1403/1027/593/583 linhas) hoje
+> estão todos abaixo de 415.
+
 ---
 
 ## P0 — bugs críticos — **TODOS CORRIGIDOS (verificado em 08/10/2026)**
