@@ -209,9 +209,13 @@ private fun MainRoot(
             withContext(Dispatchers.IO) {
                 activeUserProvider.currentActiveUser() != null
             }
+        // Rota inicial resolvida **uma** vez, direto para o grafo que o
+        // `NavHost` entende. `Home` não existe como destino de topo — é
+        // a tela de dentro do `MainGraph` —, então o sentinel "Home" não
+        // precisa atravessar esta fronteira.
         val destination =
             if (hasActiveUser) {
-                BrainOutRoutes.Home
+                BrainOutRoutes.MainGraph
             } else {
                 BrainOutRoutes.Splash
             }

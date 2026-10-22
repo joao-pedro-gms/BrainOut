@@ -52,30 +52,33 @@ class DeadlineWorker
         private val projectRepository: ProjectRepository,
     ) : CoroutineWorker(appContext, params) {
         override suspend fun doWork(): Result {
-            val taskId = inputData.getString(KEY_TASK_ID)
+            val taskId = inputData.getString(DeadlineKeys.TASK_ID)
             if (taskId == null) {
-                Log.e(TAG, "doWork falhou: KEY_TASK_ID não informado")
+                Log.e(TAG, "doWork falhou: id da tarefa não informado")
                 return Result.failure()
             }
             Log.d(TAG, "Executando DeadlineWorker para taskId=$taskId")
-            val outcome = publishReminder(taskId)
-            return outcome ?: Result.success()
+            publishReminder(taskId)
+            return Result.success()
         }
 
         /**
-         * Publica o lembrete da tarefa [taskId]; retorna `null` quando o
-         * fluxo termina com sucesso (inclusive nos cortes-circuitos) ou
-         * [Result.failure] quando o `Data` de entrada é inválido.
+         * Publica o lembrete da tarefa [taskId].
+         *
+         * Não há resultado a devolver: qualquer corte-circuito (tarefa
+         * inexistente, já concluída, permissão negada) é um desfecho
+         * normal — o worker termina com sucesso para não reprocessar a
+         * fila.
          */
-        private suspend fun publishReminder(taskId: String): Result? {
+        private suspend fun publishReminder(taskId: String) {
             val task: Task? = taskRepository.findById(taskId)
             if (task == null) {
                 Log.d(TAG, "Lembrete cancelado: tarefa $taskId não foi encontrada")
-                return null
+                return
             }
             if (task.status == TaskStatus.DONE) {
                 Log.d(TAG, "Lembrete cancelado: tarefa $taskId já está concluída")
-                return null
+                return
             }
 
             val projectName =
@@ -84,23 +87,24 @@ class DeadlineWorker
 
             if (!hasNotificationPermission(applicationContext)) {
                 Log.w(TAG, "Lembrete não exibido: permissão POST_NOTIFICATIONS negada")
-                return null
+                return
             }
 
+            val notificationId = DeadlineNotificationId.of(task.id)
             val contentIntent =
                 PendingIntent.getActivity(
                     applicationContext,
-                    task.id.hashCode(),
+                    notificationId,
                     Intent(applicationContext, pucgo.joaopedrogmsilva.brainout.MainActivity::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
             val completeIntent =
                 PendingIntent.getBroadcast(
                     applicationContext,
-                    task.id.hashCode(),
+                    notificationId,
                     Intent(applicationContext, DeadlineReceiver::class.java)
                         .setAction(DeadlineReceiver.ACTION_COMPLETE_TASK)
-                        .putExtra(DeadlineReceiver.EXTRA_TASK_ID, task.id),
+                        .putExtra(DeadlineKeys.TASK_ID, task.id),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
 
@@ -125,9 +129,8 @@ class DeadlineWorker
             @SuppressLint("MissingPermission")
             NotificationManagerCompat
                 .from(applicationContext)
-                .notify(task.id.hashCode(), notification)
+                .notify(notificationId, notification)
             Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
-            return null
         }
 
         private fun hasNotificationPermission(context: Context): Boolean =
@@ -139,9 +142,4 @@ class DeadlineWorker
             } else {
                 true
             }
-
-        companion object {
-            /** Chave do `Data` de entrada com o id da tarefa. */
-            const val KEY_TASK_ID: String = "task_id"
-        }
     }

@@ -15,12 +15,12 @@ object NotificationDismissal {
     /**
      * Remove a notificação de lembrete associada a [taskId]. O id de
      * notificação é o mesmo usado na publicação
-     * ([DeadlineWorker] usa `task.id.hashCode()`).
+     * ([DeadlineNotificationId]).
      */
     fun dismiss(
         context: Context,
         taskId: String,
     ) {
-        NotificationManagerCompat.from(context).cancel(taskId.hashCode())
+        NotificationManagerCompat.from(context).cancel(DeadlineNotificationId.of(taskId))
     }
 }

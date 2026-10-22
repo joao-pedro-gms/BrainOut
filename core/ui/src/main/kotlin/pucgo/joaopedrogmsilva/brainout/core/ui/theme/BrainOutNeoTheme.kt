@@ -43,7 +43,7 @@ data class NeoThemeSpec(
 val NeoLightTheme: NeoThemeSpec =
     NeoThemeSpec(
         neoColors = NeoColors.Light,
-        colorScheme = NeoColors.Light.toMaterialColorScheme(dark = false),
+        colorScheme = NeoColors.Light.toMaterialColorScheme(),
         typography = NeoMaterialTypography,
         shapes = NeoShapes,
     )
@@ -52,7 +52,7 @@ val NeoLightTheme: NeoThemeSpec =
 val NeoDarkTheme: NeoThemeSpec =
     NeoThemeSpec(
         neoColors = NeoColors.Dark,
-        colorScheme = NeoColors.Dark.toMaterialColorScheme(dark = true),
+        colorScheme = NeoColors.Dark.toMaterialColorScheme(),
         typography = NeoMaterialTypography,
         shapes = NeoShapes,
     )
@@ -62,9 +62,7 @@ val NeoDarkTheme: NeoThemeSpec =
  *
  * Função pura, determinística e sem `isSystemInDarkTheme()`: quem decide o
  * modo é o shell (hoje `MainActivity`, que ainda delega ao tema); aqui
- * só há o mapeamento `true → escuro`, o mesmo desenho de
- * `resolveBrainOutStaticColorScheme` que `ThemeSelectionTest` já cobre
- * para a paleta legada.
+ * só há o mapeamento `true → escuro`.
  *
  * Nenhum token é resolvido "no meio": a paleta vem inteira de
  * `NeoColors.Light`/`NeoColors.Dark`, a tipografia inteira de

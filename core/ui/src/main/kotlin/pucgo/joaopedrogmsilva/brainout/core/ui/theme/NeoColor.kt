@@ -4,7 +4,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -218,84 +217,49 @@ val LocalNeoColors = staticCompositionLocalOf { NeoColors.Light }
  * explicitamente os papéis de ação. Os níveis de superfície, o `scrim` e os
  * inversos também são mapeados, para não sobrar roxo padrão do Material em
  * nenhum canto da árvore.
+ *
+ * Todos os 37 slots do Material são preenchidos explicitamente, e é por
+ * isso que existe **uma** função e não uma por modo: `lightColorScheme` e
+ * `darkColorScheme` têm a mesma assinatura e os mesmos defaults, então
+ * nenhum slot fica de fora e a fábrica não decide nada. O que distingue
+ * claro de escuro são os papéis — `NeoColors.Light` e `NeoColors.Dark`.
  */
-internal fun NeoColors.toMaterialColorScheme(dark: Boolean): ColorScheme =
-    if (dark) {
-        darkColorScheme(
-            primary = link,
-            onPrimary = onLink,
-            primaryContainer = actionBackground,
-            onPrimaryContainer = actionText,
-            inversePrimary = inversePrimary,
-            secondary = secondary,
-            onSecondary = onSecondary,
-            secondaryContainer = secondaryContainer,
-            onSecondaryContainer = secondaryText,
-            tertiary = success,
-            onTertiary = onSuccess,
-            tertiaryContainer = successContainer,
-            onTertiaryContainer = successText,
-            error = error,
-            onError = onError,
-            errorContainer = errorContainer,
-            onErrorContainer = errorText,
-            background = background,
-            onBackground = textPrimary,
-            surface = surface,
-            onSurface = textPrimary,
-            surfaceVariant = surfaceAlt,
-            onSurfaceVariant = textMuted,
-            surfaceTint = link,
-            inverseSurface = inverseBackground,
-            inverseOnSurface = inverseText,
-            outline = borderDefault,
-            outlineVariant = borderDefault,
-            scrim = scrim,
-            surfaceBright = surface,
-            surfaceDim = surfaceAlt,
-            surfaceContainerLowest = background,
-            surfaceContainerLow = surface,
-            surfaceContainer = surface,
-            surfaceContainerHigh = surfaceAlt,
-            surfaceContainerHighest = surfaceAlt,
-        )
-    } else {
-        lightColorScheme(
-            primary = link,
-            onPrimary = onLink,
-            primaryContainer = actionBackground,
-            onPrimaryContainer = actionText,
-            inversePrimary = inversePrimary,
-            secondary = secondary,
-            onSecondary = onSecondary,
-            secondaryContainer = secondaryContainer,
-            onSecondaryContainer = secondaryText,
-            tertiary = success,
-            onTertiary = onSuccess,
-            tertiaryContainer = successContainer,
-            onTertiaryContainer = successText,
-            error = error,
-            onError = onError,
-            errorContainer = errorContainer,
-            onErrorContainer = errorText,
-            background = background,
-            onBackground = textPrimary,
-            surface = surface,
-            onSurface = textPrimary,
-            surfaceVariant = surfaceAlt,
-            onSurfaceVariant = textMuted,
-            surfaceTint = link,
-            inverseSurface = inverseBackground,
-            inverseOnSurface = inverseText,
-            outline = borderDefault,
-            outlineVariant = borderDefault,
-            scrim = scrim,
-            surfaceBright = surface,
-            surfaceDim = surfaceAlt,
-            surfaceContainerLowest = background,
-            surfaceContainerLow = surface,
-            surfaceContainer = surface,
-            surfaceContainerHigh = surfaceAlt,
-            surfaceContainerHighest = surfaceAlt,
-        )
-    }
+internal fun NeoColors.toMaterialColorScheme(): ColorScheme =
+    lightColorScheme(
+        primary = link,
+        onPrimary = onLink,
+        primaryContainer = actionBackground,
+        onPrimaryContainer = actionText,
+        inversePrimary = inversePrimary,
+        secondary = secondary,
+        onSecondary = onSecondary,
+        secondaryContainer = secondaryContainer,
+        onSecondaryContainer = secondaryText,
+        tertiary = success,
+        onTertiary = onSuccess,
+        tertiaryContainer = successContainer,
+        onTertiaryContainer = successText,
+        error = error,
+        onError = onError,
+        errorContainer = errorContainer,
+        onErrorContainer = errorText,
+        background = background,
+        onBackground = textPrimary,
+        surface = surface,
+        onSurface = textPrimary,
+        surfaceVariant = surfaceAlt,
+        onSurfaceVariant = textMuted,
+        surfaceTint = link,
+        inverseSurface = inverseBackground,
+        inverseOnSurface = inverseText,
+        outline = borderDefault,
+        outlineVariant = borderDefault,
+        scrim = scrim,
+        surfaceBright = surface,
+        surfaceDim = surfaceAlt,
+        surfaceContainerLowest = background,
+        surfaceContainerLow = surface,
+        surfaceContainer = surface,
+        surfaceContainerHigh = surfaceAlt,
+        surfaceContainerHighest = surfaceAlt,
+    )

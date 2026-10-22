@@ -95,8 +95,9 @@ android {
         buildConfig = true
     }
 
-    // E3.6 — testes Robolectric do canal de notificações precisam dos
-    // recursos Android (strings.xml) mesclados no classpath de teste.
+    // E3.6 / E4.6 — testes Robolectric do canal de notificações e o smoke
+    // test de i18n precisam dos recursos Android (strings.xml) mesclados no
+    // classpath de teste.
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -118,15 +119,6 @@ android {
         abortOnError = true
         error += "MissingTranslation"
         checkReleaseBuilds = false
-    }
-
-    // Robolectric (E4.6): o smoke test de i18n resolve R.string, o que
-    // exige que os recursos mergeados do app estejam disponíveis nos
-    // testes unitários JVM.
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
     }
 }
 

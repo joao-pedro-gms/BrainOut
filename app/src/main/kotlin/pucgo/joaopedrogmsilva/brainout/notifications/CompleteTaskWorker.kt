@@ -39,9 +39,9 @@ class CompleteTaskWorker
         private val changeTaskStatus: ChangeTaskStatusUseCase,
     ) : CoroutineWorker(appContext, params) {
         override suspend fun doWork(): Result {
-            val taskId = inputData.getString(KEY_TASK_ID)
+            val taskId = inputData.getString(DeadlineKeys.TASK_ID)
             if (taskId == null) {
-                Log.e(TAG, "doWork falhou: KEY_TASK_ID ausente nos dados de entrada")
+                Log.e(TAG, "doWork falhou: id da tarefa ausente nos dados de entrada")
                 return Result.failure()
             }
             Log.d(TAG, "Concluindo tarefa $taskId via notificação")
@@ -64,10 +64,5 @@ class CompleteTaskWorker
                 Log.e(TAG, "Falha de I/O ao concluir tarefa $taskId: ${e.message}. Solicitando retry.")
                 Result.retry()
             }
-        }
-
-        companion object {
-            /** Chave do `Data` de entrada com o id da tarefa. */
-            const val KEY_TASK_ID: String = "task_id"
         }
     }

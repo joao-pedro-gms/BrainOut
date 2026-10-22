@@ -49,7 +49,7 @@ class CompleteTaskWorkerTest {
     private fun buildWorker(): CompleteTaskWorker {
         val useCase = ChangeTaskStatusUseCase(taskRepository, deadlineScheduler)
         return TestListenableWorkerBuilder<CompleteTaskWorker>(context)
-            .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to "t1"))
+            .setInputData(workDataOf(DeadlineKeys.TASK_ID to "t1"))
             .setWorkerFactory(
                 object : androidx.work.WorkerFactory() {
                     override fun createWorker(
@@ -134,7 +134,7 @@ class CompleteTaskWorkerTest {
             val useCase = ChangeTaskStatusUseCase(taskRepository, deadlineScheduler)
             val worker =
                 TestListenableWorkerBuilder<CompleteTaskWorker>(context)
-                    .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to "t-desaparecida"))
+                    .setInputData(workDataOf(DeadlineKeys.TASK_ID to "t-desaparecida"))
                     .setWorkerFactory(
                         object : androidx.work.WorkerFactory() {
                             override fun createWorker(

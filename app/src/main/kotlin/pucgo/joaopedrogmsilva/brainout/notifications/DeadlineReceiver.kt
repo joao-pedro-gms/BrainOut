@@ -41,7 +41,7 @@ class DeadlineReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
-        val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return
+        val taskId = intent.getStringExtra(DeadlineKeys.TASK_ID) ?: return
         val result = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
@@ -52,7 +52,7 @@ class DeadlineReceiver : BroadcastReceiver() {
                     // deixamos o WorkManager decidir quando executá-lo.
                     val request =
                         OneTimeWorkRequestBuilder<CompleteTaskWorker>()
-                            .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to taskId))
+                            .setInputData(workDataOf(DeadlineKeys.TASK_ID to taskId))
                             .addTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
                             .build()
                     WorkManager
@@ -71,8 +71,5 @@ class DeadlineReceiver : BroadcastReceiver() {
     companion object {
         /** Ação do botão "Concluir" da notificação. */
         const val ACTION_COMPLETE_TASK: String = "pucgo.joaopedrogmsilva.brainout.action.COMPLETE_TASK"
-
-        /** Chave do extra com o id da tarefa. */
-        const val EXTRA_TASK_ID: String = "task_id"
     }
 }
