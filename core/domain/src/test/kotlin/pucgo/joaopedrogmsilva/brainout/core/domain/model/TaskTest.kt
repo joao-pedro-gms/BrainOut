@@ -172,12 +172,33 @@ class TaskTest {
         assertThat(same).isSameInstanceAs(task)
     }
 
+    /**
+     * DEF-57 — o título é aparado antes de ser gravado.
+     *
+     * A validação já olhava o valor aparado; guardar o texto cru
+     * deixava o banco com os espaços que o usuário digitou.
+     */
     @Test
-    fun `rename trims validation and keeps new value`() {
+    fun `rename apara o titulo antes de gravar`() {
         val task = sample(title = "Old")
         val updated = task.rename("  New name  ")
 
-        assertThat(updated.title).isEqualTo("  New name  ")
+        assertThat(updated.title).isEqualTo("New name")
+    }
+
+    @Test
+    fun `rename para o mesmo titulo aparado e no-op`() {
+        val task = sample(title = "Mesmo")
+        val updated = task.rename("  Mesmo  ")
+
+        assertThat(updated).isSameInstanceAs(task)
+    }
+
+    @Test
+    fun `create apara o titulo`() {
+        val task = Task.create(projectId = "p1", title = "  Compras  ")
+
+        assertThat(task.title).isEqualTo("Compras")
     }
 
     @Test

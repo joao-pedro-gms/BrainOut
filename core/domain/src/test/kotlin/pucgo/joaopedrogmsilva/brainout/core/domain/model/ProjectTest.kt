@@ -34,6 +34,19 @@ class ProjectTest {
         assertThat(project.isCompleted).isFalse()
     }
 
+    /**
+     * DEF-57 — o nome é aparado antes de ser gravado.
+     *
+     * A validação já olhava o valor aparado; guardar o texto cru
+     * deixava o banco com os espaços que o usuário digitou.
+     */
+    @Test
+    fun `create apara o nome`() {
+        val project = Project.create(name = "  BrainOut  ", ownerId = "user-1")
+
+        assertThat(project.name).isEqualTo("BrainOut")
+    }
+
     @Test
     fun `name with only spaces fails validation`() {
         val ex =
