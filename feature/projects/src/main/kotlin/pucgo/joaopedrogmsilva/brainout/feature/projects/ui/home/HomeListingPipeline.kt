@@ -143,7 +143,7 @@ internal fun homeUiStateFlow(
     searchInput: MutableStateFlow<String>,
     projectFilter: MutableStateFlow<HomeProjectFilter>,
     debouncedInput: StateFlow<String>,
-    errorMessage: MutableStateFlow<String?>,
+    errorMessage: MutableStateFlow<HomeErrorType?>,
 ): Flow<HomeUiState> =
     retryToken.flatMapLatest { _ ->
         activeUserProvider
@@ -210,12 +210,12 @@ internal fun homeUiStateFlow(
                 }
             }.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                errorMessage.value = HomeViewModel.ERROR_LOAD_FAILED
+                errorMessage.value = HomeErrorType.LoadFailed
                 emit(
                     HomeUiState(
                         isLoading = false,
                         projectFilter = projectFilter.value,
-                        errorMessage = HomeViewModel.ERROR_LOAD_FAILED,
+                        errorMessage = HomeErrorType.LoadFailed,
                     ),
                 )
             }.onEach { state: HomeUiState ->

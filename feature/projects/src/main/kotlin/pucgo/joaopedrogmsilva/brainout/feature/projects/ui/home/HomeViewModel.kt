@@ -92,8 +92,8 @@ class HomeViewModel
         val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
         /** Mensagem de erro pendente para a UI (E2.8). */
-        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+        private val _errorMessage: MutableStateFlow<HomeErrorType?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<HomeErrorType?> = _errorMessage.asStateFlow()
 
         /**
          * Texto bruto da busca conforme o usuário digita (E2.6).
@@ -208,13 +208,6 @@ class HomeViewModel
 
         companion object {
             private const val TAG = "BrainOut:HomeVM"
-
-            // E2.8 — chaves canônicas que a UI resolve em `R.string.home_error_*`.
-            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar seus projetos"
-            const val ERROR_ACTION_FAILED: String = "Não foi possível concluir a operação"
-
-            /** Indica se a mensagem é a de falha de carga. */
-            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
 
             /** Janela de debounce da busca textual (E2.6). */
             val SEARCH_DEBOUNCE: kotlin.time.Duration = 300.milliseconds

@@ -34,7 +34,7 @@ private const val TAG: String = "BrainOut:HomeActions"
  */
 private fun runAction(
     scope: CoroutineScope,
-    errorSink: MutableStateFlow<String?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
     block: suspend () -> Unit,
 ) {
     scope.launch {
@@ -44,7 +44,7 @@ private fun runAction(
             throw e
         } catch (e: Throwable) {
             Log.w(TAG, "Falha na acao da Home: " + e.message, e)
-            errorSink.value = HomeViewModel.ERROR_ACTION_FAILED
+            errorSink.value = HomeErrorType.ActionFailed
         }
     }
 }
@@ -74,7 +74,7 @@ internal fun runCreateProject(
     name: String,
     description: String?,
     tagIds: List<String>,
-    errorSink: MutableStateFlow<String?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
     onSuccess: () -> Unit = {},
 ) {
     runAction(scope, errorSink) {
@@ -95,7 +95,7 @@ internal fun runUpdateProject(
     useCase: UpdateProjectUseCase,
     project: Project,
     tagIds: List<String>,
-    errorSink: MutableStateFlow<String?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
 ) {
     runAction(scope, errorSink) {
         useCase.invoke(project, tagIds)
@@ -107,7 +107,7 @@ internal fun runDeleteProject(
     scope: CoroutineScope,
     useCase: DeleteProjectUseCase,
     projectId: String,
-    errorSink: MutableStateFlow<String?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
 ) {
     runAction(scope, errorSink) {
         useCase.invoke(projectId)
@@ -121,7 +121,7 @@ internal fun runCreateTag(
     activeUserProvider: ActiveUserProvider,
     name: String,
     color: String,
-    errorSink: MutableStateFlow<String?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
 ) {
     runAction(scope, errorSink) {
         val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@runAction
