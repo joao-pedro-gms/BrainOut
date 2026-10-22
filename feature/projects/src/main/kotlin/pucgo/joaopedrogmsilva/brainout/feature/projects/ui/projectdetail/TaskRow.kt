@@ -40,6 +40,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -69,8 +70,8 @@ internal fun TaskRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = NeoSpacing.md, vertical = NeoSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
         ) {
             TaskRowHeader(
                 title = task.title,
@@ -122,8 +123,8 @@ private fun TaskRowChips(
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
     ) {
         NeoTaskStatusChip(status = status)
         NeoTaskPriorityChip(priority = priority)

@@ -36,8 +36,10 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoConfirmedColor
 
 private val priorityIcons =
@@ -82,13 +84,13 @@ fun NeoPriorityIndicator(
                 2 -> colors.onTertiaryContainer
                 else -> colors.onSurfaceVariant
             },
-        border = BorderStroke(1.dp, colors.outline),
+        border = BorderStroke(NeoBorders.subtle, colors.outline),
         shape = MaterialTheme.shapes.extraSmall,
     ) {
         Icon(
             painterResource(priorityIcons[priorityCode]),
             contentDescription = null,
-            modifier = Modifier.padding(4.dp).size(NeoSizes.iconMeta),
+            modifier = Modifier.padding(NeoSpacing.xxs).size(NeoSizes.iconMeta),
         )
     }
 }
@@ -192,8 +194,8 @@ fun NeoPriorityLegend(modifier: Modifier = Modifier) {
             exit = shrinkVertically(tween(NeoMotion.selection)),
         ) {
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
             ) {
                 priorityIcons.indices.forEach { code ->
                     Row(

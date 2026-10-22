@@ -25,6 +25,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPressFeedback
 
 internal const val MAX_TAG_CHIPS_PREVIEW: Int = 4
@@ -58,7 +60,7 @@ internal fun ProjectCard(
                     indication = androidx.compose.foundation.LocalIndication.current,
                     onClick = onClick,
                 ).neoPressFeedback(interaction),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(NeoRadii.modal),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
     ) {
@@ -66,8 +68,8 @@ internal fun ProjectCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(NeoSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
         ) {
             Text(
                 text = item.project.name,
@@ -83,7 +85,7 @@ internal fun ProjectCard(
             }
             if (item.tags.isNotEmpty()) {
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
                 ) {
                     item.tags.take(MAX_TAG_CHIPS_PREVIEW).forEach { chip ->
                         TagChipView(chip = chip, selected = true)

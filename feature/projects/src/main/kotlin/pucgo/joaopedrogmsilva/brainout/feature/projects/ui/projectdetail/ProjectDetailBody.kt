@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
@@ -39,12 +40,12 @@ internal fun ProjectDetailBody(
                 .fillMaxSize()
                 .padding(contentPadding)
                 .neoContentWidth()
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         contentPadding = PaddingValues(bottom = 88.dp),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.md)) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
                 Text(

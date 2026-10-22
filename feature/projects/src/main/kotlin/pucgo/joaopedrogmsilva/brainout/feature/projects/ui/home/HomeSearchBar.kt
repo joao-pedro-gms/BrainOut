@@ -23,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -103,8 +103,8 @@ internal fun HomeTagFilterRow(
             Modifier
                 .fillMaxWidth()
                 .testTag(HomeTestTags.TAG_FILTER_ROW),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        contentPadding = PaddingValues(vertical = NeoSpacing.xxs),
     ) {
         item(key = TAG_FILTER_ALL_KEY) {
             FilterChip(

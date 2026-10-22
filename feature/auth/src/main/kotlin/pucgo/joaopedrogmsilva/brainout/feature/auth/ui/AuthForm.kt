@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 
@@ -54,9 +55,9 @@ internal fun AuthFormScaffold(
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .neoContentWidth(form = true)
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp)
+                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm)
                 .testTag(scrollTestTag),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         content = content,
     )
 }
@@ -116,7 +117,7 @@ internal fun AuthSubmitButton(
             CircularProgressIndicator(
                 modifier =
                     Modifier
-                        .height(20.dp)
+                        .height(NeoSpacing.mdPlus)
                         .testTag(loadingTestTag),
                 strokeWidth = 2.dp,
                 color = MaterialTheme.colorScheme.onPrimary,

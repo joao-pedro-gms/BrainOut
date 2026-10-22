@@ -16,8 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 
 /**
  * Cartão de estado vazio da identidade Neo.
@@ -51,7 +52,7 @@ fun NeoEmptyState(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(NeoRadii.modal),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {
@@ -59,7 +60,7 @@ fun NeoEmptyState(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(NeoSpacing.lg),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -68,7 +69,7 @@ fun NeoEmptyState(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(NeoSpacing.xs))
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
