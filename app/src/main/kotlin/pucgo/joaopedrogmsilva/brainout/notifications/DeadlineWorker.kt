@@ -17,6 +17,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import pucgo.joaopedrogmsilva.brainout.R
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
@@ -24,6 +25,15 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
 private const val TAG = "BrainOut:DeadlineWorker"
+
+/**
+ * Quantas vezes o worker tenta publicar o lembrete antes de desistir.
+ *
+ * O WorkManager repete com backoff exponencial (o padrão é 30 s); três
+ * tentativas cobrem uma falha de I/O transória sem deixar o trabalho
+ * reprocessando para sempre (DEF-32).
+ */
+private const val MAX_ATTEMPTS = 3
 
 /**
  * Worker que publica a notificação de lembrete de prazo (marco E3.6).
@@ -42,6 +52,11 @@ private const val TAG = "BrainOut:DeadlineWorker"
  * usuário negou a permissão (Android 13+), `NotificationManagerCompat`
  * descarta silenciosamente — o worker termina com sucesso para não
  * reprocessar a fila.
+ *
+ * Falha **transitória** (I/O do banco) não é o mesmo que desfecho
+ * normal: o worker pede `Result.retry()` para o WorkManager repetir
+ * com backoff, em vez de marcar o trabalho como falho na hora e nunca
+ * mais lembrar do prazo (DEF-32).
  */
 @HiltWorker
 class DeadlineWorker
@@ -59,8 +74,27 @@ class DeadlineWorker
                 return Result.failure()
             }
             Log.d(TAG, "Executando DeadlineWorker para taskId=$taskId")
-            publishReminder(taskId)
-            return Result.success()
+            return try {
+                publishReminder(taskId)
+                Result.success()
+            } catch (e: CancellationException) {
+                // Cancelamento não é falha: o WorkManager trata o
+                // cancellation separadamente.
+                throw e
+            } catch (e: Exception) {
+                // Falha transitória (I/O do banco, por exemplo): o
+                // WorkManager repete com backoff. Sem este `try/catch`,
+                // a exceção virava `Result.failure()` — terminal — e o
+                // lembrete de prazo nunca mais aparecia para aquela
+                // tarefa (DEF-32).
+                if (runAttemptCount >= MAX_ATTEMPTS) {
+                    Log.e(TAG, "Lembrete de $taskId falhou após $MAX_ATTEMPTS tentativas; desistindo", e)
+                    Result.failure()
+                } else {
+                    Log.w(TAG, "Falha transitória ao publicar o lembrete de $taskId; o WorkManager repetirá", e)
+                    Result.retry()
+                }
+            }
         }
 
         /**
