@@ -1,12 +1,14 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.reconcileTaskReminder
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import java.time.Instant
 import javax.inject.Inject
@@ -27,6 +29,7 @@ import javax.inject.Inject
  *
  * Lança:
  * - [ProjectTaskLimitReachedException] quando o limite já foi atingido.
+ * - [ProjectNotFoundException] quando o projeto não existe.
  * - [pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException]
  *   se o `title` violar as invariantes do domínio.
  */
@@ -34,6 +37,7 @@ class CreateTaskUseCase
     @Inject
     constructor(
         private val repository: TaskRepository,
+        private val projectRepository: ProjectRepository,
         private val deadlineScheduler: DeadlineNotificationScheduler,
     ) {
         /**
@@ -50,6 +54,14 @@ class CreateTaskUseCase
             dueDate: Instant? = null,
             assigneeId: String? = null,
         ): Task {
+            // Integridade referencial: a tarefa só pode nascer em um
+            // projeto existente. Sem esta checagem, um `projectId`
+            // inválido chegava ao `@Insert` do Room e a
+            // `SQLiteConstraintException` (violação da chave
+            // estrangeira) vazava crua para a UI (DEF-56).
+            if (projectRepository.findById(projectId) == null) {
+                throw ProjectNotFoundException(projectId)
+            }
             val active = repository.countActiveByProject(projectId)
             if (active >= MAX_ACTIVE_TASKS_PER_PROJECT) {
                 throw ProjectTaskLimitReachedException(

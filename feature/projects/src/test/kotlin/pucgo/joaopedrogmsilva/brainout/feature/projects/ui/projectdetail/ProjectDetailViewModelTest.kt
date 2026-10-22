@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
@@ -410,5 +411,27 @@ class ProjectDetailViewModelTest {
             advanceUntilIdle()
 
             assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.ActionFailed)
+        }
+
+    /**
+     * DEF-56 — o projeto foi excluído com a tela aberta.
+     *
+     * O domínio barra a criação com `ProjectNotFoundException` antes do
+     * `@Insert` (que devolveria uma `SQLiteConstraintException` crua).
+     * A tela mostra uma mensagem própria, e não a genérica de falha de
+     * gravação.
+     */
+    @Test
+    fun `E2 8 projeto inexistente em addTask popula erro de projeto nao encontrado`() =
+        runTest {
+            coEvery {
+                createTask.invoke(any(), any(), any(), any(), any())
+            } throws ProjectNotFoundException(projectId)
+
+            val vm = viewModel()
+            vm.addTask("qualquer")
+            advanceUntilIdle()
+
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.ProjectNotFound)
         }
 }
