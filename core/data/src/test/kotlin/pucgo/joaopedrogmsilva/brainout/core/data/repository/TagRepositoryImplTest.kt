@@ -8,11 +8,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -21,9 +18,8 @@ import java.time.Instant
 /**
  * Testes diretos do [TagRepositoryImpl] (gap Kover 60% do módulo).
  *
- * Cobre a escrita dual (Room + `pending_ops`), o payload de sync com
- * `id` cliente-supplied (R6 — P0-4) e o `observeByProjectIds`
- * introduzido no P2 de tags-por-projeto.
+ * Cobre o mapeamento Entity ↔ Domain, a escrita transacional e o
+ * `observeByProjectIds` introduzido no P2 de tags-por-projeto.
  */
 class TagRepositoryImplTest {
     @Test
@@ -44,19 +40,6 @@ class TagRepositoryImplTest {
         }
 
     @Test
-    fun `findByIds mapeia entidades para dominio`() =
-        runTest {
-            val tagDao = FakeTagDao()
-            val t1 = sampleTag(id = "t1", name = "A")
-            val t2 = sampleTag(id = "t2", name = "B")
-            tagDao.tags[t1.id] = TagEntity.fromDomain(t1)
-            tagDao.tags[t2.id] = TagEntity.fromDomain(t2)
-            val repository = newRepository(tagDao)
-
-            assertThat(repository.findByIds(listOf("t1", "t2"))).containsExactly(t1, t2)
-        }
-
-    @Test
     fun `observeForOwner mapeia entidades para dominio`() =
         runTest {
             val tagDao = FakeTagDao()
@@ -70,20 +53,40 @@ class TagRepositoryImplTest {
     @Test
     fun `observeByProjectIds mapeia projeto para suas tags`() =
         runTest {
-            val projectDao = FakeProjectDao()
+            val tagDao = FakeTagDao()
             val t1 = sampleTag(id = "t1", name = "Urgente")
             val t2 = sampleTag(id = "t2", name = "Backlog")
-            projectDao.tagAssociations["p1"] = listOf(t1.id, t2.id)
-            projectDao.tagAssociations["p2"] = listOf(t1.id)
-            projectDao.tags[t1.id] = TagEntity.fromDomain(t1)
-            projectDao.tags[t2.id] = TagEntity.fromDomain(t2)
-            val repository = newRepository(projectDao = projectDao)
+            tagDao.tags[t1.id] = TagEntity.fromDomain(t1)
+            tagDao.tags[t2.id] = TagEntity.fromDomain(t2)
+            tagDao.associations["p1"] = listOf(t1.id, t2.id)
+            tagDao.associations["p2"] = listOf(t1.id)
+            val repository = newRepository(tagDao)
 
             val map = repository.observeByProjectIds(setOf("p1", "p2")).first()
 
             assertThat(map.keys).containsExactly("p1", "p2")
             assertThat(map["p1"]).containsExactly(t1, t2)
             assertThat(map["p2"]).containsExactly(t1)
+        }
+
+    @Test
+    fun `observeByProjectIds mantem projeto sem tags com lista vazia`() =
+        runTest {
+            val tagDao = FakeTagDao()
+            tagDao.associations["p1"] = emptyList()
+            val repository = newRepository(tagDao)
+
+            val map = repository.observeByProjectIds(setOf("p1")).first()
+
+            assertThat(map["p1"]).isEmpty()
+        }
+
+    @Test
+    fun `observeByProjectIds com conjunto vazio emite mapa vazio`() =
+        runTest {
+            val repository = newRepository()
+
+            assertThat(repository.observeByProjectIds(emptySet()).first()).isEmpty()
         }
 
     @Test
@@ -115,9 +118,8 @@ class TagRepositoryImplTest {
 
     private fun newRepository(
         tagDao: TagDao = FakeTagDao(),
-        projectDao: ProjectDao = FakeProjectDao(),
         localTransaction: LocalTransaction = FakeLocalTransaction(),
-    ): TagRepository = TagRepositoryImpl(tagDao, projectDao, localTransaction)
+    ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
 
     private fun sampleTag(
         id: String = "t1",
@@ -135,13 +137,21 @@ class TagRepositoryImplTest {
     /** Fake mínimo de [TagDao]. */
     private class FakeTagDao : TagDao {
         val tags: MutableMap<String, TagEntity> = mutableMapOf()
+        val associations: MutableMap<String, List<String>> = mutableMapOf()
 
         override fun observeForOwner(ownerId: String): Flow<List<TagEntity>> =
             MutableStateFlow(tags.values.filter { it.ownerId == ownerId })
 
         override suspend fun findById(id: String): TagEntity? = tags[id]
 
-        override suspend fun findByIds(ids: List<String>): List<TagEntity> = ids.mapNotNull { tags[it] }
+        override fun observeForProjects(projectIds: List<String>): Flow<List<ProjectTagRow>> =
+            MutableStateFlow(
+                projectIds.flatMap { projectId ->
+                    associations[projectId].orEmpty().mapNotNull { tagId ->
+                        tags[tagId]?.let { ProjectTagRow(tag = it, projectId = projectId) }
+                    }
+                },
+            )
 
         override suspend fun insert(tag: TagEntity): Long {
             tags[tag.id] = tag
@@ -151,71 +161,6 @@ class TagRepositoryImplTest {
         override suspend fun deleteById(id: String) {
             tags.remove(id)
         }
-    }
-
-    /**
-     * Fake de [ProjectDao] focado em `observeTagsFor` (usado pelo
-     * `observeByProjectIds`).
-     */
-    private class FakeProjectDao : ProjectDao {
-        val tags: MutableMap<String, TagEntity> = mutableMapOf()
-        val tagAssociations: MutableMap<String, List<String>> = mutableMapOf()
-
-        override fun observeAllForOwner(ownerId: String): Flow<List<ProjectEntity>> = MutableStateFlow(emptyList())
-
-        override fun searchProjects(
-            ownerId: String,
-            query: String,
-            tagId: String?,
-            sort: String,
-        ): Flow<List<ProjectEntity>> = MutableStateFlow(emptyList())
-
-        override suspend fun findById(id: String): ProjectEntity? = null
-
-        override fun observeTagsFor(projectId: String): Flow<List<TagEntity>> =
-            MutableStateFlow(tagAssociations[projectId].orEmpty().mapNotNull { tags[it] })
-
-        override suspend fun insert(project: ProjectEntity) = Unit
-
-        override suspend fun update(project: ProjectEntity) = Unit
-
-        override suspend fun deleteById(id: String) = Unit
-
-        override suspend fun insertProjectTags(refs: List<ProjectTagCrossRef>) = Unit
-
-        override suspend fun clearProjectTags(projectId: String) = Unit
-
-        override suspend fun replaceProjectTags(
-            projectId: String,
-            tagIds: List<String>,
-        ) = Unit
-
-        override suspend fun updateIsCompleted(
-            id: String,
-            isCompleted: Boolean,
-        ) = Unit
-
-        override suspend fun cascadeCompleteTask(
-            taskDao: TaskDao,
-            taskId: String,
-            newStatus: String,
-            completedAt: Instant,
-            projectId: String,
-        ) = Unit
-
-        override suspend fun cascadeReopenTask(
-            taskDao: TaskDao,
-            taskId: String,
-            newStatus: String,
-            projectId: String,
-        ) = Unit
-
-        override suspend fun cascadeDeleteTask(
-            taskDao: TaskDao,
-            taskId: String,
-            projectId: String,
-            wasActive: Boolean,
-        ) = Unit
     }
 
     /** Fake mínimo de [LocalTransaction]. */

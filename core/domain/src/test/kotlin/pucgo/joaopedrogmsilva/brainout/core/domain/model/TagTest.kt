@@ -10,23 +10,6 @@ import java.util.UUID
 
 class TagTest {
     @Test
-    fun `rename retorna nova instancia com nome atualizado`() {
-        val original = Tag.create(ownerId = "u", name = "Estudo", color = "#0000FF")
-        val renamed = original.rename(" Estudos ")
-
-        assertThat(renamed.name).isEqualTo("Estudos")
-        assertThat(renamed.id).isEqualTo(original.id)
-        assertThat(renamed.ownerId).isEqualTo(original.ownerId)
-        assertThat(renamed.color).isEqualTo(original.color)
-        assertThat(renamed.createdAt).isEqualTo(original.createdAt)
-        assertThat(renamed).isNotSameInstanceAs(original)
-        assertThat(original.name).isEqualTo("Estudo")
-        listOf(" ", "a".repeat(31)).forEach { name ->
-            assertThrows(InvalidModelException::class.java) { original.rename(name) }
-        }
-    }
-
-    @Test
     fun `cor fora do formato RRGGBB falha`() {
         listOf("FF0000", "#FF00", "#FF00000", "rgb(0,0,0)").forEach { invalid ->
             assertThrows("cor='$invalid' deveria falhar", InvalidModelException::class.java) {

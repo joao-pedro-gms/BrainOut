@@ -73,14 +73,4 @@ data class Project(
             }
         }
     }
-
-    /**
-     * Retorna nova instância marcada como concluída. Idempotente.
-     */
-    fun markCompleted(): Project = copy(isCompleted = true)
-
-    /**
-     * Retorna nova instância marcada como não concluída. Idempotente.
-     */
-    fun markIncomplete(): Project = copy(isCompleted = false)
 }

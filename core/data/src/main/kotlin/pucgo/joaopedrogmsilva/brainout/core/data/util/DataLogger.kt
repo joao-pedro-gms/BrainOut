@@ -41,8 +41,12 @@ internal fun logError(
 /**
  * Mascara e-mail para log: `jo***@exemplo.com`. Evita PII em claro no
  * logcat sem perder a capacidade de correlacionar eventos.
+ *
+ * Compartilhada com os módulos de feature para que a máscara de PII
+ * seja **uma** implementação — log de e-mail não deve vazar o valor em
+ * claro em nenhuma camada.
  */
-internal fun String.maskEmail(): String {
+fun String.maskEmail(): String {
     val at = indexOf('@')
     if (at <= 0) return "***"
     return take(2) + "***" + substring(at)

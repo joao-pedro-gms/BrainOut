@@ -54,4 +54,5 @@
     <string name="auth_error_empty_pwd_confirmation">Confirm your password.</string>
     <string name="auth_error_pwd_mismatch">The passwords do not match.</string>
     <string name="auth_error_unexpected">Could not complete the operation. Try again.</string>
+    <string name="auth_error_domain">Could not validate the submitted data.</string>
 </resources>

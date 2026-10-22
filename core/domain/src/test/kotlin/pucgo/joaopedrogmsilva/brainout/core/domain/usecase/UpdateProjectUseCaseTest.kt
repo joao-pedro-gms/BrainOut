@@ -54,7 +54,7 @@ class UpdateProjectUseCaseTest {
     @Test
     fun `projeto concluido chega ao repositorio marcado como concluido`() =
         runTest {
-            val concluido = projeto().markCompleted()
+            val concluido = projeto().copy(isCompleted = true)
             coEvery { repository.update(any(), any()) } returns concluido
 
             val result = useCase(concluido, emptyList())

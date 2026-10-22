@@ -178,7 +178,7 @@ class ProjectTaskTagDaoTest {
                 ),
             )
 
-            val tags = projectDao.observeTagsFor("p-1").first()
+            val tags = tagDao.observeForProjects(listOf("p-1")).first().map { it.tag }
             assertThat(tags.map { it.name }).containsExactly("alpha", "beta").inOrder()
         }
 
@@ -192,7 +192,7 @@ class ProjectTaskTagDaoTest {
 
             projectDao.replaceProjectTags("p-1", listOf("tag-b"))
 
-            val tags = projectDao.observeTagsFor("p-1").first()
+            val tags = tagDao.observeForProjects(listOf("p-1")).first().map { it.tag }
             assertThat(tags.map { it.id }).containsExactly("tag-b")
         }
 
@@ -207,7 +207,7 @@ class ProjectTaskTagDaoTest {
             projectDao.deleteById("p-1")
 
             assertThat(taskDao.findById("t-1")).isNull()
-            assertThat(projectDao.observeTagsFor("p-1").first()).isEmpty()
+            assertThat(tagDao.observeForProjects(listOf("p-1")).first()).isEmpty()
         }
 
     @Test

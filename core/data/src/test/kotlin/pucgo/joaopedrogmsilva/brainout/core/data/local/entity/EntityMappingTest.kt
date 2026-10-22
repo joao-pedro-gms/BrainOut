@@ -36,7 +36,7 @@ class EntityMappingTest {
     }
 
     @Test
-    fun `task entity round trip uses TaskPriority fromCodeOrThrow`() {
+    fun `task entity round trip uses TaskPriority fromCode`() {
         val task =
             Task(
                 id = "t-1",

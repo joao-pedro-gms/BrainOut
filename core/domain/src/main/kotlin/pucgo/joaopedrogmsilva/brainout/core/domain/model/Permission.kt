@@ -5,7 +5,8 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.model
  * Ações que podem ser executadas contra um [Project] ou um [Task].
  *
  * Cada [UserRole] declara a lista de permissões que concede ao usuário.
- * A checagem efetiva é feita por [pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CanPerformActionUseCase].
+ * A checagem efetiva é feita por
+ * [pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole.hasPermission].
  *
  * Marco E1.4 — modelagem inicial. Mais permissões (ex.: gerenciamento de
  * papéis, leitura de relatórios) podem entrar em ciclos futuros.

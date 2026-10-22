@@ -44,14 +44,14 @@ class LocalPersistenceTest {
             try {
                 val tx = RoomLocalTransaction(db)
                 val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), tx)
-                val tags = TagRepositoryImpl(db.tagDao(), db.projectDao(), tx)
+                val tags = TagRepositoryImpl(db.tagDao(), tx)
                 val tasks = TaskRepositoryImpl(db.taskDao(), db.projectDao(), tx)
                 val tag =
                     tags.create(
                         Tag.create(ownerId = "u1", name = "Urgente", color = "#123456", now = Instant.EPOCH),
                     )
                 val project = projects.create(Project.create(name = "Projeto", ownerId = "u1"), listOf(tag.id))
-                assertThat(projects.observeTagsFor(project.id).first()).containsExactly(tag)
+                assertThat(tags.observeByProjectIds(setOf(project.id)).first()[project.id]).containsExactly(tag)
                 val task = tasks.create(Task.create(projectId = project.id, title = "Tarefa"))
                 tasks.completeAndCascade(task.id)
                 assertThat(projects.findById(project.id)?.isCompleted).isTrue()
@@ -61,7 +61,7 @@ class LocalPersistenceTest {
                 assertThat(projects.findById(project.id)?.isCompleted).isTrue()
                 projects.delete(project.id)
                 assertThat(projects.findById(project.id)).isNull()
-                assertThat(projects.observeTagsFor(project.id).first()).isEmpty()
+                assertThat(tags.observeByProjectIds(setOf(project.id)).first()[project.id]).isEmpty()
                 assertThat(tags.findById(tag.id)).isNotNull()
             } finally {
                 db.close()

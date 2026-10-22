@@ -9,12 +9,13 @@ interface TagRepository {
 
     suspend fun findById(id: String): Tag?
 
-    suspend fun findByIds(ids: Collection<String>): List<Tag>
-
     /**
      * Mapa de `projectId` para as tags associadas via `project_tags`.
      *
-     * @param ids conjunto de projetos a observar. Vazio → Flow vazio.
+     * Todo id informado aparece como chave — com lista vazia quando o
+     * projeto não tem tags. Conjunto vazio → mapa vazio.
+     *
+     * @param ids conjunto de projetos a observar.
      */
     fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>>
 

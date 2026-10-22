@@ -10,8 +10,8 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.model
  *   visualizar e trabalhar em tarefas, mas não administra o projeto.
  *
  * A lista concreta de permissões concedida por cada papel é exposta via
- * [permissions]. A checagem em tempo de execução é responsabilidade de
- * [pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CanPerformActionUseCase].
+ * [permissions]. A checagem em tempo de execução é feita por
+ * [hasPermission].
  */
 enum class UserRole(
     val permissions: Set<Permission>,

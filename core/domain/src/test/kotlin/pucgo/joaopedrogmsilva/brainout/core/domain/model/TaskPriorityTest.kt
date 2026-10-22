@@ -7,13 +7,13 @@ import org.junit.Test
 
 class TaskPriorityTest {
     @Test
-    fun `fromCodeOrThrow converte codigos validos e rejeita fora do intervalo`() {
+    fun `fromCode converte codigos validos e rejeita fora do intervalo`() {
         TaskPriority.entries.forEach { priority ->
-            assertThat(TaskPriority.fromCodeOrThrow(priority.priorityCode)).isEqualTo(priority)
+            assertThat(TaskPriority.fromCode(priority.priorityCode)).isEqualTo(priority)
         }
         listOf(Int.MIN_VALUE, TaskPriority.VALID_RANGE.first - 1, TaskPriority.VALID_RANGE.last + 1, Int.MAX_VALUE)
             .forEach { code ->
-                assertThrows(IllegalArgumentException::class.java) { TaskPriority.fromCodeOrThrow(code) }
+                assertThrows(IllegalArgumentException::class.java) { TaskPriority.fromCode(code) }
             }
     }
 }

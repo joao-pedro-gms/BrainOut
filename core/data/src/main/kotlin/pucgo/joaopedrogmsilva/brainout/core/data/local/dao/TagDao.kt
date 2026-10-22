@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 
 /**
@@ -38,15 +39,23 @@ interface TagDao {
     suspend fun findById(id: String): TagEntity?
 
     /**
-     * Busca várias tags por `id` em uma única consulta. Usado pelo
-     * `TagRepository.findByIds` para carregar tags a partir dos
-     * `tagIds` armazenados na UI (chips).
+     * Observa as tags de vários projetos em **uma** consulta.
      *
-     * Recebe `List<String>` para casar com o bind nativo do Room; o
-     * domínio aceita `Collection<String>` e converte aqui.
+     * Emite uma linha por par (projeto, tag). Um conjunto vazio de
+     * projetos produz uma lista vazia — o Room emite normalmente, ao
+     * contrário de combinar consultas separadas (que nunca emitiriam).
+     *
+     * @param projectIds ids dos projetos observados.
      */
-    @Query("SELECT * FROM tags WHERE id IN (:ids)")
-    suspend fun findByIds(ids: List<String>): List<TagEntity>
+    @Query(
+        """
+        SELECT t.*, pt.project_id AS project_id FROM tags t
+        INNER JOIN project_tags pt ON pt.tag_id = t.id
+        WHERE pt.project_id IN (:projectIds)
+        ORDER BY t.name
+        """,
+    )
+    fun observeForProjects(projectIds: List<String>): Flow<List<ProjectTagRow>>
 
     // --- Writes ---
 

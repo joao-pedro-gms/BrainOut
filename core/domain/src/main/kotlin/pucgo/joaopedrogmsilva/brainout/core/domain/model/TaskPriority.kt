@@ -19,35 +19,17 @@ enum class TaskPriority(
     ;
 
     companion object {
-        /** Limite inferior válido da prioridade conforme E1.4. */
-        const val LOW_CODE: Int = 0
-
-        /** Segundo nível da escala de prioridade. */
-        const val MEDIUM_CODE: Int = 1
-
-        /** Terceiro nível da escala de prioridade. */
-        const val HIGH_CODE: Int = 2
-
-        /** Quarto nível da escala de prioridade. */
-        const val URGENT_CODE: Int = 3
-
-        /** Limite superior válido da prioridade conforme E1.4. */
-        const val CRITICAL_CODE: Int = 4
-
-        /** Retorna o [TaskPriority] correspondente ao [code] (0..4). */
-        fun fromCode(code: Int): TaskPriority =
-            entries.firstOrNull { it.priorityCode == code }
-                ?: throw IllegalArgumentException(
-                    "Prioridade inválida: $code (esperado entre $LOW_CODE e $CRITICAL_CODE)",
-                )
-
-        /** Conversão estrita usada ao reconstruir tarefas da persistência. */
-        fun fromCodeOrThrow(code: Int): TaskPriority = fromCode(code)
-
         /** Intervalo válido conforme especificado pelo domínio. */
         val VALID_RANGE: IntRange = entries.minOf { it.priorityCode }..entries.maxOf { it.priorityCode }
 
         /** Códigos válidos em ordem crescente (0..4) — uso agregado E2.7. */
         val VALID_CODES: List<Int> = entries.map { it.priorityCode }
+
+        /** Retorna o [TaskPriority] correspondente ao [code] (0..4). */
+        fun fromCode(code: Int): TaskPriority =
+            entries.firstOrNull { it.priorityCode == code }
+                ?: throw IllegalArgumentException(
+                    "Prioridade inválida: $code (esperado entre ${VALID_RANGE.first} e ${VALID_RANGE.last})",
+                )
     }
 }

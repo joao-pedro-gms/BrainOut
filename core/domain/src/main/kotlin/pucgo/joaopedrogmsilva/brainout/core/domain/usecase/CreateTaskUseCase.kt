@@ -6,6 +6,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.reconcileTaskReminder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import java.time.Instant
 import javax.inject.Inject
@@ -66,14 +67,7 @@ class CreateTaskUseCase
                     assigneeId = assigneeId,
                 )
             val created = repository.create(task)
-            scheduleReminder(created)
+            deadlineScheduler.reconcileTaskReminder(created.id, created.status, created.dueDate)
             return created
-        }
-
-        private fun scheduleReminder(task: Task) {
-            val triggerAt = task.dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
-            if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
-                deadlineScheduler.schedule(task.id, triggerAt)
-            }
         }
     }

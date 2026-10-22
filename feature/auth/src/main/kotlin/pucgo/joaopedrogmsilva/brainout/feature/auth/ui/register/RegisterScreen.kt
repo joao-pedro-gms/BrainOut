@@ -55,7 +55,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldLabels
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldTags
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.resolveAuthMessage
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
@@ -204,8 +204,8 @@ internal fun RegisterBody(
             singleLine = true,
             isError = uiState.nameError != null,
             supportingText =
-                uiState.nameError?.let { msg ->
-                    { Text(text = resolveAuthMessage(msg)) }
+                uiState.nameError?.let { errorType ->
+                    { Text(text = errorType.text()) }
                 },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions =
@@ -277,8 +277,8 @@ internal fun RegisterBody(
             onSelect = callbacks.onRoleChange,
         )
 
-        uiState.errorMessage?.let { message ->
-            val resolvedMessage = resolveAuthMessage(message)
+        uiState.errorMessage?.let { errorType ->
+            val resolvedMessage = errorType.text()
             Text(
                 text = resolvedMessage,
                 style = MaterialTheme.typography.bodyMedium,

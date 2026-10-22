@@ -13,6 +13,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
@@ -62,18 +63,6 @@ class ProjectRepositoryImplTest {
             val result = repository.observeAllForOwner(ownerId).first()
 
             assertThat(result).containsExactly(p1, p2)
-        }
-
-    @Test
-    fun `observeTagsFor mapeia entidades para dominio`() =
-        runTest {
-            val projectDao = FakeProjectDao()
-            val tag = sampleTag(id = "t1", ownerId = ownerId)
-            projectDao.tags[tag.id] = TagEntity.fromDomain(tag)
-            projectDao.associations["p1"] = mutableListOf(tag.id)
-            val repository = newRepository(projectDao)
-
-            assertThat(repository.observeTagsFor("p1").first()).containsExactly(tag)
         }
 
     @Test
@@ -269,11 +258,6 @@ class ProjectRepositoryImplTest {
 
         override suspend fun findById(id: String): ProjectEntity? = projects[id]
 
-        override fun observeTagsFor(projectId: String): Flow<List<TagEntity>> =
-            MutableStateFlow(
-                associations[projectId].orEmpty().mapNotNull { tags[it] },
-            )
-
         override suspend fun insert(project: ProjectEntity) {
             projects[project.id] = project
         }
@@ -346,7 +330,8 @@ class ProjectRepositoryImplTest {
 
         override suspend fun findById(id: String): TagEntity? = tags[id]
 
-        override suspend fun findByIds(ids: List<String>): List<TagEntity> = ids.mapNotNull { tags[it] }
+        override fun observeForProjects(projectIds: List<String>): Flow<List<ProjectTagRow>> =
+            MutableStateFlow(emptyList())
 
         override suspend fun insert(tag: TagEntity): Long {
             tags[tag.id] = tag

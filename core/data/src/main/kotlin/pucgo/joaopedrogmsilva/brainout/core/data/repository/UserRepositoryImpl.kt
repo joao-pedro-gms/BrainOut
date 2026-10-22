@@ -1,8 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.CancellationException
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
@@ -47,7 +46,10 @@ class UserRepositoryImpl
             try {
                 dao.insert(entity)
                 logDebug(TAG, "Usuário id=${user.id} salvo com sucesso no Room")
-            } catch (error: Throwable) {
+            } catch (error: CancellationException) {
+                // Cancelamento da corrotina não é erro de domínio: propaga.
+                throw error
+            } catch (error: Exception) {
                 if (isUniqueEmailViolation(error)) {
                     logWarn(TAG, "Conflito de e-mail duplicado ao salvar usuário: ${user.email.maskEmail()}")
                     throw DuplicateEmailException(user.email)
@@ -62,19 +64,6 @@ class UserRepositoryImpl
             logDebug(TAG, "Buscando usuário por id: $id")
             return dao.findById(id)?.toDomain()
         }
-
-        // --- Reactive API (Flow) ---
-
-        /**
-         * Observa um usuário pelo `id`. Emite `null` se não existir (ou se
-         * for deletado).
-         */
-        fun observeById(id: String): Flow<User?> = dao.observeById(id).map { it?.toDomain() }
-
-        /**
-         * Observa um usuário pelo `email`. Emite `null` se não existir.
-         */
-        fun observeByEmail(email: String): Flow<User?> = dao.observeByEmail(email.trim()).map { it?.toDomain() }
 
         companion object {
             /**
