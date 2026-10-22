@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -62,6 +63,11 @@ internal fun CreateProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        // DEF-46 — a janela do diálogo não redimensiona com o teclado
+        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
+        // Compose 1.12), então o `imePadding` é o que tira os botões de
+        // baixo do teclado.
+        modifier = Modifier.imePadding().testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
         title = { Text(text = stringResource(id = R.string.home_create_project_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -113,7 +119,6 @@ internal fun CreateProjectDialog(
                 Text(text = stringResource(id = R.string.common_close))
             }
         },
-        modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
     )
 
     if (showAddTag) {
@@ -235,9 +240,17 @@ private fun AddTagDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        // DEF-46 — a janela do diálogo não redimensiona com o teclado
+        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
+        // Compose 1.12), então o `imePadding` é o que tira os botões de
+        // baixo do teclado.
+        modifier = Modifier.imePadding(),
         title = { Text(text = stringResource(id = R.string.home_create_project_add_tag_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 OutlinedTextField(
                     value = tagName,
                     onValueChange = { tagName = it },

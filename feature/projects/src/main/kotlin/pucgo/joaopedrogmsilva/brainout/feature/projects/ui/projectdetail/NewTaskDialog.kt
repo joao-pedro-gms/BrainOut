@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -131,6 +132,10 @@ internal fun NewTaskDialog(
                 Text(text = stringResource(id = R.string.project_detail_new_task_cancel))
             }
         },
-        modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
+        // DEF-46 — a janela do diálogo não redimensiona com o teclado
+        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
+        // Compose 1.12), então o `imePadding` é o que tira os botões de
+        // baixo do teclado.
+        modifier = Modifier.imePadding().testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
     )
 }

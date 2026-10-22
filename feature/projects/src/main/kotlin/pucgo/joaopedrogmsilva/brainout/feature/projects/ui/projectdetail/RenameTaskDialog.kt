@@ -14,6 +14,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -80,6 +81,10 @@ internal fun RenameTaskDialog(
                 Text(text = stringResource(id = R.string.common_close))
             }
         },
-        modifier = Modifier.testTag(ProjectDetailTestTags.RENAME_TASK_DIALOG),
+        // DEF-46 — a janela do diálogo não redimensiona com o teclado
+        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
+        // Compose 1.12), então o `imePadding` é o que tira os botões de
+        // baixo do teclado.
+        modifier = Modifier.imePadding().testTag(ProjectDetailTestTags.RENAME_TASK_DIALOG),
     )
 }
