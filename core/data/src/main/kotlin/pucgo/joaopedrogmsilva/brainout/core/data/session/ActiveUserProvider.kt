@@ -61,7 +61,7 @@ class ActiveUserProvider
                                     TAG,
                                     "Sessão órfã detectada para id=$id (usuário não existe no Room). Limpando sessão.",
                                 )
-                                sessionStore.clear()
+                                sessionStore.clearAll()
                                 emit(null)
                             } else {
                                 logDebug(
@@ -103,6 +103,6 @@ class ActiveUserProvider
         /** Encerra a sessão atual (logout). */
         suspend fun signOut() {
             logDebug(TAG, "Encerrando sessão via signOut()")
-            sessionStore.clear()
+            sessionStore.clearAll()
         }
     }

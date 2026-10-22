@@ -28,7 +28,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ThemePreferencesRe
  * - default `SYSTEM` antes de qualquer escrita;
  * - escrita sobrevive a reinício (instância nova do repositório);
  * - a escolha de tema é **de dispositivo**: sobrevive ao logout
- *   (`SessionStore.clear()` não pode apagar o modo do tema);
+ *   (`SessionStore.clearAll()` não pode apagar o modo do tema);
  * - chave corrompida cai no `SYSTEM` em vez de quebrar a UI;
  * - `observe` reflete cada uma das três escritas.
  */
@@ -96,7 +96,7 @@ class ThemePreferencesRepositoryTest {
             val repo: ThemePreferencesRepository = newRepo()
             repo.set(ThemeMode.DARK)
 
-            SessionStore(dataStore = dataStore).clear()
+            SessionStore(dataStore = dataStore).clearAll()
 
             assertThat(repo.observe().first()).isEqualTo(ThemeMode.DARK)
         }

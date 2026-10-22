@@ -20,9 +20,8 @@ import javax.inject.Singleton
  * Reaproveita o [DataStore]<[Preferences]> singleton do módulo
  * (`auth_prefs`) já provido pelo `:core:data` para a sessão —
  * preferências de listagem não têm volume nem frequência que
- * justifiquem um arquivo separado, e o `SessionStore.clear()`
- * preserva intencionalmente estas chaves (não é "clear all", é
- * apenas logout).
+ * justifiquem um arquivo separado, e o `SessionStore.clearAll()`
+ * (logout) preserva intencionalmente estas chaves.
  *
  * As chaves são namespaced por `userId` para isolar contas no
  * mesmo dispositivo. O `clear()` do `SessionStore` apenas remove
