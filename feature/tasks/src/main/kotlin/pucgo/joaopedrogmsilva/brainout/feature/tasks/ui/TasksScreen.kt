@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,12 +31,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,9 +44,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoStatusChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
@@ -112,11 +110,6 @@ object TasksTestTags {
     // DEF-22 — a barra de topo com voltar é o que tira a tela do beco
     // sem saída; a tag dá ao teste um alvo para o clique.
     const val BACK_BUTTON: String = "tasks_back_button"
-
-    // E2.8 — tags do banner de erro (paridade com Home).
-    const val ERROR_BANNER: String = "tasks_error_banner"
-    const val ERROR_RETRY: String = "tasks_error_retry"
-    const val ERROR_DISMISS: String = "tasks_error_dismiss"
 }
 
 @Composable
@@ -176,50 +169,11 @@ internal fun TasksErrorBanner(
         } else {
             message
         }
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 140.dp)
-                .testTag(TasksTestTags.ERROR_BANNER),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = texto,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(
-                    onClick = onRetry,
-                    modifier =
-                        Modifier
-                            .testTag(TasksTestTags.ERROR_RETRY)
-                            .heightIn(min = 48.dp),
-                ) {
-                    Text(text = stringResource(id = R.string.tasks_error_retry))
-                }
-                TextButton(
-                    onClick = onDismiss,
-                    modifier =
-                        Modifier
-                            .testTag(TasksTestTags.ERROR_DISMISS)
-                            .heightIn(min = 48.dp),
-                ) {
-                    Text(text = stringResource(id = R.string.tasks_error_dismiss))
-                }
-            }
-        }
-    }
+    NeoErrorBanner(
+        message = texto,
+        onRetry = onRetry,
+        onDismiss = onDismiss,
+    )
 }
 
 @Composable
@@ -290,27 +244,11 @@ private fun TaskCard(row: TaskRow) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PriorityChip(priority = row.task.priority)
-                StatusChip(status = row.task.status)
+                NeoTaskPriorityChip(priority = row.task.priority)
+                NeoTaskStatusChip(status = row.task.status)
             }
         }
     }
-}
-
-@Composable
-private fun PriorityChip(priority: TaskPriority) {
-    NeoPriorityIndicator(priority.priorityCode)
-}
-
-@Composable
-private fun StatusChip(status: TaskStatus) {
-    val label =
-        when (status) {
-            TaskStatus.TODO -> R.string.task_status_todo
-            TaskStatus.DOING -> R.string.task_status_doing
-            TaskStatus.DONE -> R.string.task_status_done
-        }
-    NeoStatusChip(stringResource(label), completed = status == TaskStatus.DONE, inProgress = status == TaskStatus.DOING)
 }
 
 // --- Previews ---------------------------------------------------------

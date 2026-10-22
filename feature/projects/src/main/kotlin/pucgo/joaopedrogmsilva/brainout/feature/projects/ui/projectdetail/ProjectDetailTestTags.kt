@@ -35,7 +35,4 @@ object ProjectDetailTestTags {
 
     // E2.8 — tags de teste para loader e banner de erro.
     const val LOADING: String = "project_detail_loading"
-    const val ERROR_BANNER: String = "project_detail_error_banner"
-    const val ERROR_RETRY: String = "project_detail_error_retry"
-    const val ERROR_DISMISS: String = "project_detail_error_dismiss"
 }

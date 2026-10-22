@@ -61,6 +61,13 @@ dependencies {
     api(libs.androidx.compose.material3)
     debugApi(libs.androidx.compose.ui.tooling)
 
+    // `:core:domain` é a folha pura do grafo (Kotlin JVM, sem Android):
+    // os componentes Neo que recebem `TaskStatus`/`TaskPriority` o
+    // expõem na assinatura, então a dependência é `api` — o tipo faz
+    // parte do contrato público do módulo. Não cria ciclo: `:core:domain`
+    // não depende de nada de UI.
+    api(project(":core:domain"))
+
     // D-05 — `androidx.window:window`. ÚNICA dependência nova da frente de
     // responsividade, e ela fica **confinada a :core:ui** por escolha de
     // escopo (`implementation`, não `api`): como `:core:ui` é consumido por

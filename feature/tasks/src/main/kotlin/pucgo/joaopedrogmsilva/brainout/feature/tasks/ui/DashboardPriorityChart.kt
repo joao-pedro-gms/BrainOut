@@ -31,6 +31,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
@@ -39,14 +41,7 @@ private const val BAR_CORNER_RADIUS_PX: Float = 8f
 
 @Composable
 internal fun PriorityChart(counts: List<Int>) {
-    val labels =
-        listOf(
-            stringResource(id = R.string.task_priority_low),
-            stringResource(id = R.string.task_priority_medium),
-            stringResource(id = R.string.task_priority_high),
-            stringResource(id = R.string.task_priority_urgent),
-            stringResource(id = R.string.task_priority_critical),
-        )
+    val labels = TaskPriority.entries.map { NeoTaskPriorityLabel(it) }
     val barColors =
         listOf(
             MaterialTheme.colorScheme.surfaceVariant,
@@ -145,6 +140,7 @@ private fun PriorityBarsCanvas(
 /** Legenda numérica sob as barras do gráfico (contagem por nível). */
 @Composable
 private fun PriorityBarsLegend(counts: List<Int>) {
+    val labels = TaskPriority.entries.map { NeoTaskPriorityLabel(it) }
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -161,16 +157,7 @@ private fun PriorityBarsLegend(counts: List<Int>) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text =
-                        stringResource(
-                            when (index) {
-                                0 -> R.string.task_priority_low
-                                1 -> R.string.task_priority_medium
-                                2 -> R.string.task_priority_high
-                                3 -> R.string.task_priority_urgent
-                                else -> R.string.task_priority_critical
-                            },
-                        ),
+                    text = labels[index],
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

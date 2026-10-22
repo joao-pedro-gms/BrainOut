@@ -83,9 +83,6 @@ fun DashboardScreen(
 object DashboardTestTags {
     const val LOADING: String = "dashboard_loading"
     const val EMPTY: String = "dashboard_empty"
-    const val ERROR_BANNER: String = "dashboard_error_banner"
-    const val ERROR_RETRY: String = "dashboard_error_retry"
-    const val ERROR_DISMISS: String = "dashboard_error_dismiss"
     const val PROJECT_STATE_CARD: String = "dashboard_project_state_card"
     const val PROJECT_ACTIVE_COUNT: String = "dashboard_project_active_count"
     const val PROJECT_COMPLETED_COUNT: String = "dashboard_project_completed_count"
@@ -129,6 +126,7 @@ internal fun DashboardContent(
         when {
             state.errorMessage != null ->
                 DashboardErrorBanner(
+                    message = state.errorMessage,
                     onRetry = onRetry,
                     onDismiss = onDismissError,
                 )

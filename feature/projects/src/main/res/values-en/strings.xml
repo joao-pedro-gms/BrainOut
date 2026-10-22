@@ -38,16 +38,8 @@
     <string name="project_detail_new_task_cancel">Cancel</string>
 
     <!-- Task status labels -->
-    <string name="task_status_todo">To do</string>
-    <string name="task_status_doing">In progress</string>
-    <string name="task_status_done">Done</string>
 
     <!-- Task priority labels -->
-    <string name="task_priority_low">Low</string>
-    <string name="task_priority_medium">Medium</string>
-    <string name="task_priority_high">High</string>
-    <string name="task_priority_urgent">Urgent</string>
-    <string name="task_priority_critical">Critical</string>
 
     <!-- Task item menu -->
     <string name="project_detail_task_menu_move_doing">Move to In progress</string>
@@ -87,8 +79,6 @@
     <!-- E2.8 — loading and error states (ProjectDetail) -->
     <string name="project_detail_loading_aria_label">Loading tasks</string>
     <string name="project_detail_error_load_failed">Couldn\'t load the project tasks</string>
-    <string name="project_detail_error_retry">Try again</string>
-    <string name="project_detail_error_dismiss">Dismiss</string>
 
     <!-- RN02 (E2.4) — priority required, immutable when done -->
     <string name="project_detail_error_priority_locked_on_done">Priority cannot be changed on a completed task (RN02).</string>
@@ -113,8 +103,6 @@
     <string name="home_loading_aria_label">Loading projects</string>
     <string name="home_error_load_failed">Couldn\'t load your projects</string>
     <string name="home_error_action_failed">Couldn\'t complete the operation</string>
-    <string name="home_error_retry">Try again</string>
-    <string name="home_error_dismiss">Dismiss</string>
     <string name="home_create_project_name_required">Please enter a project name.</string>
 
     <!-- E2.6 — busca textual, filtro por tag, ordenação -->

@@ -32,6 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
@@ -118,6 +120,59 @@ fun NeoStatusChip(
         labelColor = neoConfirmedColor(foreground),
     )
 }
+
+/**
+ * Rótulo localizado do status de uma tarefa.
+ *
+ * O mapeamento status → texto mora aqui, e não em cada feature: antes,
+ * `:feature:projects` e `:feature:tasks` carregavam a mesma tabela e as
+ * mesmas strings (`task_status_*`) em cópia.
+ */
+@Composable
+fun NeoTaskStatusLabel(status: TaskStatus): String = stringResource(statusLabelRes(status))
+
+/** Chip de status de uma tarefa, com o rótulo já localizado. */
+@Composable
+fun NeoTaskStatusChip(
+    status: TaskStatus,
+    modifier: Modifier = Modifier,
+) {
+    NeoStatusChip(
+        label = NeoTaskStatusLabel(status),
+        completed = status == TaskStatus.DONE,
+        inProgress = status == TaskStatus.DOING,
+        modifier = modifier,
+    )
+}
+
+/** Rótulo localizado da prioridade de uma tarefa. */
+@Composable
+fun NeoTaskPriorityLabel(priority: TaskPriority): String = stringResource(priorityLabelRes(priority))
+
+/** Chip de prioridade de uma tarefa. */
+@Composable
+fun NeoTaskPriorityChip(
+    priority: TaskPriority,
+    modifier: Modifier = Modifier,
+) {
+    NeoPriorityIndicator(priority.priorityCode, modifier)
+}
+
+private fun statusLabelRes(status: TaskStatus): Int =
+    when (status) {
+        TaskStatus.TODO -> R.string.neo_task_status_todo
+        TaskStatus.DOING -> R.string.neo_task_status_doing
+        TaskStatus.DONE -> R.string.neo_task_status_done
+    }
+
+private fun priorityLabelRes(priority: TaskPriority): Int =
+    when (priority) {
+        TaskPriority.LOW -> R.string.neo_priority_low
+        TaskPriority.MEDIUM -> R.string.neo_priority_medium
+        TaskPriority.HIGH -> R.string.neo_priority_high
+        TaskPriority.URGENT -> R.string.neo_priority_urgent
+        TaskPriority.CRITICAL -> R.string.neo_priority_critical
+    }
 
 @Composable
 fun NeoPriorityLegend(modifier: Modifier = Modifier) {

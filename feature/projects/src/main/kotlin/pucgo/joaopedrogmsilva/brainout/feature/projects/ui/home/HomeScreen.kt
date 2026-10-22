@@ -117,9 +117,6 @@ object HomeTestTags {
     const val FILTER_ACTIVE: String = "home_filter_active"
     const val FILTER_COMPLETED: String = "home_filter_completed"
     const val LOADING: String = "home_loading"
-    const val ERROR_BANNER: String = "home_error_banner"
-    const val ERROR_RETRY: String = "home_error_retry"
-    const val ERROR_DISMISS: String = "home_error_dismiss"
 
     // E2.6 — busca + filtro por tag + ordenação.
     const val SEARCH_FIELD: String = "home_search_field"
