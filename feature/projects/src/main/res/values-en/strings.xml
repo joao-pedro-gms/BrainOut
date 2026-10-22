@@ -107,6 +107,8 @@
     <string name="home_loading_aria_label">Loading projects</string>
     <string name="home_error_load_failed">Couldn\'t load your projects</string>
     <string name="home_error_action_failed">Couldn\'t complete the operation</string>
+    <!-- DEF-61 — tag name repeated for the same user. -->
+    <string name="home_error_duplicate_tag_name">A tag with this name already exists.</string>
     <string name="home_create_project_name_required">Please enter a project name.</string>
 
     <!-- E2.6 — busca textual, filtro por tag, ordenação -->

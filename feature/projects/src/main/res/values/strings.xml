@@ -107,6 +107,8 @@
     <string name="home_loading_aria_label">Carregando projetos</string>
     <string name="home_error_load_failed">Não foi possível carregar seus projetos</string>
     <string name="home_error_action_failed">Não foi possível concluir a operação</string>
+    <!-- DEF-61 — nome de tag repetido para o mesmo usuário. -->
+    <string name="home_error_duplicate_tag_name">Já existe uma tag com esse nome.</string>
     <string name="home_create_project_name_required">Informe um nome para o projeto.</string>
 
     <!-- E2.6 — busca textual, filtro por tag, ordenação -->
