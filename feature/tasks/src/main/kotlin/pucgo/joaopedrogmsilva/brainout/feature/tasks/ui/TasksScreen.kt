@@ -44,6 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
@@ -222,13 +223,17 @@ private fun TaskCard(row: TaskRow) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun TasksScreenLoadingPreview() {
-    TasksContent(state = TasksUiState(isLoading = true))
+    BrainOutTheme {
+        TasksContent(state = TasksUiState(isLoading = true))
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun TasksScreenEmptyPreview() {
-    TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
+    BrainOutTheme {
+        TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -271,5 +276,7 @@ private fun TasksScreenPopulatedPreview() {
                 projectName = "Projeto Demo",
             ),
         )
-    TasksContent(state = TasksUiState(rows = rows, isLoading = false))
+    BrainOutTheme {
+        TasksContent(state = TasksUiState(rows = rows, isLoading = false))
+    }
 }

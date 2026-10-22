@@ -178,8 +178,7 @@ class DashboardViewModel
                         "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
                         throwable,
                     )
-                    val message = throwable.toDashboardErrorMessage()
-                    _errorMessage.value = message
+                    _errorMessage.value = DashboardViewModel.ERROR_LOAD_FAILED
                     emit(DashboardLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas;
@@ -259,10 +258,3 @@ class DashboardViewModel
             fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
         }
     }
-
-/**
- * Converte uma [Throwable] vinda do Room em uma mensagem canônica
- * para a UI (E2.8). Sem stack traces expostos — paridade com os
- * demais ViewModels.
- */
-internal fun Throwable.toDashboardErrorMessage(): String = DashboardViewModel.ERROR_LOAD_FAILED

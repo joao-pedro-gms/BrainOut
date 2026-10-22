@@ -34,15 +34,6 @@ internal fun User?.toHomeUserState(): HomeUserState =
 internal fun Tag.toChip(): TagChip = TagChip(id = id, name = name, color = color)
 
 /**
- * Converte uma [Throwable] vinda do Room em uma mensagem canônica
- * para a UI (E2.8).
- */
-internal fun Throwable.toHomeErrorMessage(): String = HomeViewModel.ERROR_LOAD_FAILED
-
-/** Mesmo mapeamento para ações (CRUD) — placeholder para evolução futura. */
-internal fun Throwable.toHomeActionErrorMessage(): String = HomeViewModel.ERROR_ACTION_FAILED
-
-/**
  * Gera o monograma do nome. Quando o nome tem mais de uma palavra,
  * usa a primeira letra do primeiro e do último nome. Quando tem
  * apenas uma palavra, usa as duas primeiras letras. Se estiver vazio

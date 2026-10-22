@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
@@ -388,8 +389,10 @@ internal data class EmailFieldConfig(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun LoginScreenPreview() {
-    LoginScreen(
-        onLoginSubmit = {},
-        onCreateAccountClicked = {},
-    )
+    BrainOutTheme {
+        LoginScreen(
+            onLoginSubmit = {},
+            onCreateAccountClicked = {},
+        )
+    }
 }

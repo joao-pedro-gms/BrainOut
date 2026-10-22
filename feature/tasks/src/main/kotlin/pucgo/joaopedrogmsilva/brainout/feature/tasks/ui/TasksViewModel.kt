@@ -184,8 +184,7 @@ class TasksViewModel
                 .catch { throwable ->
                     if (throwable is CancellationException) throw throwable
                     Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                    val message = throwable.toTasksErrorMessage()
-                    _errorMessage.value = message
+                    _errorMessage.value = TasksViewModel.ERROR_LOAD_FAILED
                     emit(TasksLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas.
@@ -252,10 +251,3 @@ class TasksViewModel
             fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
         }
     }
-
-/**
- * Converte uma [Throwable] vinda do Room em uma mensagem canônica
- * para a UI (E2.8). Mantém a regra de não expor stack traces: a UI
- * só recebe a chave de recurso; o detalhe técnico fica em logcat.
- */
-internal fun Throwable.toTasksErrorMessage(): String = TasksViewModel.ERROR_LOAD_FAILED

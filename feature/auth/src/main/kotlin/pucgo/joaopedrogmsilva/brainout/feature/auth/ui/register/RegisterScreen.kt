@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
@@ -356,8 +357,10 @@ private fun RoleRow(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun RegisterScreenPreview() {
-    RegisterScreen(
-        onRegisterSubmit = {},
-        onHaveAccountClicked = {},
-    )
+    BrainOutTheme {
+        RegisterScreen(
+            onRegisterSubmit = {},
+            onHaveAccountClicked = {},
+        )
+    }
 }
