@@ -10,6 +10,15 @@ package pucgo.joaopedrogmsilva.brainout.core.domain.repository
  *
  * A separação facilita testes unitários: testes injetam um fake
  * determinístico (ex.: sempre devolve "hashed(<senha>)").
+ *
+ * **As duas operações são `suspend`** porque o KDF é CPU-bound e
+ * caro (PBKDF2-HMAC-SHA256 com 120 000 iterações leva centenas de
+ * milissegundos). Com a porta síncrona, quem chamasse de dentro de
+ * um `viewModelScope` (que roda no dispatcher principal) congelaria a
+ * interface durante o login e o cadastro. A declaração `suspend` faz
+ * o custo explícito no contrato, e a implementação decide em qual
+ * dispatcher o trabalho acontece — de modo que nenhum chamador
+ * precise saber disso.
  */
 interface PasswordHasher {
     /**
@@ -17,14 +26,14 @@ interface PasswordHasher {
      *
      * Lança [IllegalArgumentException] se [rawPassword] estiver vazia.
      */
-    fun hash(rawPassword: String): String
+    suspend fun hash(rawPassword: String): String
 
     /**
      * Verifica se [rawPassword] corresponde ao [storedHash] previamente
      * gerado por [hash]. Deve ser resistente a timing attacks quando
      * executado em produção.
      */
-    fun verify(
+    suspend fun verify(
         rawPassword: String,
         storedHash: String,
     ): Boolean

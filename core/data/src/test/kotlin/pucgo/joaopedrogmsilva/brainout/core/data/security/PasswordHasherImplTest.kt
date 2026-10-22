@@ -2,11 +2,15 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.security
 
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.util.Base64
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Testes do [PasswordHasherImpl] usando um [PepperProvider]
@@ -21,6 +25,9 @@ import javax.crypto.spec.PBEKeySpec
  * - `verify` rejeita hashes malformados sem lançar.
  * - `hash` rejeita senha vazia via `IllegalArgumentException`.
  * - `verify` respeita as iterações gravadas no hash (regressão).
+ *
+ * `hash` e `verify` são `suspend` (o KDF é CPU-bound e roda em
+ * `Dispatchers.IO`), então os testes correm dentro de `runTest`.
  */
 class PasswordHasherImplTest {
     private lateinit var hasher: PasswordHasherImpl
@@ -31,121 +38,154 @@ class PasswordHasherImplTest {
     }
 
     @Test
-    fun `hash produces pbkdf2 formatted string`() {
-        val hashed = hasher.hash("correct horse battery staple")
+    fun `hash produces pbkdf2 formatted string`() =
+        runTest {
+            val hashed = hasher.hash("correct horse battery staple")
 
-        val parts = hashed.split(FIELD_SEPARATOR)
-        assertThat(parts).hasSize(4)
-        assertThat(parts[0]).isEqualTo(ALGORITHM_NAME)
-        assertThat(parts[1].toInt()).isGreaterThan(0)
-        assertThat(parts[2]).isNotEmpty() // salt base64
-        assertThat(parts[3]).isNotEmpty() // hash base64
-    }
-
-    @Test
-    fun `two hashes of the same password differ because of random salt`() {
-        val first = hasher.hash("same-password")
-        val second = hasher.hash("same-password")
-
-        assertThat(first).isNotEqualTo(second)
-    }
+            val parts = hashed.split(FIELD_SEPARATOR)
+            assertThat(parts).hasSize(4)
+            assertThat(parts[0]).isEqualTo(ALGORITHM_NAME)
+            assertThat(parts[1].toInt()).isGreaterThan(0)
+            assertThat(parts[2]).isNotEmpty() // salt base64
+            assertThat(parts[3]).isNotEmpty() // hash base64
+        }
 
     @Test
-    fun `verify accepts the original password`() {
-        val hashed = hasher.hash("super-secret-123")
+    fun `two hashes of the same password differ because of random salt`() =
+        runTest {
+            val first = hasher.hash("same-password")
+            val second = hasher.hash("same-password")
 
-        assertThat(hasher.verify("super-secret-123", hashed)).isTrue()
-    }
-
-    @Test
-    fun `verify rejects an incorrect password`() {
-        val hashed = hasher.hash("super-secret-123")
-
-        assertThat(hasher.verify("wrong", hashed)).isFalse()
-        assertThat(hasher.verify("", hashed)).isFalse()
-        assertThat(hasher.verify("super-secret-124", hashed)).isFalse()
-    }
+            assertThat(first).isNotEqualTo(second)
+        }
 
     @Test
-    fun `verify rejects malformed stored hash without throwing`() {
-        assertThat(hasher.verify("any", "")).isFalse()
-        assertThat(hasher.verify("any", "single-segment")).isFalse()
-        assertThat(hasher.verify("any", "pbkdf2_sha256\$notanumber\$AAAA\$BBBB")).isFalse()
-        assertThat(hasher.verify("any", "wrong_alg\$100\$AAAA\$BBBB")).isFalse()
-        assertThat(hasher.verify("any", "pbkdf2_sha256\$100\$!!notbase64\$\$\$")).isFalse()
-    }
+    fun `verify accepts the original password`() =
+        runTest {
+            val hashed = hasher.hash("super-secret-123")
+
+            assertThat(hasher.verify("super-secret-123", hashed)).isTrue()
+        }
+
+    @Test
+    fun `verify rejects an incorrect password`() =
+        runTest {
+            val hashed = hasher.hash("super-secret-123")
+
+            assertThat(hasher.verify("wrong", hashed)).isFalse()
+            assertThat(hasher.verify("", hashed)).isFalse()
+            assertThat(hasher.verify("super-secret-124", hashed)).isFalse()
+        }
+
+    @Test
+    fun `verify rejects malformed stored hash without throwing`() =
+        runTest {
+            assertThat(hasher.verify("any", "")).isFalse()
+            assertThat(hasher.verify("any", "single-segment")).isFalse()
+            assertThat(hasher.verify("any", "pbkdf2_sha256\$notanumber\$AAAA\$BBBB")).isFalse()
+            assertThat(hasher.verify("any", "wrong_alg\$100\$AAAA\$BBBB")).isFalse()
+            assertThat(hasher.verify("any", "pbkdf2_sha256\$100\$!!notbase64\$\$\$")).isFalse()
+        }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `hash rejects empty password`() {
-        hasher.hash("")
-    }
-
-    @Test
-    fun `hash produces base64-url safe output`() {
-        val hashed = hasher.hash("a-test-password")
-        val saltAndHash = hashed.substringAfter("$").substringAfter("$")
-        val hashField = hashed.substringAfterLast("$")
-        // Sem padding e alfabeto URL-safe — sem `+` nem `/` nem `=`.
-        assertThat(saltAndHash).doesNotContain("=")
-        assertThat(saltAndHash).doesNotContain("+")
-        assertThat(saltAndHash).doesNotContain("/")
-        assertThat(hashField).doesNotContain("=")
-        assertThat(hashField).doesNotContain("+")
-        assertThat(hashField).doesNotContain("/")
-    }
-
-    @Test
-    fun `hash sempre grava o custo default no hash persistido`() {
-        val hashed = hasher.hash("senha-default")
-
-        assertThat(custoDe(hashed)).isEqualTo(PBKDF2_DEFAULT_ITERATIONS)
-    }
-
-    @Test
-    fun `verify aceita hash gravado com custo abaixo do default`() {
-        val hashLegado = hashComCusto("senha-regressao", salDe(1), LEGACY_ITERATIONS)
-
-        assertThat(custoDe(hashLegado)).isEqualTo(LEGACY_ITERATIONS)
-        assertThat(hasher.verify("senha-regressao", hashLegado)).isTrue()
-        assertThat(hasher.verify("senha-errada", hashLegado)).isFalse()
-    }
-
-    @Test
-    fun `verify aceita hash gravado com custo acima do default`() {
-        val hashFuturo = hashComCusto("senha-futura", salDe(2), HIGHER_ITERATIONS)
-
-        assertThat(custoDe(hashFuturo)).isEqualTo(HIGHER_ITERATIONS)
-        assertThat(hasher.verify("senha-futura", hashFuturo)).isTrue()
-    }
-
-    @Test
-    fun `verify aceita custos distintos para a mesma senha e mesmo sal`() {
-        val sal = salDe(3)
-        val hashBarato = hashComCusto("mesma-senha", sal, LOW_ITERATIONS)
-        val hashPadrao = hashComCusto("mesma-senha", sal, PBKDF2_DEFAULT_ITERATIONS)
-
-        assertThat(hashBarato).isNotEqualTo(hashPadrao)
-        assertThat(hasher.verify("mesma-senha", hashBarato)).isTrue()
-        assertThat(hasher.verify("mesma-senha", hashPadrao)).isTrue()
-    }
-
-    @Test
-    fun `verify rejeita custo fora da faixa suportada sem lançar`() {
-        val salCodificado = encode(salDe(4))
-        val derivadoCodificado = encode(ByteArray(DERIVED_KEY_BYTES) { it.toByte() })
-
-        listOf("0", "-5", "999999999999").forEach { custo ->
-            val malformado =
-                listOf(
-                    ALGORITHM_NAME,
-                    custo,
-                    salCodificado,
-                    derivadoCodificado,
-                ).joinToString(FIELD_SEPARATOR.toString())
-
-            assertThat(hasher.verify("any", malformado)).isFalse()
+    fun `hash rejects empty password`() =
+        runTest {
+            hasher.hash("")
         }
-    }
+
+    @Test
+    fun `hash produces base64-url safe output`() =
+        runTest {
+            val hashed = hasher.hash("a-test-password")
+            val saltAndHash = hashed.substringAfter("$").substringAfter("$")
+            val hashField = hashed.substringAfterLast("$")
+            // Sem padding e alfabeto URL-safe — sem `+` nem `/` nem `=`.
+            assertThat(saltAndHash).doesNotContain("=")
+            assertThat(saltAndHash).doesNotContain("+")
+            assertThat(saltAndHash).doesNotContain("/")
+            assertThat(hashField).doesNotContain("=")
+            assertThat(hashField).doesNotContain("+")
+            assertThat(hashField).doesNotContain("/")
+        }
+
+    @Test
+    fun `hash sempre grava o custo default no hash persistido`() =
+        runTest {
+            val hashed = hasher.hash("senha-default")
+
+            assertThat(custoDe(hashed)).isEqualTo(PBKDF2_DEFAULT_ITERATIONS)
+        }
+
+    @Test
+    fun `verify aceita hash gravado com custo abaixo do default`() =
+        runTest {
+            val hashLegado = hashComCusto("senha-regressao", salDe(1), LEGACY_ITERATIONS)
+
+            assertThat(custoDe(hashLegado)).isEqualTo(LEGACY_ITERATIONS)
+            assertThat(hasher.verify("senha-regressao", hashLegado)).isTrue()
+            assertThat(hasher.verify("senha-errada", hashLegado)).isFalse()
+        }
+
+    @Test
+    fun `verify aceita hash gravado com custo acima do default`() =
+        runTest {
+            val hashFuturo = hashComCusto("senha-futura", salDe(2), HIGHER_ITERATIONS)
+
+            assertThat(custoDe(hashFuturo)).isEqualTo(HIGHER_ITERATIONS)
+            assertThat(hasher.verify("senha-futura", hashFuturo)).isTrue()
+        }
+
+    @Test
+    fun `verify aceita custos distintos para a mesma senha e mesmo sal`() =
+        runTest {
+            val sal = salDe(3)
+            val hashBarato = hashComCusto("mesma-senha", sal, LOW_ITERATIONS)
+            val hashPadrao = hashComCusto("mesma-senha", sal, PBKDF2_DEFAULT_ITERATIONS)
+
+            assertThat(hashBarato).isNotEqualTo(hashPadrao)
+            assertThat(hasher.verify("mesma-senha", hashBarato)).isTrue()
+            assertThat(hasher.verify("mesma-senha", hashPadrao)).isTrue()
+        }
+
+    @Test
+    fun `verify rejeita custo fora da faixa suportada sem lançar`() =
+        runTest {
+            val salCodificado = encode(salDe(4))
+            val derivadoCodificado = encode(ByteArray(DERIVED_KEY_BYTES) { it.toByte() })
+
+            listOf("0", "-5", "999999999999").forEach { custo ->
+                val malformado =
+                    listOf(
+                        ALGORITHM_NAME,
+                        custo,
+                        salCodificado,
+                        derivadoCodificado,
+                    ).joinToString(FIELD_SEPARATOR.toString())
+
+                assertThat(hasher.verify("any", malformado)).isFalse()
+            }
+        }
+
+    /**
+     * O KDF não pode rodar na thread que chamou.
+     *
+     * O `AuthViewModel` chama o caso de uso de dentro do
+     * `viewModelScope`, que roda no dispatcher principal: com 120 000
+     * iterações de PBKDF2-HMAC-SHA256, a interface ficaria congelada
+     * durante o login e o cadastro.
+     */
+    @Test
+    fun `o KDF nao roda na thread que chamou`() =
+        runTest {
+            val dispatcher = ThreadRecordingDispatcher()
+            val hasher = PasswordHasherImpl(FixedPepperProvider(TEST_PEPPER), dispatcher)
+            val threadDoChamador = Thread.currentThread()
+
+            hasher.hash("senha-com-kdf")
+
+            assertThat(dispatcher.threads).isNotEmpty()
+            assertThat(dispatcher.threads.first()).isNotSameInstanceAs(threadDoChamador)
+        }
 
     private fun custoDe(hashed: String): Int = hashed.split(FIELD_SEPARATOR)[1].toInt()
 
@@ -194,5 +234,27 @@ class PasswordHasherImplTest {
         const val LEGACY_ITERATIONS: Int = 10_000
         const val PBKDF2_DEFAULT_ITERATIONS: Int = 120_000
         const val HIGHER_ITERATIONS: Int = 250_000
+    }
+}
+
+/**
+ * Dispatcher que registra em qual thread o trabalho foi executado.
+ *
+ * Delega ao [Dispatchers.Default] de propósito: o pool do `Default` é
+ * separado do pool do `IO`, e o registro acontece **dentro** do
+ * trabalho despachado — ou seja, na thread em que o KDF roda, e não
+ * na que chamou.
+ */
+private class ThreadRecordingDispatcher : CoroutineDispatcher() {
+    val threads: MutableList<Thread> = mutableListOf()
+
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        Dispatchers.Default.dispatch(context) {
+            threads.add(Thread.currentThread())
+            block.run()
+        }
     }
 }
