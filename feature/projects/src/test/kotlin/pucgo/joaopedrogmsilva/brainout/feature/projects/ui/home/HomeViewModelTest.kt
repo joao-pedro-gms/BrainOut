@@ -292,8 +292,6 @@ class HomeViewModelTest {
                 assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
-
-            assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.LoadFailed)
         }
 
     /**
@@ -326,7 +324,7 @@ class HomeViewModelTest {
             viewModel.uiState.test {
                 advanceUntilIdle()
                 // Após a falha, `errorMessage` deve estar populado.
-                assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.LoadFailed)
+                assertThat(viewModel.uiState.value.errorMessage).isEqualTo(HomeErrorType.LoadFailed)
 
                 // Reconfigura o mock para emitir lista vazia (sucesso).
                 coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
@@ -335,7 +333,7 @@ class HomeViewModelTest {
                 advanceUntilIdle()
 
                 // O retry re-assina o Flow e o sucesso limpa o erro.
-                assertThat(viewModel.errorMessage.value).isNull()
+                assertThat(viewModel.uiState.value.errorMessage).isNull()
                 val state = expectMostRecentItem()
                 assertThat(state.isLoading).isFalse()
                 assertThat(state.errorMessage).isNull()
@@ -384,6 +382,10 @@ class HomeViewModelTest {
      * Falha em `createProject` (uso de I/O do Room) deve ser
      * capturada e convertida em `ERROR_ACTION_FAILED` em
      * `errorMessage` — sem crash, sem stack trace exposto.
+     *
+     * A assinatura do `uiState` vem **antes** da ação: a primeira
+     * emissão do pipeline limpa o canal de erro, então assinar
+     * depois da falha apagaria o erro antes de ser observável.
      */
     @Test
     fun `E2 8 falha em createProject popula errorMessage de acao`() =
@@ -394,10 +396,14 @@ class HomeViewModelTest {
                 IllegalStateException("disk full")
 
             val viewModel = newViewModel()
-            viewModel.createProject("x", null, emptyList())
-            advanceUntilIdle()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                viewModel.createProject("x", null, emptyList())
+                advanceUntilIdle()
 
-            assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.ActionFailed)
+                assertThat(viewModel.uiState.value.errorMessage).isEqualTo(HomeErrorType.ActionFailed)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     @Test
@@ -409,12 +415,54 @@ class HomeViewModelTest {
                 IllegalStateException("boom")
 
             val viewModel = newViewModel()
-            viewModel.createProject("x", null, emptyList())
-            advanceUntilIdle()
-            assertThat(viewModel.errorMessage.value).isNotNull()
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                viewModel.createProject("x", null, emptyList())
+                advanceUntilIdle()
+                assertThat(viewModel.uiState.value.errorMessage).isNotNull()
 
-            viewModel.clearError()
-            assertThat(viewModel.errorMessage.value).isNull()
+                viewModel.clearError()
+                advanceUntilIdle()
+                assertThat(viewModel.uiState.value.errorMessage).isNull()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * Regressão DEF-47 — o banner de erro de carga da Home permanecia
+     * na tela depois de "Dispensar".
+     *
+     * O erro de carga era escrito em dois lugares (o canal do
+     * ViewModel *e* dentro do `HomeUiState`), e `clearError()` só
+     * apagava o canal: o estado era uma fotografia imutável que
+     * continuava carregando `LoadFailed`.
+     *
+     * Aqui o estado precisa refletir o canal em tempo real — é o
+     * que faz o banner sumir.
+     */
+    @Test
+    fun `E2 8 dispensar o erro de carga limpa o banner`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
+                flow {
+                    throw IllegalStateException("boom")
+                }
+            coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel = newViewModel()
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                assertThat(expectMostRecentItem().errorMessage).isEqualTo(HomeErrorType.LoadFailed)
+
+                viewModel.clearError()
+                advanceUntilIdle()
+                assertThat(expectMostRecentItem().errorMessage).isNull()
+
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     // === E2.6 — busca, filtro, ordenação ==========================================
