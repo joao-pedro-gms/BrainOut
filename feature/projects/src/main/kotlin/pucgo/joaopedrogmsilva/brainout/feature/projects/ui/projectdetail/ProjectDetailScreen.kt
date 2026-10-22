@@ -15,6 +15,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,10 +90,13 @@ fun ProjectDetailScreen(
     var showDeleteProjectDialog by rememberSaveable { mutableStateOf(false) }
     // Tarefa selecionada para edição de prioridade (RN02); não-nula abre
     // [ChangeTaskPriorityDialog]. Só tarefas ativas chegam aqui (UI filtra).
-    var priorityDialogTask by remember { mutableStateOf<Task?>(null) }
+    // DEF-52 — o estado salvo guarda o **id** da tarefa, não o `Task`: a
+    // classe `Task` não tem `Saver`, então girar o aparelho com o diálogo
+    // aberto o fechava e perdia a tarefa selecionada.
+    val priorityDialogTaskId = rememberEditedTaskId(key = "priorityDialogTaskId")
     // DEF-22 — tarefa selecionada para renomear; não-nula abre
     // [RenameTaskDialog]. É o que torna `renameTask` alcançável.
-    var renameTask by remember { mutableStateOf<Task?>(null) }
+    val renameTaskId = rememberEditedTaskId(key = "renameTaskId")
 
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("project_detail_$projectId"),
@@ -130,12 +134,12 @@ fun ProjectDetailScreen(
                     onDismissError = viewModel::clearError,
                     onChangeStatus = viewModel::changeStatus,
                     onDeleteTask = viewModel::deleteTask,
-                    onRenameTask = { renameTask = it },
+                    onRenameTask = { renameTaskId.value = it.id },
                     onChangePriority = { task, _ ->
                         // RN02 — defesa em profundidade: a UI também bloqueia
                         // tarefas DONE via DropdownMenuItem(enabled = false).
                         if (task.status != TaskStatus.DONE) {
-                            priorityDialogTask = task
+                            priorityDialogTaskId.value = task.id
                         }
                     },
                 ),
@@ -163,30 +167,64 @@ fun ProjectDetailScreen(
         )
     }
 
-    val priorityTarget = priorityDialogTask
+    val priorityTarget =
+        remember(priorityDialogTaskId.value, state.tasks) {
+            taskById(state.tasks, priorityDialogTaskId.value)
+        }
     if (priorityTarget != null) {
         ChangeTaskPriorityDialog(
             errorMessage = resolvedMessage,
             currentPriority = priorityTarget.priority,
-            onDismiss = { priorityDialogTask = null },
+            onDismiss = { priorityDialogTaskId.value = null },
             onConfirm = { newPriority ->
-                viewModel.changeTaskPriority(priorityTarget, newPriority) { priorityDialogTask = null }
+                viewModel.changeTaskPriority(priorityTarget, newPriority) { priorityDialogTaskId.value = null }
             },
         )
     }
 
-    val renameTarget = renameTask
+    val renameTarget =
+        remember(renameTaskId.value, state.tasks) {
+            taskById(state.tasks, renameTaskId.value)
+        }
     if (renameTarget != null) {
         RenameTaskDialog(
             errorMessage = resolvedMessage,
             initialTitle = renameTarget.title,
-            onDismiss = { renameTask = null },
+            onDismiss = { renameTaskId.value = null },
             onConfirm = { newTitle ->
-                viewModel.renameTask(renameTarget, newTitle) { renameTask = null }
+                viewModel.renameTask(renameTarget, newTitle) { renameTaskId.value = null }
             },
         )
     }
 }
+
+/**
+ * Id da tarefa em edição (prioridade ou renomear), guardado no estado
+ * salvo da Activity.
+ *
+ * DEF-52 — o que fica salvo é o **id**, não o `Task`: a classe `Task`
+ * não tem `Saver`, então girar o aparelho com o diálogo de edição
+ * aberto o fechava e perdia a tarefa selecionada.
+ *
+ * A chave é explícita porque dois diálogos usam este estado: sem ela,
+ * o `rememberSaveable` deriva a chave da posição do código e os dois
+ * compartilhariam o mesmo slot.
+ */
+@Composable
+internal fun rememberEditedTaskId(key: String): MutableState<String?> =
+    rememberSaveable(key = key) { mutableStateOf(null) }
+
+/**
+ * Resolve a tarefa em edição pelo id guardado no estado salvo.
+ *
+ * Devolve `null` quando a tarefa saiu da lista (foi excluída no
+ * meantime): o diálogo fecha sozinho, em vez de operar sobre uma
+ * cópia obsoleta da tarefa.
+ */
+internal fun taskById(
+    tasks: List<Task>,
+    taskId: String?,
+): Task? = taskId?.let { id -> tasks.firstOrNull { it.id == id } }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
