@@ -5,6 +5,8 @@
     <string name="tasks_screen_title">Tarefas</string>
     <string name="tasks_empty_title">Nenhuma tarefa ainda</string>
     <string name="tasks_empty_body">Crie tarefas dentro de um projeto para vê-las aqui.</string>
+    <!-- DEF-50 — rótulo de tarefa sem projeto (FK órfã); antes era literal pt-BR no ViewModel. -->
+    <string name="tasks_no_project">(sem projeto)</string>
 
     <!-- Task status labels (espelha :feature:projects para reuso no card) -->
 

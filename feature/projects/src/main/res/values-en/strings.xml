@@ -28,6 +28,8 @@
     <string name="project_detail_new_task_due_date_label">Due date (optional)</string>
     <string name="project_detail_new_task_due_date_clear">No due date</string>
     <string name="project_detail_new_task_due_date_format">MM/dd/yyyy</string>
+    <!-- DEF-50 — short pattern used by the holiday hint; it used to be a hardcoded "dd/MM". -->
+    <string name="project_detail_new_task_due_date_format_short">MM/dd</string>
     <!-- E3.5: inline hint when a national holiday falls in the deadline window. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Next holiday: %1$s (%2$s) before the deadline</string>
     <!-- A local holiday calculation failure does not prevent saving the deadline. -->

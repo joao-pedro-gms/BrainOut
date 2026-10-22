@@ -108,11 +108,15 @@ private fun DeadlineHint(
     if (unavailable) Text(stringResource(R.string.deadline_holidays_unavailable))
     val holiday = info?.nextHoliday
     if (holiday != null) {
+        // DEF-50 — o padrão curto vem do `strings.xml`: com "dd/MM"
+        // fixo, a dica de feriado mostrava 25/12 ao lado de um campo
+        // que em `en` mostrava 12/25/2026.
+        val shortPattern = stringResource(R.string.project_detail_new_task_due_date_format_short)
         Text(
             stringResource(
                 R.string.project_detail_new_task_holiday_hint,
                 holiday.name,
-                holiday.date.format(DateTimeFormatter.ofPattern("dd/MM")),
+                holiday.date.format(DateTimeFormatter.ofPattern(shortPattern)),
             ),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_HOLIDAY_HINT),

@@ -109,7 +109,7 @@ object TasksTestTags {
 }
 
 @Composable
-private fun TasksContent(
+internal fun TasksContent(
     state: TasksUiState,
     onRetry: () -> Unit = {},
     onDismissError: () -> Unit = {},
@@ -210,7 +210,7 @@ private fun TaskCard(row: TaskRow) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = row.projectName,
+                text = row.projectName ?: stringResource(id = R.string.tasks_no_project),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

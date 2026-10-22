@@ -28,6 +28,8 @@
     <string name="project_detail_new_task_due_date_label">Prazo (opcional)</string>
     <string name="project_detail_new_task_due_date_clear">Sem prazo</string>
     <string name="project_detail_new_task_due_date_format">dd/MM/yyyy</string>
+    <!-- DEF-50 — padrão curto, usado na dica de feriado; antes era "dd/MM" fixo no código. -->
+    <string name="project_detail_new_task_due_date_format_short">dd/MM</string>
     <!-- E3.5: dica inline quando há feriado próximo do prazo escolhido. -->
     <string name="project_detail_new_task_holiday_hint">⚠ Próximo feriado: %1$s (%2$s) antes do prazo</string>
     <!-- Falha no cálculo local de feriados; não impede salvar o prazo. -->
