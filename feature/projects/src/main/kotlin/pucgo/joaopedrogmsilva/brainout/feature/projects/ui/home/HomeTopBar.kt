@@ -30,61 +30,77 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
+/**
+ * TopAppBar da Home com monograma do usuário e badge de papel
+ * colorido por role (E1.7): Owner usa container primário, Member
+ * usa surfaceVariant. O badge é decorativo (AssistChip sem ação).
+ *
+ * [user] nulo significa "sem sessão ainda" (carregando ou sem login):
+ * a barra mostra a saudação genérica, sem avatar e sem badge de
+ * papel — inventar uma identidade seria mostrar ao usuário o nome de
+ * outra pessoa (DEF-72).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun HomeTopBar(user: HomeUser) {
+internal fun HomeTopBar(user: HomeUser?) {
     TopAppBar(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(40.dp * LocalDensity.current.fontScale.coerceAtLeast(1f))
-                            .clearAndSetSemantics {}
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = user.initials,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                if (user != null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(40.dp * LocalDensity.current.fontScale.coerceAtLeast(1f))
+                                .clearAndSetSemantics {}
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = user.initials,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
                 Column {
                     Text(
-                        text = stringResource(id = R.string.home_topbar_greeting, user.displayName),
+                        text =
+                            user?.let { stringResource(id = R.string.home_topbar_greeting, it.displayName) }
+                                ?: stringResource(id = R.string.home_topbar_greeting_generic),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
-                    val badgeLabel =
-                        when (user.role) {
-                            HomeUserRole.Owner -> stringResource(id = R.string.home_role_badge_owner)
-                            HomeUserRole.Member -> stringResource(id = R.string.home_role_badge_member)
-                        }
-                    val roleContainer: Color =
-                        when (user.role) {
-                            HomeUserRole.Owner -> MaterialTheme.colorScheme.primary
-                            HomeUserRole.Member -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    val roleLabel: Color =
-                        when (user.role) {
-                            HomeUserRole.Owner -> MaterialTheme.colorScheme.onPrimary
-                            HomeUserRole.Member -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    // DEF-22 — era `AssistChip(onClick = { })`: o badge
-                    // de papel é informativo, então o TalkBack o
-                    // anunciava como botão e oferecia um toque que não
-                    // fazia nada. `NeoInfoChip` não tem `onClick`.
-                    NeoInfoChip(
-                        label = badgeLabel,
-                        containerColor = roleContainer,
-                        labelColor = roleLabel,
-                        modifier = Modifier.testTag(HomeTestTags.ROLE_BADGE),
-                    )
+                    if (user != null) {
+                        val badgeLabel =
+                            when (user.role) {
+                                HomeUserRole.Owner -> stringResource(id = R.string.home_role_badge_owner)
+                                HomeUserRole.Member -> stringResource(id = R.string.home_role_badge_member)
+                            }
+                        val roleContainer: Color =
+                            when (user.role) {
+                                HomeUserRole.Owner -> MaterialTheme.colorScheme.primary
+                                HomeUserRole.Member -> MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        val roleLabel: Color =
+                            when (user.role) {
+                                HomeUserRole.Owner -> MaterialTheme.colorScheme.onPrimary
+                                HomeUserRole.Member -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        // DEF-22 — era `AssistChip(onClick = { })`: o badge
+                        // de papel é informativo, então o TalkBack o
+                        // anunciava como botão e oferecia um toque que não
+                        // fazia nada. `NeoInfoChip` não tem `onClick`.
+                        NeoInfoChip(
+                            label = badgeLabel,
+                            containerColor = roleContainer,
+                            labelColor = roleLabel,
+                            modifier = Modifier.testTag(HomeTestTags.ROLE_BADGE),
+                        )
+                    }
                 }
             }
         },

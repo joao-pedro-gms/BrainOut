@@ -1,6 +1,10 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Identidade do usuário exibida na Home — esqueleto (E1.3).
-// A fonte de verdade real virá em E1.8 (integração Room).
+// Identidade do usuário exibida na Home (E1.7).
+//
+// A identidade vem da sessão real (E1.8): o `HomeUserState` da
+// ViewModel carrega o nome, o monograma e o papel do usuário ativo.
+// Enquanto não há sessão — carregando ou sem login — a TopAppBar
+// mostra a saudação genérica, sem inventar um nome (DEF-72).
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -18,11 +22,3 @@ data class HomeUser(
 )
 
 enum class HomeUserRole { Owner, Member }
-
-/** Placeholder do usuário fake enquanto não há sessão real. */
-val DefaultHomeUser: HomeUser =
-    HomeUser(
-        displayName = "João Pedro",
-        initials = "JP",
-        role = HomeUserRole.Owner,
-    )
