@@ -1,15 +1,5 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Conteúdo da aba "Projetos" da Home: busca, filtro
-// por tag, seção estrutural, filtro Ativos/Concluídos com menu de
-// ordenação, e a lista de cards. A escolha entre erro/loader/empty
-// state/lista é feita aqui (E2.8) — o orchestrator só decide qual
-// aba está ativa.
-//
-// `LongParameterList` é necessário: o conteúdo consome todos os
-// campos do `HomeUiState` + callbacks do ViewModel; quebrar em
-// sub-estados obrigaria novo `data class` só para a UI.
-
-@file:Suppress("LongParameterList", "LongMethod")
+@file:Suppress("LongMethod")
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -38,24 +28,47 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
+/**
+ * Estado consumido pela lista de projetos da Home.
+ *
+ * @property projects cards a exibir.
+ * @property isLoading a primeira coleta do Room ainda não aconteceu.
+ * @property currentFilter filtro ativo (ativos ou concluídos).
+ * @property errorMessage erro de carga ou de ação, quando houver.
+ * @property availableTags tags do usuário, para o filtro.
+ * @property searchQuery texto de busca digitado.
+ * @property selectedTagId tag que restringe a lista, se houver.
+ * @property sortOrder ordenação escolhida.
+ */
+internal data class HomeProjectsState(
+    val projects: List<ProjectCardItem>,
+    val isLoading: Boolean,
+    val currentFilter: HomeProjectFilter,
+    val errorMessage: String?,
+    val availableTags: List<TagChip>,
+    val searchQuery: String,
+    val selectedTagId: String?,
+    val sortOrder: SortOrder,
+)
+
+/**
+ * Ações disparadas pela lista de projetos da Home.
+ */
+internal data class HomeProjectsActions(
+    val onOpenProject: (projectId: String) -> Unit,
+    val onSelectFilter: (HomeProjectFilter) -> Unit,
+    val onRetry: () -> Unit,
+    val onDismissError: () -> Unit,
+    val onSearchQueryChange: (String) -> Unit,
+    val onTagFilterChange: (String?) -> Unit,
+    val onSortOrderChange: (SortOrder) -> Unit,
+)
+
 @Composable
 internal fun HomeProjectsContent(
     contentPadding: PaddingValues,
-    onOpenProject: (projectId: String) -> Unit,
-    projects: List<ProjectCardItem>,
-    isLoading: Boolean,
-    currentFilter: HomeProjectFilter,
-    onSelectFilter: (HomeProjectFilter) -> Unit,
-    errorMessage: String?,
-    onRetry: () -> Unit,
-    onDismissError: () -> Unit,
-    availableTags: List<TagChip>,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    selectedTagId: String?,
-    onTagFilterChange: (String?) -> Unit,
-    sortOrder: SortOrder,
-    onSortOrderChange: (SortOrder) -> Unit,
+    state: HomeProjectsState,
+    actions: HomeProjectsActions,
 ) {
     val window = LocalNeoWindowInfo.current
     LazyVerticalGrid(
@@ -77,20 +90,20 @@ internal fun HomeProjectsContent(
                 // placeholder vem de `values/strings.xml` para manter a regra
                 // E4.6 (pt/en).
                 HomeSearchBar(
-                    query = searchQuery,
-                    onQueryChange = onSearchQueryChange,
+                    query = state.searchQuery,
+                    onQueryChange = actions.onSearchQueryChange,
                 )
                 // E2.6 — chips horizontais com todas as tags do usuário +
                 // "Todas" para o filtro por tag. Renderizado como `LazyRow`
                 // para escalar quando o usuário tem muitas tags.
                 HomeTagFilterRow(
-                    availableTags = availableTags,
-                    selectedTagId = selectedTagId,
-                    onSelect = onTagFilterChange,
+                    availableTags = state.availableTags,
+                    selectedTagId = state.selectedTagId,
+                    onSelect = actions.onTagFilterChange,
                 )
                 Text(
                     text =
-                        when (currentFilter) {
+                        when (state.currentFilter) {
                             HomeProjectFilter.Active -> stringResource(id = R.string.home_section_title)
                             HomeProjectFilter.Completed ->
                                 stringResource(id = R.string.home_section_completed_title)
@@ -102,10 +115,10 @@ internal fun HomeProjectsContent(
                 // Fica sempre visível para que o usuário possa alternar mesmo
                 // quando uma das listas estiver vazia.
                 HomeProjectFilterRow(
-                    current = currentFilter,
-                    onSelect = onSelectFilter,
-                    sortOrder = sortOrder,
-                    onSortOrderChange = onSortOrderChange,
+                    current = state.currentFilter,
+                    onSelect = actions.onSelectFilter,
+                    sortOrder = state.sortOrder,
+                    onSortOrderChange = actions.onSortOrderChange,
                 )
                 // DEF-22 — divisor com o token cheio: `outline` puro marca
                 // 16.10:1 (claro) / 15.95:1 (escuro); com `alpha = 0.3f` caía
@@ -118,36 +131,37 @@ internal fun HomeProjectsContent(
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
+            val errorMessage = state.errorMessage
             if (errorMessage != null) {
                 HomeErrorBanner(
                     message = errorMessage,
-                    onRetry = onRetry,
-                    onDismiss = onDismissError,
+                    onRetry = actions.onRetry,
+                    onDismiss = actions.onDismissError,
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .heightIn(min = 120.dp),
                 )
-            } else if (projects.isEmpty() && isLoading) {
+            } else if (state.projects.isEmpty() && state.isLoading) {
                 // E2.8 — loader enquanto o Flow do Room não emite a
                 // primeira lista. Empty state só aparece após a primeira
                 // coleta efetiva, evitando a sobreposição das duas
                 // visualizações.
                 HomeLoadingState(modifier = Modifier.fillMaxWidth())
-            } else if (projects.isEmpty()) {
+            } else if (state.projects.isEmpty()) {
                 // E2.6 — diferenciar "lista vazia sem filtro" de
                 // "filtro/busca não retornou nada". No segundo caso, a
                 // mensagem cita a query (ou a tag) que está restringindo
                 // a visualização.
-                if (searchQuery.isNotBlank() || selectedTagId != null) {
+                if (state.searchQuery.isNotBlank() || state.selectedTagId != null) {
                     HomeNoMatchesState(
-                        query = searchQuery,
+                        query = state.searchQuery,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 160.dp),
                     )
-                } else if (currentFilter == HomeProjectFilter.Completed) {
+                } else if (state.currentFilter == HomeProjectFilter.Completed) {
                     HomeCompletedEmptyState(
                         modifier =
                             Modifier
@@ -164,12 +178,12 @@ internal fun HomeProjectsContent(
                 }
             }
         }
-        items(items = projects, key = { it.project.id }) { card ->
+        items(items = state.projects, key = { it.project.id }) { card ->
             androidx.compose.foundation.layout.Box(
                 Modifier.animateItem(
                     fadeInSpec =
-                        if (searchQuery.isBlank() &&
-                            selectedTagId == null
+                        if (state.searchQuery.isBlank() &&
+                            state.selectedTagId == null
                         ) {
                             tween(NeoMotion.selection)
                         } else {
@@ -177,8 +191,8 @@ internal fun HomeProjectsContent(
                         },
                     fadeOutSpec = null,
                     placementSpec =
-                        if (searchQuery.isBlank() &&
-                            selectedTagId == null
+                        if (state.searchQuery.isBlank() &&
+                            state.selectedTagId == null
                         ) {
                             tween(NeoMotion.selection)
                         } else {
@@ -186,7 +200,7 @@ internal fun HomeProjectsContent(
                         },
                 ),
             ) {
-                ProjectCard(item = card, onClick = { onOpenProject(card.project.id) })
+                ProjectCard(item = card, onClick = { actions.onOpenProject(card.project.id) })
             }
         }
     }

@@ -30,6 +30,7 @@ fun HomeScreen(
     val upgradeDialogVisible by viewModel.upgradeDialogVisible.collectAsStateWithLifecycle()
     val listState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentFilter by viewModel.projectFilter.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     // deleteProject/createTag) grava em `viewModel.errorMessage`,
     // não em `uiState.errorMessage`. Sem coletar este flow, falhas
     // de escrita ficam invisíveis na UI.
@@ -66,21 +67,27 @@ fun HomeScreen(
     ) { innerPadding ->
         HomeProjectsContent(
             contentPadding = innerPadding,
-            onOpenProject = onOpenProject,
-            projects = listState.projects,
-            isLoading = listState.isLoading,
-            currentFilter = currentFilter,
-            onSelectFilter = viewModel::setProjectFilter,
-            errorMessage = actionError ?: listState.errorMessage,
-            onRetry = viewModel::retry,
-            onDismissError = viewModel::clearError,
-            availableTags = listState.availableTags,
-            searchQuery = viewModel.searchQuery.collectAsStateWithLifecycle().value,
-            onSearchQueryChange = viewModel::onSearchQueryChange,
-            selectedTagId = listState.selectedTagId,
-            onTagFilterChange = viewModel::onTagFilterChange,
-            sortOrder = listState.sortOrder,
-            onSortOrderChange = viewModel::onSortOrderChange,
+            state =
+                HomeProjectsState(
+                    projects = listState.projects,
+                    isLoading = listState.isLoading,
+                    currentFilter = currentFilter,
+                    errorMessage = actionError ?: listState.errorMessage,
+                    availableTags = listState.availableTags,
+                    searchQuery = searchQuery,
+                    selectedTagId = listState.selectedTagId,
+                    sortOrder = listState.sortOrder,
+                ),
+            actions =
+                HomeProjectsActions(
+                    onOpenProject = onOpenProject,
+                    onSelectFilter = viewModel::setProjectFilter,
+                    onRetry = viewModel::retry,
+                    onDismissError = viewModel::clearError,
+                    onSearchQueryChange = viewModel::onSearchQueryChange,
+                    onTagFilterChange = viewModel::onTagFilterChange,
+                    onSortOrderChange = viewModel::onSortOrderChange,
+                ),
         )
     }
 
