@@ -16,10 +16,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -105,31 +103,24 @@ class TasksViewModel
         private val projectRepository: ProjectRepository,
         private val activeUserProvider: ActiveUserProvider,
     ) : ViewModel() {
-        /**
-         * Token de retry (E2.8). Cada chamada a [retry] incrementa este
-         * valor; o pipeline [uiState] depende dele como chave de
-         * `flatMapLatest`, então a mudança descarta o Flow anterior
-         * (liberando o `WhileSubscribed` interno) e inicia uma nova
-         * inscrição nos repositórios.
-         */
-        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        /** Estado de leitura compartilhado com o Painel (retry + erro). */
+        private val loadState = TasksLoadState()
 
-        private val _errorMessage: MutableStateFlow<TasksErrorType?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<TasksErrorType?> = _errorMessage.asStateFlow()
+        /** Mensagem de erro pendente para a UI (E2.8). */
+        val errorMessage: StateFlow<TasksErrorType?> = loadState.errorMessage
 
         val uiState: StateFlow<TasksUiState> =
             combine(
-                _retryToken
+                loadState.retryToken
                     .flatMapLatest { _ -> taskLoadResults() },
-                _errorMessage,
+                loadState.errorMessage,
             ) { result, err ->
                 val ui =
                     when (result) {
-                        is TasksLoadResult.Loaded -> result.state
+                        is TasksLoadResult.Loaded -> result.value
                         is TasksLoadResult.Failed -> TasksUiState(isLoading = false)
                     }
-                // A mensagem vive em `_errorMessage`; o estado interno da
+                // A mensagem vive em `loadState`; o estado interno da
                 // leitura só carrega os dados.
                 ui.copy(errorMessage = err)
             }.stateIn(
@@ -150,12 +141,12 @@ class TasksViewModel
          * Com [TasksLoadResult], "leu" e "falhou" são estados
          * diferentes por construção, e a mensagem tem uma fonte só.
          */
-        private fun taskLoadResults(): Flow<TasksLoadResult> {
-            val loaded: Flow<TasksLoadResult> =
+        private fun taskLoadResults(): Flow<TasksLoadResult<TasksUiState>> {
+            val loaded: Flow<TasksLoadResult<TasksUiState>> =
                 activeUserProvider
                     .observeActiveUserId()
                     .flatMapLatest { ownerId ->
-                        val inner: Flow<TasksLoadResult> =
+                        val inner: Flow<TasksLoadResult<TasksUiState>> =
                             if (ownerId == null) {
                                 flowOf(TasksLoadResult.Loaded(TasksUiState(isLoading = false)))
                             } else {
@@ -184,7 +175,7 @@ class TasksViewModel
                 .catch { throwable ->
                     if (throwable is CancellationException) throw throwable
                     Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                    _errorMessage.value = TasksErrorType.LoadFailed
+                    loadState.onLoadFailure()
                     emit(TasksLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas.
@@ -193,39 +184,24 @@ class TasksViewModel
                 // imediatamente, "engolindo" a falha. (E2.8)
                 .onEach { result ->
                     if (result is TasksLoadResult.Loaded) {
-                        _errorMessage.value = null
+                        loadState.onLoadSuccess()
                     }
                 }
         }
 
-        /** Resultado de uma leitura da lista de tarefas. */
-        private sealed interface TasksLoadResult {
-            /** Leitura bem-sucedida (a lista pode estar vazia). */
-            data class Loaded(
-                val state: TasksUiState,
-            ) : TasksLoadResult
-
-            /**
-             * A leitura falhou. A mensagem mora em `_errorMessage` — este
-             * tipo só distingue o desfecho, sem duplicar o texto.
-             */
-            data object Failed : TasksLoadResult
-        }
-
         /**
          * Re-assina o pipeline de observação dos repositórios após uma
-         * falha (E2.8). Incrementa [retryToken], o que dispara o
+         * falha (E2.8). Incrementa o token de retry, o que dispara o
          * `flatMapLatest` em [uiState] e descarta a coleta atual.
          */
         fun retry() {
             Log.d(TAG, "retry acionado em TasksViewModel")
-            _errorMessage.value = null
-            _retryToken.value = _retryToken.value + 1
+            loadState.retry()
         }
 
         /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI quando o usuário dispensa o banner. */
         fun clearError() {
-            _errorMessage.value = null
+            loadState.clearError()
         }
 
         private fun Task.toRow(projectsById: Map<String, Project>): TaskRow =

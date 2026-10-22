@@ -108,8 +108,7 @@ class ProjectDetailViewModel
          * então a mudança descarta a coleta atual e re-assina o Flow do
          * [TaskRepository].
          */
-        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        private val retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
 
         /**
          * Estado de UI da tela — E2.1/E2.2 + E2.8.
@@ -126,7 +125,7 @@ class ProjectDetailViewModel
          * cancelamento do ViewModel).
          */
         val uiState: StateFlow<ProjectDetailUiState> =
-            _retryToken
+            retryToken
                 .flatMapLatest { _ -> taskLoadResults() }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas.
                 // Sem esse filtro, o `catch` emitiria um resultado vazio e o
@@ -417,7 +416,7 @@ class ProjectDetailViewModel
          */
         fun retry() {
             _errorMessage.value = null
-            _retryToken.value = _retryToken.value + 1
+            retryToken.value = retryToken.value + 1
         }
 
         companion object {

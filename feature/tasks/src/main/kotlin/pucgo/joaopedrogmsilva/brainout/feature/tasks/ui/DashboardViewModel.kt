@@ -24,10 +24,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -95,30 +93,24 @@ class DashboardViewModel
         private val taskRepository: TaskRepository,
         private val activeUserProvider: ActiveUserProvider,
     ) : ViewModel() {
-        /**
-         * Token de retry (E2.8). Cada chamada a [retry] incrementa este
-         * valor; o pipeline [uiState] depende dele como chave de
-         * `flatMapLatest`, descartando a coleta atual e re-assinando os
-         * repositórios.
-         */
-        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        /** Estado de leitura compartilhado com a lista de Tarefas (retry + erro). */
+        private val loadState = TasksLoadState()
 
-        private val _errorMessage: MutableStateFlow<TasksErrorType?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<TasksErrorType?> = _errorMessage.asStateFlow()
+        /** Mensagem de erro pendente para a UI (E2.8). */
+        val errorMessage: StateFlow<TasksErrorType?> = loadState.errorMessage
 
         val uiState: StateFlow<DashboardUiState> =
             combine(
-                _retryToken
+                loadState.retryToken
                     .flatMapLatest { _ -> dashboardLoadResults() },
-                _errorMessage,
+                loadState.errorMessage,
             ) { result, err ->
                 val ui =
                     when (result) {
-                        is DashboardLoadResult.Loaded -> result.state
-                        is DashboardLoadResult.Failed -> DashboardUiState(isLoading = false)
+                        is TasksLoadResult.Loaded -> result.value
+                        is TasksLoadResult.Failed -> DashboardUiState(isLoading = false)
                     }
-                // A mensagem vive em `_errorMessage`; o estado interno da
+                // A mensagem vive em `loadState`; o estado interno da
                 // leitura só carrega os dados.
                 ui.copy(errorMessage = err)
             }.stateIn(
@@ -137,14 +129,14 @@ class DashboardViewModel
          * [DashboardLoadResult], "leu" e "falhou" são estados diferentes
          * por construção.
          */
-        private fun dashboardLoadResults(): Flow<DashboardLoadResult> {
-            val loaded: Flow<DashboardLoadResult> =
+        private fun dashboardLoadResults(): Flow<TasksLoadResult<DashboardUiState>> {
+            val loaded: Flow<TasksLoadResult<DashboardUiState>> =
                 activeUserProvider
                     .observeActiveUserId()
                     .flatMapLatest { ownerId ->
-                        val inner: Flow<DashboardLoadResult> =
+                        val inner: Flow<TasksLoadResult<DashboardUiState>> =
                             if (ownerId == null) {
-                                flowOf(DashboardLoadResult.Loaded(DashboardUiState(isLoading = false)))
+                                flowOf(TasksLoadResult.Loaded(DashboardUiState(isLoading = false)))
                             } else {
                                 combine(
                                     projectRepository.observeAllForOwner(ownerId),
@@ -154,7 +146,7 @@ class DashboardViewModel
                                         weekStartMillis = currentWeekStartMillis(),
                                     ),
                                 ) { projects, priorityCounts, stats ->
-                                    DashboardLoadResult.Loaded(
+                                    TasksLoadResult.Loaded(
                                         DashboardUiState(
                                             activeProjects = projects.count { !it.isCompleted },
                                             completedProjects = projects.count { it.isCompleted },
@@ -178,45 +170,30 @@ class DashboardViewModel
                         "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
                         throwable,
                     )
-                    _errorMessage.value = TasksErrorType.LoadFailed
-                    emit(DashboardLoadResult.Failed)
+                    loadState.onLoadFailure()
+                    emit(TasksLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas;
                 // sem esse filtro o `catch` seria "engolido" na sequência.
                 .onEach { result ->
-                    if (result is DashboardLoadResult.Loaded) {
-                        _errorMessage.value = null
+                    if (result is TasksLoadResult.Loaded) {
+                        loadState.onLoadSuccess()
                     }
                 }
         }
 
-        /** Resultado de uma leitura das estatísticas do painel. */
-        private sealed interface DashboardLoadResult {
-            /** Leitura bem-sucedida. */
-            data class Loaded(
-                val state: DashboardUiState,
-            ) : DashboardLoadResult
-
-            /**
-             * A leitura falhou. A mensagem mora em `_errorMessage` — este
-             * tipo só distingue o desfecho, sem duplicar o texto.
-             */
-            data object Failed : DashboardLoadResult
-        }
-
         /**
-         * Re-assina o pipeline após uma falha (E2.8). Incrementa
-         * [retryToken], o que dispara o `flatMapLatest` em [uiState].
+         * Re-assina o pipeline após uma falha (E2.8). Incrementa o token
+         * de retry, o que dispara o `flatMapLatest` em [uiState].
          */
         fun retry() {
             Log.d(TAG, "retry acionado no Dashboard")
-            _errorMessage.value = null
-            _retryToken.value = _retryToken.value + 1
+            loadState.retry()
         }
 
         /** Limpa a mensagem de erro atual (E2.8). Chamado pela UI ao dispensar o banner. */
         fun clearError() {
-            _errorMessage.value = null
+            loadState.clearError()
         }
 
         /**
