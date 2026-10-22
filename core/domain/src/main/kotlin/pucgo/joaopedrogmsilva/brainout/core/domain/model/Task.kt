@@ -81,7 +81,10 @@ data class Task(
             Task(
                 id = UUID.randomUUID().toString(),
                 projectId = projectId,
-                title = title,
+                // DEF-57 — a validação olha o título aparado, então o
+                // título gravado também é: sem isto, o banco guardava os
+                // espaços que o usuário digitou.
+                title = title.trim(),
                 priority = priority,
                 status = status,
                 assigneeId = assigneeId,
@@ -161,8 +164,12 @@ data class Task(
 
     /** Atualiza o título, validando invariantes. */
     fun rename(newTitle: String): Task {
-        requireValidTitle(newTitle)
-        if (newTitle == title) return this
-        return copy(title = newTitle)
+        // DEF-57 — o título é aparado antes de validar e de gravar: a
+        // validação já olhava o valor aparado, então guardar o texto
+        // cru deixava o banco com os espaços que o usuário digitou.
+        val trimmed = newTitle.trim()
+        requireValidTitle(trimmed)
+        if (trimmed == title) return this
+        return copy(title = trimmed)
     }
 }

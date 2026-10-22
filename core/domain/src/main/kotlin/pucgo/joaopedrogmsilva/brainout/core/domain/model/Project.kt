@@ -46,7 +46,9 @@ data class Project(
         ): Project =
             Project(
                 id = UUID.randomUUID().toString(),
-                name = name,
+                // DEF-57 — a validação olha o nome aparado, então o nome
+                // gravado também é (como já faz [Tag.create]).
+                name = name.trim(),
                 description = description,
                 ownerId = ownerId,
                 createdAt = now,
