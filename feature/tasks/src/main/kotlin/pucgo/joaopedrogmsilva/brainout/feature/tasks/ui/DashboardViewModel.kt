@@ -23,6 +23,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -109,21 +110,51 @@ class DashboardViewModel
         val uiState: StateFlow<DashboardUiState> =
             combine(
                 _retryToken
-                    .flatMapLatest { _ ->
-                        activeUserProvider
-                            .observeActiveUserId()
-                            .flatMapLatest { ownerId ->
-                                if (ownerId == null) {
-                                    flowOf(DashboardUiState(isLoading = false))
-                                } else {
-                                    combine(
-                                        projectRepository.observeAllForOwner(ownerId),
-                                        taskRepository.observeCountByPriority(ownerId),
-                                        taskRepository.observeCompletionStats(
-                                            ownerId = ownerId,
-                                            weekStartMillis = currentWeekStartMillis(),
-                                        ),
-                                    ) { projects, priorityCounts, stats ->
+                    .flatMapLatest { _ -> dashboardLoadResults() },
+                _errorMessage,
+            ) { result, err ->
+                val ui =
+                    when (result) {
+                        is DashboardLoadResult.Loaded -> result.state
+                        is DashboardLoadResult.Failed -> DashboardUiState(isLoading = false)
+                    }
+                // A mensagem vive em `_errorMessage`; o estado interno da
+                // leitura só carrega os dados.
+                ui.copy(errorMessage = err)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = DashboardUiState(),
+            )
+
+        /**
+         * Leitura das estatísticas do painel, com a falha tipada.
+         *
+         * Mesmo desenho de [TasksViewModel.taskLoadResults]: o `catch`
+         * emitia um estado com `errorMessage` preenchido e o passo
+         * seguinte usava esse campo como flag de sucesso, enquanto o
+         * `combine` final sobrescrevia o mesmo campo. Com
+         * [DashboardLoadResult], "leu" e "falhou" são estados diferentes
+         * por construção.
+         */
+        private fun dashboardLoadResults(): Flow<DashboardLoadResult> {
+            val loaded: Flow<DashboardLoadResult> =
+                activeUserProvider
+                    .observeActiveUserId()
+                    .flatMapLatest { ownerId ->
+                        val inner: Flow<DashboardLoadResult> =
+                            if (ownerId == null) {
+                                flowOf(DashboardLoadResult.Loaded(DashboardUiState(isLoading = false)))
+                            } else {
+                                combine(
+                                    projectRepository.observeAllForOwner(ownerId),
+                                    taskRepository.observeCountByPriority(ownerId),
+                                    taskRepository.observeCompletionStats(
+                                        ownerId = ownerId,
+                                        weekStartMillis = currentWeekStartMillis(),
+                                    ),
+                                ) { projects, priorityCounts, stats ->
+                                    DashboardLoadResult.Loaded(
                                         DashboardUiState(
                                             activeProjects = projects.count { !it.isCompleted },
                                             completedProjects = projects.count { it.isCompleted },
@@ -133,33 +164,45 @@ class DashboardViewModel
                                             weeklyCompletionPercent = stats.weeklyCompletionPercent,
                                             overallCompletionPercent = stats.overallCompletionPercent,
                                             isLoading = false,
-                                        )
-                                    }
-                                }
-                            }.catch { throwable ->
-                                if (throwable is CancellationException) throw throwable
-                                Log.e(
-                                    TAG,
-                                    "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
-                                    throwable,
-                                )
-                                val message = throwable.toDashboardErrorMessage()
-                                _errorMessage.value = message
-                                emit(DashboardUiState(isLoading = false, errorMessage = message))
-                            }.onEach { state ->
-                                if (state.errorMessage == null) {
-                                    _errorMessage.value = null
+                                        ),
+                                    )
                                 }
                             }
-                    },
-                _errorMessage,
-            ) { ui, err ->
-                if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = DashboardUiState(),
-            )
+                        inner
+                    }
+            return loaded
+                .catch { throwable ->
+                    if (throwable is CancellationException) throw throwable
+                    Log.e(
+                        TAG,
+                        "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
+                        throwable,
+                    )
+                    val message = throwable.toDashboardErrorMessage()
+                    _errorMessage.value = message
+                    emit(DashboardLoadResult.Failed(message))
+                }
+                // Limpa o erro pendente APENAS em leituras bem-sucedidas;
+                // sem esse filtro o `catch` seria "engolido" na sequência.
+                .onEach { result ->
+                    if (result is DashboardLoadResult.Loaded) {
+                        _errorMessage.value = null
+                    }
+                }
+        }
+
+        /** Resultado de uma leitura das estatísticas do painel. */
+        private sealed interface DashboardLoadResult {
+            /** Leitura bem-sucedida. */
+            data class Loaded(
+                val state: DashboardUiState,
+            ) : DashboardLoadResult
+
+            /** A leitura falhou; a mensagem já está em `_errorMessage`. */
+            data class Failed(
+                val message: String,
+            ) : DashboardLoadResult
+        }
 
         /**
          * Re-assina o pipeline após uma falha (E2.8). Incrementa
