@@ -2,7 +2,8 @@ name: CodeQL
 
 # Análise estática de segurança. CodeQL roda em Java + Kotlin quando há
 # código fonte real; falha limpa (configuration_error) em PRs sem código,
-# o que é tratado como não-bloqueante para o merge.
+# o que é tratado como não-bloqueante para o merge. Um achado real de
+# segurança, ao contrário, reprova o PR (DEF-68).
 
 on:
   push:
@@ -23,18 +24,24 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         language: ['java', 'kotlin']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
+      # DEF-68 — o job inteiro era `continue-on-error: true`, então um
+      # achado real do CodeQL não bloqueava o merge. Agora a tolerância
+      # fica só na etapa de inicialização: uma falha de configuração
+      # (PR sem código analisável) não reprova, mas uma falha da
+      # análise reprova.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        id: init
+        continue-on-error: true
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           languages: ${{ matrix.language }}
           # `build-mode: none` em linguagens compiladas (Java/Kotlin)
@@ -44,6 +51,7 @@ jobs:
           build-mode: autobuild
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v4
+        if: steps.init.outcome == 'success'
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: "/language:${{ matrix.language }}"
