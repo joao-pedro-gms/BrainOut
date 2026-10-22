@@ -9,12 +9,16 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertThrows
+import org.junit.Before
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import java.time.Instant
 
@@ -29,13 +33,24 @@ import java.time.Instant
  * - Quando o projeto já atingiu [MAX_ACTIVE_TASKS_PER_PROJECT],
  *   a operação lança [ProjectTaskLimitReachedException] antes
  *   de qualquer escrita no repositório.
+ * - Quando o projeto não existe, a operação lança
+ *   [ProjectNotFoundException] — sem chegar ao `@Insert` do Room
+ *   (que devolveria uma `SQLiteConstraintException` crua).
  * - Tarefa criada com prazo futuro agenda lembrete para
  *   `dueDate - 1h`; sem prazo ou com prazo vencido, não agenda.
  */
 class CreateTaskUseCaseTest {
     private val repository: TaskRepository = mockk()
+    private val projectRepository: ProjectRepository = mockk()
     private val deadlineScheduler: DeadlineNotificationScheduler = mockk(relaxed = true)
-    private val useCase = CreateTaskUseCase(repository, deadlineScheduler)
+    private val useCase = CreateTaskUseCase(repository, projectRepository, deadlineScheduler)
+
+    private val existingProject: Project = Project.create(name = "Projeto", ownerId = "u1")
+
+    @Before
+    fun setUp() {
+        coEvery { projectRepository.findById("p1") } returns existingProject
+    }
 
     @Test
     fun `cria task quando limite nao foi atingido`() =
@@ -50,6 +65,26 @@ class CreateTaskUseCaseTest {
             assertThat(result.status).isEqualTo(TaskStatus.TODO)
             assertThat(result.priority).isEqualTo(TaskPriority.MEDIUM)
             coVerify { repository.create(any()) }
+        }
+
+    @Test
+    fun `lanca ProjectNotFoundException quando o projeto nao existe`() =
+        runTest {
+            coEvery { projectRepository.findById("p-inexistente") } returns null
+
+            // `assertThrows` é síncrono; embrulha a chamada suspend em
+            // runBlocking para manter a API do JUnit e exercitar o mesmo
+            // caminho de exceção do caso de uso.
+            val ex =
+                assertThrows(ProjectNotFoundException::class.java) {
+                    runBlocking { useCase(projectId = "p-inexistente", title = "Tarefa") }
+                }
+
+            assertThat(ex.message).contains("p-inexistente")
+            // A falha acontece **antes** de qualquer escrita: sem isto,
+            // o `projectId` inválido chegaria ao `@Insert` do Room e
+            // voltaria como `SQLiteConstraintException` crua (DEF-56).
+            coVerify(exactly = 0) { repository.create(any()) }
         }
 
     @Test

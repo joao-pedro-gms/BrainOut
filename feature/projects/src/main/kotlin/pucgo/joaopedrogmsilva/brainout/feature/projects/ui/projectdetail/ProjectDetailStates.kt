@@ -135,6 +135,8 @@ internal fun resolveProjectDetailMessage(error: ProjectDetailError): String =
             stringResource(id = R.string.project_detail_error_invalid_transition)
         ProjectDetailError.PriorityLocked ->
             stringResource(id = R.string.project_detail_error_priority_locked_on_done)
+        ProjectDetailError.ProjectNotFound ->
+            stringResource(id = R.string.project_detail_error_project_not_found)
         is ProjectDetailError.TaskLimitReached ->
             stringResource(id = R.string.project_detail_error_task_limit, error.limit)
         ProjectDetailError.ActionFailed ->

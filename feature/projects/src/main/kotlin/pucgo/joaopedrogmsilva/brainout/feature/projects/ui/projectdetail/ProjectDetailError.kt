@@ -38,6 +38,14 @@ sealed interface ProjectDetailError {
     /** RN02 — prioridade não pode mudar em tarefa concluída. */
     data object PriorityLocked : ProjectDetailError
 
+    /**
+     * O projeto não existe mais (foi excluído com a tela aberta).
+     * O domínio lança [pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException]
+     * em vez de deixar a violação de chave estrangeira do Room
+     * escapar como `SQLiteConstraintException` (DEF-56).
+     */
+    data object ProjectNotFound : ProjectDetailError
+
     /** Falha ao gravar (banco, I/O) numa ação do usuário. */
     data object ActionFailed : ProjectDetailError
 }

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
@@ -235,6 +236,13 @@ class ProjectDetailViewModel
                 } catch (e: ProjectTaskLimitReachedException) {
                     Log.w(TAG, "Limite de tarefas ativas atingido (RN01) no projeto $projectId")
                     _errorMessage.update { ProjectDetailError.TaskLimitReached(e.limit) }
+                } catch (e: ProjectNotFoundException) {
+                    // DEF-56 — o projeto foi excluído com a tela aberta.
+                    // O domínio barre antes do `@Insert`; sem este
+                    // mapeamento, o usuário veria a mensagem genérica de
+                    // falha de gravação.
+                    Log.w(TAG, "Projeto $projectId não existe mais")
+                    _errorMessage.update { ProjectDetailError.ProjectNotFound }
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                     Log.w(TAG, "Título de tarefa inválido: ${e.message}")
                     _errorMessage.update { ProjectDetailError.InvalidTitle }
