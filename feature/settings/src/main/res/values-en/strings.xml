@@ -42,4 +42,13 @@
     <string name="settings_backup_error_pwd_mismatch">The passwords do not match.</string>
     <string name="settings_backup_success_exported">Backup exported successfully.</string>
     <string name="settings_backup_success_restored">Backup restored. Sign in with your password to continue.</string>
+    <string name="settings_backup_summary">%1$s and %2$s.</string>
+    <plurals name="settings_backup_projects">
+        <item quantity="one">%d project</item>
+        <item quantity="other">%d projects</item>
+    </plurals>
+    <plurals name="settings_backup_tasks">
+        <item quantity="one">%d task</item>
+        <item quantity="other">%d tasks</item>
+    </plurals>
 </resources>
