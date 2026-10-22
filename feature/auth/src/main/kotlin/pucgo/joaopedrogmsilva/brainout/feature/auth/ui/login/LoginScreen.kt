@@ -386,13 +386,27 @@ internal data class EmailFieldConfig(
     }
 }
 
+/**
+ * Preview do formulário de Login.
+ *
+ * Aponta para [LoginBody] (e não para [LoginScreen]) de propósito: a
+ * tela resolve o ViewModel por `hiltViewModel()`, que exige uma
+ * Activity — no IDE a preview simplesmente não renderizava. O corpo
+ * recebe um estado de exemplo e renderiza igual.
+ */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun LoginScreenPreview() {
     BrainOutTheme {
-        LoginScreen(
-            onLoginSubmit = {},
-            onCreateAccountClicked = {},
+        LoginBody(
+            callbacks =
+                LoginCallbacks(
+                    onEmailChange = {},
+                    onPasswordChange = {},
+                    onSubmit = {},
+                    onCreateAccountClicked = {},
+                ),
+            uiState = AuthUiState(email = "joao@example.com", password = "senha-de-exemplo"),
         )
     }
 }

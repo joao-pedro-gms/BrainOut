@@ -6,6 +6,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -190,9 +192,26 @@ fun ProjectDetailScreen(
 @Composable
 private fun ProjectDetailScreenPreview() {
     BrainOutTheme {
-        ProjectDetailScreen(
-            projectId = "demo-project",
-            onBackClicked = {},
+        // O corpo, e não a tela: `ProjectDetailScreen` resolve o
+        // ViewModel por `hiltViewModel()`, que exige uma Activity — no
+        // IDE a preview não renderizava.
+        ProjectDetailBody(
+            contentPadding = PaddingValues(0.dp),
+            state =
+                ProjectDetailState(
+                    tasks = emptyList(),
+                    isLoading = false,
+                    errorMessage = null,
+                ),
+            actions =
+                ProjectDetailActions(
+                    onRetry = {},
+                    onDismissError = {},
+                    onChangeStatus = { _, _ -> },
+                    onDeleteTask = {},
+                    onRenameTask = {},
+                    onChangePriority = { _, _ -> },
+                ),
         )
     }
 }
