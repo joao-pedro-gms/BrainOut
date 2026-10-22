@@ -288,12 +288,12 @@ class HomeViewModelTest {
             viewModel.uiState.test {
                 advanceUntilIdle()
                 val state = expectMostRecentItem()
-                assertThat(state.errorMessage).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.errorMessage).isEqualTo(HomeErrorType.LoadFailed)
                 assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
 
-            assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
+            assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.LoadFailed)
         }
 
     /**
@@ -326,7 +326,7 @@ class HomeViewModelTest {
             viewModel.uiState.test {
                 advanceUntilIdle()
                 // Após a falha, `errorMessage` deve estar populado.
-                assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_LOAD_FAILED)
+                assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.LoadFailed)
 
                 // Reconfigura o mock para emitir lista vazia (sucesso).
                 coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
@@ -397,7 +397,7 @@ class HomeViewModelTest {
             viewModel.createProject("x", null, emptyList())
             advanceUntilIdle()
 
-            assertThat(viewModel.errorMessage.value).isEqualTo(HomeViewModel.ERROR_ACTION_FAILED)
+            assertThat(viewModel.errorMessage.value).isEqualTo(HomeErrorType.ActionFailed)
         }
 
     @Test

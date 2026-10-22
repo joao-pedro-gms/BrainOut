@@ -44,7 +44,7 @@ internal data class HomeProjectsState(
     val projects: List<ProjectCardItem>,
     val isLoading: Boolean,
     val currentFilter: HomeProjectFilter,
-    val errorMessage: String?,
+    val errorMessage: HomeErrorType?,
     val availableTags: List<TagChip>,
     val searchQuery: String,
     val selectedTagId: String?,
@@ -134,7 +134,7 @@ internal fun HomeProjectsContent(
             val errorMessage = state.errorMessage
             if (errorMessage != null) {
                 HomeErrorBanner(
-                    message = errorMessage,
+                    error = errorMessage,
                     onRetry = actions.onRetry,
                     onDismiss = actions.onDismissError,
                     modifier =

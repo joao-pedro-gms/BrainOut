@@ -1,7 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Diálogo de criação de projeto (E2.1) com seleção de tags e o
 // sub-diálogo `AddTagDialog`. Validação inline de nome obrigatório
-// (E2.8) via chave canônica + `resolveCreateProjectNameError`.
+// (E2.8) via chave canônica + `resolveNameError`.
 //
 // `LongParameterList` é necessário: o orchestrator passa adiante
 // callbacks do ViewModel para composição + validação + criação;
@@ -39,15 +39,6 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
-/**
- * Chave canônica de validação inline (E2.8). Mesma estratégia do
- * `ERROR_LOAD_FAILED` — a UI resolve para o recurso localizado via
- * [resolveCreateProjectNameError]. Permanece como constante para
- * que os testes Compose possam comparar com a chave sem depender de
- * texto em pt/en.
- */
-private const val CREATE_PROJECT_NAME_REQUIRED_KEY: String = "CREATE_PROJECT_NAME_REQUIRED"
-
 @Composable
 internal fun CreateProjectDialog(
     availableTags: List<TagChip>,
@@ -58,7 +49,7 @@ internal fun CreateProjectDialog(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
-    var nameError by rememberSaveable { mutableStateOf<String?>(null) }
+    var nameError by rememberSaveable { mutableStateOf<HomeErrorType?>(null) }
     val selectedTagIds =
         rememberSaveable(
             saver =
@@ -103,7 +94,7 @@ internal fun CreateProjectDialog(
                         // diálogo, marca `nameError` para o
                         // `TextField` exibir `isError` +
                         // `supportingText`.
-                        nameError = CREATE_PROJECT_NAME_REQUIRED_KEY
+                        nameError = HomeErrorType.NameRequired
                         return@TextButton
                     }
                     onCreateProject(
@@ -137,19 +128,13 @@ internal fun CreateProjectDialog(
 }
 
 @Composable
-internal fun resolveCreateProjectNameError(key: String?): String? =
-    when (key) {
-        CREATE_PROJECT_NAME_REQUIRED_KEY ->
-            stringResource(id = R.string.home_create_project_name_required)
-        null -> null
-        else -> key
-    }
+internal fun resolveNameError(error: HomeErrorType?): String? = error?.let { resolveHomeErrorMessage(it) }
 
 @Composable
 private fun CreateProjectDialogBody(
     name: String,
     onNameChange: (String) -> Unit,
-    nameError: String?,
+    nameError: HomeErrorType?,
     description: String,
     onDescriptionChange: (String) -> Unit,
     availableTags: List<TagChip>,
@@ -159,7 +144,7 @@ private fun CreateProjectDialogBody(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // E2.8 — `isError` + `supportingText` quando `nameError`
         // estiver preenchido. A mensagem é resolvida via
-        // [resolveCreateProjectNameError] para manter a string
+        // [resolveNameError] para manter a string
         // localizada em pt/en (regra E4.6).
         OutlinedTextField(
             value = name,
@@ -168,7 +153,7 @@ private fun CreateProjectDialogBody(
             singleLine = true,
             isError = nameError != null,
             supportingText = {
-                val resolved = resolveCreateProjectNameError(nameError)
+                val resolved = resolveNameError(nameError)
                 if (resolved != null) {
                     Text(
                         text = resolved,

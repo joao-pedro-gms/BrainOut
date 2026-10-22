@@ -35,7 +35,7 @@ data class HomeUiState(
     val selectedTagId: String? = null,
     val sortOrder: SortOrder = SortOrder.CreatedDesc,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: HomeErrorType? = null,
     val projectFilter: HomeProjectFilter = HomeProjectFilter.Active,
 )
 

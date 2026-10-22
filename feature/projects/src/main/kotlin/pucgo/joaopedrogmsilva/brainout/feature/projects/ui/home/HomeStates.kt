@@ -52,20 +52,19 @@ internal fun HomeLoadingState(modifier: Modifier = Modifier) {
 
 /**
  * Banner de erro com ações de retry/dispensar (E2.8). Renderizado
- * sempre que `errorMessage != null`. A mensagem vinda do ViewModel
- * é uma chave canônica (`ERROR_LOAD_FAILED` ou
- * `ERROR_ACTION_FAILED`); a UI resolve para o recurso localizado
- * via [resolveHomeErrorMessage].
+ * sempre que há erro. O erro chega **tipado**
+ * ([HomeErrorType]) e a UI resolve para o recurso localizado via
+ * [resolveHomeErrorMessage].
  */
 @Composable
 internal fun HomeErrorBanner(
-    message: String,
+    error: HomeErrorType,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NeoErrorBanner(
-        message = resolveHomeErrorMessage(message),
+        message = resolveHomeErrorMessage(error),
         onRetry = onRetry,
         onDismiss = onDismiss,
         modifier = modifier,
@@ -76,17 +75,19 @@ internal fun HomeErrorBanner(
 }
 
 /**
- * Resolve a chave canônica de erro do [HomeViewModel] para a string
- * localizada. Mesma estratégia de `resolveProjectDetailMessage` em
- * E2.1 — chaves técnicas do ViewModel viram recurso pt/en sem
- * expor stack traces para o usuário.
+ * Resolve o erro do [HomeViewModel] para a string localizada.
+ *
+ * O ViewModel entrega o **tipo** do erro; aqui a escolha do texto
+ * pt/en. Antes o tipo era deduzido comparando a mensagem em
+ * português.
  */
 @Composable
-internal fun resolveHomeErrorMessage(message: String): String =
-    when {
-        HomeViewModel.isLoadErrorMessage(message) ->
+internal fun resolveHomeErrorMessage(error: HomeErrorType): String =
+    when (error) {
+        HomeErrorType.LoadFailed ->
             stringResource(id = R.string.home_error_load_failed)
-        message == HomeViewModel.ERROR_ACTION_FAILED ->
+        HomeErrorType.ActionFailed ->
             stringResource(id = R.string.home_error_action_failed)
-        else -> message
+        HomeErrorType.NameRequired ->
+            stringResource(id = R.string.home_create_project_name_required)
     }
