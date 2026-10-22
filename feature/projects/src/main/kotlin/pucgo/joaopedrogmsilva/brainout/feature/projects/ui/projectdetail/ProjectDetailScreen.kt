@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
@@ -187,8 +188,10 @@ fun ProjectDetailScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ProjectDetailScreenPreview() {
-    ProjectDetailScreen(
-        projectId = "demo-project",
-        onBackClicked = {},
-    )
+    BrainOutTheme {
+        ProjectDetailScreen(
+            projectId = "demo-project",
+            onBackClicked = {},
+        )
+    }
 }

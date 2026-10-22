@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 
 /** Lista de projetos; navegação global pertence ao shell do app. */
 @Composable
@@ -144,5 +145,7 @@ object HomeTestTags {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
-    HomeScreen()
+    BrainOutTheme {
+        HomeScreen()
+    }
 }

@@ -6,6 +6,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -19,6 +20,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateTagUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
 import kotlin.coroutines.cancellation.CancellationException
+
+/** Tag de log das ações da Home. */
+private const val TAG: String = "BrainOut:HomeActions"
 
 /**
  * Executa [block] no [scope], convertendo falhas em mensagem no
@@ -39,7 +43,8 @@ private fun runAction(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            errorSink.value = e.toHomeActionErrorMessage()
+            Log.w(TAG, "Falha na acao da Home: " + e.message, e)
+            errorSink.value = HomeViewModel.ERROR_ACTION_FAILED
         }
     }
 }

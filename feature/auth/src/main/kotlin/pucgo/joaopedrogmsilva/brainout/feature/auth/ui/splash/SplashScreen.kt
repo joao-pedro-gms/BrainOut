@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -98,5 +99,7 @@ object SplashScreenTestTags {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun SplashScreenPreview() {
-    SplashScreen(onStartClicked = {})
+    BrainOutTheme {
+        SplashScreen(onStartClicked = {})
+    }
 }

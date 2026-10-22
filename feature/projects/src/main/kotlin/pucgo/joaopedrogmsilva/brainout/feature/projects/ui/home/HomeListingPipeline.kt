@@ -210,13 +210,12 @@ internal fun homeUiStateFlow(
                 }
             }.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                val message = throwable.toHomeErrorMessage()
-                errorMessage.value = message
+                errorMessage.value = HomeViewModel.ERROR_LOAD_FAILED
                 emit(
                     HomeUiState(
                         isLoading = false,
                         projectFilter = projectFilter.value,
-                        errorMessage = message,
+                        errorMessage = HomeViewModel.ERROR_LOAD_FAILED,
                     ),
                 )
             }.onEach { state: HomeUiState ->

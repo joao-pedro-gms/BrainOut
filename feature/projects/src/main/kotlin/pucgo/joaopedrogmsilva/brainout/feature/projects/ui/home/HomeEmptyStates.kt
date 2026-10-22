@@ -41,20 +41,25 @@ internal fun HomeNoMatchesState(
     )
 }
 
+/**
+ * Estado vazio da lista de projetos.
+ *
+ * Serve aos dois casos — "nenhum projeto" e "nenhum projeto concluído" —
+ * que diferem apenas no texto. Os textos ficam na chamada; o cartão é o
+ * mesmo.
+ *
+ * @param titleRes recurso do título.
+ * @param bodyRes recurso do texto de apoio.
+ */
 @Composable
-internal fun HomeCompletedEmptyState(modifier: Modifier = Modifier) {
+internal fun HomeEmptyState(
+    titleRes: Int,
+    bodyRes: Int,
+    modifier: Modifier = Modifier,
+) {
     NeoEmptyState(
-        title = stringResource(id = R.string.home_completed_empty_title),
-        body = stringResource(id = R.string.home_completed_empty_body),
-        modifier = modifier,
-    )
-}
-
-@Composable
-internal fun HomeEmptyState(modifier: Modifier = Modifier) {
-    NeoEmptyState(
-        title = stringResource(id = R.string.home_empty_title),
-        body = stringResource(id = R.string.home_empty_body),
+        title = stringResource(id = titleRes),
+        body = stringResource(id = bodyRes),
         modifier = modifier,
     )
 }

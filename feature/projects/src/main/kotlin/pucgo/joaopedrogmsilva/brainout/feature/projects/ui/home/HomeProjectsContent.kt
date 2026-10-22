@@ -162,7 +162,9 @@ internal fun HomeProjectsContent(
                                 .heightIn(min = 160.dp),
                     )
                 } else if (state.currentFilter == HomeProjectFilter.Completed) {
-                    HomeCompletedEmptyState(
+                    HomeEmptyState(
+                        titleRes = R.string.home_completed_empty_title,
+                        bodyRes = R.string.home_completed_empty_body,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -170,6 +172,8 @@ internal fun HomeProjectsContent(
                     )
                 } else {
                     HomeEmptyState(
+                        titleRes = R.string.home_empty_title,
+                        bodyRes = R.string.home_empty_body,
                         modifier =
                             Modifier
                                 .fillMaxWidth()

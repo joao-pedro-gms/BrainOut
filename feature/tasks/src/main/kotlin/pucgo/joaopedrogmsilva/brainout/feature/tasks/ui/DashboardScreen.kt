@@ -37,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
@@ -175,7 +176,7 @@ private fun DashboardBody(state: DashboardUiState) {
 @Preview(showBackground = true)
 @Composable
 private fun DashboardScreenEmptyPreview() {
-    androidx.compose.material3.MaterialTheme {
+    BrainOutTheme {
         DashboardContent(state = DashboardUiState(isLoading = false))
     }
 }
@@ -183,7 +184,7 @@ private fun DashboardScreenEmptyPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun DashboardScreenPopulatedPreview() {
-    androidx.compose.material3.MaterialTheme {
+    BrainOutTheme {
         DashboardContent(
             state =
                 DashboardUiState(

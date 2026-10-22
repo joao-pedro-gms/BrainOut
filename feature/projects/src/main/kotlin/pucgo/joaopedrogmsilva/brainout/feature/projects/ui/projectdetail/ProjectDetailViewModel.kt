@@ -167,8 +167,7 @@ class ProjectDetailViewModel
                     .map { tasks -> TaskLoadResult.Loaded(tasks) }
             return loaded.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                val message = throwable.toProjectDetailErrorMessage()
-                _errorMessage.value = message
+                _errorMessage.value = ProjectDetailViewModel.ERROR_LOAD_FAILED
                 emit(TaskLoadResult.Failed)
             }
         }
@@ -246,7 +245,7 @@ class ProjectDetailViewModel
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao adicionar tarefa: ${e.message}", e)
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -290,7 +289,7 @@ class ProjectDetailViewModel
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao alterar status da tarefa $taskId: ${e.message}", e)
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -341,7 +340,7 @@ class ProjectDetailViewModel
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao alterar prioridade da tarefa ${task.id}: ${e.message}", e)
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -372,7 +371,7 @@ class ProjectDetailViewModel
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao renomear tarefa ${task.id}: ${e.message}", e)
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -386,7 +385,7 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -403,7 +402,7 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    _errorMessage.update { e.toProjectDetailErrorMessage() }
+                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
                 }
             }
         }
@@ -470,10 +469,3 @@ class ProjectDetailViewModel
             private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
         }
     }
-
-/**
- * Converte uma [Throwable] vinda do Room em uma mensagem canônica
- * para a UI (E2.8). Mantém a regra de não expor stack traces: a UI
- * só recebe a chave de recurso; o detalhe técnico fica em logcat.
- */
-internal fun Throwable.toProjectDetailErrorMessage(): String = ProjectDetailViewModel.ERROR_LOAD_FAILED
