@@ -2,9 +2,10 @@
 // Testes Compose da [SettingsScreen] (E1.3). Robolectric JVM.
 //
 // Sem ViewModel próprio: a tela é stateless e delega ao NavHost via
-// callbacks. Cobre (a) renderização das seções/opções, (b) click
-// despachando o [SettingsActionType] correto, (c) ícone de logout
-// para a opção SignOut.
+// callback. Cobre (a) renderização das seções/opções, (b) o toque em
+// "Sair" disparando a ação, (c) as linhas sem destino respondendo
+// "Em breve" em vez de absorver o toque em silêncio (DEF-44) e (d) o
+// ícone de logout para a opção SignOut.
 
 package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 
@@ -26,7 +27,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 
 /**
  * Cobertura mínima do esqueleto de configurações (E1.3): título,
- * subtítulo, três seções, quatro opções e dispatch por clique.
+ * subtítulo, três seções, quatro opções e o efeito do clique.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], qualifiers = "pt-rBR")
@@ -35,11 +36,11 @@ class SettingsScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `renderiza titulo, subtitulo e quatro opcoes`() {
+    fun `renderiza titulo, subtitulo e as quatro opcoes`() {
         composeRule.setContent {
             BrainOutTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SettingsScreen(onOptionClicked = {})
+                    SettingsScreen(onSignOut = {})
                 }
             }
         }
@@ -65,25 +66,43 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun `click em cada opcao despacha o SettingsActionType correspondente`() {
-        val dispatched = mutableListOf<SettingsActionType>()
+    fun `clicar em Sair despacha a acao de encerrar sessao`() {
+        var signOutCount = 0
         composeRule.setContent {
             BrainOutTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SettingsScreen(onOptionClicked = { dispatched += it })
+                    SettingsScreen(onSignOut = { signOutCount++ })
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("settings_option_signout").performScrollTo().performClick()
+
+        assert(signOutCount == 1) { "esperava 1 dispatch de Sair, veio $signOutCount" }
+    }
+
+    /**
+     * DEF-44 — as linhas sem destino não podem absorver o toque em
+     * silêncio: o usuário recebe "Em breve" no snackbar.
+     */
+    @Test
+    fun `clicar em linha sem destino mostra Em breve e nao despacha acao`() {
+        var signOutCount = 0
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    SettingsScreen(onSignOut = { signOutCount++ })
                 }
             }
         }
 
         composeRule.onNodeWithTag("settings_option_profile").performScrollTo().performClick()
+        composeRule.onNodeWithText("Em breve").assertIsDisplayed()
+
         composeRule.onNodeWithTag("settings_option_notifications").performScrollTo().performClick()
         composeRule.onNodeWithTag("settings_option_theme").performScrollTo().performClick()
-        composeRule.onNodeWithTag("settings_option_signout").performScrollTo().performClick()
 
-        assert(dispatched.size == 4)
-        assert(dispatched[0] == SettingsActionType.Profile)
-        assert(dispatched[1] == SettingsActionType.Notifications)
-        assert(dispatched[2] == SettingsActionType.Theme)
-        assert(dispatched[3] == SettingsActionType.SignOut)
+        // Nenhuma delas despachou a ação de sair.
+        assert(signOutCount == 0) { "linha sem destino despachou ação ($signOutCount)" }
     }
 }

@@ -23,11 +23,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
@@ -49,22 +54,29 @@ private const val DISABLED_ALPHA: Float = 0.38f
 /**
  * Tela de configurações.
  *
- * @param onOptionClicked disparado quando o usuário toca em uma linha.
- *  Recebe o [SettingsActionType] correspondente. O `NavHost` decide o que
- *  fazer — no E1.3 apenas `SignOut` tem efeito (limpar backstack e voltar
- *  para `login`); os demais ficam reservados para E2.x.
+ * @param onSignOut disparado quando o usuário toca em "Sair" — é a
+ *  única ação que troca a rota (o `NavHost` limpa a sessão e volta
+ *  para `login`).
  * @param backupContent área reservada à seção de backup local
  *  (issue #214 — LOCAL-03). Fica como *slot* para que a tela continue
  *  sem depender do ViewModel de backup — a própria [BackupSection]
  *  resolve o seu.
+ *
+ * As linhas que ainda não têm destino (Perfil, Notificações, Tema)
+ * respondem "Em breve" em um [SnackbarHost]: o toque não é absorvido
+ * em silêncio (DEF-44).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onOptionClicked: (SettingsActionType) -> Unit,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     backupContent: @Composable () -> Unit = {},
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val comingSoonMessage = stringResource(id = R.string.settings_option_coming_soon)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -82,6 +94,7 @@ fun SettingsScreen(
                     ),
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(
@@ -113,7 +126,19 @@ fun SettingsScreen(
                         section.options.forEachIndexed { index, option ->
                             SettingsRow(
                                 option = option,
-                                onClick = { onOptionClicked(option.type) },
+                                onClick = {
+                                    when (option.kind) {
+                                        SettingsRowKind.SignOut -> onSignOut()
+                                        SettingsRowKind.Placeholder ->
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(comingSoonMessage)
+                                            }
+                                        // Ações locais (backup) não
+                                        // passam por aqui: a
+                                        // `BackupSection` as executa.
+                                        SettingsRowKind.Local -> Unit
+                                    }
+                                },
                             )
                             if (index < section.options.lastIndex) {
                                 // DEF-22 — divisor com o token cheio:
@@ -175,11 +200,11 @@ private fun SettingsIdentityHeader() {
 internal fun SettingsRow(
     option: SettingsOption,
     onClick: () -> Unit,
-    testTag: String = "settings_option_${option.type.name.lowercase()}",
+    testTag: String = "settings_option_${option.id}",
     enabled: Boolean = true,
 ) {
     val label = stringResource(id = option.labelRes)
-    val isSignOut = option.type == SettingsActionType.SignOut
+    val isSignOut = option.kind == SettingsRowKind.SignOut
     val labelColor =
         when {
             !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DISABLED_ALPHA)
@@ -234,6 +259,6 @@ internal fun SettingsRow(
 @Composable
 private fun SettingsScreenPreview() {
     pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme {
-        SettingsScreen(onOptionClicked = {})
+        SettingsScreen(onSignOut = {})
     }
 }
