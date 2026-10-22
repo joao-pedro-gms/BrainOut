@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- João Pedro G M Silva - PUC Goiás ADS - 20251012000740 -->
+<!--
+  Ícone do aplicativo BrainOut — marca neobrutalista (paleta A do
+  `DESIGN.md` §3).
+
+  Este arquivo é a FONTE ÚNICA DE VERDADE do ícone. Todo recurso Android
+  derivado é gerado por `brand/generate_icons.py` a partir daqui:
+
+    · `core/ui/.../drawable/neo_art_app_logo.xml` (arte no app) ....... grade 120
+    · `app/.../drawable/ic_launcher_foreground.xml` ................... grade 108
+    · `app/.../drawable/ic_launcher_background.xml` ................... grade 108
+    · `app/.../drawable/ic_launcher_monochrome.xml` .................... grade 108
+    · `app/.../mipmap-*/ic_launcher{,_round}.png` (API 24/25) ........ 48 a 192
+
+  Geometria na grade de 120 unidades (1 unidade = 1 dp na arte do
+  `:core:ui`). Traço uniforme de 6 unidades, canto reto, sombra rígida
+  deslocada +8,+8 e apenas três cores da paleta A: ink, yellow e violet.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+    <g id="tile">
+        <!-- Campo violeta do tile do launcher (a arte dentro do app é transparente). -->
+        <rect id="campo" x="0" y="0" width="120" height="120" fill="#B5A1F5"/>
+    </g>
+    <g id="marca">
+        <!-- Sombra rígida: a mesma silhueta da ficha, deslocada +8,+8 (sem blur). -->
+        <rect id="sombra" x="46" y="46" width="44" height="44" fill="#181818"/>
+        <!-- Ficha: yellow com contorno ink de 6 unidades. -->
+        <rect id="ficha" x="38" y="38" width="44" height="44" fill="#F9D94A" stroke="#181818" stroke-width="6"/>
+        <!-- Marca de conclusão: o traço de 6 unidades é o do NB-05, ponta reta. -->
+        <polyline id="check" points="50,56 58,64 70,48" fill="none" stroke="#181818" stroke-width="6"/>
+        <!-- Barra da tarefa: o violeta do carimbo. -->
+        <rect id="barra" x="44" y="70" width="23" height="5" fill="#B5A1F5"/>
+    </g>
+</svg>

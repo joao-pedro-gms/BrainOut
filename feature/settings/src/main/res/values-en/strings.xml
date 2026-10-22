@@ -3,6 +3,7 @@
 <resources>
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_app_name">BrainOut</string>
     <string name="settings_subtitle">Local account and app preferences.</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_section_appearance">Appearance</string>

@@ -91,7 +91,8 @@ Sync (offline-first):
 | `core/data/src/main/kotlin/.../repository/` | Repository impls; each delegates mutations to `pendingOpDao.enqueueInTx`. |
 | `core/data/src/main/kotlin/.../sync/` | `SyncDispatcher` (interface), `BrainOutSyncDispatcher`, `PendingSyncMonitor`, `ConnectivityObserver`. |
 | `core/ui/src/main/kotlin/.../theme/` | Material 3 base (`Color/Shape/Theme/Type`) **+ identidade Neo**: `NeoColor.kt`, `NeoTokens.kt`, `NeoTypography.kt` (que declara `object NeoFonts`), `BrainOutNeoTheme.kt`. `BrainOutTheme` já delega para o tema Neo. |
-| `core/ui/src/main/res/` | `font/` com **5 fontes** locais (3× Archivo — bold/extra bold/semi bold — e 2× Public Sans — regular/semi bold) e `drawable/` com **20 drawables `neo_*`** (ícones/vetores da identidade). |
+| `core/ui/src/main/res/` | `font/` com **5 fontes** locais (3× Archivo — bold/extra bold/semi bold — e 2× Public Sans — regular/semi bold) e `drawable/` com **21 drawables `neo_*`** (ícones/vetores da identidade). |
+| `brand/` | Fonte da marca do app: `brainout-icon.svg` (fonte única do ícone), `generate_icons.py` (gera arte do `:core:ui`, adaptive icon e PNGs legados) e `README.md` com a proveniência. Regerar com `python brand/generate_icons.py` — nunca editar os recursos derivados à mão. |
 | `feature/<x>/src/main/kotlin/.../ui/` | Screens + `*TestTags` objects for Compose UI tests. |
 | `feature/<x>/src/main/kotlin/.../viewmodel/` or `ui/<x>/` | `@HiltViewModel` + `data class XxxUiState`. |
 | `feature/<x>/src/main/kotlin/.../navigation/*Routes.kt` | Constantes de rota por feature; ver *Navigation* acima (uso desigual). |

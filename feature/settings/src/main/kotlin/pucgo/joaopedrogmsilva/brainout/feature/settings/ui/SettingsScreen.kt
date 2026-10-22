@@ -3,6 +3,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -88,11 +90,7 @@ fun SettingsScreen(
                     .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = stringResource(id = R.string.settings_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            SettingsIdentityHeader()
 
             SettingsSections.forEach { section ->
                 Text(
@@ -131,6 +129,40 @@ fun SettingsScreen(
             backupContent()
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * Cabeçalho de identidade da tela: a mesma marca que é o ícone do launcher
+ * (`brand/brainout-icon.svg`), com o nome do app e o subtítulo.
+ *
+ * A figura é decorativa — o nome do app já está em texto ao lado, então a
+ * imagem não repete informação para o TalkBack.
+ */
+@Composable
+private fun SettingsIdentityHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.md),
+    ) {
+        Image(
+            painter = painterResource(UiR.drawable.neo_art_app_logo),
+            contentDescription = null,
+            modifier = Modifier.size(96.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.xxs)) {
+            Text(
+                text = stringResource(id = R.string.settings_app_name),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

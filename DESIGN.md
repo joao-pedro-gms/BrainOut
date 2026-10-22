@@ -214,6 +214,8 @@ Sombra significa impressão deslocada, não iluminação. No dark, é um offset 
 
 **Ilustração:** traço uniforme, 2–3 cores, formas preenchidas e offset único. Sem texto rasterizado, sem imagens remotas obrigatórias. Criar no máximo uma ilustração original para splash e três empty states; autoria/licença devem acompanhar o asset. Não reutilizar logos, personagens ou imagens de Gumroad.
 
+**Marca do app:** o ícone do launcher é um asset de outra categoria — a figura que identifica o produto — e não conta no teto de «uma ilustração de splash e três empty states». Ele cumpre as mesmas regras de forma (traço uniforme de 6, três cores da paleta A, offset único de sombra) e fica versionado em `brand/brainout-icon.svg`: o ícone do launcher, a arte dentro do app e os PNGs legados saem todos desse SVG, por `brand/generate_icons.py`.
+
 ### Layout adaptativo
 
 Projetar pela janela disponível, não pelo modelo do aparelho. [Fonte oficial](https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes).
