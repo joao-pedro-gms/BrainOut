@@ -11,12 +11,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -125,42 +127,22 @@ class ProjectDetailViewModel
          */
         val uiState: StateFlow<ProjectDetailUiState> =
             _retryToken
-                .flatMapLatest { _ ->
-                    taskRepository
-                        .observeForProject(projectId)
-                        .catch { throwable ->
-                            if (throwable is CancellationException) throw throwable
-                            val message = throwable.toProjectDetailErrorMessage()
-                            _errorMessage.value = message
-                            // Lista de sentinela — o `onEach` abaixo a
-                            // distingue da lista vazia real do Room para
-                            // evitar "engolir" o erro pendente.
-                            emit(sentinelOnError)
-                        }
-                        // Limpa erro pendente APENAS em emissões vindas do
-                        // upstream (sucesso do Flow), não na sentinela
-                        // emitida pelo `catch` acima. Sem esse filtro, o
-                        // `catch` emitiria a lista vazia e o `onEach`
-                        // seguinte resetaria o erro para `null`
-                        // imediatamente, "engolindo" a falha. (E2.8)
-                        .onEach { tasks ->
-                            if (tasks !== sentinelOnError) {
-                                _errorMessage.value = null
-                            }
-                        }
-                }.let { tasksFlow ->
-                    kotlinx.coroutines.flow.flow {
-                        tasksFlow.collect { tasks ->
-                            emit(
-                                ProjectDetailUiState(
-                                    projectId = projectId,
-                                    tasks = tasks,
-                                    isLoading = false,
-                                    errorMessage = _errorMessage.value,
-                                ),
-                            )
-                        }
+                .flatMapLatest { _ -> taskLoadResults() }
+                // Limpa o erro pendente APENAS em leituras bem-sucedidas.
+                // Sem esse filtro, o `catch` emitiria um resultado vazio e o
+                // passo seguinte resetaria o erro para `null`
+                // imediatamente, "engolindo" a falha. (E2.8)
+                .onEach { result ->
+                    if (result is TaskLoadResult.Loaded) {
+                        _errorMessage.value = null
                     }
+                }.map { result ->
+                    ProjectDetailUiState(
+                        projectId = projectId,
+                        tasks = (result as? TaskLoadResult.Loaded)?.tasks.orEmpty(),
+                        isLoading = false,
+                        errorMessage = _errorMessage.value,
+                    )
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
@@ -168,18 +150,54 @@ class ProjectDetailViewModel
                 )
 
         /**
-         * Sentinela interna para distinguir a lista vazia emitida pelo
-         * `catch` (que sinaliza erro) de uma lista vazia real do Room.
-         * Evita que o `onEach` "engola" o erro pendente logo após o
-         * `catch` emitir a lista.
+         * Leitura das tarefas do projeto, com a falha tipada.
          *
-         * Criada uma única vez por ViewModel — cada `catch` produz um
-         * `emit(sentinelOnError)`, então o downstream recebe a mesma
-         * referência. Como a lista do Room é uma `MutableList` real
-         * (vinda do Cursor do `RoomDatabase`), nunca terá referência
-         * idêntica a esta `ListOf(0)`.
+         * O `catch` converte a exceção do Room em [TaskLoadResult.Failed] e
+         * registra a mensagem em [errorMessage]; o `onEach` do pipeline
+         * acima só limpa o erro quando o resultado é [TaskLoadResult.Loaded].
          */
-        private val sentinelOnError: List<Task> = listOf()
+        private fun taskLoadResults(): Flow<TaskLoadResult> {
+            // O tipo do Flow e' declarado explicitamente porque o `map`
+            // inferiria apenas o subtipo concreto (`Loaded`); o `catch`
+            // precisa de `TaskLoadResult` para poder emitir tambem o
+            // caso de falha.
+            val loaded: Flow<TaskLoadResult> =
+                taskRepository
+                    .observeForProject(projectId)
+                    .map { tasks -> TaskLoadResult.Loaded(tasks) }
+            return loaded.catch { throwable ->
+                if (throwable is CancellationException) throw throwable
+                val message = throwable.toProjectDetailErrorMessage()
+                _errorMessage.value = message
+                emit(TaskLoadResult.Failed(message))
+            }
+        }
+
+        /**
+         * Resultado de uma leitura da lista de tarefas.
+         *
+         * Antes era uma "lista de sentinela" — uma `List<Task>` vazia
+         * comparada **por referência** (`!==`) para distinguir a falha da
+         * lista vazia de verdade do Room. Funcionava por acidente: a
+         * lista do Room é sempre uma nova instância e a sentinela um
+         * objeto fixo. Bastava o Room devolver a mesma instância para
+         * os dois estados virarem ambíguos — e o KDoc do arquivo chegou
+         * a descrever uma sentinela `ListOf(0)` que o código nunca teve.
+         *
+         * Com o tipo explícito, "falhou" e "não tem tarefas" são
+         * estados diferentes por construção.
+         */
+        private sealed interface TaskLoadResult {
+            /** Leitura bem-sucedida (a lista pode estar vazia). */
+            data class Loaded(
+                val tasks: List<Task>,
+            ) : TaskLoadResult
+
+            /** A leitura falhou; a mensagem já está no estado da UI. */
+            data class Failed(
+                val message: String,
+            ) : TaskLoadResult
+        }
 
         /**
          * Cria uma nova tarefa no projeto corrente. Aplica a RN01
