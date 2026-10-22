@@ -163,7 +163,7 @@ executado.
 | Nº | Requisito | Status | Onde é verificável | Marco |
 |----|-----------|--------|--------------------|-------|
 | R1 | Mínimo de 6 telas funcionais com navegação estruturada | **Atendido** | Rotas em `app/src/main/kotlin/pucgo/joaopedrogmsilva/brainout/navigation/BrainOutRoutes.kt` (`Splash`, `Login`, `Register`, `Home`, `Settings`, `ProjectDetailPattern`) e `BrainOutNavHost.kt`; telas em `feature/auth/src/main/kotlin/.../ui/{splash,login,register}/`, `feature/projects/src/main/kotlin/.../ui/{home,projectdetail}/`, `feature/settings/src/main/kotlin/.../ui/SettingsScreen.kt`, `feature/tasks/src/main/kotlin/.../ui/TasksScreen.kt`, `feature/tasks/src/main/kotlin/.../ui/dashboard/DashboardScreen.kt` | E1.3, E1.6, E2.1, E2.2, E2.7 |
-| R2 | Autenticação com 2 perfis de permissão distintos | **Atendido** | `core/domain/src/main/kotlin/.../core/domain/model/UserRole.kt` (enum `OWNER`/`MEMBER` com `Set<Permission>`); `Permission.kt`; `usecase/CanPerformActionUseCase.kt`; matriz coberta por `core/domain/src/test/.../model/PermissionMatrixTest.kt` e `usecase/CanPerformActionUseCaseTest.kt`; fluxo em `feature/auth/.../ui/login/LoginScreen.kt` e `ui/register/RegisterScreen.kt`; hashing via `core/data/.../security/PasswordHasherImpl.kt` + `PepperProvider.kt` | E1.6, E1.7, E1.8 |
+| R2 | Autenticação com 2 perfis de permissão distintos | **Atendido** | `core/domain/src/main/kotlin/.../core/domain/model/UserRole.kt` (enum `OWNER`/`MEMBER` com `Set<Permission>`); `Permission.kt`; matriz coberta por `core/domain/src/test/.../model/PermissionMatrixTest.kt`; o papel condiciona a UI (botão "novo projeto" só para `OWNER`) em `feature/projects/.../ui/home/HomeScreen.kt`; fluxo em `feature/auth/.../ui/login/LoginScreen.kt` e `ui/register/RegisterScreen.kt`; hashing via `core/data/.../security/PasswordHasherImpl.kt` + `PepperProvider.kt`. **Lacuna registrada (DEF-36):** o gate de papel no caminho de mutação ainda não existe — a matriz é consultada pela UI, não pelo domínio | E1.6, E1.7, E1.8 |
 | R3 | Manutenção completa de dados sobre 2 entidades | **Atendido** | `Project` e `Task` em `core/domain/.../model/`; use cases `CreateProjectUseCase`, `UpdateProjectUseCase`, `DeleteProjectUseCase`, `CreateTaskUseCase`, `UpdateTaskUseCase`, `DeleteTaskUseCase`, `ChangeTaskStatusUseCase` em `core/domain/.../usecase/`; DAOs em `core/data/.../local/dao/ProjectDao.kt` e `TaskDao.kt`; UI em `feature/projects/.../ui/` (Home + ProjectDetail) e `feature/tasks/.../ui/TasksScreen.kt` | E2.1, E2.2 |
 | R4 | Mínimo de 3 regras de negócio não triviais | **Atendido** | **RN01** em `core/domain/.../usecase/CreateTaskUseCase.kt` (`MAX_ACTIVE_TASKS_PER_PROJECT`); **RN02** em `core/domain/.../model/Task.kt` (`changePriority` lança `TaskPriorityChangeForbiddenException`, definida em `core/domain/.../error/BusinessRuleException.kt`); **RN03** em `core/data/.../repository/TaskRepositoryImpl.kt` (`completeAndCascade`/`reopenAndCascade` em transação `@Transaction`). Testes: `TaskPriorityRulesTest`, `CreateTaskUseCaseTest`, `ProjectCompletionTest` em `core/domain/src/test/.../` | E2.3, E2.4, E2.5 |
 | R5 | Persistência local com tratamento de ausência de conectividade | **Atendido** | Persistência local em `core/data/.../local/BrainOutDatabase.kt` (Room, versão 4), DAOs em `core/data/.../local/dao/`, migrações `MIGRATION_1_2`/`MIGRATION_2_3`/`MIGRATION_3_4` em `Migrations.kt`; testes Robolectric em `core/data/src/test/.../local/dao/UserDaoTest.kt`, `ProjectTaskCascadeTest.kt`, `ProjectTaskTagDaoTest.kt`, `PendingOpDaoTest.kt`. Tratamento de conectividade (banner offline + fila visível): `core/data/.../sync/ConnectivityObserver.kt` (`AndroidConnectivityObserver`), `app/src/main/.../sync/SyncConnectivityWatcher.kt`, banner em `feature/projects/.../ui/home/HomeScreen.kt` e `ui/projectdetail/ProjectDetailScreen.kt`. Reconciliação automática em `SyncConnectivityWatcher.start()` + `SyncScheduler.requestImmediateSync()` | E1.5, E1.8, E3.3, E3.4 |
@@ -1160,8 +1160,10 @@ válidas (não inventamos hashes).
 | **`MEMBER`** | `CREATE_TASK`, `EDIT_TASK` | Visualiza projetos em que é `assignee_id`; não administra |
 
 A diferenciação é visível na Home: o botão "novo projeto" só é
-habilitado para `OWNER` (gate em `HomeViewModel` via
-`CanPerformActionUseCase`). Detalhes em
+habilitado para `OWNER` (gate na `HomeScreen`, pela matriz
+`UserRole`/`Permission`). O gate no caminho de **mutação** ainda não
+existe — está registrado como DEF-36 em `docs/DEFEITOS.md` e entra com
+o membership local do redesign. Detalhes em
 `docs/USABILIDADE.md` (tarefas-chave T1/T2/T3) e em
 [docs/APENDICE-C-CONFORMIDADE.md](APENDICE-C-CONFORMIDADE.md) R2.
 
@@ -1403,8 +1405,11 @@ totais de bytes e as regras da arte são assinados em teste contra o disco
 - Endurecer `lintDevDebug` em `:core:data` e `:feature:tasks`
   (`abortOnError = false` atualmente esconde `MissingTranslation` e
   `NewApi`).
-- Expandir `AuthRoutesTest`/`ProjectsRoutesTest`/`SettingsRoutesTest`
-  (coberturas fracas).
+- Expandir a cobertura de navegação: os testes de rota por módulo
+  (`AuthRoutesTest`/`ProjectsRoutesTest`/`SettingsRoutesTest`) foram
+  removidos junto com os objetos de rota (PR #226) — hoje a cobertura é
+  o `BrainOutRoutes` único mais `TasksRoutes`, e o teste do
+  `BrainOutShell` (`app/src/test/.../navigation/BrainOutShellTest.kt`).
 - Cobertura Kover: incluir repositórios
   (`TaskRepositoryImpl`/`ProjectRepositoryImpl`/`TagRepositoryImpl`)
   com testes do dual-write e cascade (sem cobertura atual; alvo de

@@ -54,7 +54,7 @@ Total: **22 pares de texto (≥ 4.5:1) + 2 pares de gráfico (≥ 3.0:1) =
 
 | Verificação                                                | Status |
 |------------------------------------------------------------|--------|
-| Bottom bar com 4 destinos (`HomeTab`: Projetos, Tarefas, Painel, Configurações) e `NavigationBarItem` rotulado | ✅     |
+| Bottom bar com 4 destinos (`NeoNavigationBar` em `:core:ui`, dentro do `BrainOutShell` do `:app`: Projetos, Tarefas, Painel, Configurações) e item rotulado | ✅     |
 | `AssistChip` do badge de papel com 48dp mínimo             | ✅     |
 | `AssistChip` de tag com 48dp mínimo                        | ✅     |
 | `FilterChip` na seleção de tags com 48dp mínimo            | ✅     |
