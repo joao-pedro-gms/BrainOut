@@ -55,8 +55,8 @@ Configuração adicional:
 
 Três jobs; `unit-tests` e `backend-integration` dependem de
 `static-analysis` (e rodam em paralelo entre si). Os três provisionam o
-mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
-`java-version: '21'`.
+mesmo JDK do release: `actions/setup-java` fixado por SHA (a tag fica
+como comentário), `distribution: temurin`, `java-version: '21'`.
 
 1. **`static-analysis`** — ktlint + detekt. Falha rápido.
    O `ktlintCheck` roda com o plugin aplicado aos **9 subprojetos**
@@ -97,7 +97,11 @@ mesmo JDK do release: `actions/setup-java@v4`, `distribution: temurin`,
    (`connectedDevDebugAndroidTest`) **não roda no CI** — exige emulador e foi
    substituída pela suíte Robolectric + MockWebServer (decisão P0-5/R6).
 
-Cache de Gradle configurado em todos os jobs (`actions/cache@v4`).
+Cache de Gradle configurado em todos os jobs (`actions/cache` fixado por SHA).
+
+Todas as actions dos workflows são fixadas por SHA, e o wrapper do
+Gradle declara o `distributionSha256Sum` da distribuição — o download é
+verificado pelo próprio wrapper (DEF-68).
 
 ### Testes instrumentados: compilam, mas não são gate
 
