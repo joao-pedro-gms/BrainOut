@@ -5,6 +5,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -15,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
@@ -142,10 +144,40 @@ object HomeTestTags {
     fun sortMenuItem(order: SortOrder): String = "home_sort_item_${order.name.lowercase()}"
 }
 
+/**
+ * Preview da lista de projetos da Home.
+ *
+ * Aponta para [HomeProjectsContent] (e não para [HomeScreen]) de
+ * propósito: a tela resolve o ViewModel por `hiltViewModel()`, que
+ * exige uma Activity — no IDE a preview simplesmente não renderizava.
+ */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun HomeScreenPreview() {
     BrainOutTheme {
-        HomeScreen()
+        HomeProjectsContent(
+            contentPadding = PaddingValues(0.dp),
+            state =
+                HomeProjectsState(
+                    projects = emptyList(),
+                    isLoading = false,
+                    currentFilter = HomeProjectFilter.Active,
+                    errorMessage = null,
+                    availableTags = emptyList(),
+                    searchQuery = "",
+                    selectedTagId = null,
+                    sortOrder = SortOrder.CreatedDesc,
+                ),
+            actions =
+                HomeProjectsActions(
+                    onOpenProject = {},
+                    onSelectFilter = {},
+                    onRetry = {},
+                    onDismissError = {},
+                    onSearchQueryChange = {},
+                    onTagFilterChange = {},
+                    onSortOrderChange = {},
+                ),
+        )
     }
 }

@@ -354,13 +354,30 @@ private fun RoleRow(
     }
 }
 
+/**
+ * Preview do formulário de Cadastro.
+ *
+ * Aponta para [RegisterBody] (e não para [RegisterScreen]) de
+ * propósito: a tela resolve o ViewModel por `hiltViewModel()`, que
+ * exige uma Activity — no IDE a preview simplesmente não renderizava.
+ * O corpo recebe um estado de exemplo e renderiza igual.
+ */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun RegisterScreenPreview() {
     BrainOutTheme {
-        RegisterScreen(
-            onRegisterSubmit = {},
-            onHaveAccountClicked = {},
+        RegisterBody(
+            callbacks =
+                RegisterCallbacks(
+                    onNameChange = {},
+                    onEmailChange = {},
+                    onPasswordChange = {},
+                    onPasswordConfirmationChange = {},
+                    onRoleChange = {},
+                    onSubmit = {},
+                    onHaveAccountClicked = {},
+                ),
+            uiState = AuthUiState(name = "João Pedro", email = "joao@example.com"),
         )
     }
 }
