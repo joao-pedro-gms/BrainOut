@@ -13,14 +13,16 @@ import androidx.core.app.NotificationManagerCompat
  */
 object NotificationDismissal {
     /**
-     * Remove a notificação de lembrete associada a [taskId]. O id de
-     * notificação é o mesmo usado na publicação
+     * Remove a notificação de lembrete associada a [taskId]. A
+     * identidade é a mesma usada na publicação — tag e id numérico
      * ([DeadlineNotificationId]).
      */
     fun dismiss(
         context: Context,
         taskId: String,
     ) {
-        NotificationManagerCompat.from(context).cancel(DeadlineNotificationId.of(taskId))
+        NotificationManagerCompat
+            .from(context)
+            .cancel(DeadlineNotificationId.tagOf(taskId), DeadlineNotificationId.of(taskId))
     }
 }
