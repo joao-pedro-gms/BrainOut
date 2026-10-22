@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 
 /**
  * Banner de erro da identidade Neo.
@@ -81,7 +82,7 @@ fun NeoErrorBanner(
                         Modifier
                             .testTag(NeoErrorBannerTestTags.RETRY)
                             // E4.4: 48dp mínimo WCAG 2.5.5.
-                            .heightIn(min = 48.dp),
+                            .heightIn(min = NeoSizes.touchMin),
                 ) {
                     Text(text = stringResource(id = R.string.neo_error_retry))
                 }
@@ -90,7 +91,7 @@ fun NeoErrorBanner(
                     modifier =
                         Modifier
                             .testTag(NeoErrorBannerTestTags.DISMISS)
-                            .heightIn(min = 48.dp),
+                            .heightIn(min = NeoSizes.touchMin),
                 ) {
                     Text(text = stringResource(id = R.string.neo_error_dismiss))
                 }

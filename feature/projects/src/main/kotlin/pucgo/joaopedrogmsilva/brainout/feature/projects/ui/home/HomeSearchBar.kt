@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -67,7 +68,7 @@ internal fun HomeSearchBar(
                     modifier =
                         Modifier
                             .testTag(HomeTestTags.SEARCH_CLEAR)
-                            .heightIn(min = 48.dp),
+                            .heightIn(min = NeoSizes.touchMin),
                 ) {
                     Icon(
                         painter = painterResource(UiR.drawable.neo_ic_close),
@@ -116,7 +117,7 @@ internal fun HomeTagFilterRow(
                     Modifier
                         .testTag(HomeTestTags.TAG_FILTER_ALL)
                         // E4.4: 48dp mínimo WCAG 2.5.5.
-                        .heightIn(min = 48.dp),
+                        .heightIn(min = NeoSizes.touchMin),
             )
         }
         items(items = availableTags, key = { it.id }) { chip ->
@@ -130,7 +131,7 @@ internal fun HomeTagFilterRow(
                     Modifier
                         .testTag(HomeTestTags.tagFilterChip(chip.id))
                         // E4.4: 48dp mínimo WCAG 2.5.5.
-                        .heightIn(min = 48.dp),
+                        .heightIn(min = NeoSizes.touchMin),
             )
         }
     }

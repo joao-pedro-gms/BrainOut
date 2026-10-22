@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -70,7 +71,7 @@ internal fun ChangeTaskPriorityDialog(
                                             option.priorityCode.toString(),
                                     )
                                     // E4.4: 48dp mínimo WCAG 2.5.5.
-                                    .heightIn(min = 48.dp),
+                                    .heightIn(min = NeoSizes.touchMin),
                         )
                     }
                 }

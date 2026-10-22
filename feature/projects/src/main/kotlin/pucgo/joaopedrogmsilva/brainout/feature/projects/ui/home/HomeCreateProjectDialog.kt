@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 /**
@@ -233,7 +234,7 @@ private fun CreateProjectTagsFlow(
                 label = { Text(text = chip.name) },
                 // E4.4: FilterChip padrão M3 tem ~32dp de altura.
                 // Aplicamos 48dp para satisfazer WCAG 2.5.5.
-                modifier = Modifier.heightIn(min = 48.dp),
+                modifier = Modifier.heightIn(min = NeoSizes.touchMin),
             )
         }
     }

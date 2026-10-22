@@ -22,12 +22,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 
 /** Apresentação de uma aba. Rotas e estado de navegação pertencem ao app. */
 data class NeoNavigationItem(
@@ -76,7 +76,7 @@ fun NeoNavigationBar(
                                     painter = painterResource(item.icon),
                                     contentDescription = null,
                                     modifier =
-                                        Modifier.size(24.dp).graphicsLayer {
+                                        Modifier.size(NeoSizes.icon).graphicsLayer {
                                             scaleX = scale
                                             scaleY = scale
                                         },
