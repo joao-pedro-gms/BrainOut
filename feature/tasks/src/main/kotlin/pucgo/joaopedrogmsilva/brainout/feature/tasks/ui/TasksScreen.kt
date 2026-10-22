@@ -8,16 +8,13 @@
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,11 +26,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -44,12 +39,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoEmptyState
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
@@ -178,41 +173,12 @@ internal fun TasksErrorBanner(
 
 @Composable
 private fun TasksEmptyState(modifier: Modifier = Modifier) {
-    // DEF-22 — o cartão ganha **fronteira** em vez de(alpha).
-    // `surfaceVariant.copy(alpha = 0.4f)` sobre o fundo dava 1.06:1;
-    // `surfaceVariant` puro dá 1.15:1 — os dois reprovam o mínimo de
-    // 3:1, porque o papel é uma superfície alternativa, quase da mesma
-    // luminância do fundo por desenho. O que torna a região perceptível
-    // é a borda: `outline` puro marca 16.10:1 (claro) / 15.95:1 (escuro).
-    // O texto dentro (`onSurfaceVariant`) fica em 6.56:1 / 9.26:1.
-    Surface(
+    NeoEmptyState(
+        title = stringResource(id = R.string.tasks_empty_title),
+        body = stringResource(id = R.string.tasks_empty_body),
         modifier = modifier.heightIn(min = 160.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(id = R.string.tasks_empty_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(id = R.string.tasks_empty_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
+        bodyTextAlign = TextAlign.Center,
+    )
 }
 
 @Composable

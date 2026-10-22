@@ -39,6 +39,8 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R
  * @param onDismiss ação "Dispensar".
  * @param modifier modificador do cartão.
  * @param minHeight altura mínima do cartão; `0.dp` remove a reserva.
+ * @param messageTextAlign alinhamento da mensagem; `Start` é o padrão
+ *  herdado das telas de lista, `Center` o do cartão do Painel.
  */
 @Composable
 fun NeoErrorBanner(
@@ -47,6 +49,7 @@ fun NeoErrorBanner(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     minHeight: Dp = 140.dp,
+    messageTextAlign: TextAlign = TextAlign.Start,
 ) {
     Surface(
         modifier =
@@ -69,7 +72,7 @@ fun NeoErrorBanner(
                 text = message,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center,
+                textAlign = messageTextAlign,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(
