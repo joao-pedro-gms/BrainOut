@@ -162,7 +162,12 @@ internal fun BackupContent(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SettingsRow(
-                    option = SettingsOption(SettingsActionType.ExportBackup, R.string.settings_option_export_backup),
+                    option =
+                        SettingsOption(
+                            SettingsRowKind.Local,
+                            "export_backup",
+                            R.string.settings_option_export_backup,
+                        ),
                     onClick = onExport,
                     testTag = BackupTestTags.EXPORT_ROW,
                     // Enquanto uma operação está em andamento as linhas
@@ -172,7 +177,12 @@ internal fun BackupContent(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 SettingsRow(
-                    option = SettingsOption(SettingsActionType.RestoreBackup, R.string.settings_option_restore_backup),
+                    option =
+                        SettingsOption(
+                            SettingsRowKind.Local,
+                            "restore_backup",
+                            R.string.settings_option_restore_backup,
+                        ),
                     onClick = onRestore,
                     testTag = BackupTestTags.RESTORE_ROW,
                     enabled = !state.isBusy,

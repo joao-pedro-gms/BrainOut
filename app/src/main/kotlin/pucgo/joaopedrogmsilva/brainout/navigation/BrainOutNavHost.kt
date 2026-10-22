@@ -31,7 +31,6 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.splash.SplashScreen
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home.HomeScreen
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.ProjectDetailScreen
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.BackupSection
-import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsActionType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.ui.SettingsScreen
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.dashboardGraph
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.tasksGraph
@@ -50,9 +49,9 @@ private const val TAG = "BrainOut:Nav"
  * acessarem o controller diretamente. Isso facilita a testabilidade de cada
  * tela isoladamente e evita dependência circular.
  *
- * O [activeUserProvider] é usado pelo handler de `SettingsActionType.SignOut`
- * para encerrar a sessão persistida (E1.8) — chama `signOut()` antes de
- * navegar para `Login` com a pilha limpa.
+ * O [activeUserProvider] é usado pelo handler de "Sair" para encerrar
+ * a sessão persistida (E1.8) — chama `signOut()` antes de navegar
+ * para `Login` com a pilha limpa.
  */
 @Composable
 fun BrainOutNavHost(
@@ -190,31 +189,17 @@ private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
     composable(route = BrainOutRoutes.Settings) {
         val lifecycleOwner = LocalLifecycleOwner.current
         SettingsScreen(
-            onOptionClicked = { action ->
-                when (action) {
-                    SettingsActionType.SignOut -> {
-                        Log.d(TAG, "Navegando: Settings -> SignOut (Limpando sessão)")
-                        // Limpa a sessão no DataStore (E1.8) num escopo que
-                        // sobrevive à saída de Settings e navega apenas após
-                        // a escrita concluir — evita sessão órfã no próximo
-                        lifecycleOwner.lifecycleScope.launch {
-                            activeUserProvider.signOut()
-                            navController.clearMainBackStacks()
-                            navController.navigate(BrainOutRoutes.Login) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    }
-                    SettingsActionType.Profile,
-                    SettingsActionType.Notifications,
-                    SettingsActionType.Theme,
-                    SettingsActionType.ExportBackup,
-                    SettingsActionType.RestoreBackup,
-                    -> {
-                        // Sub-telas não fazem parte do E1.6 — placeholder.
-                        // As linhas de backup são tratadas pela própria
-                        // `BackupSection` (que abre o seletor de arquivos
-                        // do sistema), não por este `when`.
+            onSignOut = {
+                Log.d(TAG, "Navegando: Settings -> SignOut (Limpando sessão)")
+                // Limpa a sessão no DataStore (E1.8) num escopo que
+                // sobrevive à saída de Settings e navega apenas após
+                // a escrita concluir — evita sessão órfã no próximo
+                // lançamento do app.
+                lifecycleOwner.lifecycleScope.launch {
+                    activeUserProvider.signOut()
+                    navController.clearMainBackStacks()
+                    navController.navigate(BrainOutRoutes.Login) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             },
