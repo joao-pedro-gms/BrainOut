@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -91,6 +92,7 @@ class DeadlineWorker
             }
 
             val notificationId = DeadlineNotificationId.of(task.id)
+            val notificationTag = DeadlineNotificationId.tagOf(task.id)
             val contentIntent =
                 PendingIntent.getActivity(
                     applicationContext,
@@ -104,6 +106,12 @@ class DeadlineWorker
                     notificationId,
                     Intent(applicationContext, DeadlineReceiver::class.java)
                         .setAction(DeadlineReceiver.ACTION_COMPLETE_TASK)
+                        // O `data` torna o `PendingIntent` único por
+                        // tarefa. Sem ele, duas tarefas com o mesmo id
+                        // numérico (colisão de `hashCode`) compartilhariam
+                        // o mesmo `PendingIntent` — e o "Concluir" de uma
+                        // acabaria concluindo a outra (DEF-54).
+                        .setData(Uri.parse("brainout://deadline/${task.id}"))
                         .putExtra(DeadlineKeys.TASK_ID, task.id),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
@@ -129,7 +137,7 @@ class DeadlineWorker
             @SuppressLint("MissingPermission")
             NotificationManagerCompat
                 .from(applicationContext)
-                .notify(notificationId, notification)
+                .notify(notificationTag, notificationId, notification)
             Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
         }
 
