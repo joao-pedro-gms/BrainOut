@@ -235,25 +235,25 @@ private fun TaskRowMenu(
 
 /**
  * Transições válidas a partir do estado atual, com o rótulo do menu
- * correspondente. Mantém a paridade com [TaskStatus.canTransitionTo]
- * do domínio e evita oferecer opções que resultariam em
+ * correspondente.
+ *
+ * A lista vem da **regra do domínio** ([TaskStatus.canTransitionTo]) —
+ * aqui mora apenas o texto do menu. Antes esta função reescrevia a
+ * matriz de transições por conta própria, e as duas listas podiam
+ * divergir: o menu ofereceria uma opção que o domínio recusaria com
  * `InvalidStateTransitionException` ao chamar `changeStatus`.
  */
 private fun TaskStatus.allowedTransitions(): List<Pair<TaskStatus, Int>> =
+    TaskStatus.entries
+        .filter { canTransitionTo(it) }
+        .map { target -> target to target.menuLabelRes() }
+
+/** Rótulo do menu de mover a tarefa para este status. */
+private fun TaskStatus.menuLabelRes(): Int =
     when (this) {
-        TaskStatus.TODO ->
-            listOf(
-                TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
-            )
-        TaskStatus.DOING ->
-            listOf(
-                TaskStatus.TODO to R.string.project_detail_task_menu_move_todo,
-                TaskStatus.DONE to R.string.project_detail_task_menu_move_done,
-            )
-        TaskStatus.DONE ->
-            listOf(
-                TaskStatus.DOING to R.string.project_detail_task_menu_move_doing,
-            )
+        TaskStatus.TODO -> R.string.project_detail_task_menu_move_todo
+        TaskStatus.DOING -> R.string.project_detail_task_menu_move_doing
+        TaskStatus.DONE -> R.string.project_detail_task_menu_move_done
     }
 
 /** Resolve o test tag do item de menu correspondente ao status alvo. */
