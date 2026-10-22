@@ -127,10 +127,17 @@ internal fun tagChipsForOwnerFlow(
  * Room e mapeia o resultado em [HomeUiState] via [buildHomeUiState].
  *
  * O `.catch` é o ponto de captura E2.8: quando o Room emite um erro
- * (e.g. banco corrompido, I/O falho), a exceção é convertida em
- * [HomeUiState.errorMessage] + `isLoading = false`. A versão
- * debounceada do input é sincronizada com o snapshot persistido
- * quando o owner muda (ex.: login).
+ * (e.g. banco corrompido, I/O falho), a exceção é registrada em
+ * [errorSink] e o estado sai do loading.
+ *
+ * O erro **não** viaja dentro do [HomeUiState]: o canal é lido pelo
+ * ViewModel e combinado com o estado, de modo que "Dispensar" (que
+ * limpa o canal) faça o banner sumir. Sem isso, o erro ficaria
+ * congelado na última emissão do pipeline e o banner persistiria na
+ * tela (DEF-47).
+ *
+ * A versão debounceada do input é sincronizada com o snapshot
+ * persistido quando o owner muda (ex.: login).
  */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @Suppress("LongMethod", "LongParameterList")
@@ -143,7 +150,7 @@ internal fun homeUiStateFlow(
     searchInput: MutableStateFlow<String>,
     projectFilter: MutableStateFlow<HomeProjectFilter>,
     debouncedInput: StateFlow<String>,
-    errorMessage: MutableStateFlow<HomeErrorType?>,
+    errorSink: MutableStateFlow<HomeErrorType?>,
 ): Flow<HomeUiState> =
     retryToken.flatMapLatest { _ ->
         activeUserProvider
@@ -208,20 +215,22 @@ internal fun homeUiStateFlow(
                         }
                     }.flatMapLatest { it }
                 }
+            }.onEach {
+                // Leitura bem-sucedida: o erro pendente (de carga ou de
+                // ação) deixa de valer. O `catch` abaixo reescreve o
+                // canal quando a leitura falha, então os dois passos
+                // não se anulam — por isso o `onEach` fica **antes**
+                // do `catch`.
+                errorSink.value = null
             }.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                errorMessage.value = HomeErrorType.LoadFailed
+                errorSink.value = HomeErrorType.LoadFailed
                 emit(
                     HomeUiState(
                         isLoading = false,
                         projectFilter = projectFilter.value,
-                        errorMessage = HomeErrorType.LoadFailed,
                     ),
                 )
-            }.onEach { state: HomeUiState ->
-                if (state.errorMessage == null) {
-                    errorMessage.value = null
-                }
             }
     }
 

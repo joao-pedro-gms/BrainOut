@@ -34,10 +34,6 @@ fun HomeScreen(
     val listState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentFilter by viewModel.projectFilter.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    // deleteProject/createTag) grava em `viewModel.errorMessage`,
-    // não em `uiState.errorMessage`. Sem coletar este flow, falhas
-    // de escrita ficam invisíveis na UI.
-    val actionError by viewModel.errorMessage.collectAsStateWithLifecycle()
 
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -75,7 +71,7 @@ fun HomeScreen(
                     projects = listState.projects,
                     isLoading = listState.isLoading,
                     currentFilter = currentFilter,
-                    errorMessage = actionError ?: listState.errorMessage,
+                    errorMessage = listState.errorMessage,
                     availableTags = listState.availableTags,
                     searchQuery = searchQuery,
                     selectedTagId = listState.selectedTagId,
@@ -96,7 +92,7 @@ fun HomeScreen(
 
     if (showCreateDialog) {
         CreateProjectDialog(
-            errorMessage = actionError?.let { resolveHomeErrorMessage(it) },
+            errorMessage = listState.errorMessage?.let { resolveHomeErrorMessage(it) },
             availableTags = listState.availableTags,
             onDismiss = { showCreateDialog = false },
             onCreateTag = { name, color -> viewModel.createTag(name, color) },

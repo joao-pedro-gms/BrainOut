@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
@@ -38,7 +39,8 @@ import kotlin.time.Duration.Companion.milliseconds
  * Responsabilidades:
  * - E1.7 — observar o usuário ativo e expor [HomeUserState].
  * - E2.1/E2.6/E2.8 — combinar os Flows em [uiState] (delegado a
- *   [homeUiStateFlow]) e capturar falhas de CRUD em [errorMessage].
+ *   [homeUiStateFlow]) e capturar falhas de CRUD no canal de erro,
+ *   que chega à UI por [HomeUiState.errorMessage].
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -90,9 +92,21 @@ class HomeViewModel
         /** Token de retry (E2.8); cada [retry] reinicia o pipeline. */
         private val retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
 
-        /** Mensagem de erro pendente para a UI (E2.8). */
-        private val _errorMessage: MutableStateFlow<HomeErrorType?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<HomeErrorType?> = _errorMessage.asStateFlow()
+        /**
+         * Canal único de erro da Home (E2.8).
+         *
+         * Toda falha — de leitura ou de ação — é gravada aqui e chega
+         * à UI por [HomeUiState.errorMessage], que é a **única**
+         * superfície de leitura do erro.
+         *
+         * Antes o erro de carga era duplicado: o pipeline o escrevia
+         * no canal *e* dentro do [HomeUiState], e a tela resolvia
+         * `actionError ?: listState.errorMessage`. Como o estado é uma
+         * fotografia imutável, o "Dispensar" (que só limpava o canal)
+         * não apagava a cópia — o banner ficava na tela para sempre
+         * (DEF-47).
+         */
+        private val errorSink: MutableStateFlow<HomeErrorType?> = MutableStateFlow(null)
 
         /**
          * Texto bruto da busca conforme o usuário digita (E2.6).
@@ -113,19 +127,31 @@ class HomeViewModel
                 debounceWindow = SEARCH_DEBOUNCE,
             )
 
-        /** Estado da lista de projetos — E2.1 + E2.5 + E2.6 + E2.8. */
+        /**
+         * Estado da lista de projetos — E2.1 + E2.5 + E2.6 + E2.8.
+         *
+         * O erro não vem pronto do pipeline: o canal [errorSink] é
+         * combinado com o estado aqui, de modo que a UI leia um único
+         * campo ([HomeUiState.errorMessage]) e o "Dispensar" apague o
+         * banner de fato (DEF-47).
+         */
         val uiState: StateFlow<HomeUiState> =
-            homeUiStateFlow(
-                retryToken = retryToken,
-                activeUserProvider = activeUserProvider,
-                listingPreferences = listingPreferences,
-                tagRepository = tagRepository,
-                projectRepository = projectRepository,
-                searchInput = _searchQuery,
-                projectFilter = _projectFilter,
-                debouncedInput = debouncedSearchInput,
-                errorMessage = _errorMessage,
-            ).stateIn(
+            combine(
+                homeUiStateFlow(
+                    retryToken = retryToken,
+                    activeUserProvider = activeUserProvider,
+                    listingPreferences = listingPreferences,
+                    tagRepository = tagRepository,
+                    projectRepository = projectRepository,
+                    searchInput = _searchQuery,
+                    projectFilter = _projectFilter,
+                    debouncedInput = debouncedSearchInput,
+                    errorSink = errorSink,
+                ),
+                errorSink,
+            ) { state: HomeUiState, error: HomeErrorType? ->
+                state.copy(errorMessage = error)
+            }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
                 initialValue = HomeUiState(),
@@ -146,7 +172,7 @@ class HomeViewModel
                 name,
                 description,
                 tagIds,
-                _errorMessage,
+                errorSink,
                 onSuccess,
             )
         }
@@ -157,13 +183,13 @@ class HomeViewModel
             tagIds: List<String>,
         ) {
             Log.d(TAG, "updateProject acionado: id=${project.id}, name=${project.name}")
-            runUpdateProject(viewModelScope, updateProject, project, tagIds, _errorMessage)
+            runUpdateProject(viewModelScope, updateProject, project, tagIds, errorSink)
         }
 
         /** Remove projeto (tarefas e `project_tags` em cascata). */
         fun deleteProject(projectId: String) {
             Log.d(TAG, "deleteProject acionado: id=$projectId")
-            runDeleteProject(viewModelScope, deleteProject, projectId, _errorMessage)
+            runDeleteProject(viewModelScope, deleteProject, projectId, errorSink)
         }
 
         /** Cria tag para o owner ativo. */
@@ -172,7 +198,7 @@ class HomeViewModel
             color: String,
         ) {
             Log.d(TAG, "createTag acionado: name=$name, color=$color")
-            runCreateTag(viewModelScope, createTag, activeUserProvider, name, color, _errorMessage)
+            runCreateTag(viewModelScope, createTag, activeUserProvider, name, color, errorSink)
         }
 
         /** Atualiza a query de busca e persiste no DataStore (E2.6). */
@@ -196,13 +222,13 @@ class HomeViewModel
         /** Re-assina o pipeline após falha (E2.8). */
         fun retry() {
             Log.d(TAG, "retry acionado na Home")
-            _errorMessage.value = null
+            errorSink.value = null
             retryToken.value = retryToken.value + 1
         }
 
         /** Limpa a mensagem de erro atual (E2.8). */
         fun clearError() {
-            _errorMessage.value = null
+            errorSink.value = null
         }
 
         companion object {

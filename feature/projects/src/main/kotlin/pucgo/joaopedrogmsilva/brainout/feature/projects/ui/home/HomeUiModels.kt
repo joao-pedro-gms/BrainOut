@@ -27,6 +27,11 @@ sealed interface HomeUserState {
 /**
  * Estado da lista de projetos (E2.1/E2.5/E2.6/E2.8) consumido pela
  * [HomeScreen].
+ *
+ * @property errorMessage erro de carga ou de ação, quando houver. É o
+ *   **único** lugar por onde a UI lê o erro: o ViewModel combina o
+ *   canal de erro com o estado, então dispensar o banner limpa este
+ *   campo de fato (DEF-47).
  */
 data class HomeUiState(
     val projects: List<ProjectCardItem> = emptyList(),
