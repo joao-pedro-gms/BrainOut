@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -120,58 +121,96 @@ class TasksViewModel
         val uiState: StateFlow<TasksUiState> =
             combine(
                 _retryToken
-                    .flatMapLatest { _ ->
-                        activeUserProvider
-                            .observeActiveUserId()
-                            .flatMapLatest { ownerId ->
-                                if (ownerId == null) {
-                                    flowOf(TasksUiState(isLoading = false))
-                                } else {
-                                    taskRepository
-                                        .observeAllForOwner(ownerId)
-                                        .flatMapLatest { tasks ->
-                                            projectRepository.observeAllForOwner(ownerId).map { projects ->
-                                                // O índice é montado uma vez por
-                                                // emissão: dentro do `map` de
-                                                // tarefas, um `associateBy` por
-                                                // linha custaria O(tarefas ×
-                                                // projetos).
-                                                val projectsById = projects.associateBy { it.id }
-                                                TasksUiState(
-                                                    rows = tasks.map { it.toRow(projectsById) },
-                                                    isLoading = false,
-                                                )
-                                            }
-                                        }
-                                }
-                            }.catch { throwable ->
-                                if (throwable is CancellationException) throw throwable
-                                Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                                val message = throwable.toTasksErrorMessage()
-                                _errorMessage.value = message
-                                emit(TasksUiState(isLoading = false, errorMessage = message))
-                            }
-                            // Limpa erro pendente APENAS em emissões vindas do
-                            // `flatMapLatest` (sucesso), não nas emitidas pelo
-                            // `catch` acima — identificadas pelo
-                            // `errorMessage == null`. Sem esse filtro, o `catch`
-                            // emitiria um estado com erro e o `onEach` seguinte
-                            // o resetaria para `null` imediatamente, "engolindo"
-                            // a falha. (E2.8)
-                            .onEach { state ->
-                                if (state.errorMessage == null) {
-                                    _errorMessage.value = null
-                                }
-                            }
-                    },
+                    .flatMapLatest { _ -> taskLoadResults() },
                 _errorMessage,
-            ) { ui, err ->
-                if (err != null) ui.copy(errorMessage = err) else ui.copy(errorMessage = null)
+            ) { result, err ->
+                val ui =
+                    when (result) {
+                        is TasksLoadResult.Loaded -> result.state
+                        is TasksLoadResult.Failed -> TasksUiState(isLoading = false)
+                    }
+                // A mensagem vive em `_errorMessage`; o estado interno da
+                // leitura só carrega os dados.
+                ui.copy(errorMessage = err)
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
                 initialValue = TasksUiState(),
             )
+
+        /**
+         * Leitura das tarefas do usuário ativo, com a falha tipada.
+         *
+         * Antes, o `catch` emitia um [TasksUiState] com `errorMessage`
+         * preenchido e o passo seguinte usava esse campo como
+         * "isto foi sucesso ou falha?" — enquanto o `combine` final
+         * sobrescrevia o mesmo campo com `_errorMessage`. O campo era
+         * escrito duas vezes e lido uma vez, só para servir de flag.
+         *
+         * Com [TasksLoadResult], "leu" e "falhou" são estados
+         * diferentes por construção, e a mensagem tem uma fonte só.
+         */
+        private fun taskLoadResults(): Flow<TasksLoadResult> {
+            val loaded: Flow<TasksLoadResult> =
+                activeUserProvider
+                    .observeActiveUserId()
+                    .flatMapLatest { ownerId ->
+                        val inner: Flow<TasksLoadResult> =
+                            if (ownerId == null) {
+                                flowOf(TasksLoadResult.Loaded(TasksUiState(isLoading = false)))
+                            } else {
+                                taskRepository
+                                    .observeAllForOwner(ownerId)
+                                    .flatMapLatest { tasks ->
+                                        projectRepository.observeAllForOwner(ownerId).map { projects ->
+                                            // O índice é montado uma vez por
+                                            // emissão: dentro do `map` de
+                                            // tarefas, um `associateBy` por
+                                            // linha custaria O(tarefas ×
+                                            // projetos).
+                                            val projectsById = projects.associateBy { it.id }
+                                            TasksLoadResult.Loaded(
+                                                TasksUiState(
+                                                    rows = tasks.map { it.toRow(projectsById) },
+                                                    isLoading = false,
+                                                ),
+                                            )
+                                        }
+                                    }
+                            }
+                        inner
+                    }
+            return loaded
+                .catch { throwable ->
+                    if (throwable is CancellationException) throw throwable
+                    Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
+                    val message = throwable.toTasksErrorMessage()
+                    _errorMessage.value = message
+                    emit(TasksLoadResult.Failed(message))
+                }
+                // Limpa o erro pendente APENAS em leituras bem-sucedidas.
+                // Sem esse filtro, o `catch` emitiria um estado vazio e o
+                // passo seguinte resetaria o erro para `null`
+                // imediatamente, "engolindo" a falha. (E2.8)
+                .onEach { result ->
+                    if (result is TasksLoadResult.Loaded) {
+                        _errorMessage.value = null
+                    }
+                }
+        }
+
+        /** Resultado de uma leitura da lista de tarefas. */
+        private sealed interface TasksLoadResult {
+            /** Leitura bem-sucedida (a lista pode estar vazia). */
+            data class Loaded(
+                val state: TasksUiState,
+            ) : TasksLoadResult
+
+            /** A leitura falhou; a mensagem já está em `_errorMessage`. */
+            data class Failed(
+                val message: String,
+            ) : TasksLoadResult
+        }
 
         /**
          * Re-assina o pipeline de observação dos repositórios após uma
