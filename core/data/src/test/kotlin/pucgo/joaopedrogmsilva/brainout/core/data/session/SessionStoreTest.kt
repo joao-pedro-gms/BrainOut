@@ -39,7 +39,7 @@ class SessionStoreTest {
         runTest {
             val store = newStore()
             // Limpa qualquer estado residual de execuções anteriores.
-            store.clear()
+            store.clearAll()
 
             assertThat(store.currentUserId()).isNull()
         }
@@ -48,7 +48,7 @@ class SessionStoreTest {
     fun `saveUserId persists and currentUserId returns the saved id`() =
         runTest {
             val store = newStore()
-            store.clear()
+            store.clearAll()
 
             store.saveUserId("user-123")
 
@@ -59,7 +59,7 @@ class SessionStoreTest {
     fun `observeUserId emits the saved id`() =
         runTest {
             val store = newStore()
-            store.clear()
+            store.clearAll()
             store.saveUserId("user-abc")
 
             val emitted = store.observeUserId().first()
@@ -73,7 +73,7 @@ class SessionStoreTest {
             val store = newStore()
             store.saveUserId("user-to-remove")
 
-            store.clear()
+            store.clearAll()
 
             assertThat(store.currentUserId()).isNull()
         }
@@ -90,7 +90,7 @@ class SessionStoreTest {
     fun `saving twice replaces the previous id`() =
         runTest {
             val store = newStore()
-            store.clear()
+            store.clearAll()
 
             store.saveUserId("first")
             store.saveUserId("second")

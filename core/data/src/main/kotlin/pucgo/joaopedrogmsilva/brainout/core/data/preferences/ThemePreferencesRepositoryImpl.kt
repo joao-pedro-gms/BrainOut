@@ -20,8 +20,8 @@ import javax.inject.Singleton
  * (`auth_prefs`), o mesmo usado pela sessão e pelas preferências de
  * listagem: a chave é **global** (não é namespaced por `userId`)
  * porque o tema é preferência de dispositivo — sobrevive a
- * logout/login, e o `SessionStore.clear()` (granular, remove só
- * `user_id` e a flag de notificação) a preserva.
+ * logout/login, e o `SessionStore.clearAll()` (remove `user_id` e a
+ * flag de notificação) a preserva.
  *
  * Antes do NB-06 esta escolha simplesmente não existia; o default é
  * [ThemeMode.SYSTEM], o comportamento anterior do app (seguir o

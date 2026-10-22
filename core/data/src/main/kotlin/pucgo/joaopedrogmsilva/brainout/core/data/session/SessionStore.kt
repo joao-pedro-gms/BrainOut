@@ -58,9 +58,16 @@ class SessionStore(
         }
     }
 
-    /** Limpa a sessão atual (logout). */
-    suspend fun clear() {
-        logDebug(TAG, "Limpando sessão (logout) no DataStore")
+    /**
+     * Limpa **todo** o estado persistido neste [DataStore]: a sessão
+     * atual e a marca de que a permissão de notificação já foi pedida.
+     *
+     * Usado no logout e quando a sessão aponta para um usuário que não
+     * existe mais no Room. Para encerrar só a sessão (restauração de
+     * backup), use [clearSession] — lá a permissão continua válida.
+     */
+    suspend fun clearAll() {
+        logDebug(TAG, "Limpando sessão e marca de permissão no DataStore")
         dataStore.edit { prefs ->
             prefs.remove(USER_ID_KEY)
             prefs.remove(NOTIFICATION_PERMISSION_ASKED_KEY)
@@ -87,7 +94,7 @@ class SessionStore(
     /**
      * `true` se a permissão `POST_NOTIFICATIONS` já foi pedida alguma
      * vez (marco E3.6). Independente da sessão: sobrevive a logout.
-     * Removida apenas em [clear] (reset total do DataStore).
+     * Removida apenas em [clearAll] (reset do DataStore).
      */
     suspend fun wasNotificationPermissionAsked(): Boolean =
         dataStore.data.first()[NOTIFICATION_PERMISSION_ASKED_KEY] == true

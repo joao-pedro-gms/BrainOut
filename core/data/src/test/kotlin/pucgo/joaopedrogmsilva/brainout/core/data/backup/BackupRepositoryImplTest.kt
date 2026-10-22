@@ -56,7 +56,7 @@ class BackupRepositoryImplTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        runTest { SessionStore(context.authDataStore).clear() }
+        runTest { SessionStore(context.authDataStore).clearAll() }
     }
 
     @Test

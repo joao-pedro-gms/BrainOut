@@ -134,8 +134,8 @@ object DataModule {
      * DataStore (E2.6 do ROADMAP). Reaproveita o mesmo
      * [DataStore]<[Preferences]> da sessão (injetado por
      * [provideAuthDataStore]) para evitar um arquivo de preferências
-     * adicional — `SessionStore.clear()` já é granular e preserva
-     * intencionalmente estas chaves.
+     * adicional — `SessionStore.clearAll()` remove a sessão e a flag de
+     * notificação, mas preserva intencionalmente estas chaves.
      */
     @Provides
     @Singleton
@@ -146,7 +146,7 @@ object DataModule {
      * Bind de [ThemePreferencesRepository] para a implementação
      * DataStore (NB-06, E4.5 — escolha manual System/Light/Dark).
      * Mesmo `DataStore` da sessão: a chave `theme_mode` é global e o
-     * `SessionStore.clear()` de logout não a remove.
+     * `SessionStore.clearAll()` de logout não a remove.
      */
     @Provides
     @Singleton
