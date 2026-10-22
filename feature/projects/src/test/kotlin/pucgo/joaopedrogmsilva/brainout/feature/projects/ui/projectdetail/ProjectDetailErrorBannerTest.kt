@@ -34,7 +34,7 @@ class ProjectDetailErrorBannerTest {
         composeRule.setContent {
             BrainOutTheme {
                 ProjectDetailErrorBanner(
-                    message = ProjectDetailViewModel.ERROR_LOAD_FAILED,
+                    error = ProjectDetailError.LoadFailed,
                     onRetry = {},
                     onDismiss = {},
                 )
@@ -49,7 +49,7 @@ class ProjectDetailErrorBannerTest {
         composeRule.setContent {
             BrainOutTheme {
                 ProjectDetailErrorBanner(
-                    message = ProjectDetailViewModel.ERROR_EMPTY_TITLE,
+                    error = ProjectDetailError.EmptyTitle,
                     onRetry = {},
                     onDismiss = {},
                 )

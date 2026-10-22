@@ -59,7 +59,7 @@ data class ProjectDetailUiState(
     val projectId: String,
     val tasks: List<Task> = emptyList(),
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: ProjectDetailError? = null,
 )
 
 /**
@@ -99,8 +99,8 @@ class ProjectDetailViewModel
                 "projectId é obrigatório em ProjectDetail"
             }
 
-        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+        private val _errorMessage: MutableStateFlow<ProjectDetailError?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<ProjectDetailError?> = _errorMessage.asStateFlow()
 
         /**
          * Token de retry (E2.8). Cada chamada a [retry] incrementa este
@@ -167,7 +167,7 @@ class ProjectDetailViewModel
                     .map { tasks -> TaskLoadResult.Loaded(tasks) }
             return loaded.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                _errorMessage.value = ProjectDetailViewModel.ERROR_LOAD_FAILED
+                _errorMessage.value = ProjectDetailError.LoadFailed
                 emit(TaskLoadResult.Failed)
             }
         }
@@ -220,7 +220,7 @@ class ProjectDetailViewModel
         ) {
             val trimmed = title.trim()
             if (trimmed.isEmpty()) {
-                _errorMessage.update { ERROR_EMPTY_TITLE }
+                _errorMessage.update { ProjectDetailError.EmptyTitle }
                 return
             }
             Log.d(TAG, "addTask: title=$trimmed, priority=$priority, projectId=$projectId")
@@ -234,18 +234,16 @@ class ProjectDetailViewModel
                     )
                     onSuccess()
                 } catch (e: ProjectTaskLimitReachedException) {
-                    @Suppress("SwallowedException")
-                    val message = e.message ?: taskLimitMessage()
                     Log.w(TAG, "Limite de tarefas ativas atingido (RN01) no projeto $projectId")
-                    _errorMessage.update { message }
+                    _errorMessage.update { ProjectDetailError.TaskLimitReached(e.limit) }
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
                     Log.w(TAG, "Título de tarefa inválido: ${e.message}")
-                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                    _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao adicionar tarefa: ${e.message}", e)
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -281,15 +279,15 @@ class ProjectDetailViewModel
                     changeStatus.invoke(taskId, target)
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
                     Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
-                    _errorMessage.update { e.message ?: ERROR_INVALID_TRANSITION }
+                    _errorMessage.update { ProjectDetailError.InvalidTransition }
                 } catch (e: ProjectTaskLimitReachedException) {
                     Log.w(TAG, "RN01: reabertura no teto de tarefas ativas para taskId=$taskId")
-                    _errorMessage.update { e.message ?: taskLimitMessage() }
+                    _errorMessage.update { ProjectDetailError.TaskLimitReached(e.limit) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao alterar status da tarefa $taskId: ${e.message}", e)
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -320,10 +318,10 @@ class ProjectDetailViewModel
                     task.changePriority(newPriority)
                 } catch (e: TaskPriorityChangeForbiddenException) {
                     Log.w(TAG, "RN02: alteração de prioridade bloqueada para taskId=${task.id} (tarefa DONE)")
-                    _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+                    _errorMessage.update { ProjectDetailError.PriorityLocked }
                     return
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                    _errorMessage.update { ProjectDetailError.InvalidTitle }
                     return
                 }
             viewModelScope.launch {
@@ -333,14 +331,14 @@ class ProjectDetailViewModel
                 } catch (e: TaskPriorityChangeForbiddenException) {
                     // Persistência indica DONE (bypass via copy).
                     Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
-                    _errorMessage.update { e.message ?: ERROR_PRIORITY_LOCKED }
+                    _errorMessage.update { ProjectDetailError.PriorityLocked }
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                    _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao alterar prioridade da tarefa ${task.id}: ${e.message}", e)
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -353,7 +351,7 @@ class ProjectDetailViewModel
         ) {
             val trimmed = newTitle.trim()
             if (trimmed.isEmpty()) {
-                _errorMessage.update { ERROR_EMPTY_TITLE }
+                _errorMessage.update { ProjectDetailError.EmptyTitle }
                 return
             }
             if (trimmed == task.title) {
@@ -366,12 +364,12 @@ class ProjectDetailViewModel
                     updateTask.invoke(task.rename(trimmed))
                     onSuccess()
                 } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
-                    _errorMessage.update { e.message ?: ERROR_INVALID_TITLE }
+                    _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
                     Log.e(TAG, "Erro ao renomear tarefa ${task.id}: ${e.message}", e)
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -385,7 +383,7 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -402,7 +400,7 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    _errorMessage.update { ProjectDetailViewModel.ERROR_LOAD_FAILED }
+                    _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
             }
         }
@@ -427,45 +425,5 @@ class ProjectDetailViewModel
 
             /** Nome do argumento da rota do Navigation Compose. */
             const val PROJECT_ID_ARG: String = "projectId"
-
-            // Mensagens embutidas no ViewModel em vez de strings.xml —
-            // mesma decisão do AuthViewModel (ver comentário no companion
-            // object de lá): frases de validação técnica que não dependem
-            // de localização para os testes de VM; a camada de UI traduz
-            // para o recurso localizado via `resolveProjectDetailMessage`
-            // (E4.6) quando a mensagem casa com uma chave conhecida.
-            const val ERROR_EMPTY_TITLE: String = "Título da tarefa não pode ser vazio"
-            const val ERROR_INVALID_TITLE: String = "Título inválido"
-            const val ERROR_INVALID_TRANSITION: String = "Transição de status inválida"
-            const val ERROR_PRIORITY_LOCKED: String =
-                "RN02: alteração de prioridade bloqueada em tarefa concluída"
-
-            /**
-             * Mensagem canônica para falhas genéricas do Room/use case
-             * (E2.8). A UI resolve esta chave para o recurso localizado
-             * via `R.string.project_detail_error_load_failed`.
-             */
-            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar as tarefas do projeto"
-
-            private const val ERROR_TASK_LIMIT_PREFIX: String = "Erro: limite de "
-            private const val ERROR_TASK_LIMIT_SUFFIX: String = " tarefas atingido"
-
-            /** Mensagem canônica de RN01 para o limite informado (usada pela UI). */
-            fun taskLimitMessage(limit: Int = MAX_ACTIVE_TASKS_PER_PROJECT): String =
-                "$ERROR_TASK_LIMIT_PREFIX$limit$ERROR_TASK_LIMIT_SUFFIX"
-
-            /** Indica se [message] é a mensagem de RN01 (limite de tarefas). */
-            fun isTaskLimitMessage(message: String): Boolean =
-                message.startsWith(ERROR_TASK_LIMIT_PREFIX) && message.endsWith(ERROR_TASK_LIMIT_SUFFIX)
-
-            /** Indica se [message] é a mensagem canônica de RN02 (prioridade bloqueada). */
-            fun isPriorityLockedMessage(message: String): Boolean =
-                message.startsWith(ERROR_PRIORITY_LOCKED_PREFIX) && ERROR_PRIORITY_LOCKED_TAG in message
-
-            /** Indica se [message] é a mensagem canônica de falha de carga (E2.8). */
-            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
-
-            private const val ERROR_PRIORITY_LOCKED_PREFIX: String = "RN02: alteração de prioridade bloqueada"
-            private const val ERROR_PRIORITY_LOCKED_TAG: String = "RN02"
         }
     }

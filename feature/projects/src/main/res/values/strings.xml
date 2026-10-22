@@ -75,6 +75,7 @@
     <string name="project_detail_error_invalid_title">Título inválido</string>
     <string name="project_detail_error_invalid_transition">Transição de status inválida</string>
     <string name="project_detail_error_empty_title">Título da tarefa não pode ser vazio</string>
+    <string name="project_detail_error_action_failed">Não foi possível concluir a operação. Tente novamente.</string>
 
     <!-- E2.8 — estados de erro e carregamento (ProjectDetail) -->
     <string name="project_detail_loading_aria_label">Carregando tarefas</string>

@@ -75,6 +75,7 @@
     <string name="project_detail_error_invalid_title">Invalid title</string>
     <string name="project_detail_error_invalid_transition">Invalid status transition</string>
     <string name="project_detail_error_empty_title">Task title cannot be empty</string>
+    <string name="project_detail_error_action_failed">Could not complete the operation. Try again.</string>
 
     <!-- E2.8 — loading and error states (ProjectDetail) -->
     <string name="project_detail_loading_aria_label">Loading tasks</string>

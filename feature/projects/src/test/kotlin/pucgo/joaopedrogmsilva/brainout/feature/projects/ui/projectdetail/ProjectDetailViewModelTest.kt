@@ -153,7 +153,7 @@ class ProjectDetailViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 0) { createTask.invoke(any(), any(), any(), any(), any()) }
-            assertThat(vm.errorMessage.value).isEqualTo("Título da tarefa não pode ser vazio")
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.EmptyTitle)
         }
 
     @Test
@@ -176,7 +176,7 @@ class ProjectDetailViewModelTest {
             advanceUntilIdle()
 
             assertThat(vm.errorMessage.value)
-                .isEqualTo("Projeto $projectId já atingiu o limite de $MAX_ACTIVE_TASKS_PER_PROJECT tarefas ativas")
+                .isEqualTo(ProjectDetailError.TaskLimitReached(MAX_ACTIVE_TASKS_PER_PROJECT))
         }
 
     @Test
@@ -212,9 +212,9 @@ class ProjectDetailViewModelTest {
             advanceUntilIdle()
 
             assertThat(vm.errorMessage.value)
-                .isEqualTo("Projeto $projectId já atingiu o limite de $MAX_ACTIVE_TASKS_PER_PROJECT tarefas ativas")
+                .isEqualTo(ProjectDetailError.TaskLimitReached(MAX_ACTIVE_TASKS_PER_PROJECT))
             assertThat(vm.errorMessage.value)
-                .isNotEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+                .isNotEqualTo(ProjectDetailError.LoadFailed)
         }
 
     @Test
@@ -341,12 +341,12 @@ class ProjectDetailViewModelTest {
             vm.uiState.test {
                 advanceUntilIdle()
                 val state = expectMostRecentItem()
-                assertThat(state.errorMessage).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.errorMessage).isEqualTo(ProjectDetailError.LoadFailed)
                 assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
 
-            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.LoadFailed)
         }
 
     /**
@@ -372,7 +372,7 @@ class ProjectDetailViewModelTest {
 
             vm.uiState.test {
                 advanceUntilIdle()
-                assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+                assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.LoadFailed)
 
                 // Reconfigura o mock para emitir lista vazia.
                 coEvery { taskRepository.observeForProject(projectId) } returns tasksFlow
@@ -393,9 +393,13 @@ class ProjectDetailViewModelTest {
      * Falha genérica em `addTask` (não mapeada por exceção de
      * domínio) deve ser convertida em `errorMessage` via o catch
      * `Throwable` adicionado em E2.8 — sem crash.
+     *
+     * É uma falha de **gravação**, não de leitura: por isso o tipo é
+     * `ActionFailed` e não `LoadFailed` — o primeiro vai para o
+     * snackbar, o segundo para o banner com "Tentar novamente".
      */
     @Test
-    fun `E2 8 falha generica em addTask popula errorMessage de carga`() =
+    fun `E2 8 falha generica em addTask popula errorMessage de acao`() =
         runTest {
             coEvery {
                 createTask.invoke(any(), any(), any(), any(), any())
@@ -405,6 +409,6 @@ class ProjectDetailViewModelTest {
             vm.addTask("qualquer")
             advanceUntilIdle()
 
-            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailViewModel.ERROR_LOAD_FAILED)
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.ActionFailed)
         }
 }

@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MAX_ACTIVE_TASKS_PER_PROJECT
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -60,18 +59,18 @@ internal fun ProjectDetailLoadingState() {
  * Banner de erro com retry/dispensar (E2.8). Espelha `HomeErrorBanner`
  * em estrutura visual.
  *
- * DEF-26: a mensagem chega do ViewModel e passa por
- * [resolveProjectDetailMessage] — o texto fixo de "falha ao carregar"
- * escondia falha de escrita atrás de falha de leitura.
+ * DEF-26: o erro chega **tipado** ([ProjectDetailError]) e o texto sai
+ * de [resolveProjectDetailMessage] — a falha de escrita (título vazio,
+ * RN02) não é mais escondida atrás de "falha ao carregar".
  */
 @Composable
 internal fun ProjectDetailErrorBanner(
-    message: String,
+    error: ProjectDetailError,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     NeoErrorBanner(
-        message = resolveProjectDetailMessage(message),
+        message = resolveProjectDetailMessage(error),
         onRetry = onRetry,
         onDismiss = onDismiss,
     )
@@ -116,33 +115,28 @@ internal fun EmptyTasksCard() {
 }
 
 /**
- * Resolve a mensagem vinda do [ProjectDetailViewModel] para a versão
- * localizada em `strings.xml` quando ela casar com uma chave conhecida;
- * caso contrário devolve a própria mensagem (mesma estratégia de
- * `resolveAuthMessage` em `:feature:auth`, marco E4.6).
+ * Resolve o erro do [ProjectDetailViewModel] para o texto localizado.
+ *
+ * O ViewModel entrega o **tipo** do erro ([ProjectDetailError]); aqui a
+ * escolha do texto em pt/en. Antes o tipo era deduzido comparando a
+ * mensagem em português — inclusive extraindo o limite de tarefas por
+ * prefixo/sufixo —, o que quebrava se o texto mudasse.
  */
 @Composable
-internal fun resolveProjectDetailMessage(message: String): String {
-    val limit = MAX_ACTIVE_TASKS_PER_PROJECT
-    return when {
-        // DEF-26: antes o banner fixa "falha ao carregar" e descarta a
-        // mensagem — uma falha de escrita (título vazio, RN02) chegava
-        // ao usuário como se a lista do Room tivesse quebrado.
-        ProjectDetailViewModel.isLoadErrorMessage(message) ->
+internal fun resolveProjectDetailMessage(error: ProjectDetailError): String =
+    when (error) {
+        ProjectDetailError.LoadFailed ->
             stringResource(id = R.string.project_detail_error_load_failed)
-        message == ProjectDetailViewModel.ERROR_EMPTY_TITLE ->
+        ProjectDetailError.EmptyTitle ->
             stringResource(id = R.string.project_detail_error_empty_title)
-        message == ProjectDetailViewModel.ERROR_INVALID_TITLE ->
+        ProjectDetailError.InvalidTitle ->
             stringResource(id = R.string.project_detail_error_invalid_title)
-        message == ProjectDetailViewModel.ERROR_INVALID_TRANSITION ->
+        ProjectDetailError.InvalidTransition ->
             stringResource(id = R.string.project_detail_error_invalid_transition)
-        message == ProjectDetailViewModel.ERROR_PRIORITY_LOCKED ||
-            ProjectDetailViewModel.isPriorityLockedMessage(message) ->
+        ProjectDetailError.PriorityLocked ->
             stringResource(id = R.string.project_detail_error_priority_locked_on_done)
-        // RN01: mensagem cru do domínio inclui o id do projeto; casamos
-        // por prefixo/sufixo e usamos o limite global no recurso localizado.
-        ProjectDetailViewModel.isTaskLimitMessage(message) ->
-            stringResource(id = R.string.project_detail_error_task_limit, limit)
-        else -> message
+        is ProjectDetailError.TaskLimitReached ->
+            stringResource(id = R.string.project_detail_error_task_limit, error.limit)
+        ProjectDetailError.ActionFailed ->
+            stringResource(id = R.string.project_detail_error_action_failed)
     }
-}

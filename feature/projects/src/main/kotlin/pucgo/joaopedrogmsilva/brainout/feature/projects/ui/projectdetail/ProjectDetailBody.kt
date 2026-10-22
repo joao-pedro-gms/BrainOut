@@ -58,9 +58,9 @@ internal fun ProjectDetailBody(
         }
         item {
             val errorMessage = state.errorMessage
-            if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
+            if (errorMessage is ProjectDetailError.LoadFailed) {
                 ProjectDetailErrorBanner(
-                    message = errorMessage,
+                    error = errorMessage,
                     onRetry = actions.onRetry,
                     onDismiss = actions.onDismissError,
                 )
