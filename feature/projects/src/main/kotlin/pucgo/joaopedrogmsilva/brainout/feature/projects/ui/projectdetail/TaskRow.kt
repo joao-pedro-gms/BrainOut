@@ -46,10 +46,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 @Composable
 internal fun TaskRow(
     task: Task,
-    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
-    onDeleteTask: (Task) -> Unit,
-    onChangePriority: (Task, TaskPriority) -> Unit,
-    onRenameTask: (Task) -> Unit,
+    actions: ProjectDetailActions,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -86,10 +83,7 @@ internal fun TaskRow(
             expanded = menuExpanded,
             onDismiss = { menuExpanded = false },
             task = task,
-            onChangeStatus = onChangeStatus,
-            onDeleteTask = onDeleteTask,
-            onChangePriority = onChangePriority,
-            onRenameTask = onRenameTask,
+            actions = actions,
         )
     }
 }
@@ -141,10 +135,7 @@ private fun TaskRowMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     task: Task,
-    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
-    onDeleteTask: (Task) -> Unit,
-    onChangePriority: (Task, TaskPriority) -> Unit,
-    onRenameTask: (Task) -> Unit,
+    actions: ProjectDetailActions,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -159,7 +150,7 @@ private fun TaskRowMenu(
                 text = { Text(text = stringResource(id = labelRes)) },
                 onClick = {
                     onDismiss()
-                    onChangeStatus(task.id, target)
+                    actions.onChangeStatus(task.id, target)
                 },
                 modifier = Modifier.testTag(target.menuTag()),
             )
@@ -198,7 +189,7 @@ private fun TaskRowMenu(
             enabled = task.status != TaskStatus.DONE,
             onClick = {
                 onDismiss()
-                onChangePriority(task, task.priority)
+                actions.onChangePriority(task, task.priority)
             },
             modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_CHANGE_PRIORITY),
         )
@@ -212,7 +203,7 @@ private fun TaskRowMenu(
             text = { Text(text = stringResource(id = R.string.project_detail_task_menu_rename)) },
             onClick = {
                 onDismiss()
-                onRenameTask(task)
+                actions.onRenameTask(task)
             },
             modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_RENAME),
         )
@@ -226,7 +217,7 @@ private fun TaskRowMenu(
             },
             onClick = {
                 onDismiss()
-                onDeleteTask(task)
+                actions.onDeleteTask(task)
             },
             modifier = Modifier.testTag(ProjectDetailTestTags.TASK_ITEM_MENU_DELETE),
         )

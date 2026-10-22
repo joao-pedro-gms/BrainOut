@@ -113,22 +113,28 @@ fun ProjectDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         ProjectDetailBody(
-            tasks = state.tasks,
-            isLoading = state.isLoading,
-            errorMessage = state.errorMessage,
-            onRetry = viewModel::retry,
-            onDismissError = viewModel::clearError,
             contentPadding = innerPadding,
-            onChangeStatus = viewModel::changeStatus,
-            onDeleteTask = viewModel::deleteTask,
-            onRenameTask = { renameTask = it },
-            onChangePriority = { task, _ ->
-                // RN02 — defesa em profundidade: a UI também bloqueia
-                // tarefas DONE via DropdownMenuItem(enabled = false).
-                if (task.status != TaskStatus.DONE) {
-                    priorityDialogTask = task
-                }
-            },
+            state =
+                ProjectDetailState(
+                    tasks = state.tasks,
+                    isLoading = state.isLoading,
+                    errorMessage = state.errorMessage,
+                ),
+            actions =
+                ProjectDetailActions(
+                    onRetry = viewModel::retry,
+                    onDismissError = viewModel::clearError,
+                    onChangeStatus = viewModel::changeStatus,
+                    onDeleteTask = viewModel::deleteTask,
+                    onRenameTask = { renameTask = it },
+                    onChangePriority = { task, _ ->
+                        // RN02 — defesa em profundidade: a UI também bloqueia
+                        // tarefas DONE via DropdownMenuItem(enabled = false).
+                        if (task.status != TaskStatus.DONE) {
+                            priorityDialogTask = task
+                        }
+                    },
+                ),
         )
     }
 
