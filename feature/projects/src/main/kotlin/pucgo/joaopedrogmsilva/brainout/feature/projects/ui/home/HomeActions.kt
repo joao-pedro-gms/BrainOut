@@ -20,6 +20,47 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeleteProjectUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateProjectUseCase
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Executa [block] no [scope], convertendo falhas em mensagem no
+ * [errorSink].
+ *
+ * Uma única implementação do try/catch: as sete ações da Home
+ * repetiam o mesmo bloco, e uma delas divergir (ou esquecer de
+ * re-lançar o cancelamento) seria um bug silencioso.
+ */
+private fun runAction(
+    scope: CoroutineScope,
+    errorSink: MutableStateFlow<String?>,
+    block: suspend () -> Unit,
+) {
+    scope.launch {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            errorSink.value = e.toHomeActionErrorMessage()
+        }
+    }
+}
+
+/**
+ * Executa [block] no [scope] com o id do usuário ativo.
+ *
+ * Sem usuário ativo (sessão encerrada), a ação é ignorada — a mesma
+ * regra das quatro ações de CRUD.
+ */
+private fun runForActiveUser(
+    scope: CoroutineScope,
+    activeUserProvider: ActiveUserProvider,
+    block: suspend (ownerId: String) -> Unit,
+) {
+    scope.launch {
+        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+        block(ownerId)
+    }
+}
+
 /** Dispara [CreateProjectUseCase] capturando falhas em [errorSink]. */
 internal fun runCreateProject(
     scope: CoroutineScope,
@@ -31,21 +72,15 @@ internal fun runCreateProject(
     errorSink: MutableStateFlow<String?>,
     onSuccess: () -> Unit = {},
 ) {
-    scope.launch {
-        try {
-            val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
-            useCase.invoke(
-                name = name,
-                ownerId = ownerId,
-                description = description,
-                tagIds = tagIds,
-            )
-            onSuccess()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            errorSink.value = e.toHomeActionErrorMessage()
-        }
+    runAction(scope, errorSink) {
+        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@runAction
+        useCase.invoke(
+            name = name,
+            ownerId = ownerId,
+            description = description,
+            tagIds = tagIds,
+        )
+        onSuccess()
     }
 }
 
@@ -57,14 +92,8 @@ internal fun runUpdateProject(
     tagIds: List<String>,
     errorSink: MutableStateFlow<String?>,
 ) {
-    scope.launch {
-        try {
-            useCase.invoke(project, tagIds)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            errorSink.value = e.toHomeActionErrorMessage()
-        }
+    runAction(scope, errorSink) {
+        useCase.invoke(project, tagIds)
     }
 }
 
@@ -75,14 +104,8 @@ internal fun runDeleteProject(
     projectId: String,
     errorSink: MutableStateFlow<String?>,
 ) {
-    scope.launch {
-        try {
-            useCase.invoke(projectId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            errorSink.value = e.toHomeActionErrorMessage()
-        }
+    runAction(scope, errorSink) {
+        useCase.invoke(projectId)
     }
 }
 
@@ -95,15 +118,9 @@ internal fun runCreateTag(
     color: String,
     errorSink: MutableStateFlow<String?>,
 ) {
-    scope.launch {
-        try {
-            val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
-            useCase.invoke(ownerId, name, color)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            errorSink.value = e.toHomeActionErrorMessage()
-        }
+    runAction(scope, errorSink) {
+        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@runAction
+        useCase.invoke(ownerId, name, color)
     }
 }
 
@@ -114,8 +131,7 @@ internal fun runOnSearchQueryChange(
     activeUserProvider: ActiveUserProvider,
     newQuery: String,
 ) {
-    scope.launch {
-        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+    runForActiveUser(scope, activeUserProvider) { ownerId ->
         repo.setSearchQuery(ownerId, newQuery)
     }
 }
@@ -127,8 +143,7 @@ internal fun runOnTagFilterChange(
     activeUserProvider: ActiveUserProvider,
     tagId: String?,
 ) {
-    scope.launch {
-        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+    runForActiveUser(scope, activeUserProvider) { ownerId ->
         repo.setSelectedTagId(ownerId, tagId)
     }
 }
@@ -140,8 +155,7 @@ internal fun runOnSortOrderChange(
     activeUserProvider: ActiveUserProvider,
     order: SortOrder,
 ) {
-    scope.launch {
-        val ownerId = activeUserProvider.observeActiveUserId().first() ?: return@launch
+    runForActiveUser(scope, activeUserProvider) { ownerId ->
         repo.setSortOrder(ownerId, order)
     }
 }
