@@ -13,11 +13,11 @@
 | Raios 4/4/8/8/16 dp nos 5 slots de `Shapes` | **Implementados e ativos** | `theme/Shape.kt` (`NeoShapes`) |
 | Contraste AA da paleta Neo | **Verificado por teste** (5 casos, `NeoContrastRatioTest`) | `core/ui/src/test/.../theme/NeoContrastRatioTest.kt` |
 | Ausência do roxo `#6750A4` do Material | **Verificada por teste** | `NeoThemeActivationTest` (14 casos) |
-| 20 drawables `neo_*` (16 ícones + 4 artes) | **Empacotados e verificados, mas NENHUMA tela os referencia** | `res/drawable/neo_*.xml`; testes `NeoDocumentedAssetsTest`/`NeoVectorAssetsTest` |
-| Componentes de tela da paleta A (cartões com borda 2dp e sombra rígida, chips, empty states) | **Não implementados** — item em aberto | — |
-| Escolha manual de tema, Perfil, lembretes na tela de Configurações | **Não implementados** — rotas são placeholders | — |
+| 28 drawables `neo_*` (23 ícones + 5 artes) | **Empacotados, verificados e adotados** | `res/drawable/neo_*.xml`; testes `NeoDocumentedAssetsTest`/`NeoVectorAssetsTest`; uso em `BrainOutShell` (ícones das abas), `SplashScreen`/`SettingsScreen` (logo), `ProjectDetailTopBar`/`TasksTopBar` (voltar, excluir), `HomeSearchBar`, `HomeFilterRow`, `NeoTaskMetadata` (prioridades), `NeoCreateActionButton`, `NeoNavigationBar` e o toggle de senha |
+| Componentes de tela da paleta A (cartões com borda 2dp e sombra rígida, chips, empty states) | **Implementados** | `core/ui/.../components/`: `NeoCreateActionButton`, `NeoEmptyState`, `NeoErrorBanner`, `NeoInfoChip`, `NeoNavigationBar`, `NeoTaskMetadata` (chips de status e prioridade) |
+| Escolha manual de tema, Perfil, lembretes na tela de Configurações | **Parcial**: a escolha de tema **já é persistida** (`ThemePreferencesRepository` + `MainActivity` aplica o `ThemeMode`); o que falta é a **tela** para escolher. Perfil e lembretes continuam sem tela — as linhas respondem "Em breve" | — |
 
-**Nenhum asset foi adotado visualmente até aqui.** O `grep` por `R.drawable.neo_` em `app/`, `core/` e `feature/` não retorna nada: os 20 vetores viajam no APK e são testados, mas não são usados. A paleta legada (`BrainOutLightColors`/`BrainOutDarkColors`, `BrainOutShapes`, `BrainOutTypography`) permanece em `Theme.kt`/`Shape.kt`/`Type.kt` porque `ThemeSelectionTest` e `ContrastRatioTest` ainda a assinam — removê-la é tarefa declarada do NB-32.
+**Os assets já são adotados visualmente.** O `grep` por `R.drawable.neo_` em `app/`, `core/` e `feature/` retorna uso em produção: ícones das abas (`BrainOutShell`), logo (`SplashScreen`, `SettingsScreen`), voltar/excluir (`ProjectDetailTopBar`, `TasksTopBar`), busca e ordenação (`HomeSearchBar`, `HomeFilterRow`), prioridades (`NeoTaskMetadata`), botão de criar (`NeoCreateActionButton`) e toggle de senha. A paleta legada (`BrainOutLightColors`/`BrainOutDarkColors`, `BrainOutShapes`, `BrainOutTypography`) saiu do `Theme.kt`/`Shape.kt`/`Type.kt` (PR #227) — o `ThemeSelectionTest` e o `ContrastRatioTest` hoje assinam a paleta Neo.
 
 **Razão de existir:** transformar referências visuais em decisões implementáveis para reformular toda a UI Android, preservando legibilidade, regras de negócio e comportamento offline-first.
 

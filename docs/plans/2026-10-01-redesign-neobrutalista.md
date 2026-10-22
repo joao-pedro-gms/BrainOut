@@ -2,6 +2,33 @@
 
 > **Para o agente de IA:** REQUIRED SUB-SKILL: use `executing-plans` para executar este plano tarefa por tarefa. Esta entrega é o planejamento; a implementação começa por NB-01.
 
+> ### Estado em 22/10/2026 — leia antes de executar
+>
+> Parte do que este plano assumia já mudou. **Não recrie o que existe:**
+>
+> - **NB-17 (shell adaptativo) já está entregue**, em outra forma: o
+>   `BrainOutShell` (`app/navigation/BrainOutShell.kt`) envolve o `NavHost` e
+>   renderiza o `NeoNavigationBar` (`:core:ui`), com a aba selecionada
+>   derivada do back stack. `HomeBottomBar.kt`/`HomeTab.kt` **não existem
+>   mais** — o `when (currentTab)` morto saiu junto.
+> - **O `CanPerformActionUseCase` foi removido** (PR #226) por não ter caller
+>   de produção. O NB-03 precisa **recriá-lo** (ou equivalente) para poder
+>   aplicá-lo a todos os use cases de mutação.
+> - **A escolha de tema já é persistida**: `ThemePreferencesRepository`
+>   (`:core:data`) grava o `ThemeMode` em `DataStore` e o `MainActivity` o
+>   aplica. O NB-06/NB-27 precisa da **tela**, não da persistência.
+> - **As linhas de Configurações sem destino respondem "Em breve"**
+>   (PR #252); o enum `SettingsActionType` virou `SettingsRowKind`, interno
+>   de `:feature:settings`, e o callback do `NavHost` é `onSignOut`.
+> - **O `KDF` roda fora da thread principal** (PR #259) e **a notificação de
+>   prazo tem identidade (tag, id)** (PR #246) — o plano não precisa mexer
+>   nisso.
+> - A matriz de migração (`docs/design/MATRIZ_MIGRACAO.md`) foi reconciliada
+>   com o código em 22/10/2026 e é a referência atual das rotas e dos donos
+>   de insets.
+>
+> O resto do plano (NB-01 em diante) segue válido como está.
+
 **Goal:** transformar o BrainOut na identidade “Bloco de ação” — impacto visual marcante — e ampliar o produto com tarefas globais acionáveis, kanban, agenda de prazos, biblioteca de tags, criação rápida e membership local, mantendo offline-first, acessibilidade e desempenho medido.
 
 **Architecture:** tokens e componentes em `:core:ui` envolvendo Material 3 com tema neobrutalista aditivo; migração de rotas progressiva com ativação global no fim. Capacidades novas vivem em `:core:domain`/`:core:data` (membership, semântica de prazo, CRUD de tags, regras de DONE) e são expostas por ViewModels imutáveis + componentes data/callback. Integração remota inalterada: capacidades novas são locais e avisam “só neste dispositivo” quando necessário.

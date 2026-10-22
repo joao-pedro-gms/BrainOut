@@ -10,31 +10,53 @@ Razão de existir: dizer, rota por rota e capacidade por capacidade, **o que exi
 
 | Rota real | Declarada em | Composable | Estado por tela |
 |---|---|---|---|
-| `splash` | `BrainOutRoutes` / `AuthRoutes` | `SplashScreen` (`:feature:auth`) | `AuthUiState` |
-| `login` | `BrainOutRoutes` / `AuthRoutes` | `LoginScreen` (`:feature:auth`) | `AuthUiState` |
-| `register` | `BrainOutRoutes` / `AuthRoutes` | `RegisterScreen` (`:feature:auth`) | `AuthUiState` |
-| `home` | `BrainOutRoutes` / `ProjectsRoutes` | `HomeScreen` (`:feature:projects`) | `HomeUiState` |
-| `project/{projectId}` | `BrainOutRoutes.ProjectDetailPattern` / `ProjectsRoutes.projectDetailRoute(id)` | `ProjectDetailScreen` (`:feature:projects`) | `ProjectDetailUiState` |
+| `splash` | `BrainOutRoutes.Splash` | `SplashScreen` (`:feature:auth`) | `AuthUiState` |
+| `login` | `BrainOutRoutes.Login` | `LoginScreen` (`:feature:auth`) | `AuthUiState` |
+| `register` | `BrainOutRoutes.Register` | `RegisterScreen` (`:feature:auth`) | `AuthUiState` |
+| `home` | `BrainOutRoutes.Home` | `HomeScreen` (`:feature:projects`) | `HomeUiState` |
+| `project/{projectId}` | `BrainOutRoutes.ProjectDetailPattern` / `BrainOutRoutes.projectDetail(id)` | `ProjectDetailScreen` (`:feature:projects`) | `ProjectDetailUiState` |
 | `tasks` | `TasksRoutes.TASKS` (`:feature:tasks`) | `TasksScreen` | `TasksUiState` |
 | `dashboard` | `TasksRoutes.DASHBOARD` (`:feature:tasks`) | `DashboardScreen` | `DashboardUiState` |
-| `settings` | `BrainOutRoutes` / `SettingsRoutes` | `SettingsScreen` (`:feature:settings`) | **sem UiState** (tela stateless, sem ViewModel) |
+| `settings` | `BrainOutRoutes.Settings` | `SettingsScreen` (`:feature:settings`) | **sem UiState** (tela stateless, sem ViewModel) |
+
+> **Atualizado em 22/10/2026:** os objetos de rota `AuthRoutes`, `ProjectsRoutes`
+> e `SettingsRoutes` foram removidos (PR #226) — eram objetos sem consumidor.
+> Hoje a fonte é `BrainOutRoutes` (`:app`), mais `TasksRoutes` (`:feature:tasks`),
+> que permanece porque expõe as extensões de grafo `tasksGraph()`/`dashboardGraph()`
+> e é dona das rotas que usa.
 
 O `BrainOutNavHost` (`:app`) registra seis composables (`splash`, `login`, `register`, `home`, `project/{projectId}`, `settings`); `tasks` e `dashboard` entram por navegação disparada a partir das abas da `HomeScreen` via `TasksRoutes`.
 
-**A barra inferior não é do `:app`.** Ela vive em `:feature:projects/ui/home/`: `HomeBottomBar.kt` renderiza `HomeTab.values()` e `HomeScreen.kt` guarda a aba atual em `rememberSaveable`. **Não existe** `app/navigation/BottomBar.kt` — a auditoria da seção 14 do plano removeu essa referência.
+**A barra inferior é do `:app`, dentro do shell.** O `BrainOutShell` (`:app/navigation/BrainOutShell.kt`) envolve o `NavHost` e renderiza o `NeoNavigationBar` (`:core:ui`), com a aba selecionada derivada do back stack (`currentBackStackEntryAsState` + `hierarchy`) e a troca feita por `selectMainTab` (`popUpTo`/`saveState`/`restoreState`). **Não existe** `app/navigation/BottomBar.kt` nem `HomeBottomBar.kt`/`HomeTab` em `:feature:projects` — o `when (currentTab)` morto saiu junto (PR #244 e o rework do shell).
 
 ### 1.2 Callbacks e donos de insets (observado)
 
 | Tela | Callbacks que recebe | Insets |
 |---|---|---|
 | `LoginScreen` / `RegisterScreen` | ações de auth pelo `AuthViewModel` | `Scaffold` da própria tela |
-| `HomeScreen` | `onOpenTasks`, `onOpenDashboard`, `onOpenSettings` (definidos no `NavHost`) | `Scaffold` da própria tela |
+| `HomeScreen` | `onOpenProject` (definido no `NavHost`) | `Scaffold` da própria tela |
 | `ProjectDetailScreen` | abrir/voltar, menu de ações | `Scaffold` da própria tela |
-| `TasksScreen` | `onRetry`, `onDismissError` — **nada mais** | sem `Scaffold` |
-| `DashboardScreen` | dados do próprio VM | sem `Scaffold` |
-| `SettingsScreen` | `onOptionClicked(SettingsActionType)` — o `NavHost` decide | `Scaffold` da própria tela |
+| `TasksScreen` | `onRetry`, `onDismissError` — **nada mais** | `Scaffold` da própria tela |
+| `DashboardScreen` | dados do próprio VM | `Scaffold` da própria tela |
+| `SettingsScreen` | `onSignOut: () -> Unit` — a única ação que troca a rota | `Scaffold` da própria tela |
 
-`enableEdgeToEdge()` é chamado **uma vez**, em `MainActivity`. Não há tratamento explícito de `WindowInsets`/`imePadding` em nenhuma feature: hoje quem absorve insets é o `Scaffold` de cada tela. **Consequência para o redesign:** quando o shell adaptativo (NB-17) passar a envolver as rotas, é preciso eleger **um único dono** de insets, senão o padding é aplicado duas vezes — risco já registrado no plano.
+> **Atualizado em 22/10/2026:** as telas de Tarefas e Painel **têm** `Scaffold`
+> próprio (o shell adaptativo não absorve o inset delas), e a tela de
+> Configurações não recebe mais `onOptionClicked(SettingsActionType)`: o enum
+> virou `SettingsRowKind`, interno do módulo, e o callback é `onSignOut`. As
+> linhas sem destino (Perfil, Notificações, Tema) respondem "Em breve" dentro da
+> própria tela (PR #252).
+
+`enableEdgeToEdge()` é chamado **uma vez**, em `MainActivity`. O consumo de inseto
+está distribuído assim: o `BrainOutShell` declara `contentWindowInsets =
+WindowInsets(0, 0, 0, 0)` (não consome nada, para não tirar de quem está
+abaixo) e faz `consumeWindowInsets(padding)`; cada tela tem o seu `Scaffold`, cujo
+`contentWindowInsets` padrão é `WindowInsets.systemBars` — é ela que cede espaço
+para a barra de status e para a barra de gestos. As telas de autenticação
+usam `imePadding()` no formulário. A prova geométrica está em
+`SystemInsetsTest` (`:app`). **Consequência para o redesign:** quando o shell
+adaptativo (NB-17) evoluir, manter **um único dono de insets** por camada, senão
+o padding é aplicado duas vezes — risco já registrado no plano.
 
 ### 1.3 Test tags
 
@@ -83,7 +105,7 @@ Contrato de apresentação a preservar (ESPECIFICACAO §2): erro de leitura **su
 | Reconciliação de lembrete em toda mutação (create/update/status) | `CreateTaskUseCase`, `UpdateTaskUseCase`, `ChangeTaskStatusUseCase` |
 | Drenagem de fila em lote de 50; 4xx descarta, 5xx/IO faz retry | `SyncWorker` |
 | Preferências de listagem por usuário (busca, tag, ordenação) | `ListingPreferencesRepository` (DataStore) |
-| Papéis Owner/Member + `CanPerformActionUseCase` | `:core:domain` (**sem uso de produção** — ver §4) |
+| Papéis Owner/Member + a matriz `UserRole`/`Permission` | `:core:domain` (**sem gate de produção** — o `CanPerformActionUseCase` foi removido por não ter caller; ver §4) |
 
 ### 3.2 Capacidade nova (proposta)
 
@@ -102,7 +124,7 @@ Contrato de apresentação a preservar (ESPECIFICACAO §2): erro de leitura **su
 
 ### 3.3 Capacidade que **não existe** (para não ser desenhada como pronta)
 
-Perfil, escolha manual de tema (System/Light/Dark), preferência de lembretes, telas `ProfileScreen`/`ThemeScreen`/`NotificationsScreen` e `SettingsViewModel`. O módulo `:feature:settings` tem **apenas** `SettingsScreen` (lista neutra), `SettingsStructure` (dados das linhas) e `SettingsRoutes`; o `NavHost` trata `Profile`, `Notifications` e `Theme` como placeholder vazio. `Theme.kt` aplica `isSystemInDarkTheme()` e `dynamicColor = false`, sem persistência de escolha.
+Perfil, telas `ProfileScreen`/`ThemeScreen`/`NotificationsScreen` e `SettingsViewModel`. O módulo `:feature:settings` tem **apenas** `SettingsScreen` (lista neutra) e `SettingsStructure` (catálogo das linhas, interno); as linhas sem destino respondem "Em breve" dentro da tela. A **persistência** da escolha de tema **já existe**: `ThemePreferencesRepository` (`:core:data`) grava o `ThemeMode` em `DataStore` e o `MainActivity` o aplica — o que falta é a **tela** para escolher (e a preferência de lembretes, que não existe).
 
 ### 3.4 Local × sync (verdade dos dados)
 
@@ -121,7 +143,7 @@ Perfil, escolha manual de tema (System/Light/Dark), preferência de lembretes, t
 
 | Lacuna | Resultado | Evidência |
 |---|---|---|
-| `CanPerformActionUseCase` sem uso de produção | **confirmada** | só definição e teste (`core/domain/.../CanPerformActionUseCase.kt`) |
+| Gate de papel ausente na mutação | **confirmada** | a matriz `UserRole`/`Permission` existe e tem teste (`PermissionMatrixTest.kt`), mas **nenhum use case de mutação a consulta**; o `CanPerformActionUseCase` foi removido por não ter caller (PR #226) e o gate entra com o membership local (plano NB-03) |
 | Member sem visibilidade | **confirmada** | `HomeListingPipeline` chama `projectRepository.observeSearch(ownerId = capturedOwnerId, …)`; sem join em membership |
 | Detalhe de projeto sem gate de papel | **confirmada** | nenhuma ocorrência de `UserRole`/`isOwner` em `ProjectDetailViewModel.kt` |
 | `UpdateTaskUseCase` rejeita qualquer update de DONE | **confirmada** | rejeita quando o registro vigente está DONE, com `TaskPriorityChangeForbiddenException` |

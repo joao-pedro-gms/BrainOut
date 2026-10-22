@@ -144,16 +144,17 @@ Encerramento (Sem 18-19) → Documentação final + apresentação    → Entreg
       *Critério:* testes unitários verificam a matriz de permissões.
       *Atende R2.* *Estimativa:* 3 PH.
       _Entregue no setup inicial do projeto (verificável pelos artefatos
-      atuais): enum `UserRole { Owner, Member }` em
+      atuais): enum `UserRole { OWNER, MEMBER }` em
       `core/domain/.../model/UserRole.kt`, cada `UserRole` carregando
       `Set<Permission>` derivado de matriz em `Permission.kt`; uso
-      `CanPerformActionUseCase` em
-      `core/domain/.../usecase/CanPerformActionUseCase.kt` consumido
-      pela Home (botão "novo projeto" condicionado a `Owner`); matriz
-      verificada por `PermissionMatrixTest` (em
-      `core/domain/src/test/.../model/PermissionMatrixTest.kt`) e
-      `CanPerformActionUseCaseTest` (em
-      `core/domain/src/test/.../usecase/CanPerformActionUseCaseTest.kt`)._
+      da matriz pela Home (botão "novo projeto" condicionado a
+      `Owner` — `HomeScreen.kt`); matriz verificada por
+      `PermissionMatrixTest` (em
+      `core/domain/src/test/.../model/PermissionMatrixTest.kt`).
+      _Nota (22/10/2026): o `CanPerformActionUseCase` foi removido por
+      não ter caller de produção (PR #226) — o gate de papel no
+      caminho de mutação entra com o membership local (plano NB-03),
+      e está registrado como DEF-36 no `docs/DEFEITOS.md`._
 
 - [x] **E1.8** — Integração mínima com Room para o módulo de autenticação.
       *Critério:* usuário cadastrado persiste em SQLite local; login
