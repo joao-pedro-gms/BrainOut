@@ -60,7 +60,7 @@ import kotlin.coroutines.cancellation.CancellationException
 data class TasksUiState(
     val rows: List<TaskRow> = emptyList(),
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: TasksErrorType? = null,
 )
 
 /**
@@ -115,8 +115,8 @@ class TasksViewModel
         private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
         val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
-        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+        private val _errorMessage: MutableStateFlow<TasksErrorType?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<TasksErrorType?> = _errorMessage.asStateFlow()
 
         val uiState: StateFlow<TasksUiState> =
             combine(
@@ -184,7 +184,7 @@ class TasksViewModel
                 .catch { throwable ->
                     if (throwable is CancellationException) throw throwable
                     Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                    _errorMessage.value = TasksViewModel.ERROR_LOAD_FAILED
+                    _errorMessage.value = TasksErrorType.LoadFailed
                     emit(TasksLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas.
@@ -239,15 +239,5 @@ class TasksViewModel
 
             /** Texto exibido quando a tarefa referencia um projeto inexistente. */
             const val NO_PROJECT_LABEL: String = "(sem projeto)"
-
-            /**
-             * Mensagem canônica para falhas de carga (E2.8). A UI
-             * resolve esta chave para o recurso localizado via
-             * `R.string.tasks_error_load_failed`.
-             */
-            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar suas tarefas"
-
-            /** Indica se [message] é a de falha de carga. */
-            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
         }
     }

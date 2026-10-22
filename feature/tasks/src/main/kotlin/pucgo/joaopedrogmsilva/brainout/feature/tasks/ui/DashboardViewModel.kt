@@ -70,7 +70,7 @@ data class DashboardUiState(
     val weeklyCompletionPercent: Int = 0,
     val overallCompletionPercent: Int = 0,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null,
+    val errorMessage: TasksErrorType? = null,
 ) {
     companion object {
         /** Níveis de prioridade exibidos no gráfico (0..4 — E1.4). */
@@ -104,8 +104,8 @@ class DashboardViewModel
         private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
         val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
 
-        private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
-        val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+        private val _errorMessage: MutableStateFlow<TasksErrorType?> = MutableStateFlow(null)
+        val errorMessage: StateFlow<TasksErrorType?> = _errorMessage.asStateFlow()
 
         val uiState: StateFlow<DashboardUiState> =
             combine(
@@ -178,7 +178,7 @@ class DashboardViewModel
                         "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
                         throwable,
                     )
-                    _errorMessage.value = DashboardViewModel.ERROR_LOAD_FAILED
+                    _errorMessage.value = TasksErrorType.LoadFailed
                     emit(DashboardLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas;
@@ -246,15 +246,5 @@ class DashboardViewModel
 
         companion object {
             private const val TAG = "BrainOut:DashboardVM"
-
-            /**
-             * Mensagem canônica para falhas de carga (E2.8). A UI resolve
-             * esta chave para o recurso localizado via
-             * `R.string.dashboard_error_load_failed`.
-             */
-            const val ERROR_LOAD_FAILED: String = "Não foi possível carregar o dashboard"
-
-            /** Indica se [message] é a de falha de carga. */
-            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
         }
     }

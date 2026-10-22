@@ -116,7 +116,7 @@ class DashboardScreenTest {
                     state =
                         DashboardUiState(
                             isLoading = false,
-                            errorMessage = DashboardViewModel.ERROR_LOAD_FAILED,
+                            errorMessage = TasksErrorType.LoadFailed,
                         ),
                     onRetry = {},
                     onDismissError = {},

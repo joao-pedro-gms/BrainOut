@@ -258,11 +258,11 @@ class DashboardViewModelTest {
             viewModel.uiState.test {
                 advanceUntilIdle()
                 val state = expectMostRecentItem()
-                assertThat(state.errorMessage).isEqualTo(DashboardViewModel.ERROR_LOAD_FAILED)
+                assertThat(state.errorMessage).isEqualTo(TasksErrorType.LoadFailed)
                 assertThat(state.isLoading).isFalse()
                 cancelAndIgnoreRemainingEvents()
             }
-            assertThat(viewModel.errorMessage.value).isEqualTo(DashboardViewModel.ERROR_LOAD_FAILED)
+            assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
         }
 
     @Test
@@ -299,7 +299,7 @@ class DashboardViewModelTest {
 
             viewModel.uiState.test {
                 advanceUntilIdle()
-                assertThat(viewModel.errorMessage.value).isEqualTo(DashboardViewModel.ERROR_LOAD_FAILED)
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
 
                 // Reconfigura o mock para sucesso na nova assinatura.
                 every { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
@@ -336,7 +336,7 @@ class DashboardViewModelTest {
 
             viewModel.uiState.test {
                 advanceUntilIdle()
-                assertThat(viewModel.errorMessage.value).isEqualTo(DashboardViewModel.ERROR_LOAD_FAILED)
+                assertThat(viewModel.errorMessage.value).isEqualTo(TasksErrorType.LoadFailed)
 
                 viewModel.clearError()
                 assertThat(viewModel.errorMessage.value).isNull()

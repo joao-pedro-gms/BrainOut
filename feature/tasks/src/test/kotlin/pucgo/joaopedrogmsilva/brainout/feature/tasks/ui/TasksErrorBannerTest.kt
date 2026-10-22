@@ -3,6 +3,9 @@
 // (`@Suppress("UNUSED_PARAMETER")`): o texto era sempre "não foi
 // possível carregar suas tarefas", então uma falha de escrita aparecia
 // como se a leitura do Room tivesse quebrado.
+//
+// O erro agora chega **tipado** (`TasksErrorType`): a tela de Tarefas
+// só produz falha de carga, e o banner mostra o texto pt/en dela.
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
@@ -33,7 +36,7 @@ class TasksErrorBannerTest {
         composeRule.setContent {
             BrainOutTheme {
                 TasksErrorBanner(
-                    message = TasksViewModel.ERROR_LOAD_FAILED,
+                    message = TasksErrorType.LoadFailed,
                     onRetry = {},
                     onDismiss = {},
                 )
@@ -41,20 +44,5 @@ class TasksErrorBannerTest {
         }
 
         composeRule.onNodeWithText("Não foi possível carregar suas tarefas").assertIsDisplayed()
-    }
-
-    @Test
-    fun `falha de escrita mostra a mensagem original`() {
-        composeRule.setContent {
-            BrainOutTheme {
-                TasksErrorBanner(
-                    message = "Falha ao salvar a tarefa",
-                    onRetry = {},
-                    onDismiss = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Falha ao salvar a tarefa").assertIsDisplayed()
     }
 }
