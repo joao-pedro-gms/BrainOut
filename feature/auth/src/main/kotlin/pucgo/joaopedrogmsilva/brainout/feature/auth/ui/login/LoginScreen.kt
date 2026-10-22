@@ -5,20 +5,14 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,9 +44,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.FocusFirstInvalidField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
@@ -143,21 +140,8 @@ internal fun LoginBody(
     val emailFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
 
-    Column(
-        modifier =
-            modifier
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .neoContentWidth(form = true)
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp)
-                .testTag(LoginTestTags.SCROLL),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(id = R.string.login_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    AuthFormScaffold(scrollTestTag = LoginTestTags.SCROLL, modifier = modifier) {
+        AuthSubtitle(textRes = R.string.login_subtitle)
 
         EmailField(
             value = uiState.email,
@@ -189,69 +173,30 @@ internal fun LoginBody(
                 ),
         )
 
-        uiState.errorMessage?.let { errorType ->
-            val resolvedMessage = errorType.text()
-            Text(
-                text = resolvedMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .testTag(LoginTestTags.ERROR_BANNER)
-                        .semantics { contentDescription = resolvedMessage },
-            )
-        }
+        AuthErrorBanner(errorType = uiState.errorMessage, testTag = LoginTestTags.ERROR_BANNER)
 
         Spacer(modifier = Modifier.height(8.dp))
-        Button(
+        AuthSubmitButton(
+            labelRes = R.string.login_cta,
+            isLoading = uiState.isLoading,
+            testTag = LoginTestTags.SUBMIT,
+            loadingTestTag = LoginTestTags.LOADING,
             onClick = callbacks.onSubmit,
+        )
+        AuthSecondaryButton(
+            labelRes = R.string.login_create_account,
             enabled = !uiState.isLoading,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .testTag(LoginTestTags.SUBMIT),
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier
-                            .height(20.dp)
-                            .testTag(LoginTestTags.LOADING),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.login_cta),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
-        TextButton(
+            testTag = LoginTestTags.CREATE_ACCOUNT,
             onClick = callbacks.onCreateAccountClicked,
-            enabled = !uiState.isLoading,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .testTag(LoginTestTags.CREATE_ACCOUNT),
-        ) {
-            Text(
-                text = stringResource(id = R.string.login_create_account),
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
+        )
     }
 
     // Reage a mudanças em emailError/passwordError para devolver o foco
     // ao primeiro campo inválido, como exigido pelo roadmap E1.6.
-    LaunchedEffect(uiState.emailError, uiState.passwordError) {
-        if (uiState.emailError != null) {
-            runCatching { emailFocus.requestFocus() }
-        } else if (uiState.passwordError != null) {
-            runCatching { passwordFocus.requestFocus() }
-        }
-    }
+    FocusFirstInvalidField(
+        errors = listOf(uiState.emailError, uiState.passwordError),
+        requesters = listOf(emailFocus, passwordFocus),
+    )
 }
 
 /** Identificadores usados por testes Compose. */

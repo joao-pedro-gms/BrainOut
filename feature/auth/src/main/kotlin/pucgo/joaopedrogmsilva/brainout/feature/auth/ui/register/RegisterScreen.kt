@@ -15,21 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,9 +42,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.FocusFirstInvalidField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
@@ -175,21 +174,8 @@ internal fun RegisterBody(
     val passwordFocus = remember { FocusRequester() }
     val passwordConfirmFocus = remember { FocusRequester() }
 
-    Column(
-        modifier =
-            modifier
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .neoContentWidth(form = true)
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp)
-                .testTag(RegisterTestTags.SCROLL),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(id = R.string.register_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    AuthFormScaffold(scrollTestTag = RegisterTestTags.SCROLL, modifier = modifier) {
+        AuthSubtitle(textRes = R.string.register_subtitle)
 
         OutlinedTextField(
             value = uiState.name,
@@ -277,73 +263,34 @@ internal fun RegisterBody(
             onSelect = callbacks.onRoleChange,
         )
 
-        uiState.errorMessage?.let { errorType ->
-            val resolvedMessage = errorType.text()
-            Text(
-                text = resolvedMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .testTag(RegisterTestTags.ERROR_BANNER),
-            )
-        }
+        AuthErrorBanner(errorType = uiState.errorMessage, testTag = RegisterTestTags.ERROR_BANNER)
 
         Spacer(modifier = Modifier.height(8.dp))
-        Button(
+        AuthSubmitButton(
+            labelRes = R.string.register_cta,
+            isLoading = uiState.isLoading,
+            testTag = RegisterTestTags.SUBMIT,
+            loadingTestTag = RegisterTestTags.LOADING,
             onClick = callbacks.onSubmit,
+        )
+        AuthSecondaryButton(
+            labelRes = R.string.register_have_account,
             enabled = !uiState.isLoading,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .testTag(RegisterTestTags.SUBMIT),
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier
-                            .height(20.dp)
-                            .testTag(RegisterTestTags.LOADING),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.register_cta),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
-        TextButton(
+            testTag = RegisterTestTags.HAVE_ACCOUNT,
             onClick = callbacks.onHaveAccountClicked,
-            enabled = !uiState.isLoading,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .testTag(RegisterTestTags.HAVE_ACCOUNT),
-        ) {
-            Text(
-                text = stringResource(id = R.string.register_have_account),
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
+        )
     }
 
-    LaunchedEffect(
-        uiState.nameError,
-        uiState.emailError,
-        uiState.passwordError,
-        uiState.passwordConfirmationError,
-    ) {
-        when {
-            uiState.nameError != null -> runCatching { nameFocus.requestFocus() }
-            uiState.emailError != null -> runCatching { emailFocus.requestFocus() }
-            uiState.passwordError != null -> runCatching { passwordFocus.requestFocus() }
-            uiState.passwordConfirmationError != null ->
-                runCatching { passwordConfirmFocus.requestFocus() }
-        }
-    }
+    FocusFirstInvalidField(
+        errors =
+            listOf(
+                uiState.nameError,
+                uiState.emailError,
+                uiState.passwordError,
+                uiState.passwordConfirmationError,
+            ),
+        requesters = listOf(nameFocus, emailFocus, passwordFocus, passwordConfirmFocus),
+    )
 }
 
 @Composable
