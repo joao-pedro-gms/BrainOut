@@ -66,14 +66,15 @@ data class TasksUiState(
  * projeto para evitar lookups repetidos na camada de UI.
  *
  * @property task Tarefa persistida no Room.
- * @property projectName Nome do projeto correspondente, ou
- *  `"(sem projeto)"` quando a FK ficou orfã (projeto excluído sem
- *  cascade das tarefas — improvável dado o schema atual, mas o
- *  fallback protege a UI).
+ * @property projectName Nome do projeto correspondente, ou `null`
+ *  quando a FK ficou orfã (projeto excluído sem cascade das tarefas —
+ *  improvável dado o schema atual, mas o fallback protege a UI). O
+ *  rótulo traduzido é escolhido pela UI, no `stringResource`: o
+ *  ViewModel não carrega texto (DEF-50).
  */
 data class TaskRow(
     val task: Task,
-    val projectName: String,
+    val projectName: String?,
 )
 
 /**
@@ -207,13 +208,10 @@ class TasksViewModel
         private fun Task.toRow(projectsById: Map<String, Project>): TaskRow =
             TaskRow(
                 task = this,
-                projectName = projectsById[this.projectId]?.name ?: NO_PROJECT_LABEL,
+                projectName = projectsById[this.projectId]?.name,
             )
 
         companion object {
             private const val TAG = "BrainOut:TasksVM"
-
-            /** Texto exibido quando a tarefa referencia um projeto inexistente. */
-            const val NO_PROJECT_LABEL: String = "(sem projeto)"
         }
     }

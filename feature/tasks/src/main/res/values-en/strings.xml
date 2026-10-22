@@ -5,6 +5,8 @@
     <string name="tasks_screen_title">Tasks</string>
     <string name="tasks_empty_title">No tasks yet</string>
     <string name="tasks_empty_body">Create tasks inside a project to see them here.</string>
+    <!-- DEF-50 — label for a task without a project (orphan FK); it was a hardcoded pt-BR literal in the ViewModel. -->
+    <string name="tasks_no_project">(no project)</string>
 
     <!-- Task status labels (espelha :feature:projects para reuso no card) -->
 
