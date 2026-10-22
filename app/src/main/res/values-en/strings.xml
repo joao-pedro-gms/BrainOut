@@ -42,11 +42,6 @@
     <string name="home_fab_create">Create new project</string>
     <string name="home_fab_disabled_label">Coming soon: create project</string>
 
-    <!-- Bottom navigation -->
-    <string name="bottom_tab_projects">Projects</string>
-    <string name="bottom_tab_tasks">Tasks</string>
-    <string name="bottom_tab_settings">Settings</string>
-
     <!-- Project detail -->
     <string name="project_detail_tasks_title">Tasks</string>
     <string name="project_detail_new_task">New task</string>

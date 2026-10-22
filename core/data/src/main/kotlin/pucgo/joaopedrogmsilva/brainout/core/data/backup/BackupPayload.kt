@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
 
@@ -152,11 +153,10 @@ internal object BackupPayloadCodec {
 }
 
 /** Lê o JSON raiz do payload. */
-@Suppress("TooGenericExceptionCaught")
 private fun parsePayloadRoot(bytes: ByteArray): JSONObject =
     try {
         JSONObject(String(bytes, Charsets.UTF_8))
-    } catch (error: Exception) {
+    } catch (error: JSONException) {
         throw BackupFormatException("Conteúdo do backup não contém JSON válido.")
     }
 

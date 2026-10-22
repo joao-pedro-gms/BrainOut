@@ -42,4 +42,13 @@
     <string name="settings_backup_error_pwd_mismatch">As senhas não coincidem.</string>
     <string name="settings_backup_success_exported">Backup exportado com sucesso.</string>
     <string name="settings_backup_success_restored">Backup restaurado. Entre com a sua senha para continuar.</string>
+    <string name="settings_backup_summary">%1$s e %2$s.</string>
+    <plurals name="settings_backup_projects">
+        <item quantity="one">%d projeto</item>
+        <item quantity="other">%d projetos</item>
+    </plurals>
+    <plurals name="settings_backup_tasks">
+        <item quantity="one">%d tarefa</item>
+        <item quantity="other">%d tarefas</item>
+    </plurals>
 </resources>

@@ -39,6 +39,9 @@ private const val HEX_COLOR_RED_SHIFT: Int = 16
 private const val HEX_COLOR_GREEN_SHIFT: Int = 8
 private const val HEX_COLOR_CHANNEL_MASK: Long = 0xFFL
 
+/** Cor usada quando o valor não é um `#RRGGBB` válido. */
+private val HEX_COLOR_FALLBACK: Color = Color(0xFF9E9E9E)
+
 @Composable
 internal fun ProjectCard(
     item: ProjectCardItem,
@@ -117,13 +120,17 @@ internal fun TagChipView(
 }
 
 /**
- * Faz parse manual de cor no formato `#RRGGBB` para evitar
- * `Color(android.graphics.Color.parseColor(...))` que lança em
- * hex inválido — neste ponto a validação já passou pelo domínio.
+ * Faz parse manual de cor no formato `#RRGGBB`.
+ *
+ * Diferente de `Color(android.graphics.Color.parseColor(...))`, que
+ * lança em hex inválido, esta função **não** lança: um valor fora do
+ * formato devolve o cinza de fallback. Na prática o domínio já valida
+ * a cor (`^#[0-9A-Fa-f]{6}$`) antes de chegar aqui, então o fallback é
+ * apenas uma rede de segurança para a UI não quebrar.
  */
 internal fun parseHexColor(hex: String): Color {
     val cleaned = hex.removePrefix("#")
-    val value = cleaned.toLong(HEX_COLOR_BASE)
+    val value = cleaned.toLongOrNull(HEX_COLOR_BASE) ?: return HEX_COLOR_FALLBACK
     val r = ((value shr HEX_COLOR_RED_SHIFT) and HEX_COLOR_CHANNEL_MASK).toInt()
     val g = ((value shr HEX_COLOR_GREEN_SHIFT) and HEX_COLOR_CHANNEL_MASK).toInt()
     val b = (value and HEX_COLOR_CHANNEL_MASK).toInt()

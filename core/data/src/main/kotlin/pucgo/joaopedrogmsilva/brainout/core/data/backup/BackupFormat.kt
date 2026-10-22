@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
+import org.json.JSONException
 import org.json.JSONObject
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.UnsupportedBackupVersionException
@@ -99,11 +100,10 @@ internal object BackupFormat {
     }
 
     /** Lê o JSON raiz do arquivo. */
-    @Suppress("TooGenericExceptionCaught")
     private fun parseRoot(bytes: ByteArray): JSONObject =
         try {
             JSONObject(String(bytes, Charsets.UTF_8))
-        } catch (error: Exception) {
+        } catch (error: JSONException) {
             throw BackupFormatException("Arquivo de backup não contém JSON válido.")
         }
 

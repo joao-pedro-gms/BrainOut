@@ -84,7 +84,7 @@ class ProjectDetailViewModel
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
-        @Suppress("unused") private val taskRepository: TaskRepository,
+        private val taskRepository: TaskRepository,
         private val createTask: CreateTaskUseCase,
         private val updateTask: UpdateTaskUseCase,
         private val changeStatus: ChangeTaskStatusUseCase,

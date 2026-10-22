@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -31,6 +33,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResul
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ExportBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.RestoreBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
+import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupUiState
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupViewModel
 import java.io.InputStream
 import java.io.OutputStream
@@ -125,11 +129,58 @@ class BackupSectionTest {
         composeRule.onNodeWithTag(BackupTestTags.MESSAGE).assertIsDisplayed()
     }
 
+    @Test
+    fun `linhas de backup ficam inativas enquanto a operacao corre`() {
+        // Sem esta trava, um segundo toque durante a exportação abriria
+        // outro seletor de arquivos por cima do primeiro.
+        setBackupContent(BackupUiState(isBusy = true))
+
+        composeRule.onNodeWithTag(BackupTestTags.EXPORT_ROW).assertIsNotEnabled()
+        composeRule.onNodeWithTag(BackupTestTags.RESTORE_ROW).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `linhas de backup ficam ativas quando nao ha operacao em andamento`() {
+        setBackupContent(BackupUiState())
+
+        composeRule.onNodeWithTag(BackupTestTags.EXPORT_ROW).assertIsEnabled()
+        composeRule.onNodeWithTag(BackupTestTags.RESTORE_ROW).assertIsEnabled()
+    }
+
+    @Test
+    fun `resumo do conteudo exportado e exibido`() {
+        setBackupContent(
+            BackupUiState(
+                successType = BackupSuccessType.Exported,
+                summary = BackupSummary(Instant.EPOCH, 1, 2, 3, 4),
+            ),
+        )
+
+        composeRule.onNodeWithTag(BackupTestTags.SUMMARY).assertIsDisplayed()
+        composeRule.onNodeWithText("2 projetos e 3 tarefas.").assertIsDisplayed()
+    }
+
     private fun setContent(viewModel: BackupViewModel = newViewModel()) {
         composeRule.setContent {
             BrainOutTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     BackupSection(onRestoreCompleted = {}, viewModel = viewModel)
+                }
+            }
+        }
+    }
+
+    /** Renderiza só o cartão de backup, com um estado forjado. */
+    private fun setBackupContent(state: BackupUiState) {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    BackupContent(
+                        state = state,
+                        onExport = {},
+                        onRestore = {},
+                        onDismissMessage = {},
+                    )
                 }
             }
         }

@@ -42,6 +42,9 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
+/** Opacidade do conteudo de uma linha desabilitada. */
+private const val DISABLED_ALPHA: Float = 0.38f
+
 /**
  * Tela de configurações.
  *
@@ -172,20 +175,21 @@ internal fun SettingsRow(
     option: SettingsOption,
     onClick: () -> Unit,
     testTag: String = "settings_option_${option.type.name.lowercase()}",
+    enabled: Boolean = true,
 ) {
     val label = stringResource(id = option.labelRes)
     val isSignOut = option.type == SettingsActionType.SignOut
     val labelColor =
-        if (isSignOut) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.onSurface
+        when {
+            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DISABLED_ALPHA)
+            isSignOut -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurface
         }
     val iconColor =
-        if (isSignOut) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+        when {
+            !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DISABLED_ALPHA)
+            isSignOut -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
 
     Row(
@@ -193,7 +197,7 @@ internal fun SettingsRow(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .testTag(testTag)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,

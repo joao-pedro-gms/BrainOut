@@ -82,7 +82,6 @@ class PasswordHasherImpl
             return constantTimeEquals(candidate, parsed.derived)
         }
 
-        @Suppress("ReturnCount")
         private fun parseHashSafely(
             rawPassword: String,
             storedHash: String,
