@@ -88,8 +88,7 @@ class HomeViewModel
         }
 
         /** Token de retry (E2.8); cada [retry] reinicia o pipeline. */
-        private val _retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
-        val retryToken: StateFlow<Int> = _retryToken.asStateFlow()
+        private val retryToken: MutableStateFlow<Int> = MutableStateFlow(0)
 
         /** Mensagem de erro pendente para a UI (E2.8). */
         private val _errorMessage: MutableStateFlow<HomeErrorType?> = MutableStateFlow(null)
@@ -117,7 +116,7 @@ class HomeViewModel
         /** Estado da lista de projetos — E2.1 + E2.5 + E2.6 + E2.8. */
         val uiState: StateFlow<HomeUiState> =
             homeUiStateFlow(
-                retryToken = _retryToken,
+                retryToken = retryToken,
                 activeUserProvider = activeUserProvider,
                 listingPreferences = listingPreferences,
                 tagRepository = tagRepository,
@@ -198,7 +197,7 @@ class HomeViewModel
         fun retry() {
             Log.d(TAG, "retry acionado na Home")
             _errorMessage.value = null
-            _retryToken.value = _retryToken.value + 1
+            retryToken.value = retryToken.value + 1
         }
 
         /** Limpa a mensagem de erro atual (E2.8). */
