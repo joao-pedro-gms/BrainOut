@@ -15,7 +15,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 internal data class ProjectDetailState(
     val tasks: List<Task>,
     val isLoading: Boolean,
-    val errorMessage: String?,
+    val errorMessage: ProjectDetailError?,
 )
 
 /**

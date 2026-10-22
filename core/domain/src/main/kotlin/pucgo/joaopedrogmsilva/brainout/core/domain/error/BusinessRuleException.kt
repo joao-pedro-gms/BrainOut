@@ -28,9 +28,16 @@ open class BusinessRuleException(
     message: String,
 ) : DomainException(message)
 
+/**
+ * RN01 (E2.4): o projeto atingiu o teto de tarefas ativas.
+ *
+ * O [limit] fica exposto como propriedade para que a camada de cima
+ * possa exibir o número **real** da regra, sem precisar reconstruir a
+ * partir do texto da mensagem.
+ */
 class ProjectTaskLimitReachedException(
     projectId: String,
-    limit: Int,
+    val limit: Int,
 ) : BusinessRuleException("Projeto $projectId já atingiu o limite de $limit tarefas ativas")
 
 /**

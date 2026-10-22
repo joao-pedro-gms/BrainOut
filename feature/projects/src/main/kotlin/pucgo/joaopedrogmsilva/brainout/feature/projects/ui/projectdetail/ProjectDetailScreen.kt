@@ -66,10 +66,11 @@ fun ProjectDetailScreen(
     // E2.8 — falhas de carga (Room) são expostas via banner de erro
     // (não snackbar) para evitar duplicação visual; as demais mensagens
     // transitórias (RN01, validação) passam pelo snackbar.
-    val isLoadError = errorMessage?.let { ProjectDetailViewModel.isLoadErrorMessage(it) } == true
+    // Falhas de carga (Room) aparecem no banner, não no snackbar; as
+    // demais (RN01, validação, gravação) passam pelo snackbar.
     val resolvedMessage =
         errorMessage
-            ?.takeUnless { isLoadError }
+            ?.takeUnless { it is ProjectDetailError.LoadFailed }
             ?.let { resolveProjectDetailMessage(it) }
     LaunchedEffect(resolvedMessage) {
         val message = resolvedMessage
