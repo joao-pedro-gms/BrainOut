@@ -37,6 +37,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoConfirmedColor
 
 private val priorityIcons =
@@ -87,7 +88,7 @@ fun NeoPriorityIndicator(
         Icon(
             painterResource(priorityIcons[priorityCode]),
             contentDescription = null,
-            modifier = Modifier.padding(4.dp).size(20.dp),
+            modifier = Modifier.padding(4.dp).size(NeoSizes.iconMeta),
         )
     }
 }

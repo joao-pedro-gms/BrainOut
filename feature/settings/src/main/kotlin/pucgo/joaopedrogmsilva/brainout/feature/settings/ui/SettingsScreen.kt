@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
@@ -209,7 +210,7 @@ internal fun SettingsRow(
             modifier = Modifier.weight(1f),
         )
         Box(
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(NeoSizes.icon),
             contentAlignment = Alignment.Center,
         ) {
             if (isSignOut) {
