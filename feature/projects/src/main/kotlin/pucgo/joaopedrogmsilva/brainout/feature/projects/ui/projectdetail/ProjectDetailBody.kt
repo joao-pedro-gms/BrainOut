@@ -21,31 +21,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
-@Suppress("LongParameterList") // 12 params: roteia estado + callbacks do orquestrador.
 @Composable
 internal fun ProjectDetailBody(
-    tasks: List<Task>,
-    isLoading: Boolean,
-    errorMessage: String?,
-    onRetry: () -> Unit,
-    onDismissError: () -> Unit,
     contentPadding: PaddingValues,
-    onChangeStatus: (taskId: String, target: TaskStatus) -> Unit,
-    onDeleteTask: (Task) -> Unit,
-    // DEF-22 — antes era `@Suppress("unused") onRenameTask: (Task, String) -> Unit`,
-    // que ninguém chamava: o use case existia e era inalcançável. O
-    // corpo agora só abre o diálogo; o `ViewModel` recebe o título novo.
-    onRenameTask: (Task) -> Unit,
-    onChangePriority: (Task, TaskPriority) -> Unit,
+    state: ProjectDetailState,
+    actions: ProjectDetailActions,
 ) {
     LazyColumn(
         modifier =
@@ -71,19 +57,20 @@ internal fun ProjectDetailBody(
             }
         }
         item {
+            val errorMessage = state.errorMessage
             if (errorMessage != null && ProjectDetailViewModel.isLoadErrorMessage(errorMessage)) {
                 ProjectDetailErrorBanner(
                     message = errorMessage,
-                    onRetry = onRetry,
-                    onDismiss = onDismissError,
+                    onRetry = actions.onRetry,
+                    onDismiss = actions.onDismissError,
                 )
-            } else if (tasks.isEmpty() && isLoading) {
+            } else if (state.tasks.isEmpty() && state.isLoading) {
                 ProjectDetailLoadingState()
-            } else if (tasks.isEmpty()) {
+            } else if (state.tasks.isEmpty()) {
                 EmptyTasksCard()
             }
         }
-        items(items = tasks, key = { it.id }) { task ->
+        items(items = state.tasks, key = { it.id }) { task ->
             androidx.compose.foundation.layout.Box(
                 Modifier.animateItem(
                     fadeInSpec = tween(NeoMotion.selection),
@@ -91,7 +78,7 @@ internal fun ProjectDetailBody(
                     placementSpec = tween(NeoMotion.selection),
                 ),
             ) {
-                TaskRow(task, onChangeStatus, onDeleteTask, onChangePriority, onRenameTask)
+                TaskRow(task = task, actions = actions)
             }
         }
     }

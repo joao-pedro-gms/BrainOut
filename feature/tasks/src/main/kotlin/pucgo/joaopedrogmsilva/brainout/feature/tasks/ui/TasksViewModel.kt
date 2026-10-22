@@ -186,7 +186,7 @@ class TasksViewModel
                     Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
                     val message = throwable.toTasksErrorMessage()
                     _errorMessage.value = message
-                    emit(TasksLoadResult.Failed(message))
+                    emit(TasksLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas.
                 // Sem esse filtro, o `catch` emitiria um estado vazio e o
@@ -206,10 +206,11 @@ class TasksViewModel
                 val state: TasksUiState,
             ) : TasksLoadResult
 
-            /** A leitura falhou; a mensagem já está em `_errorMessage`. */
-            data class Failed(
-                val message: String,
-            ) : TasksLoadResult
+            /**
+             * A leitura falhou. A mensagem mora em `_errorMessage` — este
+             * tipo só distingue o desfecho, sem duplicar o texto.
+             */
+            data object Failed : TasksLoadResult
         }
 
         /**

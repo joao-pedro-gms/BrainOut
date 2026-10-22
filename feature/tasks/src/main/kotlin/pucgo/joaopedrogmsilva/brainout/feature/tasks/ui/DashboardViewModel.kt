@@ -180,7 +180,7 @@ class DashboardViewModel
                     )
                     val message = throwable.toDashboardErrorMessage()
                     _errorMessage.value = message
-                    emit(DashboardLoadResult.Failed(message))
+                    emit(DashboardLoadResult.Failed)
                 }
                 // Limpa o erro pendente APENAS em leituras bem-sucedidas;
                 // sem esse filtro o `catch` seria "engolido" na sequência.
@@ -198,10 +198,11 @@ class DashboardViewModel
                 val state: DashboardUiState,
             ) : DashboardLoadResult
 
-            /** A leitura falhou; a mensagem já está em `_errorMessage`. */
-            data class Failed(
-                val message: String,
-            ) : DashboardLoadResult
+            /**
+             * A leitura falhou. A mensagem mora em `_errorMessage` — este
+             * tipo só distingue o desfecho, sem duplicar o texto.
+             */
+            data object Failed : DashboardLoadResult
         }
 
         /**

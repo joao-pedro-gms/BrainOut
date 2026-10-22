@@ -169,7 +169,7 @@ class ProjectDetailViewModel
                 if (throwable is CancellationException) throw throwable
                 val message = throwable.toProjectDetailErrorMessage()
                 _errorMessage.value = message
-                emit(TaskLoadResult.Failed(message))
+                emit(TaskLoadResult.Failed)
             }
         }
 
@@ -193,10 +193,11 @@ class ProjectDetailViewModel
                 val tasks: List<Task>,
             ) : TaskLoadResult
 
-            /** A leitura falhou; a mensagem já está no estado da UI. */
-            data class Failed(
-                val message: String,
-            ) : TaskLoadResult
+            /**
+             * A leitura falhou. A mensagem mora em [errorMessage] — este
+             * tipo só distingue o desfecho, sem duplicar o texto.
+             */
+            data object Failed : TaskLoadResult
         }
 
         /**
