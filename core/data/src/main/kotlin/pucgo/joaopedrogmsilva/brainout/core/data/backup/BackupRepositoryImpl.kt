@@ -3,6 +3,7 @@ package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.BackupDao
@@ -359,14 +360,24 @@ class BackupRepositoryImpl
             }
         }
 
-        /** Reaplica o tema e a ordenação gravados no backup. */
+        /**
+         * Reaplica o tema e a ordenação gravados no backup.
+         *
+         * Melhor-esforço: a restauração já gravou o banco, então uma
+         * preferência que falha de Apply não deve desfazer o sucesso —
+         * mas o cancelamento da corrotina **propaga**, senão a
+         * restauração seria reportada como bem-sucedida em uma
+         * corrotina que já estava morta.
+         */
         private suspend fun applyPreferences(payload: BackupPayload) {
-            runCatching {
+            try {
                 themePreferencesRepository.set(ThemeMode.fromStorageKey(payload.preferences.themeMode))
                 payload.preferences.sortOrderByUser.forEach { (userId, order) ->
                     listingPreferencesRepository.setSortOrder(userId, SortOrder.fromStorageKey(order))
                 }
-            }.onFailure { error ->
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
                 logError(TAG, "Falha ao reaplicar as preferências do backup", error)
             }
         }
@@ -381,10 +392,13 @@ class BackupRepositoryImpl
          * (é independente da sessão).
          */
         private suspend fun invalidateSession() {
-            runCatching { sessionStore.clearSession() }
-                .onFailure { error ->
-                    logError(TAG, "Falha ao invalidar a sessão após a restauração", error)
-                }
+            try {
+                sessionStore.clearSession()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                logError(TAG, "Falha ao invalidar a sessão após a restauração", error)
+            }
         }
 
         private companion object {
