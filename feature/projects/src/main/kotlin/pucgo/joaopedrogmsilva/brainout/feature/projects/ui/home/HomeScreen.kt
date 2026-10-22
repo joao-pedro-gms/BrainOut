@@ -37,9 +37,11 @@ fun HomeScreen(
 
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
-    val homeUser: HomeUser =
+    // DEF-72 — sem sessão (carregando ou sem login) a Home não
+    // inventa uma identidade: a TopAppBar mostra a saudação genérica.
+    val homeUser: HomeUser? =
         when (val current = userState) {
-            HomeUserState.Loading, HomeUserState.SignedOut -> DefaultHomeUser
+            HomeUserState.Loading, HomeUserState.SignedOut -> null
             is HomeUserState.SignedIn ->
                 HomeUser(
                     displayName = current.displayName,
@@ -48,7 +50,9 @@ fun HomeScreen(
                 )
         }
 
-    val isOwner = homeUser.role == HomeUserRole.Owner
+    // Sem sessão ainda, o FAB é o de criar projeto — o de membro só
+    // entra quando o papel do usuário é Member de verdade.
+    val isOwner = homeUser?.role != HomeUserRole.Member
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

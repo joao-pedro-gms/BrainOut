@@ -3,6 +3,8 @@
 <resources>
     <!-- Home (lista de projetos) -->
     <string name="home_topbar_greeting">Olá, %1$s</string>
+    <!-- DEF-72 — saudação sem nome, usada enquanto não há sessão. -->
+    <string name="home_topbar_greeting_generic">Olá!</string>
     <string name="home_role_badge_owner">Owner</string>
     <string name="home_role_badge_member">Member</string>
     <string name="home_section_title">Seus projetos</string>
