@@ -210,6 +210,9 @@ class DashboardViewModel
              * `R.string.dashboard_error_load_failed`.
              */
             const val ERROR_LOAD_FAILED: String = "Não foi possível carregar o dashboard"
+
+            /** Indica se [message] é a de falha de carga. */
+            fun isLoadErrorMessage(message: String): Boolean = message == ERROR_LOAD_FAILED
         }
     }
 

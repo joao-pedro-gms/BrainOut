@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
@@ -84,7 +85,7 @@ internal fun NewTaskDialog(
                             Text(
                                 text =
                                     stringResource(R.string.project_detail_new_task_priority_label) + ": " +
-                                        stringResource(priority.labelRes()),
+                                        NeoTaskPriorityLabel(priority),
                             )
                         }
                         DropdownMenu(
@@ -93,7 +94,7 @@ internal fun NewTaskDialog(
                         ) {
                             TaskPriority.entries.forEach { option ->
                                 DropdownMenuItem(
-                                    text = { Text(text = stringResource(id = option.labelRes())) },
+                                    text = { Text(text = NeoTaskPriorityLabel(option)) },
                                     onClick = {
                                         priority = option
                                         priorityMenuExpanded = false

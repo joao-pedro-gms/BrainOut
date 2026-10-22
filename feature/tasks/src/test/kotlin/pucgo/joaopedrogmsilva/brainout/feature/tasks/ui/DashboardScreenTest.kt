@@ -22,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBannerTestTags
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 
 /**
@@ -123,9 +124,9 @@ class DashboardScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag(DashboardTestTags.ERROR_BANNER).assertExists()
-        composeRule.onNodeWithTag(DashboardTestTags.ERROR_RETRY).assertExists()
-        composeRule.onNodeWithTag(DashboardTestTags.ERROR_DISMISS).assertExists()
+        composeRule.onNodeWithTag(NeoErrorBannerTestTags.BANNER).assertExists()
+        composeRule.onNodeWithTag(NeoErrorBannerTestTags.RETRY).assertExists()
+        composeRule.onNodeWithTag(NeoErrorBannerTestTags.DISMISS).assertExists()
         composeRule.onNodeWithText("Não foi possível carregar o painel").assertExists()
     }
 }

@@ -7,29 +7,17 @@
     <string name="tasks_empty_body">Create tasks inside a project to see them here.</string>
 
     <!-- Task status labels (espelha :feature:projects para reuso no card) -->
-    <string name="task_status_todo">To do</string>
-    <string name="task_status_doing">In progress</string>
-    <string name="task_status_done">Done</string>
 
     <!-- Task priority labels (espelha :feature:projects para reuso no card) -->
-    <string name="task_priority_low">Low</string>
-    <string name="task_priority_medium">Medium</string>
-    <string name="task_priority_high">High</string>
-    <string name="task_priority_urgent">Urgent</string>
-    <string name="task_priority_critical">Critical</string>
 
     <!-- E2.8 — loading and error states (Tasks) -->
     <string name="tasks_loading_aria_label">Loading tasks</string>
     <string name="tasks_error_load_failed">Couldn\'t load your tasks</string>
-    <string name="tasks_error_retry">Try again</string>
-    <string name="tasks_error_dismiss">Dismiss</string>
 
     <!-- E2.7 — Dashboard -->
     <string name="dashboard_screen_title">Dashboard</string>
     <string name="dashboard_loading_aria_label">Loading dashboard</string>
     <string name="dashboard_error_load_failed">Couldn\'t load the dashboard</string>
-    <string name="dashboard_error_retry">Try again</string>
-    <string name="dashboard_error_dismiss">Dismiss</string>
     <string name="dashboard_empty_title">Nothing to show yet</string>
     <string name="dashboard_empty_body">Create projects and tasks to see statistics here.</string>
     <string name="dashboard_projects_title">Projects by state</string>

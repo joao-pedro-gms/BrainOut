@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoStatusChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -131,8 +131,8 @@ private fun TaskRowChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        StatusChip(status = status)
-        PriorityChip(priority = priority)
+        NeoTaskStatusChip(status = status)
+        NeoTaskPriorityChip(priority = priority)
     }
 }
 
@@ -232,33 +232,6 @@ private fun TaskRowMenu(
         )
     }
 }
-
-@Composable
-private fun StatusChip(status: TaskStatus) {
-    val label =
-        when (status) {
-            TaskStatus.TODO -> R.string.task_status_todo
-            TaskStatus.DOING -> R.string.task_status_doing
-            TaskStatus.DONE -> R.string.task_status_done
-        }
-    NeoStatusChip(stringResource(label), completed = status == TaskStatus.DONE, inProgress = status == TaskStatus.DOING)
-}
-
-@Composable
-private fun PriorityChip(priority: TaskPriority) {
-    NeoPriorityIndicator(priority.priorityCode)
-}
-
-/** Helper para mapear [TaskPriority] ao recurso de string correspondente. */
-@Composable
-internal fun TaskPriority.labelRes(): Int =
-    when (this) {
-        TaskPriority.LOW -> R.string.task_priority_low
-        TaskPriority.MEDIUM -> R.string.task_priority_medium
-        TaskPriority.HIGH -> R.string.task_priority_high
-        TaskPriority.URGENT -> R.string.task_priority_urgent
-        TaskPriority.CRITICAL -> R.string.task_priority_critical
-    }
 
 /**
  * Transições válidas a partir do estado atual, com o rótulo do menu

@@ -12,6 +12,11 @@
     <string name="neo_priority_critical">Critical</string>
     <string name="neo_priority_description">Priority: %1$s</string>
     <string name="neo_priority_legend">Priority legend</string>
+    <string name="neo_task_status_todo">To do</string>
+    <string name="neo_task_status_doing">In progress</string>
+    <string name="neo_task_status_done">Done</string>
+    <string name="neo_error_retry">Try again</string>
+    <string name="neo_error_dismiss">Dismiss</string>
     <string name="neo_expanded">Expanded</string>
     <string name="neo_collapsed">Collapsed</string>
 </resources>

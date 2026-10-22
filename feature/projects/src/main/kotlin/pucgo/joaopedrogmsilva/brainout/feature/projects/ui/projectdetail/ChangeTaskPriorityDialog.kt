@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -60,7 +61,7 @@ internal fun ChangeTaskPriorityDialog(
                             selected = option == selected,
                             onClick = { selected = option },
                             label = {
-                                Text(text = stringResource(id = option.labelRes()))
+                                Text(text = NeoTaskPriorityLabel(option))
                             },
                             modifier =
                                 Modifier
