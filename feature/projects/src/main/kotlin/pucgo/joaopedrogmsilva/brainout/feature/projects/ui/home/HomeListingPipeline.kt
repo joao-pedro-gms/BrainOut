@@ -191,32 +191,20 @@ internal fun homeUiStateFlow(
                         // tags do owner). Cada card lista apenas as
                         // tags associadas ao seu projeto.
                         //
-                        // FIX-01 — `observeByProjectIds` completa SEM
-                        // emitir quando o conjunto é vazio (contrato
-                        // "Vazio → Flow vazio"; `combineInternal` de
-                        // lista vazia faz bail-out). Sem um valor
-                        // inicial, o `combine` abaixo nunca emitiria e
-                        // a UI ficaria presa no loading (spinner eterno
-                        // para quem não tem projetos; lista congelada
-                        // quando a busca devolve zero resultados). O
-                        // `onStart` fornece o mapa vazio como default
-                        // e é substituído pela emissão real do Room.
+                        // `observeByProjectIds` respeita o contrato
+                        // "conjunto vazio → mapa vazio" (uma única
+                        // consulta do Room), então o `onStart` aqui não
+                        // é remendo: é só o valor inicial enquanto a
+                        // consulta não responde — evita um piscar de
+                        // "sem tags" em cada card.
                         val tagsByProject: Flow<Map<String, List<Tag>>> =
                             projectsFromRoom.flatMapLatest { projects ->
                                 tagRepository
                                     .observeByProjectIds(projects.map { it.id }.toSet())
                                     .onStart { emit(emptyMap()) }
                             }
-                        combine(
-                            projectsFromRoom,
-                            tagsByProject,
-                            flowOf(inputs),
-                        ) {
-                            projects: List<Project>,
-                            tagsMap: Map<String, List<Tag>>,
-                            inp: ListingInputs,
-                            ->
-                            buildHomeUiState(inp, currentInput, projects, tagsMap)
+                        combine(projectsFromRoom, tagsByProject) { projects, tagsMap ->
+                            buildHomeUiState(inputs, currentInput, projects, tagsMap)
                         }
                     }.flatMapLatest { it }
                 }

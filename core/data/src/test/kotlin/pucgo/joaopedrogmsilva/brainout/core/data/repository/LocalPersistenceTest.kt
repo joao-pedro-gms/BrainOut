@@ -68,6 +68,23 @@ class LocalPersistenceTest {
             }
         }
 
+    @Test
+    fun `consulta de tags por projetos com conjunto vazio emite mapa vazio`() =
+        runTest {
+            // Contrato de `TagRepository.observeByProjectIds`: conjunto
+            // vazio devolve mapa vazio — sem "bail-out" que congelaria a
+            // listagem da Home para quem nao tem projetos. Exercitado
+            // contra o Room de verdade, porque a consulta usa `IN (:ids)`.
+            val db = newDatabase()
+            try {
+                val tags = TagRepositoryImpl(db.tagDao(), RoomLocalTransaction(db))
+
+                assertThat(tags.observeByProjectIds(emptySet()).first()).isEmpty()
+            } finally {
+                db.close()
+            }
+        }
+
     private fun newDatabase(): BrainOutDatabase =
         Room
             .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), BrainOutDatabase::class.java)
