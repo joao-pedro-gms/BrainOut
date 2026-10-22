@@ -58,7 +58,7 @@ Compose Screen
 Async patterns:
 - `Flow` from DAOs → `.map { rows -> rows.map { it.toDomain() } }` → ViewModel `.stateIn(viewModelScope, WhileSubscribed(5_000), initial)` exposed as immutable `data class XxxUiState(...)`.
 - Retry pattern: `_retryToken: MutableStateFlow<Int>` + `flatMapLatest` discards prior Flow and re-subscribes after failures (see `ProjectDetailViewModel`, `DashboardViewModel`).
-- **Dispatchers:** os repositórios de `:core:data` **não** fazem `withContext(Dispatchers.IO)` — `grep 'Dispatchers.IO' core/data/src/main` retorna **zero** ocorrências. O I/O dos DAOs `suspend` roda no dispatcher interno do Room, e o `Dispatchers.IO` explícito só aparece em `MainActivity` (resolução da start-destination) e em `DeadlineReceiver`. Isole a camada com `suspend`/`Flow`, não com troca de dispatcher.
+- **Dispatchers:** os repositórios de `:core:data` **não** embrulham chamadas de DAO em `withContext(Dispatchers.IO)` — o I/O dos DAOs `suspend` roda no dispatcher interno do Room. A **exceção** é o KDF de senha (`PasswordHasherImpl`): PBKDF2-HMAC-SHA256 com 120 000 iterações é trabalho de **CPU**, não de banco, e roda dentro de `withContext(Dispatchers.IO)` — sem isso o login e o cadastro congelam a interface, porque o `AuthViewModel` chama o caso de uso de dentro do `viewModelScope` (dispatcher principal). O `Dispatchers.IO` explícito também aparece em `MainActivity` (resolução da start-destination) e em `DeadlineReceiver`. Isole a camada com `suspend`/`Flow`, não com troca de dispatcher.
 
 Navigation (estado real, não o ideal):
 - **Uma fonte de verdade de rotas.** `BrainOutRoutes` (`app/src/main/.../navigation/BrainOutRoutes.kt`) é o registro central do `NavHost` (Splash/Login/Register/MainGraph/ProjectsGraph/TasksGraph/DashboardGraph/SettingsGraph/ProjectDetail). `TasksRoutes` (`:feature:tasks`) é a **única** feature que expõe extensões de grafo (`NavGraphBuilder.tasksGraph()` e `dashboardGraph()`), então é dona das rotas que usa — e esses valores não existem em `BrainOutRoutes`. As features `auth`, `projects` e `settings` **não** têm objeto de rotas: um objeto desconectado do `NavHost` nasce morto. Ao adicionar rota, edite `BrainOutRoutes` (ou o `*Routes` da feature que expõe grafo) e não crie um terceiro objeto.
@@ -272,7 +272,7 @@ Anti-patterns (do NOT):
 - Do not reintroduce a camada de rede — nem `BASE_URL`, nem Retrofit, nem flavors, nem fila de sync.
 - Do not leave commented-out code.
 - Do not suppress `MissingTranslation`; add the `values-en/` translation.
-- Do not add a new `withContext(Dispatchers.IO)` to `:core:data` — the Room DAO suspend already runs off the main thread.
+- Do not add a new `withContext(Dispatchers.IO)` to `:core:data` — the Room DAO suspend already runs off the main thread. A exceção é o KDF de senha (`PasswordHasherImpl`), que é CPU-bound e não I/O de banco.
 - Do not introduce a second route source of truth; extend `BrainOutRoutes` (ou o `*Routes` da única feature que expõe grafo).
 - Do not edit `Documentos/`, `.omo/`, `docs/ATAS/`.
 - Do not run `assembleRelease` locally expecting signed output without the 4 env vars set.

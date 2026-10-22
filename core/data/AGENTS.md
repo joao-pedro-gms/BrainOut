@@ -27,7 +27,7 @@ reintroduzir contratos remotos descritos nos documentos históricos.
   continuam @Transaction. Uma falha de validação desfaz toda a escrita.
 - Nunca usar fallbackToDestructiveMigration. Acrescentar Migration manual,
   schema exportado e teste para cada mudança de versão.
-- DAOs suspend/Flow já isolam o I/O do Room; não adicionar Dispatchers.IO.
+- DAOs suspend/Flow já isolam o I/O do Room; não adicionar Dispatchers.IO. A exceção é o KDF de senha (`PasswordHasherImpl`): PBKDF2-HMAC-SHA256 com 120 000 iterações é trabalho de CPU (não I/O de banco) e trava a interface se rodar no dispatcher principal — por isso o `withContext(Dispatchers.IO)` dentro do KDF.
 - Domínio continua Kotlin JVM: sem Room, Hilt, Android ou implementação de portas.
 - DI principal em DataModule; PepperProvider.Factory continua sendo módulo
   dedicado ao pepper. Não expor implementações para os módulos de feature.
