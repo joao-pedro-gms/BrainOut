@@ -22,6 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 
 /**
  * Cartão de uma métrica do painel: um valor em destaque e um rótulo.
@@ -56,7 +57,7 @@ internal fun MetricCard(
             modifier
                 .testTag(testTag)
                 .heightIn(min = minHeight),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(NeoRadii.card),
         color = containerColor,
     ) {
         Column(

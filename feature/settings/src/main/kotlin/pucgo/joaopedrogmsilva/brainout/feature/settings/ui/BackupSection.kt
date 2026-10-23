@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupUiState
@@ -154,7 +155,7 @@ internal fun BackupContent(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 1.dp,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(NeoRadii.card),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SettingsRow(
