@@ -37,9 +37,6 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
-// `LongMethod`: três campos (título/prioridade/prazo) + diálogo; extrair
-// quebraria a coesão.
-@Suppress("LongMethod")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewTaskDialog(
@@ -50,7 +47,6 @@ internal fun NewTaskDialog(
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.MEDIUM) }
-    var priorityMenuExpanded by remember { mutableStateOf(false) }
     var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
     val dueDate: Instant? =
         @Suppress("NewApi")
@@ -79,32 +75,10 @@ internal fun NewTaskDialog(
                                 .fillMaxWidth()
                                 .testTag(ProjectDetailTestTags.NEW_TASK_TITLE_FIELD),
                     )
-                    Box {
-                        OutlinedButton(
-                            onClick = { priorityMenuExpanded = true },
-                            modifier = Modifier.fillMaxWidth().testTag("project_detail_new_task_priority_field"),
-                        ) {
-                            Text(
-                                text =
-                                    stringResource(R.string.project_detail_new_task_priority_label) + ": " +
-                                        NeoTaskPriorityLabel(priority),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = priorityMenuExpanded,
-                            onDismissRequest = { priorityMenuExpanded = false },
-                        ) {
-                            TaskPriority.entries.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(text = NeoTaskPriorityLabel(option)) },
-                                    onClick = {
-                                        priority = option
-                                        priorityMenuExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    TaskPriorityField(
+                        priority = priority,
+                        onPriorityChange = { priority = it },
+                    )
                     DeadlineField(
                         dueDate = dueDate,
                         onDateChange = {
@@ -139,4 +113,44 @@ internal fun NewTaskDialog(
         // baixo do teclado.
         modifier = Modifier.imePadding().testTag(ProjectDetailTestTags.NEW_TASK_DIALOG),
     )
+}
+
+/**
+ * O campo de prioridade: um botão que abre o menu com as opções.
+ *
+ * O botão mostra a prioridade atual; o menu é um `Box` sobre ele — o
+ * mesmo padrão do `FilterChip` com check, em forma de menu.
+ */
+@Composable
+private fun TaskPriorityField(
+    priority: TaskPriority,
+    onPriorityChange: (TaskPriority) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth().testTag("project_detail_new_task_priority_field"),
+        ) {
+            Text(
+                text =
+                    stringResource(R.string.project_detail_new_task_priority_label) + ": " +
+                        NeoTaskPriorityLabel(priority),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            TaskPriority.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(text = NeoTaskPriorityLabel(option)) },
+                    onClick = {
+                        onPriorityChange(option)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
 }
