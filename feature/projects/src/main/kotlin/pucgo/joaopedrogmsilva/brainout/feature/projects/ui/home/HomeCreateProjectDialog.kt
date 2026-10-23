@@ -36,7 +36,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -91,7 +90,21 @@ internal fun CreateProjectDialog(
                     description = description,
                     onDescriptionChange = { description = it },
                     availableTags = availableTags,
-                    selectedTagIds = selectedTagIds,
+                    // `toList()` materializa a lista **no escopo do
+                    // diálogo**: é essa leitura que registra a
+                    // dependência do snapshot, de modo que marcar uma
+                    // tag recomponha os chips. As funções abaixo recebem
+                    // só `List<String>` + um callback — o tipo de
+                    // snapshot do Compose não vaza para a assinatura
+                    // (P2 da auditoria de 24/09/2026).
+                    selectedTagIds = selectedTagIds.toList(),
+                    onTagToggle = { tagId ->
+                        if (selectedTagIds.contains(tagId)) {
+                            selectedTagIds.remove(tagId)
+                        } else {
+                            selectedTagIds.add(tagId)
+                        }
+                    },
                     onShowAddTag = { showAddTag = true },
                 )
             }
@@ -148,7 +161,8 @@ private fun CreateProjectDialogBody(
     description: String,
     onDescriptionChange: (String) -> Unit,
     availableTags: List<TagChip>,
-    selectedTagIds: SnapshotStateList<String>,
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit,
     onShowAddTag: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
@@ -193,7 +207,8 @@ private fun CreateProjectDialogBody(
         } else {
             CreateProjectTagsFlow(
                 availableTags = availableTags,
-                selectedTagIds = selectedTagIds,
+                selectedTagIds = selectedTagIds.toList(),
+                onTagToggle = onTagToggle,
             )
         }
         TextButton(
@@ -209,7 +224,8 @@ private fun CreateProjectDialogBody(
 @Composable
 private fun CreateProjectTagsFlow(
     availableTags: List<TagChip>,
-    selectedTagIds: SnapshotStateList<String>,
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
@@ -219,17 +235,14 @@ private fun CreateProjectTagsFlow(
             val isSelected = selectedTagIds.contains(chip.id)
             FilterChip(
                 selected = isSelected,
-                onClick = {
-                    if (isSelected) {
-                        selectedTagIds.remove(chip.id)
-                    } else {
-                        selectedTagIds.add(chip.id)
-                    }
-                },
+                onClick = { onTagToggle(chip.id) },
                 label = { Text(text = chip.name) },
                 // E4.4: FilterChip padrão M3 tem ~32dp de altura.
                 // Aplicamos 48dp para satisfazer WCAG 2.5.5.
-                modifier = Modifier.heightIn(min = NeoSizes.touchMin),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag("${HomeTestTags.CREATE_PROJECT_TAG}_${chip.id}"),
             )
         }
     }
