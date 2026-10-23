@@ -54,8 +54,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.FocusFirstInvalidField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldLabels
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldTags
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
@@ -225,17 +224,14 @@ internal fun RegisterBody(
             focusRequester = passwordFocus,
             imeAction = ImeAction.Next,
             onDone = { passwordConfirmFocus.requestFocus() },
-            labels =
-                PasswordFieldLabels(
+            config =
+                PasswordFieldConfig(
                     labelId = R.string.register_pwd_label,
                     placeholderId = R.string.register_pwd_placeholder,
                     showToggleId = R.string.register_visibility_show,
                     hideToggleId = R.string.register_visibility_hide,
-                ),
-            tags =
-                PasswordFieldTags(
-                    field = RegisterTestTags.PASSWORD_FIELD,
-                    toggle = RegisterTestTags.PASSWORD_TOGGLE,
+                    fieldTestTag = RegisterTestTags.PASSWORD_FIELD,
+                    toggleTestTag = RegisterTestTags.PASSWORD_TOGGLE,
                 ),
         )
 
@@ -246,17 +242,14 @@ internal fun RegisterBody(
             focusRequester = passwordConfirmFocus,
             imeAction = ImeAction.Done,
             onDone = callbacks.onSubmit,
-            labels =
-                PasswordFieldLabels(
+            config =
+                PasswordFieldConfig(
                     labelId = R.string.register_pwd_confirm_label,
                     placeholderId = R.string.register_pwd_confirm_placeholder,
                     showToggleId = R.string.register_visibility_show,
                     hideToggleId = R.string.register_visibility_hide,
-                ),
-            tags =
-                PasswordFieldTags(
-                    field = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
-                    toggle = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
+                    fieldTestTag = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
+                    toggleTestTag = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
                 ),
         )
 
