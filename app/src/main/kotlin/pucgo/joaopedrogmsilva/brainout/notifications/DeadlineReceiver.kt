@@ -24,9 +24,10 @@ import javax.inject.Inject
  *   [CompleteTaskWorker] no WorkManager — a mudança de status da
  *   Task acontece **via WorkManager**, conforme o critério do
  *   ROADMAP — e cancela a notificação em exibição.
- * - Qualquer outra ação (incluindo "Dispensar"): apenas limpa a
- *   notificação da barrinha (o próprio `setAutoCancel(true)` já
- *   cobre o tap no corpo).
+ * - Qualquer outra ação: apenas limpa a notificação da barrinha (o
+ *   próprio `setAutoCancel(true)` já cobre o tap no corpo). A
+ *   notificação de prazo só tem o botão "Concluir" — ver
+ *   [DeadlineWorker].
  *
  * O receiver é registrado no `AndroidManifest.xml` com
  * `android:exported="false"` — só o app pode disparar os intents de
