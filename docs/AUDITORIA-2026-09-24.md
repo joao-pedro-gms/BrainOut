@@ -224,7 +224,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 ## Gaps de teste (priorizado)
 
 > **Estado em 23/10/2026.** Reconciliado item a item contra o código
-> (campanha #226–#273). **Fechados:** os use cases de
+> (campanha #226–#279). **Fechados:** os use cases de
 > `CreateTag`/`UpdateProject`/`DeleteProject`/`DeleteTask` (P0), o
 > `DeadlineWorker` no caminho de publicação (P0, PR #273), o
 > `DeadlineReceiver` como receiver isolado (P0, PR #270), o
@@ -232,11 +232,11 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 > as migrations 2→3 e 3→4 em SQLite real (P1), o `ActiveUserProvider`
 > (P1, PR #268), o `TaskTest` com `completedAt` (P1, PR #269) e o
 > cenário duplicado do `TaskPriorityRulesTest` (P1, PR #269), o
-> `DeadlineField` (P1), o `SessionStore` (P2), as agregações do
-> dashboard (P2) e a `SplashScreen` (P2). **Parciais:** a
+> `AuthViewModel` no limite do nome (P1, PR #278), o `DeadlineField`
+> (P1), o `SessionStore` (P2), as agregações do dashboard (P2) e a
+> `SplashScreen` (P2). **Parciais:** a
 > `HomeScreen`/`ProjectDetailScreen` (há suíte de componente, não da
-> tela inteira), a `RegisterScreen` (coberta pelo caso de IME), o
-> `AuthViewModel` (falta o nome com mais de 120 caracteres), a
+> tela inteira), a `RegisterScreen` (coberta pelo caso de IME), a
 > `TasksScreen` (falta o `TasksRoutesTest`) e a `SettingsScreen` (não há
 > ViewModel de settings — o backup tem o seu). **Obsoletos:** o
 > `BrainOutSyncDispatcher` e o `ConnectivityObserver` — a camada de sync
