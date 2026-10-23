@@ -132,7 +132,6 @@ fun LoginScreen(
  * o IME não redimensiona a janela, então sem isso o campo de senha e o botão
  * de envio ficariam atrás do teclado em paisagem ou em tela baixa.
  */
-@Suppress("LongMethod")
 @Composable
 internal fun LoginBody(
     callbacks: LoginCallbacks,
