@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,9 +29,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCard
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 private const val BAR_TO_SLOT_RATIO: Float = 0.55f
@@ -60,38 +58,25 @@ internal fun PriorityChart(counts: List<Int>) {
             .zip(labels) { count, label -> "$label: $count" }
             .joinToString(separator = ", ")
 
-    Card(
+    NeoCard(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(DashboardTestTags.PRIORITY_CHART),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(NeoRadii.card),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.dashboard_priority_title),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            PriorityBarsCanvas(
-                counts = counts,
-                barColors = barColors,
-                maxCount = maxCount,
-                chartDescription = chartDescription,
-            )
-            PriorityBarsLegend(counts = counts)
-        }
+        Text(
+            text = stringResource(id = R.string.dashboard_priority_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        PriorityBarsCanvas(
+            counts = counts,
+            barColors = barColors,
+            maxCount = maxCount,
+            chartDescription = chartDescription,
+        )
+        PriorityBarsLegend(counts = counts)
     }
 }
 
