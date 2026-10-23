@@ -13,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
@@ -203,6 +204,7 @@ class LocalBackupJourneyTest {
     ): BackupRepositoryImpl =
         BackupRepositoryImpl(
             database = database,
+            localTransaction = RoomLocalTransaction(database),
             passwordHasher = PasswordHasherImpl(FixedPepperProvider(pepper)),
             themePreferencesRepository = ThemePreferencesRepositoryImpl(context.authDataStore),
             listingPreferencesRepository = ListingPreferencesRepositoryImpl(context.authDataStore),

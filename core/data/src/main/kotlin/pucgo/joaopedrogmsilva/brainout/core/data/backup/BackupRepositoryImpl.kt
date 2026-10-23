@@ -2,10 +2,10 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import android.database.sqlite.SQLiteConstraintException
-import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.BackupDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
@@ -67,6 +67,7 @@ class BackupRepositoryImpl
     @Inject
     constructor(
         private val database: BrainOutDatabase,
+        private val localTransaction: LocalTransaction,
         private val passwordHasher: PasswordHasher,
         private val themePreferencesRepository: ThemePreferencesRepository,
         private val listingPreferencesRepository: ListingPreferencesRepository,
@@ -342,7 +343,7 @@ class BackupRepositoryImpl
             links: List<ProjectTagCrossRef>,
         ) {
             try {
-                database.withTransaction {
+                localTransaction.run {
                     backupDao.deleteAllProjectTags()
                     backupDao.deleteAllTasks()
                     backupDao.deleteAllProjects()

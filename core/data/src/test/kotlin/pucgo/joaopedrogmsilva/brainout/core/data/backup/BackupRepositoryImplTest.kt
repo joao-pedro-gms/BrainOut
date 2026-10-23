@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
@@ -417,6 +418,7 @@ class BackupRepositoryImplTest {
         val dataStore = context.authDataStore
         return BackupRepositoryImpl(
             database = database,
+            localTransaction = RoomLocalTransaction(database),
             passwordHasher = passwordHasher(pepper),
             themePreferencesRepository = ThemePreferencesRepositoryImpl(dataStore),
             listingPreferencesRepository = ListingPreferencesRepositoryImpl(dataStore),
