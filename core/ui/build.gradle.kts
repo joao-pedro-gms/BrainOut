@@ -43,6 +43,14 @@ android {
         compose = true
     }
 
+    // E4.6 — regressão de tradução: chave presente em `values/` sem
+    // tradução em `values-en/` é erro fatal (`MissingTranslation`).
+    lint {
+        abortOnError = true
+        error += "MissingTranslation"
+        checkReleaseBuilds = false
+    }
+
     // E4.5 — o teste Robolectric de seleção de ColorScheme precisa dos
     // recursos Android mesclados no classpath de teste para instanciar
     // ColorScheme/Color (Compose depende de Resources).

@@ -98,9 +98,9 @@ object DashboardTestTags {
 @Composable
 internal fun DashboardContent(
     state: DashboardUiState,
+    modifier: Modifier = Modifier,
     onRetry: () -> Unit = {},
     onDismissError: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier =

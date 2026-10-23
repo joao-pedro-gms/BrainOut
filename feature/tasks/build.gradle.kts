@@ -51,9 +51,13 @@ android {
     // E4.6 — regressão de tradução: chave presente em `values/` sem
     // tradução em `values-en/` é erro fatal (`MissingTranslation`).
     lint {
-        // Instant#parse em @Preview (TasksScreenPopulated) dispara [NewApi]
-        // pré-existente com minSdk 24 — não é regressão de E4.6.
-        abortOnError = false
+        // O gate voltou a ser rígido: o `Instant#parse` do
+        // `TasksScreenPopulatedPreview` que motivou o `abortOnError =
+        // false` deixou de ser problema quando o módulo passou a usar
+        // `coreLibraryDesugaring` (DEF-63) — o lint do módulo roda
+        // limpo, com zero erros.
+        abortOnError = true
+        error += "MissingTranslation"
         checkReleaseBuilds = false
     }
 
