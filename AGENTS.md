@@ -252,7 +252,7 @@ Suite instrumentada de `:core:data` (`src/androidTest/`): **`MigrationTest`** co
 
 Coverage expectations:
 - **Kover 60% line bound** enforced on `:core:domain` and `:core:data` only.
-- Class exclusions centralized in root `build.gradle.kts` (`*_Impl`, `Hilt_*`, `*.di.*`, `*.remote.*`, `*.PackageMarker`).
+- Class exclusions centralized in root `build.gradle.kts` (`*Dao_Impl`, `*Database_Impl`, `*_Factory`, `Hilt_*`, `*.di.*`, `*.BuildConfig`, `*.PackageMarker`) — nunca uma classe de produção com lógica.
 - `gradle.projectsEvaluated` in root makes every `test*UnitTest` Android task depend on `:core:domain:test` — do not remove; without it, CI won't run domain tests when invoked via an Android module.
 - New `:core:domain/usecase/` requires a test in `:core:domain/src/test/.../usecase/` (`XxxUseCaseTest`).
 - New repository impl in `:core:data` follows the `Fake*Dao` pattern (`FakeProjectDao`, `FakeTagDao` private classes inside the test) — no MockK for DAOs.

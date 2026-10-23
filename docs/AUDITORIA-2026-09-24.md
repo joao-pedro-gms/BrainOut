@@ -168,25 +168,23 @@ Status conferido um a um contra o código em `main`
 ### CI / Gradle / docs
 
 - `ci.yml:123, 218` `continue-on-error: true` esconde falhas reais (lint, instrumented). ✅ **RESOLVIDO** — nenhuma ocorrência de `continue-on-error` restou em `ci.yml`.
-- `ci.yml:148-217` `backend-integration` sem emulator + sem `setup-java` → `connectedDebugAndroidTest` sempre morre, masked by `continue-on-error`. ✅ **PARCIALMENTE RESOLVIDO** — o job agora provisiona JDK 21 (`ci.yml:188-191`) e trocou o teste instrumentado por `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest` (`:282`); **permanece** a suíte instrumentada fora do CI (sem emulador no runner) — ver DEF-13 em `docs/DEFEITOS.md`.
+- `ci.yml:148-217` `backend-integration` sem emulator + sem `setup-java` → `connectedDebugAndroidTest` sempre morre, masked by `continue-on-error`. ✅ **PARCIALMENTE RESOLVIDO** — o job agora provisiona JDK 21 (`ci.yml:188-191`) e trocou o teste instrumentado por `testDebugUnitTest` (`:124`) mais as suítes explícitas de `:feature:*` e `:core:ui` (`:130-138`); **permanece** a suíte instrumentada fora do CI (sem emulador no runner) — ver DEF-13 em `docs/DEFEITOS.md`. (A auditoria citava `testDevDebugUnitTest`, task que não existe desde a saída dos flavors no #212.)
 - **Versões de actions**: `upload-artifact` estava em `@v7` (inválido) em 24/09; ✅ **corrigido — todos os 5 usos de `actions/upload-artifact` estão em `@v4`** (`ci.yml:71,158,170,286`, `release-apk.yml:105`). Restam `@v6`/`@v5` **válidos** em `pages.yml`: `actions/configure-pages@v6:39`, `actions/upload-pages-artifact@v5:79`, `actions/deploy-pages@v5:94` — são actions do Pages com majors próprios, não inválidas. Os demais usos são `@v4` (`checkout`, `setup-java`, `cache`, `github/codeql-action/*`).
 - `codeql.yml:41` `build-mode: none` para Java/Kotlin (compiladas) → análise vazia. ✅ **PARCIALMENTE RESOLVIDO** — `build-mode` agora é `autobuild` (comentário explicativo no arquivo); `continue-on-error: true` **permanece** no job (linha 26), então a análise continua não-bloqueante.
-- JDK drift: CI 17 vs release 21 vs backend-integration sem JDK; cache key única compartilhada entre JDKs (cache pollution).
+- ✅ **RESOLVIDO** — JDK drift: CI 17 vs release 21 vs backend-integration sem JDK; cache key única compartilhada entre JDKs (cache pollution). Todos os workflows (`ci.yml`, `release-apk.yml`, `release-apk-debug.yml`) provisionam **JDK 21**.
 - ✅ **RESOLVIDO** — `core/data/build.gradle.kts:118-121` `abortOnError = false` esconde `MissingTranslation`/NewApi do data layer. O módulo usa `abortOnError = true` desde o DEF-63 (desugaring); `MissingTranslation` não é promovido porque o módulo não tem string de interface.
 - ✅ **RESOLVIDO** — `feature/tasks/build.gradle.kts:57` `abortOnError = false` esconde lint da feature. O gate voltou a ser rígido na mesma linha em que o desugaring (DEF-63) eliminou o `NewApi` do preview.
-- `koverLog` line 87 — exclusão `*.remote.*` mascara código de produção (`RemoteDataSource` error propagation + `HolidayRemoteDataSource` cache mutex).
-- `gradle.projectsEvaluated` hook frágil (string matching, late evaluation).
-- Common Android block (compileSdk/minSdk/javaVersion/jvmTarget/buildTypes) duplicado ×7 módulos. Detekt block duplicado ×8. `missingDimensionStrategy` ×4. `testOptions.unitTests.isIncludeAndroidResources` duplicado em `:app` (linhas 139 **e** 165).
-- `local.properties` leitura duplicada (`:app:32-38` + `:core/data:19-24`).
-- `:app:139-143 E 165-169` `testOptions` block declarado duas vezes — segundo silenciosamente override.
-- `composeUiTest = "1.7.5"` em `libs.versions.toml:48` é alias morto. Não referenciado.
-- `README.md:17` link para `./docs/RELATORIO-TECNICO.md` quebrado.
-- `ARQUITETURA.md:99,100,103` — stack table stale (Gradle 8.7/AGP 8.7; Ktor nunca usado; escolhemos WorkManager não AlarmManager).
-- `ARQUITETURA.md:243` path `:core:data/network/` deveria ser `remote/`.
-- `ARQUITETURA.md:193-197` AD-1, AD-2, AD-4, AD-5 ainda com "a definir". AD-6 (L249) é row órfã fora da tabela §8.
+- ✅ **RESOLVIDO** — a exclusão `*.remote.*` do Kover mascarava código de produção (`RemoteDataSource` e o mutex do `HolidayRemoteDataSource`). Com a camada de rede removida no #212, os DTOs sumiram: as exclusões `*Dto`/`*Dto$*` e o comentário que as descrevia saíram do `build.gradle.kts` — não havia mais o que excluir.
+- ℹ️ **POR DECISÃO** — `gradle.projectsEvaluated` hook frágil (string matching, late evaluation). O hook amarra o `:core:domain:test` a todo `test*UnitTest` Android (sem ele, a CI não roda os testes do domínio quando chamada por um módulo Android). Manter.
+- ⚪️ **OBSOLETO** — Common Android block (compileSdk/minSdk/javaVersion/jvmTarget/buildTypes) duplicado ×7 módulos. Detekt block duplicado ×8. `missingDimensionStrategy` ×4. `testOptions.unitTests.isIncludeAndroidResources` duplicado em `:app`. A duplicação de flavor (`missingDimensionStrategy`) sumiu com os flavors (#212); a de `testOptions` foi desfeita — o `:app` declara o bloco uma vez.
+- ⚪️ **OBSOLETO** — `local.properties` leitura duplicada (`:app:32-38` + `:core/data:19-24`). Nenhuma leitura manual sobrou: o AGP resolve o SDK por conta própria.
+- ⚪️ **OBSOLETO** — `:app:139-143 E 165-169` `testOptions` block declarado duas vezes — segundo silenciosamente override. O `:app` declara `testOptions` uma vez.
+- ✅ **RESOLVIDO** — `composeUiTest = "1.7.5"` em `libs.versions.toml` era alias morto, não referenciado. Removido: as libs de teste de Compose são gerenciadas pelo BOM.
+- ⚪️ **OBSOLETO** — `README.md:17` link para `./docs/RELATORIO-TECNICO.md` quebrado. O link está correto e o arquivo existe.
+- ⚪️ **OBSOLETO** — `ARQUITETURA.md:99,100,103` (stack table stale), `:243` (path `network/`), `:193-197` (AD-1/2/4/5 "a definir"). O documento foi reenquadrado em 16/10/2026 como **registro da arquitetura legada** (removida no #212), com o ponteiro para `TRANSICAO-LOCAL.md` no topo — as linhas citadas descrevem a arquitetura legada de propósito, não a atual.
 - `ROADMAP.md:623` + `CONTRIBUTING.md:106` placeholder "GitHub Projects (link a adicionar)".
-- `CONTRIBUTING.md:63` exemplo `Kotlin 2.0.21` stale.
-- `keystore.properties.example` é stale — build ignora, assinatura é via env.
+- ✅ **RESOLVIDO** — `CONTRIBUTING.md:63` exemplo `Kotlin 2.0.21` stale. O exemplo e o texto ao lado citam a versão do catálogo: Kotlin 2.4.21, AGP 9.4.1 e Gradle 9.8.1.
+- ✅ **RESOLVIDO** — `keystore.properties.example` era stale: o build ignora o arquivo e a assinatura vem das variáveis `BRAINOUT_KEYSTORE_PATH`/`PASSWORD`, `BRAINOUT_KEY_ALIAS`/`PASSWORD` (o próprio exemplo dizia "para builds de release via GitHub Actions" — mas o arquivo não funciona nem local). O exemplo foi removido: ele prometia um caminho que não existe.
 
 ### Kover 60% gate em risco
 

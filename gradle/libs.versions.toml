@@ -67,7 +67,6 @@ robolectric = "4.17"
 turbine = "1.2.1"
 mockk = "1.14.11"
 truth = "1.4.5"
-composeUiTest = "1.7.5"
 detekt = "1.23.8"
 # ktlint 14.2.0 — bump do 12.1.2; o plugin passa a usar uma engine ktlint
 # 1.x muito mais estrita. As violações remanescentes após `ktlintFormat`
