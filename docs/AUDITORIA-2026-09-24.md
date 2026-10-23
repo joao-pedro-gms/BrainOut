@@ -128,8 +128,8 @@ Status conferido um a um contra o código em `main`
 
 - `clearError()` quebrado em ambos VMs. Testes verificam só `viewModel.errorMessage.value`, nunca `uiState.errorMessage` → banner nunca dismiss.
 - `feature/tasks` é **read-only** — zero CRUD no escopo R7-R8 (sem `transitionTo`, `changePriority`, `dueDate` display).
-- `PriorityBarsCanvas` raw `cornerRadius = CornerRadius(8f, 8f)` em pixels, density-dependent.
-- `PriorityChart` contrato frágil: `barColors[index]` + `counts.size` divisor sem `require`. Empty list → NaN.
+- ✅ **RESOLVIDO** — `PriorityBarsCanvas` raw `cornerRadius = CornerRadius(8f, 8f)` em pixels, density-dependent. O raio passou a vir do token `NeoRadii.chip` (4dp), que escala com a tela e vale exatamente os mesmos 8px na densidade xhdpi.
+- ✅ **RESOLVIDO** — `PriorityChart` contrato frágil: `barColors[index]` + `counts.size` divisor sem `require`. Empty list → NaN. Rótulo e cor agora são lidos com guarda (`zip` e `getOrElse`) e o divisor tem piso 1; dois testes novos cobrem a lista vazia e a lista maior que o número de níveis.
 - `TasksViewModel.toRow` rebuilds `associateBy` per task (O(n*m)). Hoist.
 - Nested `flatMapLatest` re-subscribes projects flow on every task emission → use `combine`.
 - `DashboardViewModel.currentWeekStartMillis()` avaliado por subscription; `Instant.now()` no `Clock` injectable → week-rollover stale + untestable.

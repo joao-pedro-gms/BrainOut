@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -34,10 +35,10 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 private const val BAR_TO_SLOT_RATIO: Float = 0.55f
-private const val BAR_CORNER_RADIUS_PX: Float = 8f
 
 @Composable
 internal fun PriorityChart(counts: List<Int>) {
@@ -51,9 +52,12 @@ internal fun PriorityChart(counts: List<Int>) {
             MaterialTheme.colorScheme.error,
         )
     val maxCount = (counts.maxOrNull() ?: 0).coerceAtLeast(1)
+    // `zip` em vez de índice: a lista de rótulos tem um item por
+    // nível de prioridade e a de contagens pode ter outro tamanho —
+    // indexar as duas em paralelo estourava `IndexOutOfBounds`.
     val chartDescription =
         counts
-            .mapIndexed { index, count -> "${labels[index]}: $count" }
+            .zip(labels) { count, label -> "$label: $count" }
             .joinToString(separator = ", ")
 
     Card(
@@ -111,6 +115,12 @@ private fun PriorityBarsCanvas(
                 label = "confirmedPriorityCount",
             )
         }
+    // O raio vinha em pixels fixos (`8f`), o que o deixava
+    // proporcionalmente menor conforme a densidade da tela. O token
+    // `NeoRadii.chip` (4dp) escala com a tela e vale exatamente os
+    // mesmos 8px na densidade xhdpi.
+    val cornerRadiusPx = with(LocalDensity.current) { NeoRadii.chip.toPx() }
+    val fallbackBarColor = MaterialTheme.colorScheme.surfaceVariant
     Canvas(
         modifier =
             Modifier
@@ -118,7 +128,11 @@ private fun PriorityBarsCanvas(
                 .height(160.dp)
                 .semantics { contentDescription = chartDescription },
     ) {
-        val slotWidth = size.width / counts.size
+        // `coerceAtLeast(1)`: com a lista vazia a divisão daria
+        // infinito — inofensivo hoje (o laço não roda), mas é uma
+        // armadilha esperando a próxima lista menor.
+        val slotCount = counts.size.coerceAtLeast(1)
+        val slotWidth = size.width / slotCount
         val barWidth = slotWidth * BAR_TO_SLOT_RATIO
         proportions.forEachIndexed { index, proportion ->
             val barHeight = size.height * proportion.value
@@ -128,10 +142,10 @@ private fun PriorityBarsCanvas(
                     y = size.height - barHeight,
                 )
             drawRoundRect(
-                color = barColors[index],
+                color = barColors.getOrElse(index) { fallbackBarColor },
                 topLeft = topLeft,
                 size = Size(width = barWidth, height = barHeight),
-                cornerRadius = CornerRadius(BAR_CORNER_RADIUS_PX, BAR_CORNER_RADIUS_PX),
+                cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
             )
         }
     }
@@ -157,7 +171,7 @@ private fun PriorityBarsLegend(counts: List<Int>) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = labels[index],
+                    text = labels.getOrElse(index) { "" },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

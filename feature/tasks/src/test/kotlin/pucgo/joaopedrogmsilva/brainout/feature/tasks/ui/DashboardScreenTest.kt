@@ -129,4 +129,31 @@ class DashboardScreenTest {
         composeRule.onNodeWithTag(NeoErrorBannerTestTags.DISMISS).assertExists()
         composeRule.onNodeWithText("Não foi possível carregar o painel").assertExists()
     }
+
+    @Test
+    fun `grafico com lista de contagens vazia nao quebra`() {
+        composeRule.setContent {
+            MaterialTheme {
+                PriorityChart(counts = emptyList())
+            }
+        }
+
+        composeRule.onNodeWithTag(DashboardTestTags.PRIORITY_CHART).assertExists()
+    }
+
+    @Test
+    fun `grafico com mais contagens que niveis nao estoura os rotulos`() {
+        // O gráfico tem cinco níveis de prioridade; a lista de
+        // contagens vem do agrupamento do Room e não tem tamanho
+        // garantido. Indexar rótulo e cor por posição estourava
+        // `IndexOutOfBoundsException`.
+        composeRule.setContent {
+            MaterialTheme {
+                PriorityChart(counts = listOf(1, 2, 3, 4, 5, 6))
+            }
+        }
+
+        composeRule.onNodeWithTag(DashboardTestTags.PRIORITY_CHART).assertExists()
+        composeRule.onNodeWithTag(DashboardTestTags.priorityBar(4)).assertExists()
+    }
 }
