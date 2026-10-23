@@ -119,26 +119,28 @@ data class Task(
      * de transições de [TaskStatus]. Transição para o mesmo estado é
      * no-op e devolve a própria instância.
      *
-     * RN03: a transição para DONE registra [now] em [completedAt]; a
-     * reabertura (DONE → DOING ou DOING → TODO) limpa o campo. Outras
-     * transições não tocam em [completedAt].
+     * RN03: a transição para DONE registra [now] em [completedAt]; toda
+     * outra transição devolve a tarefa ativa, então o carimbo é zerado.
+     *
+     * @param now Instante carimbado em [completedAt] ao entrar em
+     *   [TaskStatus.DONE]. É injetável — como o `now` de [create] — para
+     *   que o teste afirme o valor exato em vez de um intervalo.
      */
-    fun transitionTo(target: TaskStatus): Task {
+    fun transitionTo(
+        target: TaskStatus,
+        now: Instant = Instant.now(),
+    ): Task {
         if (target == status) return this
         if (!status.canTransitionTo(target)) {
             throw InvalidStateTransitionException(
                 "Transição de status inválida: ${status.name} -> ${target.name}",
             )
         }
-        val newCompletedAt =
-            when {
-                // entrada em DONE (vindo de TODO/DOING) → carimba completedAt
-                target == TaskStatus.DONE && completedAt == null -> Instant.now()
-                // saída de DONE → limpa completedAt
-                status == TaskStatus.DONE && target != TaskStatus.DONE -> null
-                // outras transições preservam o valor (idempotente em ciclos)
-                else -> completedAt
-            }
+        // RN03: só existe carimbo em tarefa concluída — o construtor
+        // rejeita `completedAt` fora de DONE —, então nenhuma transição
+        // precisa preservar o valor: entrar em DONE carimba [now] e
+        // qualquer outra saída devolve a tarefa ativa, sem carimbo.
+        val newCompletedAt = if (target == TaskStatus.DONE) now else null
         return copy(status = target, completedAt = newCompletedAt)
     }
 

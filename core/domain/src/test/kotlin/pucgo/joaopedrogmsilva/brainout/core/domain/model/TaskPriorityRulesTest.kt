@@ -19,8 +19,15 @@ import java.time.Instant
  * - Alteração de prioridade em tarefas concluídas (DONE) é
  *   bloqueada com [TaskPriorityChangeForbiddenException] (subclasse
  *   de [BusinessRuleException] — tratada como RN).
- * - Aplicar `Task.copy(status = DONE, priority = X)` em uma tarefa
- *   que estava concluída não escapa da regra.
+ *
+ * Onde a regra é aplicada:
+ * - no modelo, por [Task.changePriority] — o único caminho de
+ *   domínio para mexer na prioridade;
+ * - no atalho que o `data class` não bloqueia (`copy`), pelo
+ *   [pucgo.joaopedrogmsilva.brainout.core.domain.usecase.UpdateTaskUseCase],
+ *   que relê o registro persistido antes de gravar. O cenário do
+ *   atalho vive em `UpdateTaskUseCaseTest`, junto do caso de uso que
+ *   o barra.
  */
 class TaskPriorityRulesTest {
     private val createdAt: Instant = Instant.parse("2026-09-21T10:00:00Z")
@@ -91,31 +98,6 @@ class TaskPriorityRulesTest {
         // A regra RN02 é absoluta: não importa se a prioridade é a
         // mesma — tarefa concluída não pode MEXER na prioridade, nem
         // para no-op.
-        assertThat(ex).isInstanceOf(TaskPriorityChangeForbiddenException::class.java)
-    }
-
-    @Test
-    fun `update integral de DONE com prioridade nova eh rejeitada`() {
-        // Cenário coberto pela nota do card: passar uma Task DONE
-        // "inteira" (via copy com prioridade diferente) deve ser
-        // rejeitado quando chegar ao persistir.
-        //
-        // Aqui testamos a invariante do domínio em si: tentar
-        // construir uma Task DONE com `priority` que NÃO foi a
-        // última alteração válida deve falhar via changePriority.
-        val task = active(status = TaskStatus.DONE, priority = TaskPriority.MEDIUM)
-
-        // Tentativa de bypass via copy direto no `priority` (sem
-        // passar por changePriority) seria aceita em `init` (que
-        // só valida intervalo), mas o domínio não oferece tal
-        // método público — todos os pontos de entrada (changePriority)
-        // já aplicam RN02. Aqui então só simulamos a chamada
-        // "legítima" de changePriority, que deve falhar.
-        val ex =
-            kotlin
-                .runCatching {
-                    task.changePriority(TaskPriority.HIGH)
-                }.exceptionOrNull()
         assertThat(ex).isInstanceOf(TaskPriorityChangeForbiddenException::class.java)
     }
 
