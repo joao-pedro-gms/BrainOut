@@ -94,7 +94,6 @@ Persistência local:
 | `feature/<x>/src/main/kotlin/.../ui/` | Screens + `*TestTags` objects for Compose UI tests. |
 | `feature/<x>/src/main/kotlin/.../viewmodel/` or `ui/<x>/` | `@HiltViewModel` + `data class XxxUiState`. |
 | `feature/tasks/src/main/kotlin/.../navigation/TasksRoutes.kt` | Única feature que expõe extensões de grafo — dona das rotas que usa. |
-| `backend-stub/server.py` | FastAPI stub — source of truth for `/v1/*` contract. |
 | `docs/ROADMAP.md`, `docs/ARQUITETURA.md`, `docs/CI-CD.md`, `docs/CONTRIBUTING.md` | Requirements R1–R14, E1.x–E5.x cycles, pipeline, conventional commits. |
 | `Documentos/` | Deliverable PDFs only — never edit. |
 
@@ -131,7 +130,7 @@ All Gradle commands from repo root. The build is verified on JDK 21 (what `ci.ym
 ./gradlew :app:lintDebug                     # Android lint — i18n MissingTranslation gate
 ```
 
-O backend stub em `backend-stub/` e o diretorio `backend-stub/` sao **historicos**: a camada de rede foi removida no #212 e o produto e local. Nao reintroduza `BASE_URL`, `BuildConfig.BASE_URL` nem flavors.
+A camada de rede foi removida no #212 e o diretorio `backend-stub/` foi apagado por inteiro no #218 (commit `05acf32`), junto com a fila `pending_ops` e o job `backend-integration`. O produto e local: nao reintroduza `BASE_URL`, `BuildConfig.BASE_URL`, flavors nem um cliente HTTP.
 
 > **Nenhum modulo declara flavor.** Todas as tasks Android sao `testDebugUnitTest` / `assembleDebug` / `lintDebug` - nao existe `testDevDebugUnitTest`. O CI roda `testDebugUnitTest` (cobre os 8 modulos) mais os gates de Kover.
 
@@ -169,8 +168,6 @@ O backend stub em `backend-stub/` e o diretorio `backend-stub/` sao **historicos
 | `core/domain/build.gradle.kts` | Pure Kotlin JVM; Jacoco + Kover; no Android. |
 | `core/ui/build.gradle.kts` | Lib Android sem flavor e **sem** `missingDimensionStrategy`; `isIncludeAndroidResources = true` (necessário para o teste Robolectric do `ColorScheme`). |
 | `config/detekt/detekt.yml` | Single detekt config. `build.maxIssues=0`. Ignores `@Composable`/`@Preview`/`@HiltAndroidApp`/`@AndroidEntryPoint` for `FunctionNaming`. |
-| `backend-stub/server.py` | FastAPI stub — contract is authoritative (idempotent upsert, client UUIDs). |
-| `backend-stub/tests/test_contract.py` | Suíte pytest do contrato (`/v1/*`). |
 | `.github/workflows/ci.yml` | Jobs de análise estática, testes unitários (incl. Kover 60%) e lint. Roda `ktlintCheck`, `detekt`, `testDebugUnitTest`, `koverVerify`, `lintDebug`. |
 | `.github/workflows/release-apk.yml` | Tag-triggered signed `.aab` build (4 secrets). |
 | `.github/CODEOWNERS` | Single approver. |
@@ -188,7 +185,7 @@ O backend stub em `backend-stub/` e o diretorio `backend-stub/` sao **historicos
 
 - **Android SDK**: `compileSdk 37`, `targetSdk 37` (só em `:app`), `minSdk 24` em todos os módulos Android. `coreLibraryDesugaring` está ligado em `:app` **e** em `:core:data` (`desugar_jdk_libs 2.1.5`) — o que fecha a dívida de `java.time`/`java.util.Base64` com `minSdk 24`; `:core:data` hoje roda com `lint { abortOnError = true }`. O platform instalado é `android-37.0` (Android 17, final — não é preview). `buildToolsVersion` não é declarado de propósito; o AGP 9.4.1 escolhe.
 - **JDK**: bytecode target Java 17. CI (`ci.yml`) e release (`release-apk.yml`) provisionam **Temurin 21** (Gradle 9.8.1 roda em JVM 17–27 e o piso do AGP 9.4.1 é 17 — 21 é o padrão unificado do projeto). Localmente: `export JAVA_HOME=/opt/android-studio/jbr` (JBR 25 do Android Studio) antes de `./gradlew`. `local.properties` precisa de `sdk.dir`.
-- **No package manager other than Gradle** for the Android side. **Python 3.12 + pip + venv** só para o `backend-stub/` histórico (ver *Development Commands*).
+- **No package manager other than Gradle** for the Android side. **Python 3.12**, sem `pip`/`venv` no caminho do dia a dia: os verificadores documentais que a CI executa (`.github/scripts/verify_*.py`, `docs/design/verify_*.py`, `.github/tests/test_release_tag.py`) são só stdlib; `brand/generate_icons.py` (arte da marca) é o único script com terceiros (`cairosvg`, `Pillow`) e roda num venv próprio.
 - **Android Studio / lint / ktlint / detekt** are the only static analysis tools. No Checkstyle, no Spotless, no Sonar.
 - **Kover 0.9.11** only on `:core:domain` and `:core:data`; everywhere else is exempt.
 
@@ -229,14 +226,13 @@ Standing rule — applies automatically at the end of every development task, wi
 
 Frameworks (all from `gradle/libs.versions.toml`):
 
-- **JUnit 4** (4.13.2) — no JUnit 5. `androidx.test.ext:junit` 1.2.1 for Android.
-- **Google Truth** (1.4.4) — primary assertion lib.
-- **MockK** (1.13.13) — `coEvery` / `coVerify` / `mockk`. `mockk-android` only in `:feature:auth/androidTest`.
-- **Robolectric** (4.15.1) — Room/Hilt/WorkManager/tema JVM tests: `@RunWith(RobolectricTestRunner::class)`. Muitos usam `@Config(sdk = [34], manifest = Config.NONE)`; as telas Compose usam `@Config(qualifiers = "pt-rBR")` para resolver `values/`. **`:core:ui` precisa de `isIncludeAndroidResources = true`** para o teste de `ColorScheme`/tokens Neo.
-- **Turbine** (1.2.0) — every ViewModel test uses `app.cash.turbine.test`.
-- **kotlinx-coroutines-test** (1.9.0) — `runTest { ... }`.
+- **JUnit 4** (4.13.2) — no JUnit 5. `androidx.test.ext:junit` 1.3.0 for Android.
+- **Google Truth** (1.4.5) — primary assertion lib.
+- **MockK** (1.14.11) — `coEvery` / `coVerify` / `mockk`. `mockk-android` only in `:feature:auth/androidTest`.
+- **Robolectric** (4.17) — Room/Hilt/WorkManager/tema JVM tests: `@RunWith(RobolectricTestRunner::class)`. Muitos usam `@Config(sdk = [34], manifest = Config.NONE)`; as telas Compose usam `@Config(qualifiers = "pt-rBR")` para resolver `values/`. **`:core:ui` precisa de `isIncludeAndroidResources = true`** para o teste de `ColorScheme`/tokens Neo.
+- **Turbine** (1.2.1) — every ViewModel test uses `app.cash.turbine.test`.
+- **kotlinx-coroutines-test** (1.11.0) — `runTest { ... }`.
 - **Compose UI Test** (JUnit4 runner, BOM-pinned) — `createComposeRule`, `onNodeWithTag`, `assertIsDisplayed`.
-- **MockWebServer** (4.12.0) — usado só pelo `backend-stub/` histórico; não há mais cliente HTTP no app.
 
 How to run:
 
@@ -284,5 +280,5 @@ Honest inventory so an agent does not assume the docs are complete:
 - **`:core:ui` não tem `AGENTS.md`.** Só `:core:domain`, `:core:data` e `feature/` têm sub-guia; `:app` também não tem. As regras de `:core:ui` (tokens Neo, fontes, drawables, `isIncludeAndroidResources`) vivem apenas na seção *Key Directories* acima.
 - **`:app` não tem `AGENTS.md`.** Suas regras (workers de notificação, NavHost, lint rígido) estão só no root.
 - **`:feature:projects`, `:feature:tasks` e `:feature:settings` não têm `AGENTS.md` próprio** — só `feature/AGENTS.md` cobre as regras comuns das features.
-- **A camada de backup local (#214) ainda tem dívida**: `BackupSection.kt` (207 LoC) ainda concentra a seção, o cartão e o nome do arquivo sugerido. A mensagem do último resultado saiu para `BackupMessage.kt`, os diálogos para `BackupDialogs.kt` e o estado para `BackupUiState.kt`/`BackupViewModel.kt`; o que ainda pesa é o tamanho do arquivo.
-- **O `HomeListingPipeline` ainda combina muitos fluxos** (`combine` de preferências, busca debounceada, tags e filtro) e o `homeUiStateFlow` tem nove parâmetros. A entrada já é explícita (`ListingInputs`) e a consulta ao Room é controlada só pelo texto debounceado (PR #281) — mas um agrupamento das dependências em um objeto de contexto ainda é trabalho em aberto.
+- **A camada de backup local (#214) ainda tem dívida**: `BackupSection.kt` (218 LoC) ainda concentra a seção, o cartão e o nome do arquivo sugerido. A mensagem do último resultado saiu para `BackupMessage.kt`, os diálogos para `BackupDialogs.kt` e o estado para `BackupUiState.kt`/`BackupViewModel.kt`; o que ainda pesa é o tamanho do arquivo.
+- **O `HomeListingPipeline` ainda combina muitos fluxos** (`combine` de preferências, busca debounceada, tags e filtro) e o `homeUiStateFlow` tem dez parâmetros. A entrada já é explícita (`ListingInputs`) e a consulta ao Room é controlada só pelo texto debounceado (PR #281) — mas um agrupamento das dependências em um objeto de contexto ainda é trabalho em aberto.
