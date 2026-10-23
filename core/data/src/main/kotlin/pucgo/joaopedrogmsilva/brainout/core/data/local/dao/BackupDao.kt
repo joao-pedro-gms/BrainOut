@@ -36,7 +36,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
  * lista de consultas de uma linha cada.
  */
 @Dao
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // A justificativa está no KDoc da interface: uma função por operação, sem lógica.
 interface BackupDao {
     // --- Leitura ---
 

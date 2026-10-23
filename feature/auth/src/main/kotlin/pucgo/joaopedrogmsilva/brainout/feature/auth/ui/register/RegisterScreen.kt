@@ -163,7 +163,7 @@ internal data class RegisterCallbacks(
  * o IME não redimensiona a janela, então sem isso o último campo e o botão
  * de envio ficariam atrás do teclado em paisagem ou em tela baixa.
  */
-@Suppress("LongMethod")
+@Suppress("LongMethod") // O formulário é uma unidade: quatro campos, o papel e o envio.
 @Composable
 internal fun RegisterBody(
     callbacks: RegisterCallbacks,
