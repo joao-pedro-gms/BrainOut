@@ -108,7 +108,7 @@ private fun androidx.navigation.NavGraphBuilder.addSplashRoute(navController: Na
 private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Login) {
         LoginScreen(
-            onLoginSubmit = {
+            onLoginSuccess = {
                 Log.d(TAG, "Navegando: Login -> Home")
                 navController.navigate(BrainOutRoutes.MainGraph) {
                     popUpTo(0) { inclusive = true }
