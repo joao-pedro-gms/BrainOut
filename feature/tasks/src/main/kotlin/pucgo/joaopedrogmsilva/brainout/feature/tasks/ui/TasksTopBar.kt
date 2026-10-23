@@ -14,12 +14,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -58,9 +58,7 @@ internal fun TasksTopBar(
             }
         },
         colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
+            neoTopAppBarColors(
                 navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
             ),
     )
