@@ -184,7 +184,7 @@ Status conferido um a um contra o código em `main`
 - ⚪️ **OBSOLETO** — `ARQUITETURA.md:99,100,103` (stack table stale), `:243` (path `network/`), `:193-197` (AD-1/2/4/5 "a definir"). O documento foi reenquadrado em 16/10/2026 como **registro da arquitetura legada** (removida no #212), com o ponteiro para `TRANSICAO-LOCAL.md` no topo — as linhas citadas descrevem a arquitetura legada de propósito, não a atual.
 - `ROADMAP.md:623` + `CONTRIBUTING.md:106` placeholder "GitHub Projects (link a adicionar)".
 - ✅ **RESOLVIDO** — `CONTRIBUTING.md:63` exemplo `Kotlin 2.0.21` stale. O exemplo e o texto ao lado citam a versão do catálogo: Kotlin 2.4.21, AGP 9.4.1 e Gradle 9.8.1.
-- `keystore.properties.example` é stale — build ignora, assinatura é via env.
+- ✅ **RESOLVIDO** — `keystore.properties.example` era stale: o build ignora o arquivo e a assinatura vem das variáveis `BRAINOUT_KEYSTORE_PATH`/`PASSWORD`, `BRAINOUT_KEY_ALIAS`/`PASSWORD` (o próprio exemplo dizia "para builds de release via GitHub Actions" — mas o arquivo não funciona nem local). O exemplo foi removido: ele prometia um caminho que não existe.
 
 ### Kover 60% gate em risco
 
