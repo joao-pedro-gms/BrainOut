@@ -3,67 +3,19 @@
 <resources>
     <string name="app_name">BrainOut</string>
 
-    <!-- Splash (E1.3) -->
-    <string name="splash_title">BrainOut</string>
-    <string name="splash_tagline">Organize your projects and tasks on this device.</string>
-    <string name="splash_cta">Get started</string>
+    <!--
+      Deadline reminders / local notifications (E3.6).
 
-    <!-- Login (esqueleto, validação fica em E1.6) -->
-    <string name="login_title">Sign in</string>
-    <string name="login_subtitle">Sign in to an account on this device.</string>
-    <string name="login_email_label">Email</string>
-    <string name="login_email_placeholder">you@email.com</string>
-    <string name="login_password_label">Password</string>
-    <string name="login_password_placeholder">••••••••</string>
-    <string name="login_cta">Sign in</string>
-    <string name="login_create_account">Create account</string>
+      The `:app` module owns the notification code, so it owns these
+      strings.
 
-    <!-- Register (esqueleto, validação fica em E1.6) -->
-    <string name="register_title">Create account</string>
-    <string name="register_subtitle">Create an account on this device to get started.</string>
-    <string name="register_name_label">Name</string>
-    <string name="register_name_placeholder">Your full name</string>
-    <string name="register_email_label">Email</string>
-    <string name="register_email_placeholder">you@email.com</string>
-    <string name="register_password_label">Password</string>
-    <string name="register_password_placeholder">Create a password</string>
-    <string name="register_password_confirm_label">Confirm password</string>
-    <string name="register_password_confirm_placeholder">Type the password again</string>
-    <string name="register_cta">Sign up</string>
-    <string name="register_have_account">I already have an account</string>
-
-    <!-- Home (lista de projetos) -->
-    <string name="home_topbar_greeting">Hi, %1$s</string>
-    <string name="home_role_badge_owner">Owner</string>
-    <string name="home_role_badge_member">Member</string>
-    <string name="home_section_title">Your projects</string>
-    <string name="home_empty_title">No projects yet</string>
-    <string name="home_empty_body">Tap the “+” button to create your first project.</string>
-    <string name="home_fab_create">Create new project</string>
-    <string name="home_fab_disabled_label">Coming soon: create project</string>
-
-    <!-- Project detail -->
-    <string name="project_detail_tasks_title">Tasks</string>
-    <string name="project_detail_new_task">New task</string>
-    <string name="project_detail_back">Back</string>
-
-    <!-- Settings -->
-    <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Local account and app preferences.</string>
-    <string name="settings_section_account">Account</string>
-    <string name="settings_section_appearance">Appearance</string>
-    <string name="settings_section_session">Session</string>
-    <string name="settings_option_profile">Profile</string>
-    <string name="settings_option_notifications">Notifications</string>
-    <string name="settings_option_theme">Theme</string>
-    <string name="settings_option_signout">Sign out</string>
-
-    <!-- Common -->
-    <string name="common_back">Back</string>
-    <string name="common_close">Close</string>
-    <string name="common_user_name_default">João Pedro</string>
-
-    <!-- Deadline reminders / local notifications (E3.6) -->
+      Screen strings (splash, login, register, home, project detail,
+      settings) do NOT live here: each module keeps its own, and
+      `:app` keeps no copy of any. With `nonTransitiveRClass`, a key
+      repeated in the app and in a feature is a dual source of truth —
+      and the text edited in the feature would change nothing, because
+      the resource merge makes the app's copy win.
+    -->
     <string name="deadline_channel_name">Deadline reminders</string>
     <string name="deadline_channel_description">Notifications sent 1 hour before each task\'s deadline.</string>
     <string name="deadline_notification_title">Due: %1$s</string>
@@ -71,5 +23,4 @@
     <string name="deadline_action_complete">Complete</string>
     <string name="deadline_unknown_project">(no project)</string>
     <string name="deadline_permission_denied_toast">Notifications permission denied — deadline reminders won\'t be shown.</string>
-    <string name="deadline_permission_rationale_title">Notifications permission</string>
 </resources>

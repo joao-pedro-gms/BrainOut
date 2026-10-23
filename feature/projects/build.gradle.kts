@@ -15,10 +15,6 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        // E3.2: :core:data ganhou flavors de ambiente (dev/prod). Estes
-        // módulos não têm flavors próprios; fixam a dimensão `environment`
-        // no `dev` para o match de variantes do Gradle.
-
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
     }
