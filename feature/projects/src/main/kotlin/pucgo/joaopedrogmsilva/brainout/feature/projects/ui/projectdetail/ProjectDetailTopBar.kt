@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoBackButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -33,12 +34,7 @@ internal fun ProjectDetailTopBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onBackClicked) {
-                Icon(
-                    painter = painterResource(UiR.drawable.neo_ic_arrow_back),
-                    contentDescription = stringResource(id = R.string.common_back),
-                )
-            }
+            NeoBackButton(onClick = onBackClicked)
         },
         actions = {
             IconButton(

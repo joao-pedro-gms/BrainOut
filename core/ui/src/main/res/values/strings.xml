@@ -19,4 +19,5 @@
     <string name="neo_error_dismiss">Dispensar</string>
     <string name="neo_expanded">Expandido</string>
     <string name="neo_collapsed">Recolhido</string>
+    <string name="neo_back">Voltar</string>
 </resources>

@@ -36,5 +36,4 @@
     <string name="dashboard_rate_percent">%1$d%%</string>
 
     <!-- DEF-22 — rótulo da ação de voltar nas abas globais. -->
-    <string name="common_back">Back</string>
 </resources>
