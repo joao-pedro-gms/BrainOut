@@ -1,8 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Modelo da lista agrupada de configurações — usado pela SettingsScreen.
 // Mantém a estrutura declarativa no mesmo arquivo para evitar uma camada
-// de "state class" só por formalidade (a navegação do esqueleto E1.3 não
-// precisa de ViewModel próprio).
+// de "state class" só por formalidade: só as linhas de backup têm estado
+// próprio (o `BackupViewModel`, PR #214); o resto da tela é despachado
+// por ela.
 
 package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 
