@@ -73,28 +73,28 @@ Status conferido um a um contra o código em `main`
 
 ### core/data
 
-- Redundância `DataModule.@Provides` para classes já `@Inject @Singleton`: `UserRepositoryImpl`, `ProjectRepositoryImpl`, `TaskRepositoryImpl`, `TagRepositoryImpl`, `HolidayRepositoryImpl`, `PasswordHasherImpl`, `AndroidConnectivityObserver`. Cortar.
-- `BrainOutDatabase.kt:70` `const val NAME = DATABASE_NAME` é alias morto.
-- Kover exclusion `*.remote.*` em `build.gradle.kts:87` mascara `RemoteDataSource` (error prop) e `HolidayRemoteDataSource` (cache+mutex) — não conta pra 60%. **AINDA VÁLIDO em 08/10/2026 e não corrigido** — o padrão `*.remote.*` continua na lista de exclusões (`build.gradle.kts:83`). Medido: em `:core:data`, `remote/` (6 arquivos, 593 linhas) + `di/` (1 arquivo, 213 linhas) = **806 de 3 944 linhas** de código de produção versionado em `main` (20,4%), fora do denominador. `RemoteDataSource.kt` tem 253 linhas e **26 blocos `catch`** e é exercitado por teste — a exclusão o retira da métrica. Registrado como **DEF-14** em `docs/DEFEITOS.md`, com a correção proposta (separar DTOs de lógica).
-- `RemoteDataSource.kt:48-53 vs :56-175` — `ping()` engole Exception; outros relançam. Inconsistente.
-- `RemoteDataSource.kt:31-33` — `HttpLoggingInterceptor.Level.BASIC` sempre on, inclusive release. Loga URL em prod.
-- `RemoteDataSource.kt:50-60` — `catch (Exception)` engole `CancellationException`. BrainOutSyncDispatcher já corrigiu; alinhar.
-- `ProjectRepositoryImpl.create/update` + `TaskRepositoryImpl.delete` — `@Transaction` aninhado (`enqueueInTx`→`replaceProjectTags`/`cascade*`) depende de SQLite savepoints. Sem teste de roll-back.
-- `ProjectRepositoryImpl.kt:136-138` — `require(tag.ownerId == ownerId)` lança `IllegalArgumentException` cru; criar `TagOwnershipException`.
-- `UserDao.deleteAll()` + `count()` mortos em prod (`@VisibleForTesting` ou remover).
-- `TaskRepositoryImpl.delete` enfileira DELETE op mesmo quando task já deletada por cascade.
-- `RemoteDtos.kt:101-109` + `RemoteDataSource.kt:80-88` — `ProjectCreateDto.id: String? = null`; kotlinx-serialization omite null do PUT body → stub rejeita com 400 (path/body mismatch). Id obrigatório.
-- `Documented updated_at / last-writer-wins` ausente do data layer e stub. Zero colunas `updated_at` em entidades/payloads/stub. PUT é blind upsert. Resolver antes de multi-device.
-- `ConnectivityObserver.kt:73,83` — `connectivityManager.activeNetwork` deprecated API 29+.
-- `PasswordHasherImpl.verify` ignora `parsed.iterations` (campo morto). Latente.
-- `HttpLoggingInterceptor` em release (mesmo finding acima).
+- ❌ **NÃO É REDUNDÂNCIA** — `DataModule.@Provides` para classes já `@Inject @Singleton`: `UserRepositoryImpl`, `ProjectRepositoryImpl`, `TaskRepositoryImpl`, `TagRepositoryImpl`, `HolidayRepositoryImpl`, `PasswordHasherImpl`. Cortar. O `@Provides` **é** a ligação da interface com a impl (`UserRepository` → `UserRepositoryImpl`); o construtor `@Inject` da impl é o que a constrói. Tirar o `@Provides` quebra a resolução da interface — a forma idiomática seria `@Binds` num módulo abstrato, o que é mudança de estilo, não remoção de redundância.
+- ⚪️ **OBSOLETO** — `BrainOutDatabase.kt:70` `const val NAME = DATABASE_NAME` é alias morto. O alias não existe mais; só `DATABASE_NAME` sobreviveu.
+- ✅ **RESOLVIDO (PR #288)** — Kover exclusion `*.remote.*` em `build.gradle.kts:87` mascarava `RemoteDataSource` (error prop) e `HolidayRemoteDataSource` (cache+mutex) — não contava pra 60%. Com a camada de rede removida no #212, os DTOs sumiram: as exclusões `*Dto`/`*Dto$*` e o comentário de nove linhas que as descrevia saíram do `build.gradle.kts` (não havia mais o que excluir) e o `AGENTS.md` deixou de citar `*.remote.*`.
+- ⚪️ **OBSOLETO** — `RemoteDataSource.kt:48-53 vs :56-175` — `ping()` engole Exception; outros relançam. Inconsistente. `RemoteDataSource` não existe mais.
+- ⚪️ **OBSOLETO** — `RemoteDataSource.kt:31-33` — `HttpLoggingInterceptor.Level.BASIC` sempre on, inclusive release. Loga URL em prod. A camada de rede saiu no #212.
+- ⚪️ **OBSOLETO** — `RemoteDataSource.kt:50-60` — `catch (Exception)` engole `CancellationException`. BrainOutSyncDispatcher já corrigiu; alinhar. A camada de rede saiu no #212.
+- ✅ **RESOLVIDO** — `ProjectRepositoryImpl.create/update` + `TaskRepositoryImpl.delete` — `@Transaction` aninhado (`enqueueInTx`→`replaceProjectTags`/`cascade*`) depende de SQLite savepoints. Sem teste de roll-back. A fila `enqueueInTx` saiu com a camada de rede; o que restou são as cascatas, e elas têm teste (`TaskRepositoryImplTest` e `ProjectRepositoryImplTest` cobrem `cascadeCompleteTask`, `cascadeReopenTask` e `cascadeDeleteTask`).
+- ✅ **RESOLVIDO** — `ProjectRepositoryImpl.kt:136-138` — `require(tag.ownerId == ownerId)` lança `IllegalArgumentException` cru; criar `TagOwnershipException`. A exceção de domínio `TagOwnershipException` existe e é lançada pelo repositório.
+- ⚪️ **OBSOLETO** — `UserDao.deleteAll()` + `count()` mortos em prod (`@VisibleForTesting` ou remover). Os dois métodos não existem mais no DAO.
+- ⚪️ **OBSOLETO** — `TaskRepositoryImpl.delete` enfileira DELETE op mesmo quando task já deletada por cascade. A fila de operações saiu com a camada de rede no #212.
+- ⚪️ **OBSOLETO** — `RemoteDtos.kt:101-109` + `RemoteDataSource.kt:80-88` — `ProjectCreateDto.id: String? = null`; kotlinx-serialization omite null do PUT body → stub rejeita com 400 (path/body mismatch). Id obrigatório. Os DTOs remotos saíram no #212.
+- ⚪️ **OBSOLETO** — `Documented updated_at / last-writer-wins` ausente do data layer e stub. Zero colunas `updated_at` em entidades/payloads/stub. PUT é blind upsert. Resolver antes de multi-device. O modelo de multi-dispositivo ficou fora do escopo do produto local; o `PUT` idempotente era do backend removido.
+- ⚪️ **OBSOLETO** — `ConnectivityObserver.kt:73,83` — `connectivityManager.activeNetwork` deprecated API 29+. A observação de conectividade saiu com a camada de sync no #212.
+- ✅ **RESOLVIDO** — `PasswordHasherImpl.verify` ignora `parsed.iterations` (campo morto). Latente. O `verify` hoje lê as iterações do próprio hash armazenado (`alg$iter$salt$hash`) e valida a faixa — um hash gravado com iterações diferentes verifica corretamente.
+- ⚪️ **OBSOLETO** — `HttpLoggingInterceptor` em release (mesmo finding acima). A camada de rede saiu no #212.
 
 ### core/ui
 
-- `ThemeSelectionTest.kt:86-120` é tautológico (não invoca `BrainOutTheme` nem `isSystemInDarkTheme()`).
-- `ContrastRatioTest` cobre subset apenas: faltam `outline`/`surfaceVariant`, `onSurface`/`surfaceVariant`, error/background, inverseSurface.
-- Dynamic color path (`Theme.kt:114-116`) sem teste e sem garantia WCAG AA.
-- `Shape.kt` contrato violado por 23 hardcoded `RoundedCornerShape(...)` em `feature/*` — sem enforcement.
+- ✅ **RESOLVIDO** — `ThemeSelectionTest.kt:86-120` é tautológico (não invoca `BrainOutTheme` nem `isSystemInDarkTheme()`). O teste passou a exercitar a função de escolha (`resolveNeoThemeSpec(darkTheme = …)`) — a costura que o `BrainOutTheme` usa — com a configuração de night mode forcada nos dois sentidos.
+- ✅ **RESOLVIDO** — `ContrastRatioTest` cobre subset apenas: faltam `outline`/`surfaceVariant`, `onSurface`/`surfaceVariant`, error/background, inverseSurface. Hoje são **29 pares** declarados num único lugar (`NeoContrastRatioTest`), com um teste que fixa a contagem (29, sendo 23 com mínimo 4.5 e 6 com 3.0) para que um "conserto" por remoção seja percebido. O `EmptyStateContrastTest` fixa o outro lado do invariante: o `outline` puro passa de 3:1 e o `surfaceVariant` **não** alcança (é preenchimento, não fronteira — ver DEF-24).
+- ⚪️ **OBSOLETO** — Dynamic color path (`Theme.kt:114-116`) sem teste e sem garantia WCAG AA. O caminho de cor dinâmica saiu: a identidade Neo é fixa (`dynamicColor = false` por padrão) e quem valida o contraste é o `NeoContrastRatioTest`.
+- 🟡 **PARCIAL** — `Shape.kt` contrato violado por 23 hardcoded `RoundedCornerShape(...)` em `feature/*` — sem enforcement. Restam **9** (eram 23): o PR #263 adotou o token Neo em todos os casos de valor idêntico, e o que sobrou é raio de 12dp, que não tem token equivalente (decisão de design, registrada no `AGENTS.md`).
 
 ### feature/auth
 
