@@ -6,6 +6,11 @@
 // `LongParameterList` é necessário: o orchestrator passa adiante
 // callbacks do ViewModel para composição + validação + criação;
 // manter a superfície pública fina facilita a chamada pelo pai.
+//
+// `LongMethod` também: o corpo é a sequência de campos do formulário
+// (nome, descrição, tags) mais a validação inline. Extrair cada
+// campo em sua própria função espalharia o estado entre chamadas —
+// a coesão do formulário vale mais que a métrica.
 
 @file:Suppress("LongParameterList", "LongMethod")
 
