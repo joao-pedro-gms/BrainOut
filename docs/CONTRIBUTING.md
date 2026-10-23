@@ -60,14 +60,14 @@ Exemplos válidos:
 ```
 feat(auth): tela de login com validação inline
 fix(tasks): bloqueio de prioridade em task concluída
-chore(gradle): atualizar Kotlin para 2.3.20
+chore(gradle): atualizar Kotlin para 2.4.21
 docs(roadmap): marcar E1.6 como concluído
 ci(workflows): adicionar cache para ~/.gradle/caches
 ```
 
 O exemplo de `chore(gradle)` cita a versão que o catálogo realmente usa:
-`gradle/libs.versions.toml` fixa `kotlin = "2.3.20"` (KGP), com AGP
-9.4.1 e Gradle 9.7.1. Ao escrever um commit de bump, copie a versão do
+`gradle/libs.versions.toml` fixa `kotlin = "2.4.21"` (KGP), com AGP
+9.4.1 e Gradle 9.8.1. Ao escrever um commit de bump, copie a versão do
 catálogo, não uma de memória.
 
 ## Estilo de código

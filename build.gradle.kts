@@ -78,15 +78,6 @@ subprojects {
         //   impede a volta do padrão amplo.
         // - *_Factory / Hilt_* / dagger.hilt.* / *_HiltModules: artefatos
         //   do Hilt/Dagger
-        // - *Dto / *Dto$*: data classes de contrato (RemoteDtos.kt,
-        //   HolidayDto.kt). Sem lógica própria — só propriedades,
-        //   componentN/copy/equals/hashCode gerados e o serializador
-        //   `$$serializer` do kotlinx-serialization. O parsing de verdade é
-        //   exercitado em RemoteDataSource, que fica no denominador.
-        //   O padrão é `*Dto`, e NÃO `*.Dto`: o Kover converte `*` em `.*`
-        //   e escapa o resto, então `*.Dto` vira `.*\.Dto` e jamais casaria
-        //   com `...remote.ProjectDto` (o nome termina em `ProjectDto`, sem
-        //   ponto antes de `Dto`). O `$*` cobre `ProjectDto$Companion`.
         // - *.di.*: wiring de DI (DataModule.kt tem 19 métodos @Provides que
         //   só constroem e devolvem singletons/binds, zero lógica de
         //   domínio). A exclusão é por "wiring, não lógica" — e não por
@@ -108,8 +99,6 @@ subprojects {
                 "*_HiltModules\$*",
                 "dagger.hilt.*",
                 "hilt_aggregated_deps.*",
-                "*Dto",
-                "*Dto\$*",
                 "*.di.*",
                 "*.BuildConfig",
                 "*.PackageMarker",
