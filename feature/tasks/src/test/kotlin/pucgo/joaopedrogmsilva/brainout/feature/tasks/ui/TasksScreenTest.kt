@@ -10,6 +10,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import androidx.compose.material3.Surface
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -58,6 +59,39 @@ class TasksScreenTest {
         setRows(taskRow(projectName = null))
 
         composeRule.onNodeWithText("(sem projeto)").assertExists()
+    }
+
+    @Test
+    fun `a lista expõe a tag de list`() {
+        setRows(taskRow(projectName = "Projeto Demo"))
+
+        composeRule.onNodeWithTag(TasksTestTags.LIST).assertExists()
+    }
+
+    @Test
+    fun `estado de carregamento expõe a tag de loading`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    TasksContent(state = TasksUiState(rows = emptyList(), isLoading = true))
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(TasksTestTags.LOADING).assertExists()
+    }
+
+    @Test
+    fun `estado vazio expõe a tag de empty`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(TasksTestTags.EMPTY).assertExists()
     }
 }
 

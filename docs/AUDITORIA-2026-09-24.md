@@ -141,7 +141,7 @@ Status conferido um a um contra o código em `main`
 - ✅ **RESOLVIDO** — `TasksViewModel.NO_PROJECT_LABEL = "(sem projeto)"` hardcoded PT em VM companion. A constante não existe mais.
 - ✅ **RESOLVIDO** — `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`). As constantes não existem mais.
 - Pré-visualizações sem `BrainOutTheme { Surface { ... } }`.
-- 🟡 **PARCIAL** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves continuam declaradas e sem uso; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já são aplicadas por `DashboardLoading` e `DashboardEmptyState`.
+- ✅ **RESOLVIDO** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves passaram a ser aplicadas em `TasksContent` (a lista, o indicador de carregamento e o empty state), e três testes novos as exercitam; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já eram aplicadas por `DashboardLoading` e `DashboardEmptyState`.
 - 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
 - ✅ **RESOLVIDO** — `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`. O `Instant#parse` do preview deixou de ser problema quando o módulo passou a usar `coreLibraryDesugaring` (DEF-63); o lint do módulo roda com zero erros e o gate voltou a ser rígido, com `MissingTranslation` promovido a erro.
 

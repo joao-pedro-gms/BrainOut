@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -97,7 +98,13 @@ fun TasksScreen(
     }
 }
 
-/** Identificadores para testes de UI Compose. */
+/**
+ * Identificadores para testes de UI Compose.
+ *
+ * `LOADING`, `EMPTY` e `LIST` são aplicados em [TasksContent]: sem
+ * eles, o teste de UI não tinha âncora para o estado da lista — as
+ * chaves existiam, mas nada as usava.
+ */
 object TasksTestTags {
     const val LOADING: String = "tasks_loading"
     const val EMPTY: String = "tasks_empty"
@@ -116,7 +123,12 @@ internal fun TasksContent(
     onDismissError: () -> Unit = {},
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().neoContentWidth().padding(horizontal = LocalNeoWindowInfo.current.margin),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .neoContentWidth()
+                .padding(horizontal = LocalNeoWindowInfo.current.margin)
+                .testTag(TasksTestTags.LIST),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(vertical = 12.dp),
     ) {
@@ -125,8 +137,10 @@ internal fun TasksContent(
         item {
             when {
                 state.errorMessage != null -> TasksErrorBanner(state.errorMessage, onRetry, onDismissError)
-                state.isLoading -> CircularProgressIndicator()
-                state.rows.isEmpty() -> TasksEmptyState(Modifier.fillMaxWidth())
+                state.isLoading ->
+                    CircularProgressIndicator(modifier = Modifier.testTag(TasksTestTags.LOADING))
+                state.rows.isEmpty() ->
+                    TasksEmptyState(Modifier.fillMaxWidth().testTag(TasksTestTags.EMPTY))
             }
         }
         if (!state.isLoading && state.errorMessage == null) {
