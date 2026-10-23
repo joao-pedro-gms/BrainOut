@@ -44,7 +44,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList") // As oito dependências do Hilt: quatro repositórios e quatro casos de uso.
 class HomeViewModel
     @Inject
     constructor(
