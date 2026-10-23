@@ -141,6 +141,8 @@ internal fun resolveProjectDetailMessage(error: ProjectDetailError): String =
             stringResource(id = R.string.project_detail_error_project_not_found)
         is ProjectDetailError.TaskLimitReached ->
             stringResource(id = R.string.project_detail_error_task_limit, error.limit)
+        ProjectDetailError.PermissionDenied ->
+            stringResource(id = R.string.project_detail_error_permission_denied)
         ProjectDetailError.ActionFailed ->
             stringResource(id = R.string.project_detail_error_action_failed)
     }

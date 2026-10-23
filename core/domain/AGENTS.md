@@ -16,8 +16,9 @@ src/main/kotlin/.../core/domain/
 ├── error/                   # DomainException (sealed, raiz única) + filhos + BusinessRuleException
 ├── model/                   # User (+UserRole), Project, Task, Tag, TaskStatus, TaskPriority, Permission, Holiday
 ├── notification/            # porta DeadlineNotificationScheduler (REMINDER_LEAD = 1h)
-├── repository/              # portas: User/Project/Task/Tag/Holiday/ListingPreferences + PasswordHasher + DashboardStats
-└── usecase/                 # 13 use cases + UseCaseConstants (REMINDER_OFFSET_HOURS etc.)
+├── permission/              # requirePermission: o único ponto que consulta a matriz de papéis
+├── repository/              # portas: User/Project/Task/Tag/Holiday/ListingPreferences + PasswordHasher + ActiveUserPort + DashboardStats
+└── usecase/                 # 14 use cases + UseCaseConstants (REMINDER_OFFSET_HOURS etc.)
 
 src/test/kotlin/.../core/domain/   # espelha main
 ├── CoreDomainSmokeTest.kt   # importa o marcador só pra validar o wiring
@@ -73,6 +74,7 @@ para mensagem localizada.
 - **Use cases suspend.** Sempre `suspend operator fun invoke(...)`; dispatcher decidido na camada de cima (ViewModel).
 - **Use cases finos.** Validação + orquestração de portas. Sem I/O direto, sem `try/catch` amplo — propague `DomainException`.
 - **Portas-first.** Repositórios e o scheduler são `interface`; nenhuma implementação concreta neste pacote.
+- **Permissão no domínio, não na UI.** A matriz `UserRole`/`Permission` é consultada por `requirePermission` (`permission/`), dentro do caso de uso de mutação, **antes** da escrita. Esconder o botão na tela é defesa secundária — a regra tem de valer mesmo que alguém chame o caso de uso direto (DEF-36).
 - **PT-BR nos comentários** referenciando IDs (`R#`, `E#`).
 - **PackageMarker.kt** permanece como sentinela do pacote (regra do root); não remova. (Ele existe aqui e em `:core:data` e nos 4 features; falta em `:app` e `:core:ui` — ver root.)
 - **Header de autor** em todo `.kt` (regra do root).

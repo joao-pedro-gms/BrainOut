@@ -81,6 +81,8 @@
     <string name="project_detail_error_empty_title">Task title cannot be empty</string>
     <string name="project_detail_error_action_failed">Could not complete the operation. Try again.</string>
     <string name="project_detail_error_project_not_found">This project no longer exists.</string>
+    <!-- DEF-36 — the active user's role does not grant the required permission. -->
+    <string name="project_detail_error_permission_denied">You do not have permission for this action.</string>
 
     <!-- E2.8 — loading and error states (ProjectDetail) -->
     <string name="project_detail_loading_aria_label">Loading tasks</string>
@@ -111,6 +113,8 @@
     <string name="home_error_action_failed">Couldn\'t complete the operation</string>
     <!-- DEF-61 — tag name repeated for the same user. -->
     <string name="home_error_duplicate_tag_name">A tag with this name already exists.</string>
+    <!-- DEF-36 — the active user's role does not grant the required permission. -->
+    <string name="home_error_permission_denied">You do not have permission for this action.</string>
     <string name="home_create_project_name_required">Please enter a project name.</string>
 
     <!-- E2.6 — busca textual, filtro por tag, ordenação -->

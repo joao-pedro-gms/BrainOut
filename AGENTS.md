@@ -6,7 +6,7 @@ The owner approved a fully local Android product. Read
 [docs/TRANSICAO-LOCAL.md](docs/TRANSICAO-LOCAL.md) for the current inventory,
 transition backlog and review of open PRs. This direction takes precedence
 over older remote-product plans below. Network/sync code was removed in #212; portable backup is still pending (#214).
-Room v5 removes only the legacy queue; LocalTransaction replaces enqueueInTx.
+Room v5 removes the legacy queue entirely; `LocalTransaction` is the single write path.
 All Android modules are unflavored: use testDebugUnitTest, lintDebug,
 :app:assembleDebug and :core:data:assembleDebugAndroidTest. The legacy flavor,
 network and dual-write instructions below are historical and must not be

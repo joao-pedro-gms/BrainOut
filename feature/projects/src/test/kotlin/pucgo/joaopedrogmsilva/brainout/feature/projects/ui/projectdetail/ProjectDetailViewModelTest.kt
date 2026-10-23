@@ -23,11 +23,14 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CheckDeadlineUseCase
@@ -230,6 +233,28 @@ class ProjectDetailViewModelTest {
 
             coVerify { deleteProject.invoke(projectId) }
             assertThat(doneCalled).isTrue()
+        }
+
+    /**
+     * DEF-36 — o domínio recusa a exclusão quando o papel do usuário
+     * ativo não tem `DELETE_PROJECT`; a tela precisa dizer isso, e não
+     * a mensagem genérica de falha.
+     */
+    @Test
+    fun `exclusao recusada por falta de permissao vira erro tipado`() =
+        runTest {
+            coEvery { deleteProject.invoke(projectId) } throws
+                PermissionDeniedException(
+                    role = UserRole.MEMBER,
+                    permission = Permission.DELETE_PROJECT,
+                )
+            val vm = viewModel()
+            advanceUntilIdle()
+
+            vm.deleteProject {}
+            advanceUntilIdle()
+
+            assertThat(vm.errorMessage.value).isEqualTo(ProjectDetailError.PermissionDenied)
         }
 
     @Test
