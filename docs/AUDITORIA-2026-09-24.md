@@ -141,7 +141,7 @@ Status conferido um a um contra o código em `main`
 - ✅ **RESOLVIDO** — `TasksViewModel.NO_PROJECT_LABEL = "(sem projeto)"` hardcoded PT em VM companion. A constante não existe mais.
 - ✅ **RESOLVIDO** — `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`). As constantes não existem mais.
 - Pré-visualizações sem `BrainOutTheme { Surface { ... } }`.
-- 🟡 **PARCIAL** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves continuam declaradas e sem uso; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já são aplicadas por `DashboardLoading` e `DashboardEmptyState`.
+- ✅ **RESOLVIDO** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves passaram a ser aplicadas em `TasksContent` (a lista, o indicador de carregamento e o empty state), e três testes novos as exercitam; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já eram aplicadas por `DashboardLoading` e `DashboardEmptyState`.
 - 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
 - ✅ **RESOLVIDO** — `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`. O `Instant#parse` do preview deixou de ser problema quando o módulo passou a usar `coreLibraryDesugaring` (DEF-63); o lint do módulo roda com zero erros e o gate voltou a ser rígido, com `MissingTranslation` promovido a erro.
 
@@ -224,7 +224,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 ## Gaps de teste (priorizado)
 
 > **Estado em 23/10/2026.** Reconciliado item a item contra o código
-> (campanha #226–#273). **Fechados:** os use cases de
+> (campanha #226–#279). **Fechados:** os use cases de
 > `CreateTag`/`UpdateProject`/`DeleteProject`/`DeleteTask` (P0), o
 > `DeadlineWorker` no caminho de publicação (P0, PR #273), o
 > `DeadlineReceiver` como receiver isolado (P0, PR #270), o
@@ -232,11 +232,11 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 > as migrations 2→3 e 3→4 em SQLite real (P1), o `ActiveUserProvider`
 > (P1, PR #268), o `TaskTest` com `completedAt` (P1, PR #269) e o
 > cenário duplicado do `TaskPriorityRulesTest` (P1, PR #269), o
-> `DeadlineField` (P1), o `SessionStore` (P2), as agregações do
-> dashboard (P2) e a `SplashScreen` (P2). **Parciais:** a
+> `AuthViewModel` no limite do nome (P1, PR #278), o `DeadlineField`
+> (P1), o `SessionStore` (P2), as agregações do dashboard (P2) e a
+> `SplashScreen` (P2). **Parciais:** a
 > `HomeScreen`/`ProjectDetailScreen` (há suíte de componente, não da
-> tela inteira), a `RegisterScreen` (coberta pelo caso de IME), o
-> `AuthViewModel` (falta o nome com mais de 120 caracteres), a
+> tela inteira), a `RegisterScreen` (coberta pelo caso de IME), a
 > `TasksScreen` (falta o `TasksRoutesTest`) e a `SettingsScreen` (não há
 > ViewModel de settings — o backup tem o seu). **Obsoletos:** o
 > `BrainOutSyncDispatcher` e o `ConnectivityObserver` — a camada de sync
