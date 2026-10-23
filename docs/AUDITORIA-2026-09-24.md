@@ -56,20 +56,20 @@ Status conferido um a um contra o código em `main`
 - `BrainOutAppSmokeTest.kt:32-52` — `actual == expected` tautologia (sets idênticos).
 - `DeadlineWorker.kt:104` + `NotificationDismissal.kt:22` — `task.id.hashCode()` como notification ID: colide, pode ser negativo; clamp em `Int.MAX_VALUE`/`0x7FFF_FFFF` ou map estável.
 - `SyncConnectivityWatcher.kt:55-60` — `registerNetworkCallback` dispara `onAvailable` na primeira rede disponível; sync duplica com o `ensurePeriodicSync` 15-min. Pular o primeiro.
-- `DeadlineReceiver.kt:27-30` + `DeadlineWorker.kt:33-35` — KDoc + manifest mencionam ação "Dispensar" que não é adicionada ao `addAction`. Implementar ou remover das referências.
-- `notifications/NotificationPermissionStore.kt` + `DeadlineReceiver` carecem de teste Robolectric (goAsync + cancel + dismiss).
+- ✅ **RESOLVIDO (PR #270)** — `DeadlineReceiver.kt:27-30` + `DeadlineWorker.kt:33-35` — KDoc + manifest mencionam ação "Dispensar" que não é adicionada ao `addAction`. As referências foram removidas: a notificação só tem o botão "Concluir", e o toque no corpo abre o app e dispensa (`setAutoCancel(true)`).
+- ✅ **RESOLVIDO** — `notifications/NotificationPermissionStore.kt` + `DeadlineReceiver` carecem de teste Robolectric (goAsync + cancel + dismiss). O store tem `NotificationPermissionRequestTest` (3 casos) e o receiver ganhou `DeadlineReceiverTest` (PR #270, 5 casos: enfileira, cancela, dispensa, ação alternativa e intent sem id).
 
 ### core/domain
 
 - `CanPerformActionUseCase.kt:19-27` — sem `@Inject constructor` e `invoke` não é `suspend`. Quebra template AGENTS duas vezes.
-- `Task.transitionTo` + `CreateTaskUseCase.scheduleReminder` + `ChangeTaskStatusUseCase.reconcileReminder` + `UpdateTaskUseCase.reconcileReminder` usam `Instant.now()` direto (não injetável → RN03 não-testável; `TaskTest` **não afirma** populating/clearing em transições).
+- ✅ **RESOLVIDO (PR #269)** — `Task.transitionTo` + `CreateTaskUseCase.scheduleReminder` + `ChangeTaskStatusUseCase.reconcileReminder` + `UpdateTaskUseCase.reconcileReminder` usam `Instant.now()` direto (não injetável → RN03 não-testável; `TaskTest` **não afirma** populating/clearing em transições). O carimbo é injetável (`Task.transitionTo(target, now)`, como o `now` de `Task.create`), os use cases de lembrete passam pela regra única `ReminderReconciler` (que não carimba nada) e o `TaskTest` afirma o carimbo e o apagamento.
 - `TaskPriority.fromCodeOrThrow` é alias morto de `fromCode`. Remover ou documentar e estender.
 - `TaskPriority.VALID_CODES` + `LOW_CODE..CRITICAL_CODE` são dead constants.
 - `SortOrder.fromStorageKey` tem dois branches com o mesmo fallback (`CreatedDesc`).
 - `TaskRepository.kt` KDoc vaza "Room" / "invalidação do Room" / "@Transaction" para o domínio.
 - `UpdateTaskUseCase.kt:50-53` prossegue silenciosamente quando `findById` retorna null → RN02 não roda.
 - 4 use cases **sem teste** (gap conhecido, AGENTS): `CreateTagUseCase`, `UpdateProjectUseCase`, `DeleteProjectUseCase`, `DeleteTagUseCase`. Cada um é 1-line delegate mas zerar cobertura derruba o piso Kover.
-- `TaskPriorityRulesTest.update integral` duplica cenário `change priority from DONE is blocked` e nem exercita `copy`.
+- ✅ **RESOLVIDO (PR #269)** — `TaskPriorityRulesTest.update integral` duplica cenário `change priority from DONE is blocked` e nem exercita `copy`. O cenário duplicado saiu; o atalho `copy` que o modelo não bloqueia passou a ser coberto no `UpdateTaskUseCaseTest`, junto do caso de uso que o barra.
 
 ### core/data
 
@@ -107,7 +107,7 @@ Status conferido um a um contra o código em `main`
 - `AuthViewModel.reset()` morto (nunca invocado).
 - `LoginScreen.kt:78` `onLoginSubmit` (mesmo em RegisterScreen) deveria ser `onLoginSuccess` — nome mente.
 - `feature/auth/res` contém 4 strings `home_*` **duplicadas** em `feature/projects/res` — drift risk → eventual `Duplicate resources`. ✅ **RESOLVIDO** — `feature/auth/src/main/res/values/strings.xml` tem hoje **43 chaves, todas com prefixo `auth_`/`login_`/`register_`/`splash_` e zero `home_*`**; as 4 cópias (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) foram removidas.
-- Sem `RegisterScreenTest` + `SplashScreenTest`.
+- 🟡 **PARCIAL** — Sem `RegisterScreenTest` + `SplashScreenTest`. O `SplashScreenTest` existe; o cadastro é coberto pelo `AuthImeInsetsTest` (que renderiza o `RegisterBody` no caso do teclado), mas falta um teste da tela de cadastro como um todo.
 
 ### feature/projects
 
@@ -117,12 +117,12 @@ Status conferido um a um contra o código em `main`
 - `NewTaskDialog.onConfirm = { viewModel.addTask(...); showCreateDialog = false }` — dialog fecha antes da validação; erro perde-se.
 - `AddTagDialog` passa color raw; `Tag.requireValidColor` lança, catch em `_errorMessage` (não exibido).
 - `DeadlineField.kt:47` hardcoded `ofPattern("dd/MM/yyyy")`; `R.string.project_detail_new_task_due_date_format` (MM/dd/yyyy em EN) existe mas nunca referenciado. EN vê formato pt.
-- `R.string.home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info` são chaves mortas. ⚠️ **Estado real em 08/10/2026 (reverificado por grep em `.kt`/`.xml`):** das 5, **3 foram removidas** de `feature/projects/res` (correção registrada em *Correções aplicadas*, linha ~327) — `project_detail_task_priority_locked_info`, `project_detail_new_task_due_date_picker_title` não existem mais em nenhum `strings.xml`; `project_detail_new_task_due_date_format` foi **resgatada** e hoje é consumida por `DeadlineField.kt`. **2 continuam mortas e ainda existem**, mas em `:app` e não em `:feature:projects`: `app/src/main/res/values/strings.xml:43` + `values-en/strings.xml:43` (`home_fab_disabled_label`) e `values/strings.xml:55` + `values-en/strings.xml:55` (`project_detail_back`) — **zero referências** no código. A limpeza de 24/09 atingiu as cópias de `feature/projects`, deixando as cópias de `:app` intactas.
+- ✅ **RESOLVIDO (PR #272)** — `R.string.home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info` são chaves mortas. Duas (`project_detail_new_task_due_date_picker_title` e `project_detail_task_priority_locked_info`) já não existiam em nenhum `strings.xml`; uma (`project_detail_new_task_due_date_format`) foi resgatada e é consumida por `DeadlineField.kt`. As duas últimas cópias mortas viviam em `:app` (`home_fab_disabled_label` e `project_detail_back`, zero referências) e foram removidas junto com as demais strings duplicadas do `:app`.
 - `HomeScreen.kt:843, 921` ícones errados (`Add` como checkmark, `Sort` como leading de search).
 - `ProjectDetailBody` usa `verticalScroll` + `forEach` em vez de `LazyColumn` — jank com muitas tasks.
-- `HomeScreen.kt` + `ProjectDetailScreen.kt` Pré-visualizações dependem de `hiltViewModel()` default, não compilam no preview sem Hilt.
-- `DefaultHomeUser` hardcode "João Pedro"/"JP" flashing em Loading/SignedOut.
-- `renameTask` em `ProjectDetailScreen.kt:314` tem `@Suppress("unused")` — fio morto.
+- ✅ **RESOLVIDO** — `HomeScreen.kt` + `ProjectDetailScreen.kt` Pré-visualizações dependem de `hiltViewModel()` default, não compilam no preview sem Hilt. As previews apontam para os corpos (`HomeProjectsContent`, `ProjectDetailBody`), que recebem estado de exemplo; o motivo está escrito no ponto.
+- ✅ **RESOLVIDO (DEF-72, PR #261)** — `DefaultHomeUser` hardcode "João Pedro"/"JP" flashing em Loading/SignedOut. A `HomeTopBar` aceita `user: HomeUser?` — `null` significa "sem sessão": sem avatar, sem badge e a saudação genérica.
+- ✅ **RESOLVIDO (DEF-25)** — `renameTask` em `ProjectDetailScreen.kt:314` tem `@Suppress("unused")` — fio morto. A decisão foi **ligar**, não remover: o parâmetro ganhou tipo `(Task) -> Unit` e passou a ser acionado por um `RenameTaskDialog` novo.
 
 ### feature/tasks
 
@@ -138,11 +138,11 @@ Status conferido um a um contra o código em `main`
 - `TasksErrorBanner(message: String)` + `DashboardErrorBanner` suprime `message` (`@Suppress("UNUSED_PARAMETER")`) — sempre mostra a string canônica.
 - `retryToken` público em ambos VMs.
 - `tasksGraph()` + `dashboardGraph()` split em `TasksRoutes.kt` — fácil esquecer dashboard.
-- `TasksViewModel.NO_PROJECT_LABEL = "(sem projeto)"` hardcoded PT em VM companion.
-- `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`).
+- ✅ **RESOLVIDO** — `TasksViewModel.NO_PROJECT_LABEL = "(sem projeto)"` hardcoded PT em VM companion. A constante não existe mais.
+- ✅ **RESOLVIDO** — `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`). As constantes não existem mais.
 - Pré-visualizações sem `BrainOutTheme { Surface { ... } }`.
-- `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`).
-- Sem `TasksScreenTest` + `TasksRoutesTest`.
+- 🟡 **PARCIAL** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves continuam declaradas e sem uso; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já são aplicadas por `DashboardLoading` e `DashboardEmptyState`.
+- 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
 - `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`.
 
 ### feature/settings
@@ -202,55 +202,69 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 - **`AuthViewModel.submitLogin` etc** — adicionar `runCatching { withContext(Dispatchers.IO) { ... } }` (CPU-bound hash roda em Main hoje).
 - **`RemoteDtos.id`** — explícito required em tasks/projects (R6).
 - **Refatorar `core/data` + `core/domain` ParaConstantsHelper** — extrair `CHECK_DEADLINE_PRE_WINDOW_DAYS`, `REMINDER_OFFSET_HOURS` para shared constants.
-- **Composition cleanup:** `HomeScreen.kt:1088` `AssistChipDefaults.assistChipBorder(enabled = true, ...)` default redundante.
-- **`@file:Suppress("TooManyFunctions", "MagicNumber", "LongMethod")`** suprime sinais de bloat (corrigir decompondo, não suprimindo).
-- **`SnapshotStateList<String>`** leak em `CreateProjectDialogBody:1225` — tipar `List<String>` + callbacks.
-- **`HomeUser.kt:23-26`** `DefaultHomeUser("João Pedro"/"JP")` flashing em Loading/SignedOut. Trocar por shimmer/genérico.
+- ✅ **RESOLVIDO** — **Composition cleanup:** `HomeScreen.kt:1088` `AssistChipDefaults.assistChipBorder(enabled = true, ...)` default redundante — o `assistChipBorder` não existe mais no código.
+- 🟡 **PARCIAL** — **`@file:Suppress("TooManyFunctions", "MagicNumber", "LongMethod")`** suprime sinais de bloat (corrigir decompondo, não suprimindo). A supressão em bloco saiu: restam supressões pontuais, cada uma com a justificativa escrita no próprio lugar (`LongMethod` em `NewTaskDialog` e `HomeProjectsContent`, `LongParameterList` em `HomeCreateProjectDialog`, `TooManyFunctions` no `DataModule` do `:core:data`) e o `MagicNumber` deixou de ser suprimido.
+- ✅ **RESOLVIDO (PR #267)** — **`SnapshotStateList<String>`** leak em `CreateProjectDialogBody:1225` — tipar `List<String>` + callbacks. A assinatura agora recebe `List<String>` e o estado da seleção volta por callback, sem expor o `SnapshotStateList`.
+- ✅ **RESOLVIDO (DEF-72, PR #261)** — **`HomeUser.kt:23-26`** `DefaultHomeUser("João Pedro"/"JP")` flashing em Loading/SignedOut. Trocar por shimmer/genérico. A `HomeTopBar` passou a aceitar `user: HomeUser?` — `null` significa "sem sessão": sem avatar, sem badge e a saudação genérica.
+
+---
+
+> **⚠️ Estado em 23/10/2026.** A campanha de revisão fechou os últimos
+> gaps de teste do marco E3.6 e limpou recursos duplicados: o
+> `DeadlineReceiver` ganhou suíte própria (PR #270), o `PepperProvider`
+> ganhou suíte instrumentada (PR #271), o `TaskTest` passou a exigir o
+> carimbo de conclusão (PR #269), o `DeadlineWorker` ganhou o teste do
+> caminho de publicação (PR #273) e o `:app` deixou de guardar cópia
+> das strings das features (PR #272). A tabela de gaps abaixo foi
+> reconciliada item a item contra o código — inclusive onde a nota
+> anterior dava um item por fechado e ele não estava.
 
 ---
 
 ## Gaps de teste (priorizado)
 
-> **Estado em 23/10/2026.** A maior parte desta lista foi fechada pela
-> campanha de revisão (#226–#269). **Fechados:** use cases de
-> `CreateTag`/`UpdateProject`/`DeleteProject`/`DeleteTask` (P0),
-> `DeadlineWorker` (P0), `DeadlineReceiver` indiretamente pelo
-> `DeadlineNotificationIdentityTest`, migrations 2→3 e 3→4 em SQLite
-> real (P1), `SessionStore` (P2), `SettingsScreen` (P1),
-> `TasksScreen` (P1), `RegisterScreen` (P1), `AuthViewModel` (P1),
-> `SplashScreen` (P2), `DeadlineField` (P1),
-> `ActiveUserProvider` (P1, PR #268), `TaskTest` com `completedAt`
-> (P1, PR #269) e o cenário duplicado do `TaskPriorityRulesTest`
-> (P1, PR #269 — removido; o atalho `copy` passou a ser coberto no
-> `UpdateTaskUseCaseTest`, junto do caso de uso que o barra).
-> **Ainda abertos:** `PepperProvider` (P0 — só o `bytes()` fixo) e
-> `DeadlineReceiver` como receiver isolado (P0);
-> `ConnectivityObserver` (P1) deixou de existir com a remoção do
-> módulo de sync no #212.
+> **Estado em 23/10/2026.** Reconciliado item a item contra o código
+> (campanha #226–#273). **Fechados:** os use cases de
+> `CreateTag`/`UpdateProject`/`DeleteProject`/`DeleteTask` (P0), o
+> `DeadlineWorker` no caminho de publicação (P0, PR #273), o
+> `DeadlineReceiver` como receiver isolado (P0, PR #270), o
+> `PepperProvider` (P0, PR #271), os repositórios de `:core:data` (P0),
+> as migrations 2→3 e 3→4 em SQLite real (P1), o `ActiveUserProvider`
+> (P1, PR #268), o `TaskTest` com `completedAt` (P1, PR #269) e o
+> cenário duplicado do `TaskPriorityRulesTest` (P1, PR #269), o
+> `DeadlineField` (P1), o `SessionStore` (P2), as agregações do
+> dashboard (P2) e a `SplashScreen` (P2). **Parciais:** a
+> `HomeScreen`/`ProjectDetailScreen` (há suíte de componente, não da
+> tela inteira), a `RegisterScreen` (coberta pelo caso de IME), o
+> `AuthViewModel` (falta o nome com mais de 120 caracteres), a
+> `TasksScreen` (falta o `TasksRoutesTest`) e a `SettingsScreen` (não há
+> ViewModel de settings — o backup tem o seu). **Obsoletos:** o
+> `BrainOutSyncDispatcher` e o `ConnectivityObserver` — a camada de sync
+> foi removida no #212.
 
-| Severidade | Módulo | Arquivo | Falta |
+| Severidade | Módulo | Arquivo | Situação |
 |---|---|---|---|
-| P0 | core/data | `repository/{Task,Project,Tag}RepositoryImpl.kt` | nenhum teste (dual-write, cascade, validation, sync enqueue) |
-| P0 | core/data | `sync/BrainOutSyncDispatcher.kt` | nenhum teste (route map, IOException/5xx/4xx classification, payload decode) |
-| P0 | core/data | `security/PepperProvider.kt` | nenhum teste (B1 capturável: `bytes()` constante para um dado alias) |
-| P0 | core/domain | `usecase/{CreateTag,UpdateProject,DeleteProject,DeleteTag}UseCaseTest.kt` | ausentes (alvos: piso Kover 60%) |
-| P0 | app | `notifications/DeadlineReceiver.kt` | sem teste (goAsync, cancel pending, dismiss) |
-| P0 | app | `notifications/DeadlineWorker.kt` | sem teste (publish path; reload Room; permission gate) |
-| P1 | core/data | `local/Migrations.kt` 2→3 e 3→4 | só 1→2 em `MigrationTest`. `completed_at`, `pending_ops` CREATE não-rodam em SQLite real |
-| P1 | core/data | `session/ActiveUserProvider.kt` | nenhum teste (orphan-session clear, flatMapLatest) |
-| P1 | core/data | `sync/ConnectivityObserver.kt` | nenhum teste (`ShadowConnectivityManager` disponível) |
-| P1 | core/domain | `TaskTest` | não afirma `completedAt` populating/clearing em transições (precisa clock injection) |
-| P1 | core/domain | `TaskPriorityRulesTest.update integral` | duplica cenário; nem exercita `copy` |
-| P1 | feature/settings | `ui/SettingsScreen.kt` | `SettingsScreenTest` + `SettingsViewModelTest` (VM não existe; gap maior do repo) |
-| P1 | feature/projects | `ui/home/HomeScreen.kt` + `ui/projectdetail/ProjectDetailScreen.kt` | Compose UI test (testTag infra pronta) |
-| P1 | feature/projects | `DeadlineField.kt` | `pickerDateToDeadline`/`deadlineToPickerDate` round-trip + DST |
-| P1 | feature/auth | `ui/register/RegisterScreen.kt` | `RegisterScreenTest` |
-| P1 | feature/auth | `viewmodel/AuthViewModelTest.kt` | `validateName` (empty/>120), unexpected `Throwable` path, DomainException fallback |
-| P1 | feature/tasks | `ui/TasksScreen.kt` | `TasksScreenTest` + `TasksRoutesTest` |
-| P2 | core/data | `session/SessionStore.kt` | DataStore round-trip + `clear` |
-| P2 | core/data | `local/dao/DashboardAggregates.kt` | `observeCountByPriority` 0..4 fill |
-| P2 | core/domain | `TaskCompletionStats` / `TaskPriorityCount` / `SortOrder` | sem teste |
-| P2 | feature/auth | `ui/splash/SplashScreen.kt` | `SplashScreenTest` |
+| P0 | core/data | `repository/{Task,Project,Tag}RepositoryImpl.kt` | ✅ **RESOLVIDO** — `TaskRepositoryImplTest`, `ProjectRepositoryImplTest` e `TagRepositoryImplTest` cobrem dual-write, cascade e validação. A parte de *sync enqueue* deixou de existir com a remoção da camada de rede (#212). |
+| P0 | core/data | `sync/BrainOutSyncDispatcher.kt` | ⚪️ **OBSOLETO** — a classe foi removida com a camada de sync no #212; não há mais o que testar. |
+| P0 | core/data | `security/PepperProvider.kt` | ✅ **RESOLVIDO** — PR #271: suíte instrumentada (`PepperProviderInstrumentedTest`) prova os 16 bytes, a estabilidade entre chamadas e a regeneração após apagar o armazenamento (a regressão do B1). |
+| P0 | core/domain | `usecase/{CreateTag,UpdateProject,DeleteProject,DeleteTag}UseCaseTest.kt` | ✅ **RESOLVIDO** — os quatro testes existem e o piso de 60% do Kover passa. |
+| P0 | app | `notifications/DeadlineReceiver.kt` | ✅ **RESOLVIDO** — PR #270: `DeadlineReceiverTest` roda o receiver de verdade (Robolectric + grafo do Hilt) e prova o enfileiramento do `CompleteTaskWorker`, o cancelamento do lembrete e a dispensa da notificação. |
+| P0 | app | `notifications/DeadlineWorker.kt` | ✅ **RESOLVIDO** — o `DeadlineWorkerTest` cobre o desfecho (falha terminal vs. repetição, DEF-32) e o `DeadlineWorkerPublishTest` (PR #273) cobre o *publish path*: título, projeto, ação "Concluir", identidade (tag, id) e gate de `POST_NOTIFICATIONS`. |
+| P1 | core/data | `local/Migrations.kt` 2→3 e 3→4 | ✅ **RESOLVIDO** — `MigrationTest` exercita `MIGRATION_2_3` e `MIGRATION_3_4` em SQLite real, além da cadeia 1→5 e do reparo do banco legado. |
+| P1 | core/data | `session/ActiveUserProvider.kt` | ✅ **RESOLVIDO** — PR #268: `ActiveUserProviderTest` cobre a limpeza da sessão órfã e o `flatMapLatest`. |
+| P1 | core/data | `sync/ConnectivityObserver.kt` | ⚪️ **OBSOLETO** — removido com a camada de sync no #212. |
+| P1 | core/domain | `TaskTest` | ✅ **RESOLVIDO** — PR #269: `Task.transitionTo` aceita o instante por parâmetro (como o `now` de `Task.create`) e o teste afirma o carimbo e o apagamento. |
+| P1 | core/domain | `TaskPriorityRulesTest.update integral` | ✅ **RESOLVIDO** — PR #269: o cenário duplicado foi removido; o atalho `copy` que o modelo não bloqueia é coberto no `UpdateTaskUseCaseTest`, junto do caso de uso que o barra. |
+| P1 | feature/settings | `ui/SettingsScreen.kt` | 🟡 **PARCIAL** — `SettingsScreenTest` existe; `SettingsViewModelTest` não tem objeto, porque a tela de Configurações não tem ViewModel (o backup tem o seu, `BackupViewModel`). |
+| P1 | feature/projects | `ui/home/HomeScreen.kt` + `ui/projectdetail/ProjectDetailScreen.kt` | 🟡 **PARCIAL** — há suíte de componente (`HomeTopBarTest`, `HomeFilterRowTest`, `HomeCreateProjectDialogTest`, `ProjectDetailErrorBannerTest`, `NewTaskDialogTest`); falta a tela inteira. |
+| P1 | feature/projects | `DeadlineField.kt` | ✅ **RESOLVIDO** — `DeadlineFieldTest` cobre o round-trip `pickerDateToDeadline`/`deadlineToPickerDate`. |
+| P1 | feature/auth | `ui/register/RegisterScreen.kt` | 🟡 **PARCIAL** — `AuthImeInsetsTest` renderiza o `RegisterBody` no caso do teclado; falta um teste da tela como um todo. |
+| P1 | feature/auth | `viewmodel/AuthViewModelTest.kt` | 🟡 **PARCIAL** — o nome vazio, o erro de domínio e o erro inesperado estão cobertos; falta o nome com mais de 120 caracteres. |
+| P1 | feature/tasks | `ui/TasksScreen.kt` | 🟡 **PARCIAL** — `TasksScreenTest` existe; falta o `TasksRoutesTest`. |
+| P2 | core/data | `session/SessionStore.kt` | ✅ **RESOLVIDO** — `SessionStoreTest` cobre round-trip e `clear`. |
+| P2 | core/data | `local/dao/DashboardAggregates.kt` | ✅ **RESOLVIDO** — `TaskRepositoryImplTest` prova o preenchimento de `observeCountByPriority` de 0 a 4. |
+| P2 | core/domain | `TaskCompletionStats` / `TaskPriorityCount` / `SortOrder` | ✅ **RESOLVIDO** — `DashboardViewModelTest` exercita as duas agregações e `SortOrderStorageKeyTest` cobre o `SortOrder`. |
+| P2 | feature/auth | `ui/splash/SplashScreen.kt` | ✅ **RESOLVIDO** — `SplashScreenTest` existe. |
 
 ---
 
