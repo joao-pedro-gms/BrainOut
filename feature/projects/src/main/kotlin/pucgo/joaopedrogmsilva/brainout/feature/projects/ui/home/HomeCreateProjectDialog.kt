@@ -3,16 +3,10 @@
 // sub-diálogo `AddTagDialog`. Validação inline de nome obrigatório
 // (E2.8) via chave canônica + `resolveNameError`.
 //
-// `LongParameterList` é necessário: o orchestrator passa adiante
-// callbacks do ViewModel para composição + validação + criação;
-// manter a superfície pública fina facilita a chamada pelo pai.
-//
-// `LongMethod` também: o corpo é a sequência de campos do formulário
-// (nome, descrição, tags) mais a validação inline. Extrair cada
-// campo em sua própria função espalharia o estado entre chamadas —
-// a coesão do formulário vale mais que a métrica.
-
-@file:Suppress("LongParameterList", "LongMethod")
+// `LongMethod` no orchestrator: o corpo é a sequência de campos do
+// formulário (nome, descrição, tags) mais a validação inline. Extrair
+// cada campo em sua própria função espalharia o estado entre chamadas
+// — a coesão do formulário vale mais que a métrica.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -44,6 +38,29 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
+/**
+ * O que o usuário preencheu no diálogo de novo projeto.
+ *
+ * Agrupar os campos num objeto tira o [CreateProjectDialogBody] da
+ * lista de parâmetros: os valores e as ações chegam separados, e cada
+ * um nomeia o que é.
+ */
+internal data class CreateProjectFields(
+    val name: String,
+    val nameError: HomeErrorType?,
+    val description: String,
+    val selectedTagIds: List<String>,
+)
+
+/** Os callbacks do diálogo de novo projeto. */
+internal data class CreateProjectCallbacks(
+    val onNameChange: (String) -> Unit,
+    val onDescriptionChange: (String) -> Unit,
+    val onTagToggle: (String) -> Unit,
+    val onShowAddTag: () -> Unit,
+)
+
+@Suppress("LongMethod") // Orchestrator: os campos do formulário, a validação inline e os dois diálogos.
 @Composable
 internal fun CreateProjectDialog(
     availableTags: List<TagChip>,
@@ -78,34 +95,40 @@ internal fun CreateProjectDialog(
                 if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
 
                 CreateProjectDialogBody(
-                    name = name,
-                    onNameChange = {
-                        name = it
-                        // E2.8 — limpa o erro assim que o usuário
-                        // começa a digitar, evitando mensagem fixa no
-                        // campo enquanto a interação continua.
-                        if (nameError != null) nameError = null
-                    },
-                    nameError = nameError,
-                    description = description,
-                    onDescriptionChange = { description = it },
+                    fields =
+                        CreateProjectFields(
+                            name = name,
+                            nameError = nameError,
+                            description = description,
+                            // `toList()` materializa a lista **no escopo do
+                            // diálogo**: é essa leitura que registra a
+                            // dependência do snapshot, de modo que marcar uma
+                            // tag recomponha os chips. As funções abaixo recebem
+                            // só `List<String>` + um callback — o tipo de
+                            // snapshot do Compose não vaza para a assinatura
+                            // (P2 da auditoria de 24/09/2026).
+                            selectedTagIds = selectedTagIds.toList(),
+                        ),
                     availableTags = availableTags,
-                    // `toList()` materializa a lista **no escopo do
-                    // diálogo**: é essa leitura que registra a
-                    // dependência do snapshot, de modo que marcar uma
-                    // tag recomponha os chips. As funções abaixo recebem
-                    // só `List<String>` + um callback — o tipo de
-                    // snapshot do Compose não vaza para a assinatura
-                    // (P2 da auditoria de 24/09/2026).
-                    selectedTagIds = selectedTagIds.toList(),
-                    onTagToggle = { tagId ->
-                        if (selectedTagIds.contains(tagId)) {
-                            selectedTagIds.remove(tagId)
-                        } else {
-                            selectedTagIds.add(tagId)
-                        }
-                    },
-                    onShowAddTag = { showAddTag = true },
+                    callbacks =
+                        CreateProjectCallbacks(
+                            onNameChange = {
+                                name = it
+                                // E2.8 — limpa o erro assim que o usuário
+                                // começa a digitar, evitando mensagem fixa no
+                                // campo enquanto a interação continua.
+                                if (nameError != null) nameError = null
+                            },
+                            onDescriptionChange = { description = it },
+                            onTagToggle = { tagId ->
+                                if (selectedTagIds.contains(tagId)) {
+                                    selectedTagIds.remove(tagId)
+                                } else {
+                                    selectedTagIds.add(tagId)
+                                }
+                            },
+                            onShowAddTag = { showAddTag = true },
+                        ),
                 )
             }
         },
@@ -155,15 +178,9 @@ internal fun resolveNameError(error: HomeErrorType?): String? = error?.let { res
 
 @Composable
 private fun CreateProjectDialogBody(
-    name: String,
-    onNameChange: (String) -> Unit,
-    nameError: HomeErrorType?,
-    description: String,
-    onDescriptionChange: (String) -> Unit,
+    fields: CreateProjectFields,
     availableTags: List<TagChip>,
-    selectedTagIds: List<String>,
-    onTagToggle: (String) -> Unit,
-    onShowAddTag: () -> Unit,
+    callbacks: CreateProjectCallbacks,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
         // E2.8 — `isError` + `supportingText` quando `nameError`
@@ -171,13 +188,13 @@ private fun CreateProjectDialogBody(
         // [resolveNameError] para manter a string
         // localizada em pt/en (regra E4.6).
         OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
+            value = fields.name,
+            onValueChange = callbacks.onNameChange,
             label = { Text(text = stringResource(id = R.string.home_create_project_name_label)) },
             singleLine = true,
-            isError = nameError != null,
+            isError = fields.nameError != null,
             supportingText = {
-                val resolved = resolveNameError(nameError)
+                val resolved = resolveNameError(fields.nameError)
                 if (resolved != null) {
                     Text(
                         text = resolved,
@@ -188,8 +205,8 @@ private fun CreateProjectDialogBody(
             modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_NAME),
         )
         OutlinedTextField(
-            value = description,
-            onValueChange = onDescriptionChange,
+            value = fields.description,
+            onValueChange = callbacks.onDescriptionChange,
             label = { Text(text = stringResource(id = R.string.home_create_project_description_label)) },
             singleLine = false,
             modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DESCRIPTION),
@@ -207,12 +224,12 @@ private fun CreateProjectDialogBody(
         } else {
             CreateProjectTagsFlow(
                 availableTags = availableTags,
-                selectedTagIds = selectedTagIds.toList(),
-                onTagToggle = onTagToggle,
+                selectedTagIds = fields.selectedTagIds,
+                onTagToggle = callbacks.onTagToggle,
             )
         }
         TextButton(
-            onClick = onShowAddTag,
+            onClick = callbacks.onShowAddTag,
             modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_ADD_TAG),
         ) {
             Text(text = stringResource(id = R.string.home_create_project_add_tag))
