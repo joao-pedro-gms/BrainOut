@@ -33,10 +33,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import java.time.Instant
 
 private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
 
@@ -51,7 +54,6 @@ private const val ERROR_AUTO_DISMISS_MS: Long = 5_000L
  * @param onProjectDeleted disparado após a exclusão do projeto.
  *  Por padrão, delega para `onBackClicked`.
  */
-@Suppress("LongMethod") // Orquestrador: coleta 3 flows e roteia 3 diálogos.
 @Composable
 fun ProjectDetailScreen(
     projectId: String,
@@ -63,29 +65,11 @@ fun ProjectDetailScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
-    // Snackbar de erro com auto-dismiss em 5s (RN01, título inválido).
-    // E2.8 — falhas de carga (Room) são expostas via banner de erro
-    // (não snackbar) para evitar duplicação visual; as demais mensagens
+    // E2.8 — falhas de carga (Room) são expostas via banner de erro (não
+    // snackbar) para evitar duplicação visual; as demais mensagens
     // transitórias (RN01, validação) passam pelo snackbar.
-    // Falhas de carga (Room) aparecem no banner, não no snackbar; as
-    // demais (RN01, validação, gravação) passam pelo snackbar.
-    val resolvedMessage =
-        errorMessage
-            ?.takeUnless { it is ProjectDetailError.LoadFailed }
-            ?.let { resolveProjectDetailMessage(it) }
-    LaunchedEffect(resolvedMessage) {
-        val message = resolvedMessage
-        if (!message.isNullOrBlank()) {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
-            delay(ERROR_AUTO_DISMISS_MS)
-            viewModel.clearError()
-        }
-    }
+    val resolvedMessage = resolveTransientMessage(errorMessage)
+    val snackbarHostState = ProjectDetailSnackbarEffect(resolvedMessage, viewModel::clearError)
 
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteProjectDialog by rememberSaveable { mutableStateOf(false) }
@@ -114,87 +98,227 @@ fun ProjectDetailScreen(
                 modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_FAB),
             )
         },
-        snackbarHost = {
-            SnackbarHost(snackbarHostState) { data ->
-                Snackbar(snackbarData = data)
-            }
-        },
+        snackbarHost = { ProjectDetailSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
-        ProjectDetailBody(
+        ProjectDetailContent(
             contentPadding = innerPadding,
-            state =
-                ProjectDetailState(
-                    tasks = state.tasks,
-                    isLoading = state.isLoading,
-                    errorMessage = state.errorMessage,
-                ),
-            actions =
-                ProjectDetailActions(
-                    onRetry = viewModel::retry,
-                    onDismissError = viewModel::clearError,
-                    onChangeStatus = viewModel::changeStatus,
-                    onDeleteTask = viewModel::deleteTask,
-                    onRenameTask = { renameTaskId.value = it.id },
-                    onChangePriority = { task, _ ->
-                        // RN02 — defesa em profundidade: a UI também bloqueia
-                        // tarefas DONE via DropdownMenuItem(enabled = false).
-                        if (task.status != TaskStatus.DONE) {
-                            priorityDialogTaskId.value = task.id
-                        }
-                    },
-                ),
-        )
-    }
-
-    if (showCreateDialog) {
-        NewTaskDialog(
-            errorMessage = resolvedMessage,
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { title, priority, dueDate ->
-                viewModel.addTask(title, priority, dueDate) { showCreateDialog = false }
-            },
-            evaluateDeadline = { deadline -> viewModel.evaluateDeadline(deadline) },
-        )
-    }
-
-    if (showDeleteProjectDialog) {
-        DeleteProjectDialog(
-            onDismiss = { showDeleteProjectDialog = false },
-            onConfirm = {
-                showDeleteProjectDialog = false
-                viewModel.deleteProject(onDone = onProjectDeleted)
+            state = state,
+            viewModel = viewModel,
+            onRenameTask = { renameTaskId.value = it.id },
+            onChangePriority = { task ->
+                // RN02 — defesa em profundidade: a UI também bloqueia
+                // tarefas DONE via DropdownMenuItem(enabled = false).
+                if (task.status != TaskStatus.DONE) {
+                    priorityDialogTaskId.value = task.id
+                }
             },
         )
     }
 
-    val priorityTarget =
-        remember(priorityDialogTaskId.value, state.tasks) {
-            taskById(state.tasks, priorityDialogTaskId.value)
+    NewTaskDialogHost(
+        visible = showCreateDialog,
+        errorMessage = resolvedMessage,
+        onDismiss = { showCreateDialog = false },
+        onConfirm = { title, priority, dueDate ->
+            viewModel.addTask(title, priority, dueDate) { showCreateDialog = false }
+        },
+        evaluateDeadline = { deadline -> viewModel.evaluateDeadline(deadline) },
+    )
+
+    DeleteProjectDialogHost(
+        visible = showDeleteProjectDialog,
+        onDismiss = { showDeleteProjectDialog = false },
+        onConfirm = {
+            showDeleteProjectDialog = false
+            viewModel.deleteProject(onDone = onProjectDeleted)
+        },
+    )
+
+    ChangeTaskPriorityDialogHost(
+        taskId = priorityDialogTaskId.value,
+        tasks = state.tasks,
+        errorMessage = resolvedMessage,
+        onDismiss = { priorityDialogTaskId.value = null },
+        onConfirm = { task, newPriority ->
+            viewModel.changeTaskPriority(task, newPriority) { priorityDialogTaskId.value = null }
+        },
+    )
+
+    RenameTaskDialogHost(
+        taskId = renameTaskId.value,
+        tasks = state.tasks,
+        errorMessage = resolvedMessage,
+        onDismiss = { renameTaskId.value = null },
+        onConfirm = { task, newTitle ->
+            viewModel.renameTask(task, newTitle) { renameTaskId.value = null }
+        },
+    )
+}
+
+/**
+ * O host do snackbar de erro transitório.
+ */
+@Composable
+private fun ProjectDetailSnackbarHost(snackbarHostState: SnackbarHostState) {
+    SnackbarHost(snackbarHostState) { data ->
+        Snackbar(snackbarData = data)
+    }
+}
+
+/**
+ * O diálogo de criar tarefa, aberto enquanto o botão de criação estiver
+ * ativo.
+ */
+@Composable
+private fun NewTaskDialogHost(
+    visible: Boolean,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (title: String, priority: TaskPriority, dueDate: Instant?) -> Unit,
+    evaluateDeadline: suspend (Instant?) -> DeadlineInfo,
+) {
+    if (!visible) return
+    NewTaskDialog(
+        errorMessage = errorMessage,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        evaluateDeadline = evaluateDeadline,
+    )
+}
+
+/**
+ * O diálogo de excluir o projeto, aberto enquanto o botão de exclusão
+ * estiver ativo.
+ */
+@Composable
+private fun DeleteProjectDialogHost(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    if (!visible) return
+    DeleteProjectDialog(
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+    )
+}
+
+/**
+ * O corpo da tela: o estado e as ações que o [ProjectDetailBody] recebe.
+ */
+@Composable
+private fun ProjectDetailContent(
+    contentPadding: PaddingValues,
+    state: ProjectDetailUiState,
+    viewModel: ProjectDetailViewModel,
+    onRenameTask: (Task) -> Unit,
+    onChangePriority: (Task) -> Unit,
+) {
+    ProjectDetailBody(
+        contentPadding = contentPadding,
+        state =
+            ProjectDetailState(
+                tasks = state.tasks,
+                isLoading = state.isLoading,
+                errorMessage = state.errorMessage,
+            ),
+        actions =
+            ProjectDetailActions(
+                onRetry = viewModel::retry,
+                onDismissError = viewModel::clearError,
+                onChangeStatus = viewModel::changeStatus,
+                onDeleteTask = viewModel::deleteTask,
+                onRenameTask = onRenameTask,
+                onChangePriority = { task, _ -> onChangePriority(task) },
+            ),
+    )
+}
+
+/**
+ * A mensagem transitória do snackbar.
+ *
+ * E2.8 — as falhas de carga do Room aparecem no **banner** de erro, e
+ * não aqui: repetir a mesma falha nos dois lugares seria duplicação
+ * visual. As demais (RN01, validação, gravação) passam pelo snackbar.
+ */
+@Composable
+private fun resolveTransientMessage(errorMessage: ProjectDetailError?): String? =
+    errorMessage
+        ?.takeUnless { it is ProjectDetailError.LoadFailed }
+        ?.let { resolveProjectDetailMessage(it) }
+
+/**
+ * O snackbar de erro transitório, com auto-dismiss em 5 s (RN01).
+ *
+ * Devolve o estado do host, para que a tela não precise criá-lo: o
+ * efeito e o host nascem juntos.
+ */
+@Composable
+private fun ProjectDetailSnackbarEffect(
+    message: String?,
+    onDismiss: () -> Unit,
+): SnackbarHostState {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(message) {
+        if (!message.isNullOrBlank()) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
+            delay(ERROR_AUTO_DISMISS_MS)
+            onDismiss()
         }
-    if (priorityTarget != null) {
+    }
+    return snackbarHostState
+}
+
+/**
+ * O diálogo de prioridade, aberto enquanto houver uma tarefa em edição.
+ *
+ * O alvo é resolvido pelo **id** guardado (DEF-52): a `Task` não tem
+ * `Saver`, então o estado salvo guarda o id e a lista viva re-resolve.
+ */
+@Composable
+private fun ChangeTaskPriorityDialogHost(
+    taskId: String?,
+    tasks: List<Task>,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (Task, TaskPriority) -> Unit,
+) {
+    val target = remember(taskId, tasks) { taskById(tasks, taskId) }
+    if (target != null) {
         ChangeTaskPriorityDialog(
-            errorMessage = resolvedMessage,
-            currentPriority = priorityTarget.priority,
-            onDismiss = { priorityDialogTaskId.value = null },
-            onConfirm = { newPriority ->
-                viewModel.changeTaskPriority(priorityTarget, newPriority) { priorityDialogTaskId.value = null }
-            },
+            errorMessage = errorMessage,
+            currentPriority = target.priority,
+            onDismiss = onDismiss,
+            onConfirm = { newPriority -> onConfirm(target, newPriority) },
         )
     }
+}
 
-    val renameTarget =
-        remember(renameTaskId.value, state.tasks) {
-            taskById(state.tasks, renameTaskId.value)
-        }
-    if (renameTarget != null) {
+/**
+ * O diálogo de renomear, aberto enquanto houver uma tarefa em edição.
+ *
+ * O alvo é resolvido pelo **id** guardado (DEF-52), como no diálogo de
+ * prioridade.
+ */
+@Composable
+private fun RenameTaskDialogHost(
+    taskId: String?,
+    tasks: List<Task>,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (Task, String) -> Unit,
+) {
+    val target = remember(taskId, tasks) { taskById(tasks, taskId) }
+    if (target != null) {
         RenameTaskDialog(
-            errorMessage = resolvedMessage,
-            initialTitle = renameTarget.title,
-            onDismiss = { renameTaskId.value = null },
-            onConfirm = { newTitle ->
-                viewModel.renameTask(renameTarget, newTitle) { renameTaskId.value = null }
-            },
+            errorMessage = errorMessage,
+            initialTitle = target.title,
+            onDismiss = onDismiss,
+            onConfirm = { newTitle -> onConfirm(target, newTitle) },
         )
     }
 }
