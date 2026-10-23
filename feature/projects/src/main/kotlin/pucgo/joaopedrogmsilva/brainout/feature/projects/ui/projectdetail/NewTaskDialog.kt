@@ -4,8 +4,6 @@
 // O `evaluateDeadline` vem do `ProjectDetailViewModel` para que a UI
 // não precise importar o caso de uso de domínio diretamente.
 
-@file:Suppress("LongMethod") // três campos (título/prioridade/prazo) + diálogo; extrair quebraria a coesão.
-
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +37,9 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
+// `LongMethod`: três campos (título/prioridade/prazo) + diálogo; extrair
+// quebraria a coesão.
+@Suppress("LongMethod")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewTaskDialog(

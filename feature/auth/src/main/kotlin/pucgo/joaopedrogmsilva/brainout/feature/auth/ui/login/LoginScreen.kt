@@ -161,17 +161,14 @@ internal fun LoginBody(
             focusRequester = passwordFocus,
             imeAction = ImeAction.Done,
             onDone = callbacks.onSubmit,
-            labels =
-                PasswordFieldLabels(
+            config =
+                PasswordFieldConfig(
                     labelId = R.string.login_pwd_label,
                     placeholderId = R.string.login_pwd_placeholder,
                     showToggleId = R.string.login_visibility_show,
                     hideToggleId = R.string.login_visibility_hide,
-                ),
-            tags =
-                PasswordFieldTags(
-                    field = LoginTestTags.PASSWORD_FIELD,
-                    toggle = LoginTestTags.PASSWORD_TOGGLE,
+                    fieldTestTag = LoginTestTags.PASSWORD_FIELD,
+                    toggleTestTag = LoginTestTags.PASSWORD_TOGGLE,
                 ),
         )
 
@@ -226,7 +223,6 @@ internal data class LoginCallbacks(
 )
 
 /** Toggle para tornar o campo de senha persistente entre composições. */
-@Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PasswordField(
@@ -236,12 +232,11 @@ internal fun PasswordField(
     focusRequester: FocusRequester,
     imeAction: ImeAction,
     onDone: () -> Unit,
-    labels: PasswordFieldLabels,
-    tags: PasswordFieldTags,
+    config: PasswordFieldConfig,
 ) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    val showDescription = stringResource(id = labels.showToggleId)
-    val hideDescription = stringResource(id = labels.hideToggleId)
+    val showDescription = stringResource(id = config.showToggleId)
+    val hideDescription = stringResource(id = config.hideToggleId)
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -249,9 +244,9 @@ internal fun PasswordField(
             Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
-                .testTag(tags.field),
-        label = { Text(text = stringResource(id = labels.labelId)) },
-        placeholder = { Text(text = stringResource(id = labels.placeholderId)) },
+                .testTag(config.fieldTestTag),
+        label = { Text(text = stringResource(id = config.labelId)) },
+        placeholder = { Text(text = stringResource(id = config.placeholderId)) },
         singleLine = true,
         visualTransformation =
             if (passwordVisible) {
@@ -280,7 +275,7 @@ internal fun PasswordField(
                 onClick = { passwordVisible = !passwordVisible },
                 modifier =
                     Modifier
-                        .testTag(tags.toggle)
+                        .testTag(config.toggleTestTag)
                         .semantics {
                             contentDescription =
                                 if (passwordVisible) {
@@ -310,21 +305,19 @@ internal fun PasswordField(
 }
 
 /**
- * Conjunto de strings (resource ids) usadas pelo [PasswordField].
- * Agrupadas em um único parâmetro para manter a assinatura da
- * função abaixo do limite de `LongParameterList` do detekt.
+ * Configuração textual + tags do [PasswordField].
+ *
+ * Agrupada em um único parâmetro para manter a assinatura da função
+ * abaixo do limite de `LongParameterList` do detekt — o mesmo desenho
+ * do [EmailFieldConfig].
  */
-internal data class PasswordFieldLabels(
+internal data class PasswordFieldConfig(
     @androidx.annotation.StringRes val labelId: Int,
     @androidx.annotation.StringRes val placeholderId: Int,
     @androidx.annotation.StringRes val showToggleId: Int,
     @androidx.annotation.StringRes val hideToggleId: Int,
-)
-
-/** Tags de teste Compose aplicadas ao [PasswordField]. */
-internal data class PasswordFieldTags(
-    val field: String,
-    val toggle: String,
+    val fieldTestTag: String,
+    val toggleTestTag: String,
 )
 
 /**
