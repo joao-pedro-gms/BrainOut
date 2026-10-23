@@ -122,6 +122,14 @@ object HomeTestTags {
     const val CREATE_PROJECT_DESCRIPTION: String = "home_create_project_description"
     const val CREATE_PROJECT_CONFIRM: String = "home_create_project_confirm"
     const val CREATE_PROJECT_ADD_TAG: String = "home_create_project_add_tag"
+
+    /**
+     * Chip de tag selecionável no diálogo de criação de projeto.
+     *
+     * O sufixo é o id da tag (`home_create_project_tag_<id>`), porque
+     * há um chip por tag disponível.
+     */
+    const val CREATE_PROJECT_TAG: String = "home_create_project_tag"
     const val PROJECT_CARD: String = "home_project_card"
     const val FILTER_GROUP: String = "home_filter_group"
     const val FILTER_ACTIVE: String = "home_filter_active"
