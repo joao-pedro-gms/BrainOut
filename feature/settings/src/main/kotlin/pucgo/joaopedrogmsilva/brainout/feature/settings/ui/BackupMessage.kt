@@ -17,6 +17,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
@@ -51,7 +52,7 @@ internal fun BackupMessage(
                 .fillMaxWidth()
                 .testTag(BackupTestTags.MESSAGE),
         color = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(NeoRadii.card),
     ) {
         Column(
             modifier = Modifier.padding(12.dp),

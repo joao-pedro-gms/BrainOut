@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 @Composable
@@ -36,7 +37,7 @@ internal fun ProjectStateCard(
                 containerColor = MaterialTheme.colorScheme.surface,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(NeoRadii.card),
     ) {
         Column(
             modifier =

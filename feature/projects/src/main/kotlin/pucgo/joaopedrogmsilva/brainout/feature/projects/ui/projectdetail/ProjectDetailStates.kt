@@ -89,7 +89,7 @@ internal fun EmptyTasksCard() {
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
-        shape = RoundedCornerShape(NeoRadii.modal),
+        shape = RoundedCornerShape(NeoRadii.card),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
     ) {

@@ -60,7 +60,7 @@ internal fun ProjectCard(
                     indication = androidx.compose.foundation.LocalIndication.current,
                     onClick = onClick,
                 ).neoPressFeedback(interaction),
-        shape = RoundedCornerShape(NeoRadii.modal),
+        shape = RoundedCornerShape(NeoRadii.card),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
     ) {
