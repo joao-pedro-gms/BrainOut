@@ -138,15 +138,21 @@ class HomeViewModel
         val uiState: StateFlow<HomeUiState> =
             combine(
                 homeUiStateFlow(
-                    retryToken = retryToken,
-                    activeUserProvider = activeUserProvider,
-                    listingPreferences = listingPreferences,
-                    tagRepository = tagRepository,
-                    projectRepository = projectRepository,
-                    searchInput = _searchQuery,
-                    projectFilter = _projectFilter,
-                    debouncedInput = debouncedSearchInput,
-                    errorSink = errorSink,
+                    dependencies =
+                        ListingDependencies(
+                            activeUserProvider = activeUserProvider,
+                            listingPreferences = listingPreferences,
+                            projectRepository = projectRepository,
+                            tagRepository = tagRepository,
+                        ),
+                    signals =
+                        ListingSignals(
+                            retryToken = retryToken,
+                            searchInput = _searchQuery,
+                            projectFilter = _projectFilter,
+                            debouncedInput = debouncedSearchInput,
+                            errorSink = errorSink,
+                        ),
                 ),
                 errorSink,
             ) { state: HomeUiState, error: HomeErrorType? ->

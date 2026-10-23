@@ -54,6 +54,36 @@ internal data class ListingInputs(
     val filter: HomeProjectFilter,
 )
 
+/**
+ * As dependências que o pipeline da Home consulta: a sessão ativa e os
+ * três repositórios que respondem pela listagem.
+ *
+ * Agrupadas num objeto só para que a assinatura do pipeline não carregue
+ * nove parâmetros — a lista completa estava no limiar do `LongParameterList`
+ * do detekt e dependia de um `@Suppress`.
+ */
+internal data class ListingDependencies(
+    val activeUserProvider: ActiveUserProvider,
+    val listingPreferences: ListingPreferencesRepository,
+    val projectRepository: ProjectRepository,
+    val tagRepository: TagRepository,
+)
+
+/**
+ * Os sinais que o pipeline lê e escreve: o token de retry, o texto cru e
+ * o debounceado da busca, o filtro estrutural e o canal de erro.
+ *
+ * Separados das [ListingDependencies] porque têm natureza diferente —
+ * são estado mutável, não collaborators de leitura.
+ */
+internal data class ListingSignals(
+    val retryToken: MutableStateFlow<Int>,
+    val searchInput: MutableStateFlow<String>,
+    val projectFilter: MutableStateFlow<HomeProjectFilter>,
+    val debouncedInput: StateFlow<String>,
+    val errorSink: MutableStateFlow<HomeErrorType?>,
+)
+
 internal fun ListingPreferences.toSnapshot(): ListingSnapshot = ListingSnapshot(searchQuery, selectedTagId, sortOrder)
 
 /**
@@ -121,6 +151,71 @@ internal fun tagChipsForOwnerFlow(
         }.distinctUntilChanged()
 
 /**
+ * Os 4 sinais "instantâneos" que alimentam o pipeline: preferências,
+ * busca debounceada, tags em chips e filtro estrutural.
+ *
+ * A sincronização do input visual com o snapshot persistido acontece
+ * aqui, e **fora** do `combine`: o input cru muda a cada tecla e, se
+ * participasse do gatilho de assinatura, refaria a consulta do Room a
+ * cada tecla — o oposto do que o `debounce` promete.
+ */
+private fun listingInputsFlow(
+    dependencies: ListingDependencies,
+    signals: ListingSignals,
+): Flow<ListingInputs> =
+    combine(
+        listingPrefsFlow(dependencies.activeUserProvider, dependencies.listingPreferences),
+        signals.debouncedInput,
+        tagChipsForOwnerFlow(dependencies.activeUserProvider, dependencies.tagRepository),
+        signals.projectFilter,
+    ) {
+        prefs: ListingSnapshot,
+        query: String,
+        tagChips: List<TagChip>,
+        filter: HomeProjectFilter,
+        ->
+        ListingInputs(prefs, query, tagChips, filter)
+    }.onEach { inputs ->
+        if (inputs.query.isEmpty() && signals.searchInput.value != inputs.prefs.searchQuery) {
+            signals.searchInput.value = inputs.prefs.searchQuery
+        }
+    }
+
+/**
+ * A consulta ao Room e as tags por projeto, combinadas no estado final.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun projectsWithTagsFlow(
+    ownerId: String,
+    inputs: ListingInputs,
+    dependencies: ListingDependencies,
+): Flow<HomeUiState> {
+    val projectsFromRoom: Flow<List<Project>> =
+        dependencies.projectRepository.observeSearch(
+            ownerId = ownerId,
+            query = inputs.query,
+            tagId = inputs.prefs.selectedTagId,
+            sortOrder = inputs.prefs.sortOrder,
+        )
+    // E2.6/R5 — tags por projeto (não todas as tags do owner). Cada
+    // card lista apenas as tags associadas ao seu projeto.
+    //
+    // `observeByProjectIds` respeita o contrato "conjunto vazio → mapa
+    // vazio" (uma única consulta do Room), então o `onStart` aqui não é
+    // remendo: é só o valor inicial enquanto a consulta não responde —
+    // evita um piscar de "sem tags" em cada card.
+    val tagsByProject: Flow<Map<String, List<Tag>>> =
+        projectsFromRoom.flatMapLatest { projects ->
+            dependencies.tagRepository
+                .observeByProjectIds(projects.map { it.id }.toSet())
+                .onStart { emit(emptyMap()) }
+        }
+    return combine(projectsFromRoom, tagsByProject) { projects, tagsMap ->
+        buildHomeUiState(inputs, projects, tagsMap)
+    }
+}
+
+/**
  * Pipeline central da Home (E2.1/E2.5/E2.6/E2.8). Combina os 4
  * sinais "instantâneos" (preferências, busca debounceada, tags em
  * chips, filtro estrutural), usa-os para chamar `observeSearch` no
@@ -128,7 +223,7 @@ internal fun tagChipsForOwnerFlow(
  *
  * O `.catch` é o ponto de captura E2.8: quando o Room emite um erro
  * (e.g. banco corrompido, I/O falho), a exceção é registrada em
- * [errorSink] e o estado sai do loading.
+ * [ListingSignals.errorSink] e o estado sai do loading.
  *
  * O erro **não** viaja dentro do [HomeUiState]: o canal é lido pelo
  * ViewModel e combinado com o estado, de modo que "Dispensar" (que
@@ -140,92 +235,22 @@ internal fun tagChipsForOwnerFlow(
  * persistido quando o owner muda (ex.: login).
  */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-@Suppress("LongMethod", "LongParameterList")
 internal fun homeUiStateFlow(
-    retryToken: MutableStateFlow<Int>,
-    activeUserProvider: ActiveUserProvider,
-    listingPreferences: ListingPreferencesRepository,
-    tagRepository: TagRepository,
-    projectRepository: ProjectRepository,
-    searchInput: MutableStateFlow<String>,
-    projectFilter: MutableStateFlow<HomeProjectFilter>,
-    debouncedInput: StateFlow<String>,
-    errorSink: MutableStateFlow<HomeErrorType?>,
+    dependencies: ListingDependencies,
+    signals: ListingSignals,
 ): Flow<HomeUiState> =
-    retryToken.flatMapLatest { _ ->
-        activeUserProvider
+    signals.retryToken.flatMapLatest { _ ->
+        dependencies.activeUserProvider
             .observeActiveUserId()
             .flatMapLatest { ownerId ->
                 if (ownerId == null) {
                     flowOf(HomeUiState(isLoading = false))
                 } else {
                     val capturedOwnerId = ownerId
-                    // Combina os 4 sinais "instantâneos" (preferências,
-                    // busca debounceada, tags em chips, filtro
-                    // estrutural) e usa os valores para chamar
-                    // `observeSearch` no Room. O `observeSearch` +
-                    // `_searchInput` são combinados no `combine` interno
-                    // (5 fontes no total: projects + searchInput +
-                    // listingPrefs + tagChips + projectFilter).
-                    val listingInputs: Flow<ListingInputs> =
-                        combine(
-                            listingPrefsFlow(activeUserProvider, listingPreferences),
-                            debouncedInput,
-                            tagChipsForOwnerFlow(activeUserProvider, tagRepository),
-                            projectFilter,
-                        ) {
-                            prefs: ListingSnapshot,
-                            query: String,
-                            tagChips: List<TagChip>,
-                            filter: HomeProjectFilter,
-                            ->
-                            ListingInputs(prefs, query, tagChips, filter)
-                        }.onEach { inputs ->
-                            // Sincroniza o input visual com o snapshot
-                            // persistido quando o owner muda (ex.: login).
-                            //
-                            // Fica **fora** do `combine` de propósito: o
-                            // input cru muda a cada tecla e, se
-                            // participasse do gatilho de assinatura,
-                            // refaria a consulta do Room a cada tecla —
-                            // o oposto do que o `debounce` promete.
-                            if (inputs.query.isEmpty() && searchInput.value != inputs.prefs.searchQuery) {
-                                searchInput.value = inputs.prefs.searchQuery
-                            }
-                        }
-                    // A assinatura do Room é controlada só pelos inputs
-                    // **debounceados**: o texto cru entra depois, para
-                    // atualizar o `searchQuery` do estado (a barra de
-                    // busca mostra o que o usuário digitou, na hora).
-                    listingInputs
+                    listingInputsFlow(dependencies, signals)
                         .flatMapLatest { inputs ->
-                            val projectsFromRoom: Flow<List<Project>> =
-                                projectRepository.observeSearch(
-                                    ownerId = capturedOwnerId,
-                                    query = inputs.query,
-                                    tagId = inputs.prefs.selectedTagId,
-                                    sortOrder = inputs.prefs.sortOrder,
-                                )
-                            // E2.6/R5 — tags por projeto (não todas as
-                            // tags do owner). Cada card lista apenas as
-                            // tags associadas ao seu projeto.
-                            //
-                            // `observeByProjectIds` respeita o contrato
-                            // "conjunto vazio → mapa vazio" (uma única
-                            // consulta do Room), então o `onStart` aqui não
-                            // é remendo: é só o valor inicial enquanto a
-                            // consulta não responde — evita um piscar de
-                            // "sem tags" em cada card.
-                            val tagsByProject: Flow<Map<String, List<Tag>>> =
-                                projectsFromRoom.flatMapLatest { projects ->
-                                    tagRepository
-                                        .observeByProjectIds(projects.map { it.id }.toSet())
-                                        .onStart { emit(emptyMap()) }
-                                }
-                            combine(projectsFromRoom, tagsByProject) { projects, tagsMap ->
-                                buildHomeUiState(inputs, projects, tagsMap)
-                            }
-                        }.combine(searchInput) { state: HomeUiState, currentInput: String ->
+                            projectsWithTagsFlow(capturedOwnerId, inputs, dependencies)
+                        }.combine(signals.searchInput) { state: HomeUiState, currentInput: String ->
                             state.copy(searchQuery = currentInput)
                         }
                 }
@@ -235,14 +260,14 @@ internal fun homeUiStateFlow(
                 // canal quando a leitura falha, então os dois passos
                 // não se anulam — por isso o `onEach` fica **antes**
                 // do `catch`.
-                errorSink.value = null
+                signals.errorSink.value = null
             }.catch { throwable ->
                 if (throwable is CancellationException) throw throwable
-                errorSink.value = HomeErrorType.LoadFailed
+                signals.errorSink.value = HomeErrorType.LoadFailed
                 emit(
                     HomeUiState(
                         isLoading = false,
-                        projectFilter = projectFilter.value,
+                        projectFilter = signals.projectFilter.value,
                     ),
                 )
             }
