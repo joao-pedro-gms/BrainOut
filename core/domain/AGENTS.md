@@ -18,7 +18,7 @@ src/main/kotlin/.../core/domain/
 ├── notification/            # porta DeadlineNotificationScheduler (REMINDER_LEAD = 1h)
 ├── permission/              # requirePermission: o único ponto que consulta a matriz de papéis
 ├── repository/              # portas: User/Project/Task/Tag/Holiday/ListingPreferences + PasswordHasher + ActiveUserPort + DashboardStats
-└── usecase/                 # 14 use cases + UseCaseConstants (REMINDER_OFFSET_HOURS etc.)
+└── usecase/                 # 14 use cases + UseCaseConstants (MAX_ACTIVE_TASKS_PER_PROJECT)
 
 src/test/kotlin/.../core/domain/   # espelha main
 ├── CoreDomainSmokeTest.kt   # importa o marcador só pra validar o wiring
