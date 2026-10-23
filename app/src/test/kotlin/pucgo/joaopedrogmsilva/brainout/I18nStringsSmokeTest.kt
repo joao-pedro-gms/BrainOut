@@ -49,8 +49,11 @@ class I18nStringsSmokeTest {
 
     @Test
     fun `tagline is localized in both pt and en`() {
-        val pt = contextFor(Locale("pt")).getString(R.string.splash_tagline)
-        val en = contextFor(Locale("en")).getString(R.string.splash_tagline)
+        // A tagline é da feature de autenticação — o `:app` não guarda
+        // cópia das strings de tela (ver `app/src/main/res/values/strings.xml`).
+        val resource = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.splash_tagline
+        val pt = contextFor(Locale("pt")).getString(resource)
+        val en = contextFor(Locale("en")).getString(resource)
         // A chave existe nos dois conjuntos (lint MissingTranslation garante
         // a paridade); traduções efetivas devem diferir entre as línguas,
         // provando que o lookup de `values-en` não está quebrado.

@@ -3,67 +3,19 @@
 <resources>
     <string name="app_name">BrainOut</string>
 
-    <!-- Splash (E1.3) -->
-    <string name="splash_title">BrainOut</string>
-    <string name="splash_tagline">Organize seus projetos e tarefas neste aparelho.</string>
-    <string name="splash_cta">Começar</string>
+    <!--
+      Lembretes de prazo / notificações locais (E3.6).
 
-    <!-- Login (esqueleto, validação fica em E1.6) -->
-    <string name="login_title">Entrar</string>
-    <string name="login_subtitle">Entre em uma conta deste aparelho.</string>
-    <string name="login_email_label">E-mail</string>
-    <string name="login_email_placeholder">seu@email.com</string>
-    <string name="login_password_label">Senha</string>
-    <string name="login_password_placeholder">••••••••</string>
-    <string name="login_cta">Entrar</string>
-    <string name="login_create_account">Criar conta</string>
+      O `:app` é o dono do código das notificações, então é ele que
+      guarda as strings delas.
 
-    <!-- Register (esqueleto, validação fica em E1.6) -->
-    <string name="register_title">Criar conta</string>
-    <string name="register_subtitle">Crie uma conta neste aparelho para começar.</string>
-    <string name="register_name_label">Nome</string>
-    <string name="register_name_placeholder">Seu nome completo</string>
-    <string name="register_email_label">E-mail</string>
-    <string name="register_email_placeholder">seu@email.com</string>
-    <string name="register_password_label">Senha</string>
-    <string name="register_password_placeholder">Crie uma senha</string>
-    <string name="register_password_confirm_label">Confirmar senha</string>
-    <string name="register_password_confirm_placeholder">Digite a senha novamente</string>
-    <string name="register_cta">Cadastrar</string>
-    <string name="register_have_account">Já tenho conta</string>
-
-    <!-- Home (lista de projetos) -->
-    <string name="home_topbar_greeting">Olá, %1$s</string>
-    <string name="home_role_badge_owner">Owner</string>
-    <string name="home_role_badge_member">Member</string>
-    <string name="home_section_title">Seus projetos</string>
-    <string name="home_empty_title">Nenhum projeto ainda</string>
-    <string name="home_empty_body">Toque no botão “+” para criar o seu primeiro projeto.</string>
-    <string name="home_fab_create">Criar novo projeto</string>
-    <string name="home_fab_disabled_label">Em breve: criar projeto</string>
-
-    <!-- Project detail -->
-    <string name="project_detail_tasks_title">Tarefas</string>
-    <string name="project_detail_new_task">Nova tarefa</string>
-    <string name="project_detail_back">Voltar</string>
-
-    <!-- Settings -->
-    <string name="settings_title">Configurações</string>
-    <string name="settings_subtitle">Conta local e preferências do aplicativo.</string>
-    <string name="settings_section_account">Conta</string>
-    <string name="settings_section_appearance">Aparência</string>
-    <string name="settings_section_session">Sessão</string>
-    <string name="settings_option_profile">Perfil</string>
-    <string name="settings_option_notifications">Notificações</string>
-    <string name="settings_option_theme">Tema</string>
-    <string name="settings_option_signout">Sair</string>
-
-    <!-- Common -->
-    <string name="common_back">Voltar</string>
-    <string name="common_close">Fechar</string>
-    <string name="common_user_name_default">João Pedro</string>
-
-    <!-- Lembretes de prazo / notificações locais (E3.6) -->
+      As strings de tela (splash, login, register, home, project
+      detail, settings) NÃO moram aqui: cada módulo guarda as suas,
+      e `:app` não guarda cópia de nenhuma. Com `nonTransitiveRClass`,
+      uma chave repetida no app e na feature é fonte de verdade dupla
+      — e o texto editado na feature não mudaria nada, porque o merge
+      de recursos faz a cópia do app prevalecer.
+    -->
     <string name="deadline_channel_name">Lembretes de prazo</string>
     <string name="deadline_channel_description">Notificações enviadas 1 hora antes do prazo de cada tarefa.</string>
     <string name="deadline_notification_title">Prazo: %1$s</string>
@@ -71,5 +23,4 @@
     <string name="deadline_action_complete">Concluir</string>
     <string name="deadline_unknown_project">(sem projeto)</string>
     <string name="deadline_permission_denied_toast">Sem permissão de notificações — os lembretes de prazo não serão exibidos.</string>
-    <string name="deadline_permission_rationale_title">Permissão de notificações</string>
 </resources>
