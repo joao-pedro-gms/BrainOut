@@ -592,6 +592,54 @@ class HomeViewModelTest {
         }
 
     /**
+     * O `debounce` da busca existe para que uma rajada de digitação
+     * vire **uma** consulta ao Room. O texto cru alimenta a barra de
+     * busca (na hora), mas não pode gatilhar a assinatura da consulta
+     * — senão cada tecla refaz o SQL, que é exatamente o que o
+     * debounce promete evitar.
+     */
+    @Test
+    fun `E2 6 cada tecla nao refaz a consulta do Room`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
+            coEvery {
+                projectRepository.observeSearch(any(), any(), any(), any())
+            } returns projectsFlow
+
+            val viewModel = newViewModel()
+            val job = launch { viewModel.uiState.collect() }
+            advanceUntilIdle()
+
+            viewModel.onSearchQueryChange("a")
+            viewModel.onSearchQueryChange("ap")
+            viewModel.onSearchQueryChange("app")
+            advanceTimeBy(400.milliseconds)
+            advanceUntilIdle()
+
+            // A consulta inicial (texto vazio) e a do texto final —
+            // uma vez cada. As teclas intermediárias não consultam.
+            coVerify(exactly = 1) {
+                projectRepository.observeSearch(
+                    ownerId = "u1",
+                    query = "",
+                    tagId = null,
+                    sortOrder = SortOrder.CreatedDesc,
+                )
+            }
+            coVerify(exactly = 1) {
+                projectRepository.observeSearch(
+                    ownerId = "u1",
+                    query = "app",
+                    tagId = null,
+                    sortOrder = SortOrder.CreatedDesc,
+                )
+            }
+            job.cancel()
+        }
+
+    /**
      * O debounce configurado em [HomeViewModel.searchQuery] não
      * pode bloquear a emissão inicial do estado vazio: o
      * `uiState` deve chegar a `isLoading = false` mesmo antes do
