@@ -125,7 +125,7 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: Nav
 private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Register) {
         RegisterScreen(
-            onRegisterSubmit = {
+            onRegisterSuccess = {
                 Log.d(TAG, "Navegando: Register -> Home")
                 navController.navigate(BrainOutRoutes.MainGraph) {
                     popUpTo(0) { inclusive = true }

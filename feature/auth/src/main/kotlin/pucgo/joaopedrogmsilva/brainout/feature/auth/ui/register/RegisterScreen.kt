@@ -64,7 +64,7 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
 /**
  * Tela de cadastro — formulário funcional (E1.6).
  *
- * @param onRegisterSubmit disparado após cadastro bem-sucedido
+ * @param onRegisterSuccess disparado após cadastro bem-sucedido
  *  (consumido pelo `NavHost` para navegar para `home`).
  * @param onHaveAccountClicked disparado quando o usuário toca em
  *  "Já tenho conta" — volta para a rota `login`.
@@ -74,7 +74,7 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onRegisterSubmit: () -> Unit,
+    onRegisterSuccess: () -> Unit,
     onHaveAccountClicked: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel(),
@@ -84,7 +84,7 @@ fun RegisterScreen(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             if (event is AuthEvent.NavigateHome) {
-                onRegisterSubmit()
+                onRegisterSuccess()
             }
         }
     }
@@ -129,9 +129,9 @@ object RegisterTestTags {
     const val NAME_FIELD: String = "register_name"
     const val EMAIL_FIELD: String = "register_email"
     const val PASSWORD_FIELD: String = "register_password"
-    const val PASSWORD_CONFIRM_FIELD: String = "register_visibility_confirm"
-    const val PASSWORD_TOGGLE: String = "register_visibility_toggle"
-    const val PASSWORD_CONFIRM_TOGGLE: String = "register_visibility_confirm_toggle"
+    const val PASSWORD_CONFIRM_FIELD: String = "register_password_confirm"
+    const val PASSWORD_TOGGLE: String = "register_password_toggle"
+    const val PASSWORD_CONFIRM_TOGGLE: String = "register_password_confirm_toggle"
     const val ROLE_OWNER: String = "register_role_owner"
     const val ROLE_MEMBER: String = "register_role_member"
     const val SUBMIT: String = "register_submit"
