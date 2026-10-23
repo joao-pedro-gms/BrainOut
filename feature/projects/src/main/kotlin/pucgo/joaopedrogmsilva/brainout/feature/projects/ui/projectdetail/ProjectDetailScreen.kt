@@ -94,10 +94,10 @@ fun ProjectDetailScreen(
     // DEF-52 — o estado salvo guarda o **id** da tarefa, não o `Task`: a
     // classe `Task` não tem `Saver`, então girar o aparelho com o diálogo
     // aberto o fechava e perdia a tarefa selecionada.
-    val priorityDialogTaskId = rememberEditedTaskId(key = "priorityDialogTaskId")
+    val priorityDialogTaskId = rememberPriorityDialogTaskId()
     // DEF-22 — tarefa selecionada para renomear; não-nula abre
     // [RenameTaskDialog]. É o que torna `renameTask` alcançável.
-    val renameTaskId = rememberEditedTaskId(key = "renameTaskId")
+    val renameTaskId = rememberRenameTaskId()
 
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("project_detail_$projectId"),
@@ -200,20 +200,33 @@ fun ProjectDetailScreen(
 }
 
 /**
- * Id da tarefa em edição (prioridade ou renomear), guardado no estado
- * salvo da Activity.
+ * O id da tarefa em edição no diálogo de prioridade (RN02), guardado no
+ * estado salvo da Activity.
  *
  * DEF-52 — o que fica salvo é o **id**, não o `Task`: a classe `Task`
  * não tem `Saver`, então girar o aparelho com o diálogo de edição
  * aberto o fechava e perdia a tarefa selecionada.
  *
- * A chave é explícita porque dois diálogos usam este estado: sem ela,
- * o `rememberSaveable` deriva a chave da posição do código e os dois
- * compartilhariam o mesmo slot.
+ * O id fica no estado salvo pelo escopo posicional do `rememberSaveable`
+ * — o runtime do Compose gera uma chave única para cada local de código
+ * exato da composição. A versão anterior passava uma chave manual
+ * (`rememberSaveable(key = ...)`), que o Compose depreciou por burlar
+ * esse escopo.
  */
 @Composable
-internal fun rememberEditedTaskId(key: String): MutableState<String?> =
-    rememberSaveable(key = key) { mutableStateOf(null) }
+internal fun rememberPriorityDialogTaskId(): MutableState<String?> = rememberSaveable { mutableStateOf<String?>(null) }
+
+/**
+ * O id da tarefa em edição no diálogo de renomear (DEF-22), guardado no
+ * estado salvo da Activity.
+ *
+ * Fica em uma função própria — e não em um `rememberSaveable` a mais ao
+ * lado do de prioridade — porque a separação dos dois slots depende do
+ * local de código: duas chamadas no mesmo corpo compartilhariam o
+ * mesmo local e, portanto, o mesmo slot.
+ */
+@Composable
+internal fun rememberRenameTaskId(): MutableState<String?> = rememberSaveable { mutableStateOf<String?>(null) }
 
 /**
  * Resolve a tarefa em edição pelo id guardado no estado salvo.

@@ -18,6 +18,10 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
  * O `Task` não tem `Saver`, então o estado salvo guarda o **id** da
  * tarefa — é o que permite o diálogo de edição sobreviver a uma
  * recreação da Activity (giro do aparelho).
+ *
+ * Os dois diálogos (prioridade e renomear) têm estados **independentes**:
+ * cada um tem o seu próprio `rememberSaveable`, e é o escopo posicional do
+ * runtime do Compose que garante que eles não compartilhem o slot.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "pt-rBR")
@@ -31,7 +35,7 @@ class TaskDialogTargetTest {
         val observed = mutableStateOf<String?>(null)
 
         restorationTester.setContent {
-            val editedId = rememberEditedTaskId(key = "renameTaskId")
+            val editedId = rememberRenameTaskId()
             observed.value = editedId.value
             editedId.value = "task-1"
         }
@@ -52,8 +56,8 @@ class TaskDialogTargetTest {
         val observed = mutableStateOf<Pair<String?, String?>>(null to null)
 
         restorationTester.setContent {
-            val priorityId = rememberEditedTaskId(key = "priorityDialogTaskId")
-            val renameId = rememberEditedTaskId(key = "renameTaskId")
+            val priorityId = rememberPriorityDialogTaskId()
+            val renameId = rememberRenameTaskId()
             observed.value = priorityId.value to renameId.value
             priorityId.value = "task-1"
             renameId.value = "task-2"
