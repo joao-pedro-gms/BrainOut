@@ -143,7 +143,7 @@ Status conferido um a um contra o código em `main`
 - Pré-visualizações sem `BrainOutTheme { Surface { ... } }`.
 - 🟡 **PARCIAL** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves continuam declaradas e sem uso; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já são aplicadas por `DashboardLoading` e `DashboardEmptyState`.
 - 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
-- `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`.
+- ✅ **RESOLVIDO** — `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`. O `Instant#parse` do preview deixou de ser problema quando o módulo passou a usar `coreLibraryDesugaring` (DEF-63); o lint do módulo roda com zero erros e o gate voltou a ser rígido, com `MissingTranslation` promovido a erro.
 
 ### feature/settings
 
@@ -172,8 +172,8 @@ Status conferido um a um contra o código em `main`
 - **Versões de actions**: `upload-artifact` estava em `@v7` (inválido) em 24/09; ✅ **corrigido — todos os 5 usos de `actions/upload-artifact` estão em `@v4`** (`ci.yml:71,158,170,286`, `release-apk.yml:105`). Restam `@v6`/`@v5` **válidos** em `pages.yml`: `actions/configure-pages@v6:39`, `actions/upload-pages-artifact@v5:79`, `actions/deploy-pages@v5:94` — são actions do Pages com majors próprios, não inválidas. Os demais usos são `@v4` (`checkout`, `setup-java`, `cache`, `github/codeql-action/*`).
 - `codeql.yml:41` `build-mode: none` para Java/Kotlin (compiladas) → análise vazia. ✅ **PARCIALMENTE RESOLVIDO** — `build-mode` agora é `autobuild` (comentário explicativo no arquivo); `continue-on-error: true` **permanece** no job (linha 26), então a análise continua não-bloqueante.
 - JDK drift: CI 17 vs release 21 vs backend-integration sem JDK; cache key única compartilhada entre JDKs (cache pollution).
-- `core/data/build.gradle.kts:118-121` `abortOnError = false` esconde `MissingTranslation`/NewApi do data layer.
-- `feature/tasks/build.gradle.kts:57` `abortOnError = false` esconde lint da feature.
+- ✅ **RESOLVIDO** — `core/data/build.gradle.kts:118-121` `abortOnError = false` esconde `MissingTranslation`/NewApi do data layer. O módulo usa `abortOnError = true` desde o DEF-63 (desugaring); `MissingTranslation` não é promovido porque o módulo não tem string de interface.
+- ✅ **RESOLVIDO** — `feature/tasks/build.gradle.kts:57` `abortOnError = false` esconde lint da feature. O gate voltou a ser rígido na mesma linha em que o desugaring (DEF-63) eliminou o `NewApi` do preview.
 - `koverLog` line 87 — exclusão `*.remote.*` mascara código de produção (`RemoteDataSource` error propagation + `HolidayRemoteDataSource` cache mutex).
 - `gradle.projectsEvaluated` hook frágil (string matching, late evaluation).
 - Common Android block (compileSdk/minSdk/javaVersion/jvmTarget/buildTypes) duplicado ×7 módulos. Detekt block duplicado ×8. `missingDimensionStrategy` ×4. `testOptions.unitTests.isIncludeAndroidResources` duplicado em `:app` (linhas 139 **e** 165).

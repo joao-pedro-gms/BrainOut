@@ -111,9 +111,9 @@ object TasksTestTags {
 @Composable
 internal fun TasksContent(
     state: TasksUiState,
+    modifier: Modifier = Modifier,
     onRetry: () -> Unit = {},
     onDismissError: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().neoContentWidth().padding(horizontal = LocalNeoWindowInfo.current.margin),
