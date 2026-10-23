@@ -132,7 +132,7 @@ Status conferido um a um contra o código em `main`
 - ✅ **RESOLVIDO** — `PriorityChart` contrato frágil: `barColors[index]` + `counts.size` divisor sem `require`. Empty list → NaN. Rótulo e cor agora são lidos com guarda (`zip` e `getOrElse`) e o divisor tem piso 1; dois testes novos cobrem a lista vazia e a lista maior que o número de níveis.
 - `TasksViewModel.toRow` rebuilds `associateBy` per task (O(n*m)). Hoist.
 - Nested `flatMapLatest` re-subscribes projects flow on every task emission → use `combine`.
-- `DashboardViewModel.currentWeekStartMillis()` avaliado por subscription; `Instant.now()` no `Clock` injectable → week-rollover stale + untestable.
+- 🟡 **PARCIAL (DEF-74)** — `DashboardViewModel.currentWeekStartMillis()` avaliado por subscription; `Instant.now()` no `Clock` injectable → week-rollover stale + untestable. O instante passou a vir de um `java.time.Clock` injetado (`provideClock` no `DataModule`), o que torna o cálculo determinístico e testável, e a semana é recalculada quando a tela é reaberta (o `WhileSubscribed(5_000)` solta o fluxo antigo). O que continua de pé: uma tela **aberta** atravessando a virada de segunda-feira mostra a semana antiga — um fluxo periódico resolveria, mas quebra o `advanceUntilIdle` dos testes.
 - UTC Monday hardcoded (en expects Sunday).
 - `AssistChip(onClick = {})` decorativo em PriorityChip/StatusChip — ainda focusável, TalkBack engana.
 - `TasksErrorBanner(message: String)` + `DashboardErrorBanner` suprime `message` (`@Suppress("UNUSED_PARAMETER")`) — sempre mostra a string canônica.

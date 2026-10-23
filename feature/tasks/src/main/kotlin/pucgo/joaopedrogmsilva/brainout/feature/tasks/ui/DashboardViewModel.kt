@@ -37,8 +37,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import java.time.Clock
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
@@ -92,6 +92,7 @@ class DashboardViewModel
         private val projectRepository: ProjectRepository,
         private val taskRepository: TaskRepository,
         private val activeUserProvider: ActiveUserProvider,
+        private val clock: Clock,
     ) : ViewModel() {
         /** Estado de leitura compartilhado com a lista de Tarefas (retry + erro). */
         private val loadState = TasksLoadState()
@@ -201,10 +202,20 @@ class DashboardViewModel
          * 00:00 via [TemporalAdjusters.previousOrSame]. Semana UTC evita
          * depender do fuso do dispositivo para a agregação SQL — a contagem
          * é estável entre sessões e dispositivos.
+         *
+         * O instante vem do [clock] injetado, e não de `Instant.now()`:
+         * com o relógio do sistema dentro do ViewModel, o cálculo não era
+         * determinístico e o teste dependia do dia em que rodava.
+         *
+         * O valor é calculado na assinatura do fluxo. Como o `stateIn` usa
+         * `WhileSubscribed(5_000)`, reabrir a tela depois da virada
+         * recalcula a semana — o caso que ficava desatualizado é o de uma
+         * tela aberta atravessando a virada, que é raro e está
+         * documentado aqui.
          */
         private fun currentWeekStartMillis(): Long =
-            Instant
-                .now()
+            clock
+                .instant()
                 .atZone(ZoneOffset.UTC)
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .toLocalDate()
