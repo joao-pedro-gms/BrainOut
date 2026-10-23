@@ -27,6 +27,16 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > alvos de decomposição de arquivos (1403/1027/593/583 linhas) hoje
 > estão todos abaixo de 415.
 
+> **⚠️ Base pré-transição local.** Esta página foi escrita contra a base que
+> ainda tinha camada de rede, flavors e fila `pending_ops`. A direção aprovada
+> em 16/10/2026 ([TRANSICAO-LOCAL](TRANSICAO-LOCAL.md)) removeu esse código no
+> #218: o diretório `backend-stub/` foi apagado por inteiro e o job
+> `backend-integration` não existe mais. Todo item desta página que cita o
+> stub, os flavors, `BuildConfig.BASE_URL` ou a fila descreve **código que não
+> existe mais** — vale como histórico do diagnóstico, não como backlog. O
+> produto é local; a leitura do estado atual está no *ledger*
+> ([DEFEITOS](DEFEITOS.md)).
+
 ---
 
 ## P0 — bugs críticos — **TODOS CORRIGIDOS (verificado em 08/10/2026)**
@@ -147,15 +157,22 @@ Status conferido um a um contra o código em `main`
 
 ### feature/settings
 
-- `app/src/main/res/values*/strings.xml:58-66` **duplica** as 9 chaves `settings_*` já em `feature/settings/res` — dual source of truth, eventual `Duplicate resources`. Deletar de `:app`. ⚠️ **AINDA VÁLIDO em 08/10/2026, não corrigido** — as 9 chaves (`settings_title`, `settings_subtitle`, `settings_section_account`, `settings_section_appearance`, `settings_section_session`, `settings_option_profile`, `settings_option_notifications`, `settings_option_theme`, `settings_option_signout`) existem nos **dois** arquivos, em PT **e** EN. Verificado que `app` não consome nenhuma delas: os 9 `R.string.settings_*` do código estão todos em `feature/settings/` (`SettingsScreen.kt:62`, `SettingsStructure.kt` ×7). A remoção em `:app` é segura e puramente cosmética (risco de `Duplicate resources` permanece).
-- `SettingsRoutes.SettingsPattern` constante morta. NavHost usa `BrainOutRoutes.Settings`. Remover ou tornar `private`.
-- Build.gradle.kts tem `lifecycle-viewmodel-compose`, `hilt-android`, `hilt-navigation-compose`, KSP mas **não tem** `SettingsViewModel` — todas dead deps.
-- `SettingsScreen.kt:174-178` `@Preview` sem `BrainOutTheme { Surface { ... } }`.
-- `Profile`/`Notifications`/`Theme` cliques são no-op silenciosos (BrainOutNavHost L179-183). No Snackbar/Toast — broken UX.
-- `SettingsStructure.kt:4-6` comentário envelhece mal ("não precisa de ViewModel próprio"). Reavaliar em E2.6+.
-- `FEATURE_SETTINGS_PACKAGE` constante não referenciada fora do próprio arquivo.
+- ✅ **RESOLVIDO (PR #272)** — `app/src/main/res/values*/strings.xml:58-66` **duplica** as 9 chaves `settings_*` já em `feature/settings/res` — dual source of truth, eventual `Duplicate resources`. Deletar de `:app`. As 9 chaves saíram do `:app` (que foi de 55 para 8 strings) junto com as outras 38 cópias de feature que lá estavam.
+- ⚪️ **OBSOLETO** — `SettingsRoutes.SettingsPattern` constante morta. NavHost usa `BrainOutRoutes.Settings`. Remover ou tornar `private`. A constante não existe mais.
+- ❌ **NÃO É VERDADE** — Build.gradle.kts tem `lifecycle-viewmodel-compose`, `hilt-android`, `hilt-navigation-compose`, KSP mas **não tem** `SettingsViewModel` — todas dead deps. O `BackupViewModel` (PR #214) usa `hiltViewModel()` (de `hilt-navigation-compose`) e é um `@HiltViewModel` (Hilt + ksp): as dependências existem porque são usadas. O que não existe é um `SettingsViewModel` — e ele não é necessário: só o backup tem estado próprio.
+- ⚠️ **PARCIAL** — `SettingsScreen.kt:174-178` `@Preview` sem `BrainOutTheme { Surface { ... } }`. A preview embrulha em `BrainOutTheme` e a tela desenha o próprio `Surface` (`SettingsScreen.kt:119`), então o fundo Neo aparece — mas o `Surface` vem de dentro da tela, e não do preview, ao contrário das três previews do módulo de tarefas.
+- ✅ **RESOLVIDO (DEF-44, PR #252)** — `Profile`/`Notifications`/`Theme` cliques são no-op silenciosos (BrainOutNavHost L179-183). No Snackbar/Toast — broken UX. As linhas de placeholder agora respondem "Em breve" num snackbar (`SettingsRowKind.Placeholder`).
+- ✅ **RESOLVIDO** — `SettingsStructure.kt:4-6` comentário envelhece mal ("não precisa de ViewModel próprio"). Reavaliar em E2.6+. O comentário foi corrigido: só as linhas de backup têm estado próprio (o `BackupViewModel`).
+- ℹ️ **POR DECISÃO** — `FEATURE_SETTINGS_PACKAGE` constante não referenciada fora do próprio arquivo. É a convenção de marcador de módulo (o `AGENTS.md` registra que ela existe nos 8 módulos e o Kover a exclui).
 
 ### backend-stub
+
+> ⚪️ **REMOVIDO** — o diretório `backend-stub/` foi apagado por inteiro no #218
+> (commit `05acf32`), junto com a camada de rede, a fila `pending_ops` e o job
+> `backend-integration` que o exercitava. Os achados abaixo descrevem arquivos
+> que não existem mais: valem como histórico do contrato `/v1/*`, não como
+> backlog. A seção "Correções aplicadas (2026-09-24)" deste arquivo, que
+> menciona o stub, é um registro datado de antes da remoção.
 
 - `smoke_e2e.py:18-23` — quando `want_status is None`, `return 200, json.loads(out)` hardcoda 200 → asserts `code == 200` são **tautológicos**. Toda POST/PUT/GET (lines 35, 41, 48, 68, 71, 78, 89) aceita 4xx/5xx silencioso.
 - `server.py:96-110` — `TaskIn`/`TaskUpsert.project_id: str` sem UUID validator → 404 (project not found) em vez de **400** exigido por §5.1.

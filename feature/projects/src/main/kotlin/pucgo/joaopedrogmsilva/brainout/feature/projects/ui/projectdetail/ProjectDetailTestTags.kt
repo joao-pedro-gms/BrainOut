@@ -14,7 +14,6 @@ object ProjectDetailTestTags {
     const val NEW_TASK_SAVE: String = "project_detail_new_task_save"
     const val NEW_TASK_CANCEL: String = "project_detail_new_task_cancel"
     const val NEW_TASK_DUE_DATE_FIELD: String = "project_detail_new_task_due_date_field"
-    const val NEW_TASK_DUE_DATE_FIELD_OVERLAY: String = "project_detail_new_task_due_date_overlay"
     const val NEW_TASK_HOLIDAY_HINT: String = "project_detail_new_task_holiday_hint"
     const val TASK_ITEM_MENU: String = "project_detail_task_item_menu"
     const val TASK_ITEM_MENU_DELETE: String = "project_detail_task_item_menu_delete"
