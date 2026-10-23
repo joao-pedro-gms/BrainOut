@@ -7,8 +7,8 @@ import javax.inject.Inject
 /**
  * Caso de uso responsável por remover uma [pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag].
  *
- * Associações em `project_tags` são removidas via `ON DELETE CASCADE`
- * do schema Room — não é necessário tratamento adicional.
+ * Associações em `project_tags` são removidas em cascata pela
+ * implementação — não é necessário tratamento adicional aqui.
  */
 class DeleteTagUseCase
     @Inject

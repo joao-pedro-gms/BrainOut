@@ -24,6 +24,11 @@ class BrainOutAppSmokeTest {
     fun `nav routes expose the expected top level destinations`() {
         // Garante que o conjunto de rotas exposto em BrainOutRoutes está
         // alinhado com as 6 telas exigidas pelo marco E1.3 do ROADMAP.
+        //
+        // O esperado é literal de propósito: comparar o conjunto com
+        // ele mesmo (o teste anterior) nunca falharia, porque os dois
+        // lados eram construídos com as mesmas constantes — um erro de
+        // digitação numa rota passaria batido.
         val actual =
             setOf(
                 BrainOutRoutes.Splash,
@@ -35,12 +40,12 @@ class BrainOutAppSmokeTest {
             )
         val expected =
             setOf(
-                BrainOutRoutes.Splash,
-                BrainOutRoutes.Login,
-                BrainOutRoutes.Register,
-                BrainOutRoutes.Home,
-                BrainOutRoutes.Settings,
-                BrainOutRoutes.ProjectDetailPattern,
+                "splash",
+                "login",
+                "register",
+                "home",
+                "settings",
+                "project/{projectId}",
             )
         assertThat(actual).isEqualTo(expected)
     }

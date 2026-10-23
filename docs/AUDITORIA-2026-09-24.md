@@ -51,23 +51,23 @@ Status conferido um a um contra o código em `main`
 
 ### App module (`brainOut :app`)
 
-- `MainActivity.kt:87-89` + AGENTS: permission request prompt roda em **toda composição**, não só na Home como documentado.
-- `MainActivity.kt:152-161` `withContext(Dispatchers.IO) { currentActiveUser }` sem `runCatching` → spinner eterno em DataStore/Room falho no cold-start.
-- `BrainOutAppSmokeTest.kt:32-52` — `actual == expected` tautologia (sets idênticos).
+- ✅ **RESOLVIDO (PR #251)** — `MainActivity.kt:87-89` + AGENTS: permission request prompt roda em **toda composição**, não só na Home como documentado. O pedido da permissão saiu da raiz da Activity e passou para o destino Home (DEF-36).
+- ✅ **RESOLVIDO** — `MainActivity.kt:152-161` `withContext(Dispatchers.IO) { currentActiveUser }` sem `runCatching` → spinner eterno em DataStore/Room falho no cold-start. A leitura da sessão agora é envolvida em `runCatching`: se falhar, o app segue para o Splash (que pede o login dentro dele) em vez de deixar `startDestination` nulo e a tela presa no `LoadingIndicator`.
+- ✅ **RESOLVIDO** — `BrainOutAppSmokeTest.kt:32-52` — `actual == expected` tautologia (sets idênticos). O lado esperado virou literal de propósito: com os dois lados construídos pelas mesmas constantes, o teste nunca falharia e um erro de digitação numa rota passaria batido.
 - `DeadlineWorker.kt:104` + `NotificationDismissal.kt:22` — `task.id.hashCode()` como notification ID: colide, pode ser negativo; clamp em `Int.MAX_VALUE`/`0x7FFF_FFFF` ou map estável.
-- `SyncConnectivityWatcher.kt:55-60` — `registerNetworkCallback` dispara `onAvailable` na primeira rede disponível; sync duplica com o `ensurePeriodicSync` 15-min. Pular o primeiro.
+- ⚪️ **OBSOLETO** — `SyncConnectivityWatcher.kt:55-60` — `registerNetworkCallback` dispara `onAvailable` na primeira rede disponível; sync duplica com o `ensurePeriodicSync` 15-min. Pular o primeiro. A camada de sync foi removida no #212.
 - ✅ **RESOLVIDO (PR #270)** — `DeadlineReceiver.kt:27-30` + `DeadlineWorker.kt:33-35` — KDoc + manifest mencionam ação "Dispensar" que não é adicionada ao `addAction`. As referências foram removidas: a notificação só tem o botão "Concluir", e o toque no corpo abre o app e dispensa (`setAutoCancel(true)`).
 - ✅ **RESOLVIDO** — `notifications/NotificationPermissionStore.kt` + `DeadlineReceiver` carecem de teste Robolectric (goAsync + cancel + dismiss). O store tem `NotificationPermissionRequestTest` (3 casos) e o receiver ganhou `DeadlineReceiverTest` (PR #270, 5 casos: enfileira, cancela, dispensa, ação alternativa e intent sem id).
 
 ### core/domain
 
-- `CanPerformActionUseCase.kt:19-27` — sem `@Inject constructor` e `invoke` não é `suspend`. Quebra template AGENTS duas vezes.
+- ⚪️ **OBSOLETO** — `CanPerformActionUseCase.kt:19-27` — sem `@Inject constructor` e `invoke` não é `suspend`. Quebra template AGENTS duas vezes. O use case foi removido no PR #226 por não ter caller de produção; o gate de papel entrou pelo `ActiveUserPort` + `requirePermission` (PR #264).
 - ✅ **RESOLVIDO (PR #269)** — `Task.transitionTo` + `CreateTaskUseCase.scheduleReminder` + `ChangeTaskStatusUseCase.reconcileReminder` + `UpdateTaskUseCase.reconcileReminder` usam `Instant.now()` direto (não injetável → RN03 não-testável; `TaskTest` **não afirma** populating/clearing em transições). O carimbo é injetável (`Task.transitionTo(target, now)`, como o `now` de `Task.create`), os use cases de lembrete passam pela regra única `ReminderReconciler` (que não carimba nada) e o `TaskTest` afirma o carimbo e o apagamento.
-- `TaskPriority.fromCodeOrThrow` é alias morto de `fromCode`. Remover ou documentar e estender.
-- `TaskPriority.VALID_CODES` + `LOW_CODE..CRITICAL_CODE` são dead constants.
+- ⚪️ **OBSOLETO** — `TaskPriority.fromCodeOrThrow` é alias morto de `fromCode`. Remover ou documentar e estender. O alias não existe mais no código.
+- ⚪️ **OBSOLETO** — `TaskPriority.VALID_CODES` + `LOW_CODE..CRITICAL_CODE` são dead constants. `VALID_CODES` está em uso (`TaskRepositoryImpl` e `DashboardViewModel` normalizam a contagem por ele) e as constantes `LOW_CODE..CRITICAL_CODE` não existem mais.
+- ✅ **RESOLVIDO** — `TaskRepository.kt` KDoc vaza "Room" / "invalidação do Room" / "@Transaction" para o domínio. A porta documenta o **contrato** ("na mesma transação", "mudança relevante nos dados"); o mesmo vale para `ChangeTaskStatusUseCase`, `DeleteProjectUseCase`, `DeleteTagUseCase`, `CreateTagUseCase` e `CreateTaskUseCase`. O KDoc do `completeAndCascade` ainda prometia `IllegalArgumentException` quando a tarefa não existe — a implementação lança `TaskNotFoundException`; o texto foi corrigido.
 - `SortOrder.fromStorageKey` tem dois branches com o mesmo fallback (`CreatedDesc`).
-- `TaskRepository.kt` KDoc vaza "Room" / "invalidação do Room" / "@Transaction" para o domínio.
-- `UpdateTaskUseCase.kt:50-53` prossegue silenciosamente quando `findById` retorna null → RN02 não roda.
+- ✅ **RESOLVIDO** — `UpdateTaskUseCase.kt:50-53` prossegue silenciosamente quando `findById` retorna null → RN02 não roda. O repositório é quem falha: `TaskRepositoryImpl.update` lança `TaskNotFoundException` quando a tarefa não existe, então o "silêncio" nunca chega a happen — o caso de uso propaga a falha de domínio.
 - 4 use cases **sem teste** (gap conhecido, AGENTS): `CreateTagUseCase`, `UpdateProjectUseCase`, `DeleteProjectUseCase`, `DeleteTagUseCase`. Cada um é 1-line delegate mas zerar cobertura derruba o piso Kover.
 - ✅ **RESOLVIDO (PR #269)** — `TaskPriorityRulesTest.update integral` duplica cenário `change priority from DONE is blocked` e nem exercita `copy`. O cenário duplicado saiu; o atalho `copy` que o modelo não bloqueia passou a ser coberto no `UpdateTaskUseCaseTest`, junto do caso de uso que o barra.
 

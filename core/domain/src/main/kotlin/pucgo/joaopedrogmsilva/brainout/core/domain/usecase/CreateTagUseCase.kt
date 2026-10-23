@@ -9,9 +9,10 @@ import javax.inject.Inject
  * Caso de uso responsável por criar uma nova [Tag].
  *
  * Constrói a entidade via [Tag.create] (valida nome e cor) e
- * delega a persistência ao [TagRepository]. O índice único
- * `(owner_id, name)` do Room propaga colisões como
- * `SQLiteConstraintException`; uma camada superior (ex.:
+ * delega a persistência ao [TagRepository]. A unicidade de
+ * `(owner_id, name)` é garantida pela implementação, que traduz a
+ * violação para [pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException];
+ * uma camada superior (ex.:
  * `ViewModel`) deve capturar e converter para erro de domínio
  * quando necessário.
  */
