@@ -98,49 +98,49 @@ Status conferido um a um contra o código em `main`
 
 ### feature/auth
 
-- `AuthViewModel.kt:100-108, 188-194` — `emailError`/`passwordError` **e** `errorMessage` setados com a mesma string → banner + `supportingText` mostram a mesma mensagem em duplicidade.
-- `AuthViewModel.kt:51` `MutableSharedFlow()` default (replay=0, buffer=0, SUSPEND) → `NavigateHome` emitido durante rotation pode perder-se. Trocar para `Channel(BUFFERED)` ou `MutableSharedFlow(extraBufferCapacity=1, onBufferOverflow=DROP_OLDEST)`.
-- `AuthViewModel.kt:109, 128, 170, 196` emite `AuthEvent.FocusField` + `AuthField` enum — dead code, não consumido; UI usa `LaunchedEffect(uiState.*Error)`.
-- `AuthUiState.MIN_PASSWORD_LENGTH = 8` enforçado só no VM, não em `CreateUserUseCase`/`AuthenticateUserUseCase` (apenas `isNotBlank()`). Parity gap.
-- `LoginScreen.kt:246-270` `resolveAuthMessage` `else -> message` vaza domain PT raw em locale EN (`InvalidModelException` no catch `DomainException`).
-- `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` em `:feature:auth` que **não existe**.
-- `AuthViewModel.reset()` morto (nunca invocado).
+- ✅ **RESOLVIDO** — `AuthViewModel.kt:100-108, 188-194` — `emailError`/`passwordError` **e** `errorMessage` setados com a mesma string → banner + `supportingText` mostram a mesma mensagem em duplicidade. Os erros de campo não vão mais para `errorMessage`: o banner ficou reservado para os erros de domínio que não são de campo.
+- ✅ **RESOLVIDO** — `AuthViewModel.kt:51` `MutableSharedFlow()` default (replay=0, buffer=0, SUSPEND) → `NavigateHome` emitido durante rotation pode perder-se. O evento passou a `Channel<AuthEvent>(BUFFERED)` + `receiveAsFlow()`: o `NavigateHome` não se perde entre composições nem em config change.
+- ✅ **RESOLVIDO** — `AuthViewModel.kt:109, 128, 170, 196` emite `AuthEvent.FocusField` + `AuthField` enum — dead code, não consumido; UI usa `LaunchedEffect(uiState.*Error)`. O enum e o evento saíram; o foco é state-driven.
+- ✅ **RESOLVIDO** — `AuthUiState.MIN_PASSWORD_LENGTH = 8` enforçado só no VM, não em `CreateUserUseCase`/`AuthenticateUserUseCase` (apenas `isNotBlank()`). Parity gap. A constante local foi removida e a do domínio passou a ser a autoridade única: os dois casos de uso exigem `length >= MIN_PASSWORD_LENGTH`.
+- ✅ **RESOLVIDO (DEF-49)** — `LoginScreen.kt:246-270` `resolveAuthMessage` `else -> message` vaza domain PT raw em locale EN (`InvalidModelException` no catch `DomainException`). O ViewModel entrega o **tipo** (`AuthErrorType`) e a UI escolhe o texto pt/en: nenhuma mensagem técnica do domínio chega à tela.
+- ✅ **RESOLVIDO** — `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` em `:feature:auth` que **não existe**. O comentário saiu.
+- ✅ **RESOLVIDO** — `AuthViewModel.reset()` morto (nunca invocado). O método saiu.
 - ✅ **RESOLVIDO** — `LoginScreen.kt:78` `onLoginSubmit` (mesmo em RegisterScreen) deveria ser `onLoginSuccess` — nome mente. O callback só dispara no evento `AuthEvent.NavigateHome`, ou seja, depois do login bem-sucedido — o próprio KDoc dizia "após login/cadastro bem-sucedido". Renomeado para `onLoginSuccess` na tela, no NavHost e no teste instrumentado; o irmão `onRegisterSubmit` foi renomeado para `onRegisterSuccess` pelo mesmo motivo. (O `RegisterScreen` não tinha esse problema de nome no KDoc, mas tinha o callback homônimo.)
 - `feature/auth/res` contém 4 strings `home_*` **duplicadas** em `feature/projects/res` — drift risk → eventual `Duplicate resources`. ✅ **RESOLVIDO** — `feature/auth/src/main/res/values/strings.xml` tem hoje **43 chaves, todas com prefixo `auth_`/`login_`/`register_`/`splash_` e zero `home_*`**; as 4 cópias (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) foram removidas.
-- 🟡 **PARCIAL** — Sem `RegisterScreenTest` + `SplashScreenTest`. O `SplashScreenTest` existe; o cadastro é coberto pelo `AuthImeInsetsTest` (que renderiza o `RegisterBody` no caso do teclado), mas falta um teste da tela de cadastro como um todo.
+- ✅ **RESOLVIDO (PR #280)** — Sem `RegisterScreenTest` + `SplashScreenTest`. O `SplashScreenTest` existe e o `RegisterScreenTest` (Robolectric, 5 casos) cobre a tela de cadastro inteira: o erro no campo, o foco voltando ao primeiro campo inválido, senhas diferentes barrando o envio, o cadastro inválido sem navegar e o cadastro válido persistindo a sessão e pedindo a navegação.
 
 ### feature/projects
 
-- `HomeViewModel.buildHomeUiState` linhas 380-385 — `tags = inputs.tagChips` (todas tags do owner) atribuído a **cada** ProjectCard → cards mostram tags erradas. DAO tem `observeTagsFor`; falta port `TagRepository.observeForProject`.
-- `HomeViewModel.createProject/updateProject/deleteProject/createTag` (`HomeViewModel.kt:419,433,445,459`) gravam em `_errorMessage` que **não é observado** por `HomeScreen` (UI só lê `uiState.errorMessage` de Room). CRUD falha silenciosamente.
-- `DeleteProjectDialog` usa `R.string.project_detail_description` (descrição do app) como corpo de confirmação. Texto errado.
-- `NewTaskDialog.onConfirm = { viewModel.addTask(...); showCreateDialog = false }` — dialog fecha antes da validação; erro perde-se.
-- `AddTagDialog` passa color raw; `Tag.requireValidColor` lança, catch em `_errorMessage` (não exibido).
-- `DeadlineField.kt:47` hardcoded `ofPattern("dd/MM/yyyy")`; `R.string.project_detail_new_task_due_date_format` (MM/dd/yyyy em EN) existe mas nunca referenciado. EN vê formato pt.
+- ✅ **RESOLVIDO** — `HomeViewModel.buildHomeUiState` linhas 380-385 — `tags = inputs.tagChips` (todas tags do owner) atribuído a **cada** ProjectCard → cards mostram tags erradas. DAO tem `observeTagsFor`; falta port `TagRepository.observeForProject`. A port `TagRepository.observeByProjectIds(ids): Flow<Map<String, List<Tag>>>` existe e cada card lista só as tags do seu projeto.
+- ✅ **RESOLVIDO (DEF-45)** — `HomeViewModel.createProject/updateProject/deleteProject/createTag` (`HomeViewModel.kt:419,433,445,459`) gravam em `_errorMessage` que **não é observado** por `HomeScreen` (UI só lê `uiState.errorMessage` de Room). CRUD falha silenciosamente. O canal de erro passou a ser a única fonte e a tela combina `actionError ?: listState.errorMessage` — a falha de CRUD chega ao banner.
+- ✅ **RESOLVIDO** — `DeleteProjectDialog` usa `R.string.project_detail_description` (descrição do app) como corpo de confirmação. Texto errado. O diálogo usa `project_detail_delete_confirm_title`/`_body` (pt+en).
+- ✅ **RESOLVIDO** — `NewTaskDialog.onConfirm = { viewModel.addTask(...); showCreateDialog = false }` — dialog fecha antes da validação; erro perde-se. O `onSuccess` do caso de uso é que fecha o diálogo: a validação acontece antes e o erro fica na tela.
+- ✅ **RESOLVIDO** — `AddTagDialog` passa color raw; `Tag.requireValidColor` lança, catch em `_errorMessage` (não exibido). O erro de cor inválida agora chega à tela (o canal de erro é observado) — e o diálogo já envia uma cor válida.
+- ✅ **RESOLVIDO** — `DeadlineField.kt:47` hardcoded `ofPattern("dd/MM/yyyy")`; `R.string.project_detail_new_task_due_date_format` (MM/dd/yyyy em EN) existe mas nunca referenciado. EN vê formato pt. O padrão vem do recurso localizado, então o `en` mostra `MM/dd/yyyy`.
 - ✅ **RESOLVIDO (PR #272)** — `R.string.home_fab_disabled_label`, `project_detail_back`, `project_detail_new_task_due_date_picker_title`, `project_detail_new_task_due_date_format`, `project_detail_task_priority_locked_info` são chaves mortas. Duas (`project_detail_new_task_due_date_picker_title` e `project_detail_task_priority_locked_info`) já não existiam em nenhum `strings.xml`; uma (`project_detail_new_task_due_date_format`) foi resgatada e é consumida por `DeadlineField.kt`. As duas últimas cópias mortas viviam em `:app` (`home_fab_disabled_label` e `project_detail_back`, zero referências) e foram removidas junto com as demais strings duplicadas do `:app`.
-- `HomeScreen.kt:843, 921` ícones errados (`Add` como checkmark, `Sort` como leading de search).
-- `ProjectDetailBody` usa `verticalScroll` + `forEach` em vez de `LazyColumn` — jank com muitas tasks.
+- ✅ **RESOLVIDO (DEF-22/DEF-23)** — `HomeScreen.kt:843, 921` ícones errados (`Add` como checkmark, `Sort` como leading de search). O marcador de "selecionado" é o check (com `stateDescription` para o TalkBack) e o ícone de ordenação é o de sort.
+- ✅ **RESOLVIDO** — `ProjectDetailBody` usa `verticalScroll` + `forEach` em vez de `LazyColumn` — jank com muitas tasks. A lista virou `LazyColumn` com chave por `task.id`.
 - ✅ **RESOLVIDO** — `HomeScreen.kt` + `ProjectDetailScreen.kt` Pré-visualizações dependem de `hiltViewModel()` default, não compilam no preview sem Hilt. As previews apontam para os corpos (`HomeProjectsContent`, `ProjectDetailBody`), que recebem estado de exemplo; o motivo está escrito no ponto.
 - ✅ **RESOLVIDO (DEF-72, PR #261)** — `DefaultHomeUser` hardcode "João Pedro"/"JP" flashing em Loading/SignedOut. A `HomeTopBar` aceita `user: HomeUser?` — `null` significa "sem sessão": sem avatar, sem badge e a saudação genérica.
 - ✅ **RESOLVIDO (DEF-25)** — `renameTask` em `ProjectDetailScreen.kt:314` tem `@Suppress("unused")` — fio morto. A decisão foi **ligar**, não remover: o parâmetro ganhou tipo `(Task) -> Unit` e passou a ser acionado por um `RenameTaskDialog` novo.
 
 ### feature/tasks
 
-- `clearError()` quebrado em ambos VMs. Testes verificam só `viewModel.errorMessage.value`, nunca `uiState.errorMessage` → banner nunca dismiss.
+- ✅ **RESOLVIDO** — `clearError()` quebrado em ambos VMs. Testes verificam só `viewModel.errorMessage.value`, nunca `uiState.errorMessage` → banner nunca dismiss. O `uiState` combina o canal de erro e o `clearError()` zera o banner.
 - `feature/tasks` é **read-only** — zero CRUD no escopo R7-R8 (sem `transitionTo`, `changePriority`, `dueDate` display).
 - ✅ **RESOLVIDO** — `PriorityBarsCanvas` raw `cornerRadius = CornerRadius(8f, 8f)` em pixels, density-dependent. O raio passou a vir do token `NeoRadii.chip` (4dp), que escala com a tela e vale exatamente os mesmos 8px na densidade xhdpi.
 - ✅ **RESOLVIDO** — `PriorityChart` contrato frágil: `barColors[index]` + `counts.size` divisor sem `require`. Empty list → NaN. Rótulo e cor agora são lidos com guarda (`zip` e `getOrElse`) e o divisor tem piso 1; dois testes novos cobrem a lista vazia e a lista maior que o número de níveis.
-- `TasksViewModel.toRow` rebuilds `associateBy` per task (O(n*m)). Hoist.
-- Nested `flatMapLatest` re-subscribes projects flow on every task emission → use `combine`.
+- ✅ **RESOLVIDO** — `TasksViewModel.toRow` rebuilds `associateBy` per task (O(n*m)). Hoist. O mapa é montado uma vez por lista.
+- ✅ **RESOLVIDO** — Nested `flatMapLatest` re-subscribes projects flow on every task emission → use `combine`. A assinatura do Room acontece quando os **inputs** mudam (preferências, texto debounceado, tags e filtro), não a cada emissão de tarefa.
 - 🟡 **PARCIAL (DEF-74)** — `DashboardViewModel.currentWeekStartMillis()` avaliado por subscription; `Instant.now()` no `Clock` injectable → week-rollover stale + untestable. O instante passou a vir de um `java.time.Clock` injetado (`provideClock` no `DataModule`), o que torna o cálculo determinístico e testável, e a semana é recalculada quando a tela é reaberta (o `WhileSubscribed(5_000)` solta o fluxo antigo). O que continua de pé: uma tela **aberta** atravessando a virada de segunda-feira mostra a semana antiga — um fluxo periódico resolveria, mas quebra o `advanceUntilIdle` dos testes.
-- UTC Monday hardcoded (en expects Sunday).
-- `AssistChip(onClick = {})` decorativo em PriorityChip/StatusChip — ainda focusável, TalkBack engana.
-- `TasksErrorBanner(message: String)` + `DashboardErrorBanner` suprime `message` (`@Suppress("UNUSED_PARAMETER")`) — sempre mostra a string canônica.
-- `retryToken` público em ambos VMs.
-- `tasksGraph()` + `dashboardGraph()` split em `TasksRoutes.kt` — fácil esquecer dashboard.
+- ℹ️ **POR DECISÃO** — UTC Monday hardcoded (en expects Sunday). A semana UTC é a regra: a contagem é a mesma entre sessões e dispositivos, independentemente do fuso. O motivo está no KDoc do cálculo.
+- ✅ **RESOLVIDO (DEF-22)** — `AssistChip(onClick = {})` decorativo em PriorityChip/StatusChip — ainda focusável, TalkBack engana. O `NeoInfoChip` não tem parâmetro `onClick`: quem precisa de chip acionável usa `FilterChip` (seleção) ou um botão.
+- ✅ **RESOLVIDO (DEF-26)** — `TasksErrorBanner(message: String)` + `DashboardErrorBanner` suprime `message` (`@Suppress("UNUSED_PARAMETER")`) — sempre mostra a string canônica. O banner de tarefas mostra a mensagem; o do Painel segue a regra canônica de propósito.
+- ✅ **RESOLVIDO** — `retryToken` público em ambos VMs. O token vive no `TasksLoadState` (classe interna) e o ViewModel expõe só `retry()`.
+- ℹ️ **POR DECISÃO** — `tasksGraph()` + `dashboardGraph()` split em `TasksRoutes.kt` — fácil esquecer dashboard. A feature é a dona das rotas que usa (é a única que expõe extensões de grafo) e o `AGENTS.md` registra a regra.
 - ✅ **RESOLVIDO** — `TasksViewModel.NO_PROJECT_LABEL = "(sem projeto)"` hardcoded PT em VM companion. A constante não existe mais.
 - ✅ **RESOLVIDO** — `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`). As constantes não existem mais.
-- Pré-visualizações sem `BrainOutTheme { Surface { ... } }`.
+- ✅ **RESOLVIDO** — Pré-visualizações sem `BrainOutTheme { Surface { ... } }`. As três previews do módulo de tarefas agora embrulham o conteúdo em `Surface`, como as dos outros módulos — sem isso o preview pintava o fundo do IDE, e não o do tema.
 - ✅ **RESOLVIDO** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves passaram a ser aplicadas em `TasksContent` (a lista, o indicador de carregamento e o empty state), e três testes novos as exercitam; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já eram aplicadas por `DashboardLoading` e `DashboardEmptyState`.
 - 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
 - ✅ **RESOLVIDO** — `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`. O `Instant#parse` do preview deixou de ser problema quando o módulo passou a usar `coreLibraryDesugaring` (DEF-63); o lint do módulo roda com zero erros e o gate voltou a ser rígido, com `MissingTranslation` promovido a erro.

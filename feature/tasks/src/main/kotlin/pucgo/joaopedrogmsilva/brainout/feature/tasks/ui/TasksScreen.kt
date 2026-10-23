@@ -26,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -245,7 +246,9 @@ private fun TaskCard(row: TaskRow) {
 @Composable
 private fun TasksScreenLoadingPreview() {
     BrainOutTheme {
-        TasksContent(state = TasksUiState(isLoading = true))
+        Surface {
+            TasksContent(state = TasksUiState(isLoading = true))
+        }
     }
 }
 
@@ -253,7 +256,9 @@ private fun TasksScreenLoadingPreview() {
 @Composable
 private fun TasksScreenEmptyPreview() {
     BrainOutTheme {
-        TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
+        Surface {
+            TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
+        }
     }
 }
 
@@ -298,6 +303,8 @@ private fun TasksScreenPopulatedPreview() {
             ),
         )
     BrainOutTheme {
-        TasksContent(state = TasksUiState(rows = rows, isLoading = false))
+        Surface {
+            TasksContent(state = TasksUiState(rows = rows, isLoading = false))
+        }
     }
 }
