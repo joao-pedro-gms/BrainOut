@@ -56,7 +56,7 @@ class CreateTaskUseCase
         ): Task {
             // Integridade referencial: a tarefa só pode nascer em um
             // projeto existente. Sem esta checagem, um `projectId`
-            // inválido chegava ao `@Insert` do Room e a
+            // inválido chegava à inserção e a
             // `SQLiteConstraintException` (violação da chave
             // estrangeira) vazava crua para a UI (DEF-56).
             if (projectRepository.findById(projectId) == null) {

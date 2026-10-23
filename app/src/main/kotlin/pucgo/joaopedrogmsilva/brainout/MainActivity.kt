@@ -144,9 +144,19 @@ private fun MainRoot(
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        // Falha ao ler a sessão (DataStore ou Room) não pode deixar a
+        // tela presa no spinner: a corrotina do `LaunchedEffect` morre
+        // com a exceção, `startDestination` continua `null` e o
+        // `LoadingIndicator` fica na tela para sempre. O fallback é o
+        // Splash — o caminho seguro, que pede o login dentro dele.
         val hasActiveUser: Boolean =
-            withContext(Dispatchers.IO) {
-                activeUserProvider.currentActiveUser() != null
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    activeUserProvider.currentActiveUser() != null
+                }
+            }.getOrElse { error ->
+                Log.w(TAG, "Falha ao resolver a sessão ativa; indo para o Splash", error)
+                false
             }
         // Rota inicial resolvida **uma** vez, direto para o grafo que o
         // `NavHost` entende. `Home` não existe como destino de topo — é

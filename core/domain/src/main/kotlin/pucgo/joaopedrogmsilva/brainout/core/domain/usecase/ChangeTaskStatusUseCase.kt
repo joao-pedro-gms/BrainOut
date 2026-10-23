@@ -17,7 +17,7 @@ import javax.inject.Inject
  * RN03 (E2.5) — conclusão cascata: ao receber `target = DONE` o caso
  * de uso delega para [TaskRepository.completeAndCascade], que aplica
  * a transição E marca o projeto como concluído na mesma transação
- * Room quando a tarefa concluída é a última ativa. Para reabrir
+ * quando a tarefa concluída é a última ativa. Para reabrir
  * (DONE → DOING ou DOING → TODO) delega para [TaskRepository.reopenAndCascade]
  * que desfaz a marca de conclusão do projeto caso ele estivesse
  * concluído.

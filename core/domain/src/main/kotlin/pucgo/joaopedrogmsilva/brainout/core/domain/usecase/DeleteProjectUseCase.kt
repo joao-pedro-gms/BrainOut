@@ -10,8 +10,8 @@ import javax.inject.Inject
 /**
  * Caso de uso responsável por remover um [pucgo.joaopedrogmsilva.brainout.core.domain.model.Project].
  *
- * Tarefas e associações `project_tags` são removidas via `ON DELETE
- * CASCADE` do schema Room — não é necessário tratamento adicional.
+ * Tarefas e associações `project_tags` são removidas em cascata pela
+ * implementação — não é necessário tratamento adicional aqui.
  *
  * A exclusão exige [Permission.DELETE_PROJECT]: só o dono do projeto
  * pode apagá-lo, porque o efeito é em cascata sobre todas as tarefas

@@ -69,8 +69,8 @@ class TagOwnershipException(
 /**
  * Já existe uma tag com o mesmo nome para o mesmo dono.
  *
- * O índice UNIQUE `(owner_id, name)` do Room é a fonte da verdade; o
- * repositório traduz a violação para esta exceção, para que a tela
+ * A unicidade de `(owner_id, name)` é garantida pela implementação, que
+ * traduz a violação para esta exceção, para que a tela
  * possa dizer "já existe uma tag com esse nome" em vez da mensagem
  * genérica de falha (DEF-61).
  */
