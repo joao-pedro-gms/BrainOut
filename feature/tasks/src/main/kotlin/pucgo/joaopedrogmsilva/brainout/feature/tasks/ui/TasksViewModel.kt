@@ -18,12 +18,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
@@ -31,7 +29,6 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Estado de UI da [TasksScreen].
@@ -172,22 +169,9 @@ class TasksViewModel
                             }
                         inner
                     }
-            return loaded
-                .catch { throwable ->
-                    if (throwable is CancellationException) throw throwable
-                    Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
-                    loadState.onLoadFailure()
-                    emit(TasksLoadResult.Failed)
-                }
-                // Limpa o erro pendente APENAS em leituras bem-sucedidas.
-                // Sem esse filtro, o `catch` emitiria um estado vazio e o
-                // passo seguinte resetaria o erro para `null`
-                // imediatamente, "engolindo" a falha. (E2.8)
-                .onEach { result ->
-                    if (result is TasksLoadResult.Loaded) {
-                        loadState.onLoadSuccess()
-                    }
-                }
+            return loaded.withLoadFailurePolicy(loadState) { throwable ->
+                Log.e(TAG, "Erro ao carregar tarefas do owner: ${throwable.message}", throwable)
+            }
         }
 
         /**

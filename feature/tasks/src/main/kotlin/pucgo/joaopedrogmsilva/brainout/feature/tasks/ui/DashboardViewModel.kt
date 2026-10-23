@@ -11,10 +11,10 @@
 // Todos os Flows são invalidados automaticamente pelo Room quando o
 // banco muda — os gráficos atualizam sem recarregar a tela.
 //
-// Marco E2.8 — captura falhas do Room via `.catch` (re-lançando
-// `CancellationException` para preservar o cancelamento estruturado),
-// expõe `errorMessage` e oferece `retry()` com token de re-assinatura,
-// seguindo o mesmo padrão de HomeViewModel/TasksViewModel.
+// Marco E2.8 — captura falhas do Room via [withLoadFailurePolicy]
+// (re-lançando `CancellationException` para preservar o cancelamento
+// estruturado), expõe `errorMessage` e oferece `retry()` com token de
+// re-assinatura, seguindo o mesmo padrão de HomeViewModel/TasksViewModel.
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
@@ -26,11 +26,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
@@ -42,7 +40,6 @@ import java.time.DayOfWeek
 import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Estado de UI da [DashboardScreen] (E2.7).
@@ -127,8 +124,9 @@ class DashboardViewModel
          * emitia um estado com `errorMessage` preenchido e o passo
          * seguinte usava esse campo como flag de sucesso, enquanto o
          * `combine` final sobrescrevia o mesmo campo. Com
-         * [DashboardLoadResult], "leu" e "falhou" são estados diferentes
-         * por construção.
+         * [TasksLoadResult], "leu" e "falhou" são estados diferentes
+         * por construção — e a política de falha é a mesma das duas
+         * telas, em [withLoadFailurePolicy].
          */
         private fun dashboardLoadResults(): Flow<TasksLoadResult<DashboardUiState>> {
             val loaded: Flow<TasksLoadResult<DashboardUiState>> =
@@ -163,24 +161,13 @@ class DashboardViewModel
                             }
                         inner
                     }
-            return loaded
-                .catch { throwable ->
-                    if (throwable is CancellationException) throw throwable
-                    Log.e(
-                        TAG,
-                        "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
-                        throwable,
-                    )
-                    loadState.onLoadFailure()
-                    emit(TasksLoadResult.Failed)
-                }
-                // Limpa o erro pendente APENAS em leituras bem-sucedidas;
-                // sem esse filtro o `catch` seria "engolido" na sequência.
-                .onEach { result ->
-                    if (result is TasksLoadResult.Loaded) {
-                        loadState.onLoadSuccess()
-                    }
-                }
+            return loaded.withLoadFailurePolicy(loadState) { throwable ->
+                Log.e(
+                    TAG,
+                    "Erro ao carregar estatísticas do dashboard: ${throwable.message}",
+                    throwable,
+                )
+            }
         }
 
         /**

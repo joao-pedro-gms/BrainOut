@@ -1,9 +1,13 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Resultado de uma leitura do Room nas telas de Tarefas e Painel.
@@ -73,3 +77,34 @@ internal class TasksLoadState {
         _errorMessage.value = null
     }
 }
+
+/**
+ * A política de falha de uma leitura: a exceção vira
+ * [TasksLoadResult.Failed], o estado registra a falha, e o erro pendente
+ * é limpo **apenas** em leituras bem-sucedidas.
+ *
+ * Sem o filtro do `onEach`, o `catch` emitiria um estado vazio e o passo
+ * seguinte resetaria o erro para `null` imediatamente, "engolindo" a
+ * falha. (E2.8)
+ *
+ * A política morava escrita nos dois ViewModels — Tarefas e Painel — com
+ * o mesmo encadeamento de operadores e as mesmas regras; o que diferia era
+ * a mensagem do log, que continua na chamada.
+ *
+ * @param onFailure o que fazer com a exceção antes de registrar a falha
+ *  — nos dois casos, o log.
+ */
+internal fun <T> Flow<TasksLoadResult<T>>.withLoadFailurePolicy(
+    state: TasksLoadState,
+    onFailure: (Throwable) -> Unit,
+): Flow<TasksLoadResult<T>> =
+    catch { throwable ->
+        if (throwable is CancellationException) throw throwable
+        onFailure(throwable)
+        state.onLoadFailure()
+        emit(TasksLoadResult.Failed)
+    }.onEach { result ->
+        if (result is TasksLoadResult.Loaded) {
+            state.onLoadSuccess()
+        }
+    }
