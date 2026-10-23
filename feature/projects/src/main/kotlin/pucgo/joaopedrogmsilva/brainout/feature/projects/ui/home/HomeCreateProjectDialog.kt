@@ -59,7 +59,10 @@ internal data class CreateProjectCallbacks(
     val onShowAddTag: () -> Unit,
 )
 
-@Suppress("LongMethod") // Orchestrator: os campos do formulário, a validação inline e os dois diálogos.
+/**
+ * Orquestrador: os campos do formulário, a validação inline e os dois
+ * diálogos.
+ */
 @Composable
 internal fun CreateProjectDialog(
     availableTags: List<TagChip>,
