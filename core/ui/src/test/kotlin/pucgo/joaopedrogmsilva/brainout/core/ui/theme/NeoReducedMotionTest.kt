@@ -4,7 +4,7 @@ package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
