@@ -1,12 +1,4 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-//
-// `LongMethod`: o corpo é a composição da lista de projetos — grade
-// responsiva, empty states, banner de erro e o botão flutuante da
-// Home. Cada bloco já é uma função própria (`HomeEmptyStates`,
-// `HomeErrorBanner`); quebrar mais ainda espalharia o estado do
-// filtro entre chamadas.
-
-@file:Suppress("LongMethod")
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -72,6 +64,12 @@ internal data class HomeProjectsActions(
     val onSortOrderChange: (SortOrder) -> Unit,
 )
 
+// `LongMethod`: o corpo é a composição da lista de projetos — grade
+// responsiva, empty states, banner de erro e o botão flutuante da
+// Home. Cada bloco já é uma função própria (`HomeEmptyStates`,
+// `HomeErrorBanner`); quebrar mais ainda espalharia o estado do
+// filtro entre chamadas.
+@Suppress("LongMethod")
 @Composable
 internal fun HomeProjectsContent(
     contentPadding: PaddingValues,
