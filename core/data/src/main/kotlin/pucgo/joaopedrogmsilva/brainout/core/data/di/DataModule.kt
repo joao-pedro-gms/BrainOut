@@ -32,8 +32,10 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.HolidayRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
@@ -105,6 +107,10 @@ object DataModule {
     @Provides
     @Singleton
     fun provideUserRepository(impl: UserRepositoryImpl): UserRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideActiveUserPort(impl: SessionActiveUserPort): ActiveUserPort = impl
 
     @Provides
     @Singleton

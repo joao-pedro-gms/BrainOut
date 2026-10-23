@@ -7,8 +7,13 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 
 /**
@@ -23,15 +28,25 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
  */
 class UpdateProjectUseCaseTest {
     private val repository: ProjectRepository = mockk()
-    private val useCase = UpdateProjectUseCase(repository)
+    private val activeUser: ActiveUserPort = mockk()
+    private val useCase = UpdateProjectUseCase(repository, activeUser)
 
     private fun projeto() = Project.create(name = "Estagio", ownerId = "u1")
+
+    private fun usuario(role: UserRole): User =
+        User.create(
+            name = "Pessoa",
+            email = "pessoa@example.com",
+            passwordHash = "hash",
+            role = role,
+        )
 
     @Test
     fun `update delega projeto e lista de tags e devolve o retorno do repositorio`() =
         runTest {
             val alvo = projeto()
             val salvo = alvo.copy(description = "Nova descricao")
+            coEvery { activeUser.currentUser() } returns usuario(UserRole.OWNER)
             coEvery { repository.update(any(), any()) } returns salvo
 
             val result = useCase(alvo, listOf("t1"))
@@ -44,6 +59,7 @@ class UpdateProjectUseCaseTest {
     fun `lista de tags vazia substitui as associacoes anteriores`() =
         runTest {
             val alvo = projeto()
+            coEvery { activeUser.currentUser() } returns usuario(UserRole.OWNER)
             coEvery { repository.update(any(), any()) } returns alvo
 
             useCase(alvo, emptyList())
@@ -55,6 +71,7 @@ class UpdateProjectUseCaseTest {
     fun `projeto concluido chega ao repositorio marcado como concluido`() =
         runTest {
             val concluido = projeto().copy(isCompleted = true)
+            coEvery { activeUser.currentUser() } returns usuario(UserRole.OWNER)
             coEvery { repository.update(any(), any()) } returns concluido
 
             val result = useCase(concluido, emptyList())
@@ -67,6 +84,7 @@ class UpdateProjectUseCaseTest {
     fun `propaga ProjectNotFoundException do repositorio ao chamador`() =
         runTest {
             val alvo = projeto()
+            coEvery { activeUser.currentUser() } returns usuario(UserRole.OWNER)
             coEvery { repository.update(any(), any()) } throws ProjectNotFoundException(alvo.id)
 
             val erro =
@@ -76,5 +94,21 @@ class UpdateProjectUseCaseTest {
 
             assertThat(erro).isInstanceOf(ProjectNotFoundException::class.java)
             assertThat(erro?.message).contains(alvo.id)
+        }
+
+    @Test
+    fun `member nao edita o projeto e o repositorio nao e tocado`() =
+        runTest {
+            val alvo = projeto()
+            coEvery { activeUser.currentUser() } returns usuario(UserRole.MEMBER)
+
+            val erro =
+                runCatching {
+                    useCase(alvo, emptyList())
+                }.exceptionOrNull()
+
+            assertThat(erro).isInstanceOf(PermissionDeniedException::class.java)
+            assertThat((erro as PermissionDeniedException).permission).isEqualTo(Permission.EDIT_PROJECT)
+            coVerify(exactly = 0) { repository.update(any(), any()) }
         }
 }

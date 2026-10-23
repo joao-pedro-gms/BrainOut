@@ -28,9 +28,10 @@ object TasksRoutes {
 /**
  * Declara o destino [TasksScreen] no [NavGraphBuilder] do host.
  *
- * Mantida como extensão para que o `:app` (ou o `ProjectsRoutes` que
- * já monta Home e ProjectDetail) possa chamá-la com `tasksGraph()`
- * sem precisar conhecer detalhes do composable.
+ * Mantida como extensão para que o `:app` possa chamá-la com
+ * `tasksGraph()` sem precisar conhecer detalhes do composable — e sem
+ * que a feature dependa do `:app` (as rotas continuam aqui, que é quem
+ * as usa).
  *
  * DEF-22 — o `Scaffold` de [TasksScreen] precisa de um destino de
  * retorno. `popBackStack()` é o comportamento esperado de um botão

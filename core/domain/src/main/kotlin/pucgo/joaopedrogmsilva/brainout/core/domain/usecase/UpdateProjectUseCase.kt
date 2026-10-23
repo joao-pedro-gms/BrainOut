@@ -1,7 +1,10 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.domain.permission.requirePermission
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import javax.inject.Inject
 
@@ -12,11 +15,15 @@ import javax.inject.Inject
  * (via [Project.copy]) e a nova lista de `tagIds`; a validação
  * das tags (existência e mesma propriedade) acontece no
  * [ProjectRepository.update].
+ *
+ * A edição exige [Permission.EDIT_PROJECT]: `Member` trabalha em
+ * tarefas, mas não administra o projeto (DEF-36).
  */
 class UpdateProjectUseCase
     @Inject
     constructor(
         private val repository: ProjectRepository,
+        private val activeUser: ActiveUserPort,
     ) {
         /**
          * @param project Projeto com os campos atualizados — `id` deve
@@ -26,5 +33,8 @@ class UpdateProjectUseCase
         suspend operator fun invoke(
             project: Project,
             tagIds: List<String>,
-        ): Project = repository.update(project, tagIds)
+        ): Project {
+            activeUser.requirePermission(Permission.EDIT_PROJECT)
+            return repository.update(project, tagIds)
+        }
     }

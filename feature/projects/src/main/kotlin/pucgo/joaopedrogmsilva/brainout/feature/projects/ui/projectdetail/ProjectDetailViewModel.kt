@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
@@ -389,6 +390,11 @@ class ProjectDetailViewModel
                     deleteTask.invoke(task.id)
                 } catch (e: CancellationException) {
                     throw e
+                } catch (e: PermissionDeniedException) {
+                    // DEF-36 — o domínio recusou a exclusão: o papel do
+                    // usuário ativo não tem `DELETE_TASK`.
+                    Log.w(TAG, "Exclusão de tarefa ${task.id} recusada: ${e.message}")
+                    _errorMessage.update { ProjectDetailError.PermissionDenied }
                 } catch (e: Throwable) {
                     _errorMessage.update { ProjectDetailError.ActionFailed }
                 }
@@ -406,6 +412,11 @@ class ProjectDetailViewModel
                     onDone()
                 } catch (e: CancellationException) {
                     throw e
+                } catch (e: PermissionDeniedException) {
+                    // DEF-36 — o domínio recusou a exclusão: o papel do
+                    // usuário ativo não tem `DELETE_PROJECT`.
+                    Log.w(TAG, "Exclusão do projeto $projectId recusada: ${e.message}")
+                    _errorMessage.update { ProjectDetailError.PermissionDenied }
                 } catch (e: Throwable) {
                     _errorMessage.update { ProjectDetailError.ActionFailed }
                 }

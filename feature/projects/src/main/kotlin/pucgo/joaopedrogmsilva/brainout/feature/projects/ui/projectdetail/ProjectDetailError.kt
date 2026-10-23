@@ -46,6 +46,13 @@ sealed interface ProjectDetailError {
      */
     data object ProjectNotFound : ProjectDetailError
 
+    /**
+     * O papel do usuário ativo não tem a permissão exigida pela
+     * operação (ex.: `Member` tentando excluir um projeto). O domínio
+     * recusa a escrita antes dela acontecer (DEF-36).
+     */
+    data object PermissionDenied : ProjectDetailError
+
     /** Falha ao gravar (banco, I/O) numa ação do usuário. */
     data object ActionFailed : ProjectDetailError
 }

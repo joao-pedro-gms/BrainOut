@@ -93,4 +93,6 @@ internal fun resolveHomeErrorMessage(error: HomeErrorType): String =
             stringResource(id = R.string.home_create_project_name_required)
         HomeErrorType.DuplicateTagName ->
             stringResource(id = R.string.home_error_duplicate_tag_name)
+        HomeErrorType.PermissionDenied ->
+            stringResource(id = R.string.home_error_permission_denied)
     }

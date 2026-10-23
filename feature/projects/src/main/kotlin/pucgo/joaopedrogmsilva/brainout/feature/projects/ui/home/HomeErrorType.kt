@@ -29,6 +29,13 @@ enum class HomeErrorType {
     NameRequired,
 
     /**
+     * O papel do usuário ativo não tem a permissão exigida pela
+     * operação (ex.: `Member` tentando excluir um projeto). O domínio
+     * recusa a escrita antes dela acontecer (DEF-36).
+     */
+    PermissionDenied,
+
+    /**
      * Já existe uma tag com esse nome para este usuário. O domínio
      * traduz a violação do índice UNIQUE para
      * [pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException]
