@@ -45,6 +45,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ThemePreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
+import java.time.Clock
 import javax.inject.Singleton
 
 /**
@@ -186,4 +187,16 @@ object DataModule {
     @Provides
     @Singleton
     fun provideBackupRepository(impl: BackupRepositoryImpl): BackupRepository = impl
+
+    /**
+     * Relógio do app (UTC).
+     *
+     * O Painel calcula o início da semana corrente a partir dele — e a
+     * virada de semana precisa ser observável. Com `Instant.now()`
+     * dentro do ViewModel, o cálculo ficava congelado na assinatura e
+     * não tinha como ser testado.
+     */
+    @Provides
+    @Singleton
+    fun provideClock(): Clock = Clock.systemUTC()
 }

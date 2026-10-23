@@ -16,14 +16,18 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -37,7 +41,23 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskCompletionStats
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskPriorityCount
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import kotlin.time.Duration.Companion.seconds
+
+/**
+ * Relógio fixo de uma sexta-feira — a semana corrente começa na
+ * segunda 2026-09-14.
+ */
+private val RELOGIO_FIXO: Clock = Clock.fixed(Instant.parse("2026-09-18T10:00:00Z"), ZoneOffset.UTC)
+
+/** Início da semana de 2026-09-14 (segunda-feira 00:00 UTC), em epoch millis. */
+private const val SEMANA_14_SETEMBRO: Long = 1_789_344_000_000L
+
+/** Início da semana de 2026-09-21 (segunda-feira 00:00 UTC), em epoch millis. */
+private const val SEMANA_21_SETEMBRO: Long = 1_789_948_800_000L
 
 /**
  * Verifica o contrato do [DashboardViewModel] (E2.7 + E2.8).
@@ -77,6 +97,7 @@ class DashboardViewModelTest {
         )
 
     private class Fakes(
+        val clock: Clock = RELOGIO_FIXO,
         val projectsFlow: MutableStateFlow<List<Project>> =
             MutableStateFlow(emptyList()),
         val priorityFlow: MutableStateFlow<List<TaskPriorityCount>> =
@@ -98,6 +119,7 @@ class DashboardViewModelTest {
                 projectRepository = projectRepository,
                 taskRepository = taskRepository,
                 activeUserProvider = activeUserProvider,
+                clock = RELOGIO_FIXO,
             )
         }
     }
@@ -253,6 +275,7 @@ class DashboardViewModelTest {
                     projectRepository = projectRepository,
                     taskRepository = mockk(relaxed = true),
                     activeUserProvider = activeUserProvider,
+                    clock = RELOGIO_FIXO,
                 )
 
             viewModel.uiState.test {
@@ -295,6 +318,7 @@ class DashboardViewModelTest {
                     projectRepository = projectRepository,
                     taskRepository = taskRepository,
                     activeUserProvider = activeUserProvider,
+                    clock = RELOGIO_FIXO,
                 )
 
             viewModel.uiState.test {
@@ -332,6 +356,7 @@ class DashboardViewModelTest {
                     projectRepository = projectRepository,
                     taskRepository = mockk(relaxed = true),
                     activeUserProvider = activeUserProvider,
+                    clock = RELOGIO_FIXO,
                 )
 
             viewModel.uiState.test {
@@ -343,4 +368,84 @@ class DashboardViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    /**
+     * O início da semana sai do relógio **injetado** — não de
+     * `Instant.now()` dentro do ViewModel. Com o relógio do sistema, o
+     * cálculo não era determinístico (o teste dependia do dia em que
+     * rodava) e a virada de semana não era observável.
+     */
+    @Test
+    fun `a semana corrente sai do relogio injetado`() =
+        runTest(testDispatcher) {
+            val taskRepository: TaskRepository = mockk()
+            every { taskRepository.observeCountByPriority("u1") } returns flowOf(emptyList())
+            every { taskRepository.observeCompletionStats("u1", any<Long>()) } returns
+                flowOf(TaskCompletionStats(totalCount = 0, doneCount = 0, doneThisWeekCount = 0))
+            val projectRepository: ProjectRepository = mockk()
+            every { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel =
+                DashboardViewModel(
+                    projectRepository = projectRepository,
+                    taskRepository = taskRepository,
+                    activeUserProvider = activeUserProvider("u1"),
+                    clock = RELOGIO_FIXO,
+                )
+            val job = launch { viewModel.uiState.collect() }
+            advanceUntilIdle()
+
+            // Sexta 2026-09-18 → a semana começa na segunda 2026-09-14.
+            coVerify(exactly = 1) { taskRepository.observeCompletionStats("u1", SEMANA_14_SETEMBRO) }
+            job.cancel()
+        }
+
+    /**
+     * Reabrir a tela depois da virada recalcula a semana: o
+     * `WhileSubscribed(5_000)` solta o fluxo antigo e a nova assinatura
+     * nasce com o relógio atual.
+     */
+    @Test
+    fun `ao reabrir a tela a semana e recalculada`() =
+        runTest(testDispatcher) {
+            val relogio = FakeClock(Instant.parse("2026-09-18T10:00:00Z"))
+            val taskRepository: TaskRepository = mockk()
+            every { taskRepository.observeCountByPriority("u1") } returns flowOf(emptyList())
+            every { taskRepository.observeCompletionStats("u1", any<Long>()) } returns
+                flowOf(TaskCompletionStats(totalCount = 0, doneCount = 0, doneThisWeekCount = 0))
+            val projectRepository: ProjectRepository = mockk()
+            every { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+            val viewModel =
+                DashboardViewModel(
+                    projectRepository = projectRepository,
+                    taskRepository = taskRepository,
+                    activeUserProvider = activeUserProvider("u1"),
+                    clock = relogio,
+                )
+            var job = launch { viewModel.uiState.collect() }
+            advanceUntilIdle()
+            coVerify(exactly = 1) { taskRepository.observeCompletionStats("u1", SEMANA_14_SETEMBRO) }
+
+            // A semana vira com a tela fora da árvore.
+            relogio.now = Instant.parse("2026-09-21T00:00:01Z")
+            job.cancel()
+            advanceTimeBy(6.seconds)
+            job = launch { viewModel.uiState.collect() }
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { taskRepository.observeCompletionStats("u1", SEMANA_21_SETEMBRO) }
+            job.cancel()
+        }
+
+    /** Relógio controlável — a virada de semana é simulada mudando [now]. */
+    private class FakeClock(
+        var now: Instant,
+    ) : Clock() {
+        override fun getZone(): ZoneId = ZoneOffset.UTC
+
+        override fun withZone(zone: ZoneId?): Clock = this
+
+        override fun instant(): Instant = now
+    }
 }
