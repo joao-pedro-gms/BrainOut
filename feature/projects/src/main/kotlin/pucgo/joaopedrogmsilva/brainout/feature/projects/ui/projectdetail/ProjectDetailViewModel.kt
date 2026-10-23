@@ -83,7 +83,7 @@ data class ProjectDetailUiState(
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
-@Suppress("LongParameterList") // E3.5 injeta CheckDeadlineUseCase (9 deps).
+@Suppress("LongParameterList") // E3.5 injeta CheckDeadlineUseCase (8 parâmetros).
 class ProjectDetailViewModel
     @Inject
     constructor(

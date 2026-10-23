@@ -44,7 +44,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList")
 class HomeViewModel
     @Inject
     constructor(
