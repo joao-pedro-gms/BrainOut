@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -177,7 +178,9 @@ private fun DashboardBody(state: DashboardUiState) {
 @Composable
 private fun DashboardScreenEmptyPreview() {
     BrainOutTheme {
-        DashboardContent(state = DashboardUiState(isLoading = false))
+        Surface(color = MaterialTheme.colorScheme.background) {
+            DashboardContent(state = DashboardUiState(isLoading = false))
+        }
     }
 }
 
@@ -185,18 +188,20 @@ private fun DashboardScreenEmptyPreview() {
 @Composable
 private fun DashboardScreenPopulatedPreview() {
     BrainOutTheme {
-        DashboardContent(
-            state =
-                DashboardUiState(
-                    activeProjects = 3,
-                    completedProjects = 1,
-                    priorityCounts = listOf(2, 4, 3, 1, 0),
-                    totalTasks = 10,
-                    doneTasks = 4,
-                    weeklyCompletionPercent = 40,
-                    overallCompletionPercent = 40,
-                    isLoading = false,
-                ),
-        )
+        Surface(color = MaterialTheme.colorScheme.background) {
+            DashboardContent(
+                state =
+                    DashboardUiState(
+                        activeProjects = 3,
+                        completedProjects = 1,
+                        priorityCounts = listOf(2, 4, 3, 1, 0),
+                        totalTasks = 10,
+                        doneTasks = 4,
+                        weeklyCompletionPercent = 40,
+                        overallCompletionPercent = 40,
+                        isLoading = false,
+                    ),
+            )
+        }
     }
 }
