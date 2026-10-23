@@ -44,9 +44,10 @@ private const val MAX_ATTEMPTS = 3
  *    deletada desde o agendamento, não notifica (leitura única de
  *    verdade; evita lembrete fantasma).
  * 2. Resolve o nome do projeto para o texto "Projeto \<nome\>".
- * 3. Publica a notificação no canal `brainout_deadlines` com as
- *    ações **Concluir** ([DeadlineReceiver.ACTION_COMPLETE_TASK]) e
- *    **Dispensar**.
+ * 3. Publica a notificação no canal `brainout_deadlines` com a
+ *    ação **Concluir** ([DeadlineReceiver.ACTION_COMPLETE_TASK]). O
+ *    toque no corpo da notificação abre o app e a dispensa
+ *    (`setAutoCancel(true)`).
  *
  * O POST_NOTIFICATIONS é verificado no momento da publicação: se o
  * usuário negou a permissão (Android 13+), `NotificationManagerCompat`
