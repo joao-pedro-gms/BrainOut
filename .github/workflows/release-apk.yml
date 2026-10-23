@@ -72,6 +72,30 @@ jobs:
           set -e
           echo "$BRAINOUT_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/brainout-release.jks"
 
+      - name: Preflight do keystore (DEF-02)
+        # Em PKCS12 a senha da chave e a senha do keystore sao a mesma
+        # coisa. Um `keytool -genkeypair` com senhas divergentes produz
+        # um keystore que o Gradle nao abre — e o sintoma e a mensagem
+        # criptica "Get Key failed: Given final block not properly
+        # padded", que nao diz nada sobre a causa (DEF-02).
+        # Abrir o keystore aqui transforma isso em um diagnostico
+        # util, antes do build.
+        env:
+          STORE_PWD: ${{ secrets.BRAINOUT_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.BRAINOUT_KEY_ALIAS }}
+        run: |
+          set -e
+          KEYSTORE="$RUNNER_TEMP/brainout-release.jks"
+          if ! keytool -list -keystore "$KEYSTORE" -storepass "$STORE_PWD" >/dev/null 2>&1; then
+            echo "::error::O keystore nao abre com BRAINOUT_KEYSTORE_PASSWORD. Em PKCS12 a senha da chave e a senha do keystore sao a mesma: gere com 'keytool -genkeypair -storetype PKCS12' usando a MESMA senha em -storepass e -keypass, e cadastre os 4 secrets com esse valor (ver docs/CI-CD.md)."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE" -storepass "$STORE_PWD" -alias "$ALIAS" >/dev/null 2>&1; then
+            echo "::error::O alias '$ALIAS' nao existe no keystore."
+            exit 1
+          fi
+          echo "Preflight do keystore OK."
+
       - name: bundleRelease assinado
         env:
           BRAINOUT_KEYSTORE_PATH: ${{ runner.temp }}/brainout-release.jks
