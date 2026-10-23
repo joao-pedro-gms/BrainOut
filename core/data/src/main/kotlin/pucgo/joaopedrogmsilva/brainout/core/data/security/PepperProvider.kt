@@ -71,10 +71,19 @@ interface PepperProvider {
                 return generated
             }
 
-            private companion object {
+            internal companion object {
+                /**
+                 * Nome do arquivo de preferências que guarda o pepper.
+                 *
+                 * `internal` para que a suíte instrumentada possa
+                 * apagar o armazenamento e provar que o pepper é
+                 * regerado — um pepper preso ao dispositivo não pode
+                 * ser testado sem tocar no arquivo que o guarda.
+                 */
                 const val PEPPER_PREFS_NAME: String = "brainout_pepper"
-                const val PEPPER_KEY: String = "v1"
-                const val PEPPER_LENGTH_BYTES: Int = 16
+
+                private const val PEPPER_KEY: String = "v1"
+                private const val PEPPER_LENGTH_BYTES: Int = 16
             }
         }
 
