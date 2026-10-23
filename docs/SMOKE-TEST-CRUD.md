@@ -237,6 +237,15 @@ Android e Estudo Kotlin), `Urgente` (cobre Reunião semanal), `Outros`
 
 ## 11. Banner offline + fila visível + reconciliação (E3.4)
 
+> ⚪️ **Roteiro histórico — o fluxo não existe mais.** A camada de rede e a
+> fila `pending_ops` foram removidas no #212, e o diretório `backend-stub/`
+> foi apagado no #218. O banner offline, o contador de pendências, a tabela
+> `pending_ops` e o `SyncWorker` saíram com os consumidores (issue #213). As
+> pré-condições abaixo — backend-stub no host, `adb reverse tcp:8000`,
+> consulta a `pending_ops` — são impossíveis de satisfazer hoje. O texto
+> fica como registro da validação do Ciclo 3 (22/09/2026), não como roteiro
+> executável.
+
 > Roteiro adicional para o **E3.4** (banner offline, contagem de
 > operações pendentes, reconciliação ao voltar a rede). Deve ser
 > executado em **emulador Android (API 33+)** com a APK debug
