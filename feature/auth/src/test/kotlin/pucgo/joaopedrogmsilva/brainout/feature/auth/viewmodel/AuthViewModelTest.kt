@@ -217,6 +217,38 @@ class AuthViewModelTest {
         }
 
     @Test
+    fun `submitRegister with name longer than the limit shows validation error`() =
+        runTest {
+            val viewModel = newViewModel()
+
+            viewModel.onNameChange("a".repeat(User.MAX_NAME_LENGTH + 1))
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
+
+            viewModel.submitRegister()
+            advanceUntilIdle()
+
+            assertThat(viewModel.state.value.nameError).isEqualTo(AuthErrorType.LongName)
+        }
+
+    @Test
+    fun `submitRegister with name at the limit is accepted`() =
+        runTest {
+            val viewModel = newViewModel()
+
+            viewModel.onNameChange("a".repeat(User.MAX_NAME_LENGTH))
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
+
+            viewModel.submitRegister()
+            advanceUntilIdle()
+
+            assertThat(viewModel.state.value.nameError).isNull()
+        }
+
+    @Test
     fun `submitRegister with domain error surfaces generic domain error`() =
         runTest {
             val createUser = mockk<CreateUserUseCase>()

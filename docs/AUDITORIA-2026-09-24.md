@@ -259,7 +259,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 | P1 | feature/projects | `ui/home/HomeScreen.kt` + `ui/projectdetail/ProjectDetailScreen.kt` | 🟡 **PARCIAL** — há suíte de componente (`HomeTopBarTest`, `HomeFilterRowTest`, `HomeCreateProjectDialogTest`, `ProjectDetailErrorBannerTest`, `NewTaskDialogTest`); falta a tela inteira. |
 | P1 | feature/projects | `DeadlineField.kt` | ✅ **RESOLVIDO** — `DeadlineFieldTest` cobre o round-trip `pickerDateToDeadline`/`deadlineToPickerDate`. |
 | P1 | feature/auth | `ui/register/RegisterScreen.kt` | 🟡 **PARCIAL** — `AuthImeInsetsTest` renderiza o `RegisterBody` no caso do teclado; falta um teste da tela como um todo. |
-| P1 | feature/auth | `viewmodel/AuthViewModelTest.kt` | 🟡 **PARCIAL** — o nome vazio, o erro de domínio e o erro inesperado estão cobertos; falta o nome com mais de 120 caracteres. |
+| P1 | feature/auth | `viewmodel/AuthViewModelTest.kt` | ✅ **RESOLVIDO** — o nome vazio, o erro de domínio e o erro inesperado estão cobertos, e o `validateName` ganhou os dois casos que faltavam: nome acima de `User.MAX_NAME_LENGTH` (erro `LongName`) e nome exatamente no limite (aceito). |
 | P1 | feature/tasks | `ui/TasksScreen.kt` | 🟡 **PARCIAL** — `TasksScreenTest` existe; falta o `TasksRoutesTest`. |
 | P2 | core/data | `session/SessionStore.kt` | ✅ **RESOLVIDO** — `SessionStoreTest` cobre round-trip e `clear`. |
 | P2 | core/data | `local/dao/DashboardAggregates.kt` | ✅ **RESOLVIDO** — `TaskRepositoryImplTest` prova o preenchimento de `observeCountByPriority` de 0 a 4. |
