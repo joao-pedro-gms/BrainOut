@@ -14,6 +14,8 @@ import java.time.Instant
  * - título não vazio com até 200 caracteres;
  * - prioridade sempre no intervalo válido 0..4;
  * - matriz de transições de [TaskStatus];
+ * - RN03 — carimbo de conclusão ([Task.completedAt]) ao entrar em
+ *   [TaskStatus.DONE] e o seu apagamento na reabertura;
  * - imutabilidade (copy e métodos retornam novas instâncias).
  */
 class TaskTest {
@@ -153,6 +155,73 @@ class TaskTest {
 
         assertThat(same).isEqualTo(task)
         assertThat(same).isSameInstanceAs(task)
+    }
+
+    /**
+     * RN03 (E2.5) — o carimbo de conclusão.
+     *
+     * O instante é injetado em [Task.transitionTo] (como o `now` de
+     * [Task.create]), então o teste afirma o valor exato em vez de um
+     * intervalo — sem isso, RN03 só era verificável por aproximação.
+     */
+    @Test
+    fun `transicao para DONE carimba completedAt`() {
+        val task = sample(status = TaskStatus.DOING)
+
+        val updated = task.transitionTo(TaskStatus.DONE, now = fixedInstant)
+
+        assertThat(updated.completedAt).isEqualTo(fixedInstant)
+        assertThat(task.completedAt).isNull()
+    }
+
+    @Test
+    fun `reabertura de tarefa concluida limpa completedAt`() {
+        val done = sample(status = TaskStatus.DOING).transitionTo(TaskStatus.DONE, now = fixedInstant)
+
+        val reopened = done.transitionTo(TaskStatus.DOING)
+
+        assertThat(reopened.status).isEqualTo(TaskStatus.DOING)
+        assertThat(reopened.completedAt).isNull()
+    }
+
+    @Test
+    fun `transicao que nao conclui mantem completedAt vazio`() {
+        val task = sample(status = TaskStatus.TODO)
+
+        val updated = task.transitionTo(TaskStatus.DOING)
+
+        assertThat(updated.completedAt).isNull()
+    }
+
+    @Test
+    fun `tarefa concluida legada sem completedAt eh aceita`() {
+        // Migração: tarefas concluídas antes da coluna `completed_at`
+        // seguem sem carimbo. O modelo aceita o registro como está —
+        // inventar um instante aqui falsificaria a data de conclusão.
+        val legada =
+            Task(
+                id = "task-legada",
+                projectId = "project-1",
+                title = "Tarefa antiga",
+                priority = TaskPriority.MEDIUM,
+                status = TaskStatus.DONE,
+                assigneeId = null,
+                dueDate = null,
+                createdAt = fixedInstant,
+            )
+
+        assertThat(legada.completedAt).isNull()
+    }
+
+    @Test
+    fun `completedAt em tarefa ativa eh rejeitado`() {
+        val ex =
+            kotlin
+                .runCatching {
+                    sample(status = TaskStatus.TODO).copy(completedAt = fixedInstant)
+                }.exceptionOrNull()
+
+        assertThat(ex).isInstanceOf(InvalidModelException::class.java)
     }
 
     @Test

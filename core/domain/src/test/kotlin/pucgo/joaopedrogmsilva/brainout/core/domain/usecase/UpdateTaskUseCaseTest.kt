@@ -149,4 +149,30 @@ class UpdateTaskUseCaseTest {
             // Update nunca é chamado quando a persistência indica DONE.
             coVerify(exactly = 0) { repository.update(any()) }
         }
+
+    @Test
+    fun `update integral com objeto velho contra registro concluido eh bloqueado`() =
+        runTest {
+            // O atalho que o `data class` não bloqueia: o input é uma
+            // cópia antiga da tarefa (ainda ativa, sem `copy` de
+            // prioridade) e o registro persistido está DONE. O caso de
+            // uso relê o banco e barra, mesmo sem alteração de
+            // prioridade no input.
+            val persistida =
+                Task.create(
+                    projectId = "p1",
+                    title = "Tarefa",
+                    status = TaskStatus.DONE,
+                    priority = TaskPriority.LOW,
+                )
+            val objetoVelho = persistida.copy(status = TaskStatus.DOING)
+            coEvery { repository.findById(persistida.id) } returns persistida
+
+            val ex =
+                assertThrows(TaskPriorityChangeForbiddenException::class.java) {
+                    kotlinx.coroutines.runBlocking { useCase(objetoVelho) }
+                }
+            assertThat(ex.message).contains("RN02")
+            coVerify(exactly = 0) { repository.update(any()) }
+        }
 }

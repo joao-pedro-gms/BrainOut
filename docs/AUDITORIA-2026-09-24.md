@@ -212,19 +212,21 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 ## Gaps de teste (priorizado)
 
 > **Estado em 23/10/2026.** A maior parte desta lista foi fechada pela
-> campanha de revisão (#226–#268). **Fechados:** use cases de
+> campanha de revisão (#226–#269). **Fechados:** use cases de
 > `CreateTag`/`UpdateProject`/`DeleteProject`/`DeleteTask` (P0),
 > `DeadlineWorker` (P0), `DeadlineReceiver` indiretamente pelo
 > `DeadlineNotificationIdentityTest`, migrations 2→3 e 3→4 em SQLite
 > real (P1), `SessionStore` (P2), `SettingsScreen` (P1),
 > `TasksScreen` (P1), `RegisterScreen` (P1), `AuthViewModel` (P1),
-> `SplashScreen` (P2), `DeadlineField` (P1) e
-> `ActiveUserProvider` (P1, PR #268). **Ainda abertos:**
-> `PepperProvider` (P0 — só o `bytes()` fixo), `DeadlineReceiver` como
-> receiver isolado (P0), `ConnectivityObserver` (P1 — o módulo de sync
-> foi removido no #212, então a lacuna deixou de existir),
-> `TaskTest` sem `completedAt` (P1 — exige injeção de clock) e
-> `TaskPriorityRulesTest.update integral` (P1 — cenário duplicado).
+> `SplashScreen` (P2), `DeadlineField` (P1),
+> `ActiveUserProvider` (P1, PR #268), `TaskTest` com `completedAt`
+> (P1, PR #269) e o cenário duplicado do `TaskPriorityRulesTest`
+> (P1, PR #269 — removido; o atalho `copy` passou a ser coberto no
+> `UpdateTaskUseCaseTest`, junto do caso de uso que o barra).
+> **Ainda abertos:** `PepperProvider` (P0 — só o `bytes()` fixo) e
+> `DeadlineReceiver` como receiver isolado (P0);
+> `ConnectivityObserver` (P1) deixou de existir com a remoção do
+> módulo de sync no #212.
 
 | Severidade | Módulo | Arquivo | Falta |
 |---|---|---|---|
