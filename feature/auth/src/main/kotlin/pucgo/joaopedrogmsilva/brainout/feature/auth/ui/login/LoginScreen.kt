@@ -66,7 +66,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
  * disparam `on*Change`/`submit*` no ViewModel, que centraliza a
  * validação e a chamada ao caso de uso.
  *
- * @param onLoginSubmit disparado após login/cadastro bem-sucedido
+ * @param onLoginSuccess disparado após login/cadastro bem-sucedido
  *  (consumido pelo `NavHost` para navegar para `home`).
  * @param onCreateAccountClicked disparado quando o usuário toca em
  *  "Criar conta" — navega para a rota `register`.
@@ -76,7 +76,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSubmit: () -> Unit,
+    onLoginSuccess: () -> Unit,
     onCreateAccountClicked: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel(),
@@ -86,7 +86,7 @@ fun LoginScreen(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             if (event is AuthEvent.NavigateHome) {
-                onLoginSubmit()
+                onLoginSuccess()
             }
         }
     }

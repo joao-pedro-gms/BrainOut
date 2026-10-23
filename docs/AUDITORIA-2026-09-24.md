@@ -105,7 +105,7 @@ Status conferido um a um contra o código em `main`
 - `LoginScreen.kt:246-270` `resolveAuthMessage` `else -> message` vaza domain PT raw em locale EN (`InvalidModelException` no catch `DomainException`).
 - `LoginScreen.kt:3-4` comentário referencia `SessionViewModel` em `:feature:auth` que **não existe**.
 - `AuthViewModel.reset()` morto (nunca invocado).
-- `LoginScreen.kt:78` `onLoginSubmit` (mesmo em RegisterScreen) deveria ser `onLoginSuccess` — nome mente.
+- ✅ **RESOLVIDO** — `LoginScreen.kt:78` `onLoginSubmit` (mesmo em RegisterScreen) deveria ser `onLoginSuccess` — nome mente. O callback só dispara no evento `AuthEvent.NavigateHome`, ou seja, depois do login bem-sucedido — o próprio KDoc dizia "após login/cadastro bem-sucedido". Renomeado para `onLoginSuccess` na tela, no NavHost e no teste instrumentado. (O `RegisterScreen` nunca teve esse parâmetro.)
 - `feature/auth/res` contém 4 strings `home_*` **duplicadas** em `feature/projects/res` — drift risk → eventual `Duplicate resources`. ✅ **RESOLVIDO** — `feature/auth/src/main/res/values/strings.xml` tem hoje **43 chaves, todas com prefixo `auth_`/`login_`/`register_`/`splash_` e zero `home_*`**; as 4 cópias (`home_role_member_dialog_title/body/ack`, `home_fab_disabled_owner`) foram removidas.
 - 🟡 **PARCIAL** — Sem `RegisterScreenTest` + `SplashScreenTest`. O `SplashScreenTest` existe; o cadastro é coberto pelo `AuthImeInsetsTest` (que renderiza o `RegisterBody` no caso do teclado), mas falta um teste da tela de cadastro como um todo.
 

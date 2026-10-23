@@ -76,7 +76,7 @@ class LoginScreenTest {
             BrainOutTheme {
                 Surface(modifier = Modifier) {
                     LoginScreen(
-                        onLoginSubmit = { navigationCount++ },
+                        onLoginSuccess = { navigationCount++ },
                         onCreateAccountClicked = {},
                         viewModel = viewModel,
                     )
@@ -128,7 +128,7 @@ class LoginScreenTest {
             BrainOutTheme {
                 Surface {
                     LoginScreen(
-                        onLoginSubmit = { navigationCount++ },
+                        onLoginSuccess = { navigationCount++ },
                         onCreateAccountClicked = {},
                         viewModel = viewModel,
                     )
@@ -190,7 +190,7 @@ class LoginScreenTest {
                 BrainOutTheme {
                     Surface {
                         LoginScreen(
-                            onLoginSubmit = { navigationCount++ },
+                            onLoginSuccess = { navigationCount++ },
                             onCreateAccountClicked = {},
                             viewModel = viewModel,
                         )
