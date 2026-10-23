@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.ProjectDialog
 
 /**
  * O que o usuário preencheu no diálogo de novo projeto.
@@ -82,14 +81,10 @@ internal fun CreateProjectDialog(
         ) { mutableStateListOf<String>() }
     var showAddTag by rememberSaveable { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        // DEF-46 — a janela do diálogo não redimensiona com o teclado
-        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
-        // Compose 1.12), então o `imePadding` é o que tira os botões de
-        // baixo do teclado.
-        modifier = Modifier.imePadding().testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
-        title = { Text(text = stringResource(id = R.string.home_create_project_title)) },
+    ProjectDialog(
+        titleRes = R.string.home_create_project_title,
+        onDismiss = onDismiss,
+        modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
@@ -153,11 +148,6 @@ internal fun CreateProjectDialog(
                 modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_CONFIRM),
             ) {
                 Text(text = stringResource(id = R.string.home_create_project_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.common_close))
             }
         },
     )
@@ -273,14 +263,9 @@ private fun AddTagDialog(
     var tagName by rememberSaveable { mutableStateOf("") }
     var color by rememberSaveable { mutableStateOf("#6750A4") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        // DEF-46 — a janela do diálogo não redimensiona com o teclado
-        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
-        // Compose 1.12), então o `imePadding` é o que tira os botões de
-        // baixo do teclado.
-        modifier = Modifier.imePadding(),
-        title = { Text(text = stringResource(id = R.string.home_create_project_add_tag_title)) },
+    ProjectDialog(
+        titleRes = R.string.home_create_project_add_tag_title,
+        onDismiss = onDismiss,
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -307,11 +292,6 @@ private fun AddTagDialog(
                 onCreate(trimmedName, color.trim())
             }) {
                 Text(text = stringResource(id = R.string.home_create_project_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.common_close))
             }
         },
     )

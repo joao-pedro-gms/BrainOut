@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +33,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.ProjectDialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -45,11 +44,10 @@ internal fun ChangeTaskPriorityDialog(
     errorMessage: String? = null,
 ) {
     var selected by rememberSaveable(currentPriority) { mutableStateOf(currentPriority) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(id = R.string.project_detail_task_priority_dialog_title))
-        },
+    ProjectDialog(
+        titleRes = R.string.project_detail_task_priority_dialog_title,
+        onDismiss = onDismiss,
+        modifier = Modifier.testTag(ProjectDetailTestTags.TASK_PRIORITY_DIALOG),
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
@@ -85,15 +83,5 @@ internal fun ChangeTaskPriorityDialog(
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.common_close))
-            }
-        },
-        // DEF-46 — a janela do diálogo não redimensiona com o teclado
-        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
-        // Compose 1.12), então o `imePadding` é o que tira os botões de
-        // baixo do teclado.
-        modifier = Modifier.imePadding().testTag(ProjectDetailTestTags.TASK_PRIORITY_DIALOG),
     )
 }

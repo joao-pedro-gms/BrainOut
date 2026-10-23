@@ -14,10 +14,8 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -32,6 +30,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.ProjectDialog
 
 /**
  * @param initialTitle título atual, usado como valor inicial do campo.
@@ -47,11 +46,10 @@ internal fun RenameTaskDialog(
 ) {
     var title by rememberSaveable(initialTitle) { mutableStateOf(initialTitle) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(id = R.string.project_detail_task_rename_dialog_title))
-        },
+    ProjectDialog(
+        titleRes = R.string.project_detail_task_rename_dialog_title,
+        onDismiss = onDismiss,
+        modifier = Modifier.testTag(ProjectDetailTestTags.RENAME_TASK_DIALOG),
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
@@ -76,15 +74,5 @@ internal fun RenameTaskDialog(
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.common_close))
-            }
-        },
-        // DEF-46 — a janela do diálogo não redimensiona com o teclado
-        // (`DialogProperties.decorFitsSystemWindows` não existe mais no
-        // Compose 1.12), então o `imePadding` é o que tira os botões de
-        // baixo do teclado.
-        modifier = Modifier.imePadding().testTag(ProjectDetailTestTags.RENAME_TASK_DIALOG),
     )
 }
