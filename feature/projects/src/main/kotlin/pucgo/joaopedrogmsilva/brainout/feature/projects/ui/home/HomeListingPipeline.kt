@@ -179,41 +179,55 @@ internal fun homeUiStateFlow(
                             tagChips: List<TagChip>,
                             filter: HomeProjectFilter,
                             ->
+                            ListingInputs(prefs, query, tagChips, filter)
+                        }.onEach { inputs ->
                             // Sincroniza o input visual com o snapshot
                             // persistido quando o owner muda (ex.: login).
-                            if (query.isEmpty() && searchInput.value != prefs.searchQuery) {
-                                searchInput.value = prefs.searchQuery
+                            //
+                            // Fica **fora** do `combine` de propósito: o
+                            // input cru muda a cada tecla e, se
+                            // participasse do gatilho de assinatura,
+                            // refaria a consulta do Room a cada tecla —
+                            // o oposto do que o `debounce` promete.
+                            if (inputs.query.isEmpty() && searchInput.value != inputs.prefs.searchQuery) {
+                                searchInput.value = inputs.prefs.searchQuery
                             }
-                            ListingInputs(prefs, query, tagChips, filter)
                         }
-                    combine(listingInputs, searchInput) { inputs: ListingInputs, currentInput: String ->
-                        val projectsFromRoom: Flow<List<Project>> =
-                            projectRepository.observeSearch(
-                                ownerId = capturedOwnerId,
-                                query = inputs.query,
-                                tagId = inputs.prefs.selectedTagId,
-                                sortOrder = inputs.prefs.sortOrder,
-                            )
-                        // E2.6/R5 — tags por projeto (não todas as
-                        // tags do owner). Cada card lista apenas as
-                        // tags associadas ao seu projeto.
-                        //
-                        // `observeByProjectIds` respeita o contrato
-                        // "conjunto vazio → mapa vazio" (uma única
-                        // consulta do Room), então o `onStart` aqui não
-                        // é remendo: é só o valor inicial enquanto a
-                        // consulta não responde — evita um piscar de
-                        // "sem tags" em cada card.
-                        val tagsByProject: Flow<Map<String, List<Tag>>> =
-                            projectsFromRoom.flatMapLatest { projects ->
-                                tagRepository
-                                    .observeByProjectIds(projects.map { it.id }.toSet())
-                                    .onStart { emit(emptyMap()) }
+                    // A assinatura do Room é controlada só pelos inputs
+                    // **debounceados**: o texto cru entra depois, para
+                    // atualizar o `searchQuery` do estado (a barra de
+                    // busca mostra o que o usuário digitou, na hora).
+                    listingInputs
+                        .flatMapLatest { inputs ->
+                            val projectsFromRoom: Flow<List<Project>> =
+                                projectRepository.observeSearch(
+                                    ownerId = capturedOwnerId,
+                                    query = inputs.query,
+                                    tagId = inputs.prefs.selectedTagId,
+                                    sortOrder = inputs.prefs.sortOrder,
+                                )
+                            // E2.6/R5 — tags por projeto (não todas as
+                            // tags do owner). Cada card lista apenas as
+                            // tags associadas ao seu projeto.
+                            //
+                            // `observeByProjectIds` respeita o contrato
+                            // "conjunto vazio → mapa vazio" (uma única
+                            // consulta do Room), então o `onStart` aqui não
+                            // é remendo: é só o valor inicial enquanto a
+                            // consulta não responde — evita um piscar de
+                            // "sem tags" em cada card.
+                            val tagsByProject: Flow<Map<String, List<Tag>>> =
+                                projectsFromRoom.flatMapLatest { projects ->
+                                    tagRepository
+                                        .observeByProjectIds(projects.map { it.id }.toSet())
+                                        .onStart { emit(emptyMap()) }
+                                }
+                            combine(projectsFromRoom, tagsByProject) { projects, tagsMap ->
+                                buildHomeUiState(inputs, projects, tagsMap)
                             }
-                        combine(projectsFromRoom, tagsByProject) { projects, tagsMap ->
-                            buildHomeUiState(inputs, currentInput, projects, tagsMap)
+                        }.combine(searchInput) { state: HomeUiState, currentInput: String ->
+                            state.copy(searchQuery = currentInput)
                         }
-                    }.flatMapLatest { it }
                 }
             }.onEach {
                 // Leitura bem-sucedida: o erro pendente (de carga ou de
@@ -241,7 +255,6 @@ internal fun homeUiStateFlow(
  */
 internal fun buildHomeUiState(
     inputs: ListingInputs,
-    currentInput: String,
     rows: List<Project>,
     tagsByProject: Map<String, List<Tag>> = emptyMap(),
 ): HomeUiState {
@@ -262,7 +275,10 @@ internal fun buildHomeUiState(
     return HomeUiState(
         projects = items,
         availableTags = inputs.tagChips,
-        searchQuery = currentInput,
+        // O `searchQuery` do estado é o texto **cru** (o que o usuário
+        // digitou); o pipeline o sobrescreve logo em seguida, no
+        // `combine` com o input cru.
+        searchQuery = inputs.query,
         selectedTagId = inputs.prefs.selectedTagId,
         sortOrder = inputs.prefs.sortOrder,
         isLoading = false,
