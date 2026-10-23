@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -233,23 +234,25 @@ private fun ProjectDetailScreenPreview() {
         // O corpo, e não a tela: `ProjectDetailScreen` resolve o
         // ViewModel por `hiltViewModel()`, que exige uma Activity — no
         // IDE a preview não renderizava.
-        ProjectDetailBody(
-            contentPadding = PaddingValues(0.dp),
-            state =
-                ProjectDetailState(
-                    tasks = emptyList(),
-                    isLoading = false,
-                    errorMessage = null,
-                ),
-            actions =
-                ProjectDetailActions(
-                    onRetry = {},
-                    onDismissError = {},
-                    onChangeStatus = { _, _ -> },
-                    onDeleteTask = {},
-                    onRenameTask = {},
-                    onChangePriority = { _, _ -> },
-                ),
-        )
+        Surface(color = MaterialTheme.colorScheme.background) {
+            ProjectDetailBody(
+                contentPadding = PaddingValues(0.dp),
+                state =
+                    ProjectDetailState(
+                        tasks = emptyList(),
+                        isLoading = false,
+                        errorMessage = null,
+                    ),
+                actions =
+                    ProjectDetailActions(
+                        onRetry = {},
+                        onDismissError = {},
+                        onChangeStatus = { _, _ -> },
+                        onDeleteTask = {},
+                        onRenameTask = {},
+                        onChangePriority = { _, _ -> },
+                    ),
+            )
+        }
     }
 }

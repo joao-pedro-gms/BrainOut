@@ -246,7 +246,7 @@ private fun TaskCard(row: TaskRow) {
 @Composable
 private fun TasksScreenLoadingPreview() {
     BrainOutTheme {
-        Surface {
+        Surface(color = MaterialTheme.colorScheme.background) {
             TasksContent(state = TasksUiState(isLoading = true))
         }
     }
@@ -256,7 +256,7 @@ private fun TasksScreenLoadingPreview() {
 @Composable
 private fun TasksScreenEmptyPreview() {
     BrainOutTheme {
-        Surface {
+        Surface(color = MaterialTheme.colorScheme.background) {
             TasksContent(state = TasksUiState(rows = emptyList(), isLoading = false))
         }
     }
@@ -303,7 +303,7 @@ private fun TasksScreenPopulatedPreview() {
             ),
         )
     BrainOutTheme {
-        Surface {
+        Surface(color = MaterialTheme.colorScheme.background) {
             TasksContent(state = TasksUiState(rows = rows, isLoading = false))
         }
     }

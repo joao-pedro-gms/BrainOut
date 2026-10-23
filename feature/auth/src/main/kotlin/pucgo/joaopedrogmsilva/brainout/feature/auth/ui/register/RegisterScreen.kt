@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -366,18 +367,20 @@ private fun RoleRow(
 @Composable
 private fun RegisterScreenPreview() {
     BrainOutTheme {
-        RegisterBody(
-            callbacks =
-                RegisterCallbacks(
-                    onNameChange = {},
-                    onEmailChange = {},
-                    onPasswordChange = {},
-                    onPasswordConfirmationChange = {},
-                    onRoleChange = {},
-                    onSubmit = {},
-                    onHaveAccountClicked = {},
-                ),
-            uiState = AuthUiState(name = "João Pedro", email = "joao@example.com"),
-        )
+        Surface(color = MaterialTheme.colorScheme.background) {
+            RegisterBody(
+                callbacks =
+                    RegisterCallbacks(
+                        onNameChange = {},
+                        onEmailChange = {},
+                        onPasswordChange = {},
+                        onPasswordConfirmationChange = {},
+                        onRoleChange = {},
+                        onSubmit = {},
+                        onHaveAccountClicked = {},
+                    ),
+                uiState = AuthUiState(name = "João Pedro", email = "joao@example.com"),
+            )
+        }
     }
 }

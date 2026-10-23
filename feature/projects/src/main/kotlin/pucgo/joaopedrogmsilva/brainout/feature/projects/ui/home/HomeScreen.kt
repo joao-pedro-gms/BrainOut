@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -163,29 +164,31 @@ object HomeTestTags {
 @Composable
 private fun HomeScreenPreview() {
     BrainOutTheme {
-        HomeProjectsContent(
-            contentPadding = PaddingValues(0.dp),
-            state =
-                HomeProjectsState(
-                    projects = emptyList(),
-                    isLoading = false,
-                    currentFilter = HomeProjectFilter.Active,
-                    errorMessage = null,
-                    availableTags = emptyList(),
-                    searchQuery = "",
-                    selectedTagId = null,
-                    sortOrder = SortOrder.CreatedDesc,
-                ),
-            actions =
-                HomeProjectsActions(
-                    onOpenProject = {},
-                    onSelectFilter = {},
-                    onRetry = {},
-                    onDismissError = {},
-                    onSearchQueryChange = {},
-                    onTagFilterChange = {},
-                    onSortOrderChange = {},
-                ),
-        )
+        Surface(color = MaterialTheme.colorScheme.background) {
+            HomeProjectsContent(
+                contentPadding = PaddingValues(0.dp),
+                state =
+                    HomeProjectsState(
+                        projects = emptyList(),
+                        isLoading = false,
+                        currentFilter = HomeProjectFilter.Active,
+                        errorMessage = null,
+                        availableTags = emptyList(),
+                        searchQuery = "",
+                        selectedTagId = null,
+                        sortOrder = SortOrder.CreatedDesc,
+                    ),
+                actions =
+                    HomeProjectsActions(
+                        onOpenProject = {},
+                        onSelectFilter = {},
+                        onRetry = {},
+                        onDismissError = {},
+                        onSearchQueryChange = {},
+                        onTagFilterChange = {},
+                        onSortOrderChange = {},
+                    ),
+            )
+        }
     }
 }
