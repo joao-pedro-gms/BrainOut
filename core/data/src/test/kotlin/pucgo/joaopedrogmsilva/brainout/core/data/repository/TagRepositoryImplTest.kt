@@ -13,9 +13,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
-import java.time.Instant
 
 /**
  * Testes diretos do [TagRepositoryImpl] (gap Kover 60% do módulo).
@@ -142,19 +140,6 @@ class TagRepositoryImplTest {
         localTransaction: LocalTransaction = FakeLocalTransaction(),
     ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
 
-    private fun sampleTag(
-        id: String = "t1",
-        ownerId: String = "u1",
-        name: String = "Urgente",
-    ): Tag =
-        Tag(
-            id = id,
-            ownerId = ownerId,
-            name = name,
-            color = "#6750A4",
-            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-        )
-
     /** Fake mínimo de [TagDao]. */
     private class FakeTagDao : TagDao {
         val tags: MutableMap<String, TagEntity> = mutableMapOf()
@@ -187,10 +172,5 @@ class TagRepositoryImplTest {
         override suspend fun deleteById(id: String) {
             tags.remove(id)
         }
-    }
-
-    /** Fake mínimo de [LocalTransaction]. */
-    private class FakeLocalTransaction : LocalTransaction {
-        override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 }

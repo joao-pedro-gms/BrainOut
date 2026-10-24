@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.CompletionStatsRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PriorityCountRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
@@ -17,8 +16,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import java.time.Instant
 
@@ -261,19 +258,6 @@ class TaskRepositoryImplTest {
     private fun newRepository(taskDao: TaskDao): TaskRepositoryImpl =
         TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), FakeLocalTransaction())
 
-    private fun sampleTask(
-        status: TaskStatus = TaskStatus.TODO,
-        priority: TaskPriority = TaskPriority.MEDIUM,
-        createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
-    ): Task =
-        Task.create(
-            projectId = "p1",
-            title = "Tarefa",
-            priority = priority,
-            status = status,
-            now = createdAt,
-        )
-
     /** Registra uma chamada a `cascadeDeleteTask`. */
     private data class DeleteCall(
         val taskId: String,
@@ -426,16 +410,5 @@ class TaskRepositoryImplTest {
             deleteCalls += DeleteCall(taskId, projectId, wasActive)
             taskDao.deleteById(taskId)
         }
-    }
-
-    /**
-     * Fake mínimo de [LocalTransaction]: executa o bloco.
-     *
-     * A escrita dupla (Room + `pending_ops`) deixou de existir com a
-     * remoção da camada de rede (#212) — não há mais ordem de
-     * enfileiramento para capturar.
-     */
-    private class FakeLocalTransaction : LocalTransaction {
-        override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 }
