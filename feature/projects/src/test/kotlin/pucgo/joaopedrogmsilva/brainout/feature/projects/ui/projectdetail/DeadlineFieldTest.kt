@@ -37,7 +37,12 @@ class DeadlineFieldTest {
                         if (it == firstDate) error("Falha no cálculo local")
                         DeadlineInfo(
                             isBusinessDay = false,
-                            nextHoliday = Holiday(LocalDate.of(2026, 11, 20), "Consciência Negra", "national"),
+                            nextHoliday =
+                                Holiday(
+                                    LocalDate.of(2026, 11, 20),
+                                    "Consciência Negra",
+                                    Holiday.TYPE_NATIONAL,
+                                ),
                         )
                     },
                 )

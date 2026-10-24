@@ -24,7 +24,7 @@ class HolidayRepositoryImpl
                     holiday(year, 11, 15, "Proclamação da República"),
                     holiday(year, 12, 25, "Natal"),
                 )
-            val goodFriday = Holiday(easter(year).minusDays(2), "Paixão de Cristo", "national")
+            val goodFriday = Holiday(easter(year).minusDays(2), "Paixão de Cristo", Holiday.TYPE_NATIONAL)
             val consciousnessDay =
                 if (year >=
                     2024
@@ -41,7 +41,7 @@ class HolidayRepositoryImpl
             month: Int,
             day: Int,
             name: String,
-        ): Holiday = Holiday(LocalDate.of(year, month, day), name, "national")
+        ): Holiday = Holiday(LocalDate.of(year, month, day), name, Holiday.TYPE_NATIONAL)
 
         /** Computus gregoriano (Meeus/Jones/Butcher), independente de rede ou fuso horário. */
         @Suppress("MagicNumber") // As constantes do algoritmo de Meeus/Jones/Butcher são o próprio assunto.
