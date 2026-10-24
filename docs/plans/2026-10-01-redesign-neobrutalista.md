@@ -285,9 +285,9 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 **Criar:** `docs/design/BASELINE.md`, `docs/design/PERFORMANCE.md`. **Ler:** `AGENTS.md`, `gradle/libs.versions.toml`, `core/ui/build.gradle.kts`, `$APP/MainActivity.kt`, `$APP/navigation/BrainOutNavHost.kt`.
 
 1. Registrar SHA, JDK, SDK, variante, resolução real de dependências e dispositivos disponíveis.
-2. Rodar o gate da seção 9 (incluindo os `testDebugUnitTest` por feature — a CI os lista porque `testDevDebugUnitTest` não os alcança); registrar falhas preexistentes.
+2. Rodar o gate da seção 9 (incluindo os `testDebugUnitTest` por feature — a CI os lista porque `testDebugUnitTest` não os alcança); registrar falhas preexistentes.
 3. Registrar o defeito do diálogo de criação (fecha antes do sucesso: `HomeScreen.kt` fecha em `onCreateProject`, no dispatch de `viewModel.createProject`, e não no evento de sucesso) como conhecido; a correção é NB-18, antes da migração visual da Home.
-4. Definir o roteiro reproduzível de desempenho (Q27): build de medição = `:app:assembleDevRelease` assinado com keystore local **não versionado** (variáveis `BRAINOUT_KEYSTORE_*`, gerado com `keytool` fora do repo) ou artefato CI; capturas de tela não são evidência de desempenho.
+4. Definir o roteiro reproduzível de desempenho (Q27): build de medição = `:app:assembleRelease` assinado com keystore local **não versionado** (variáveis `BRAINOUT_KEYSTORE_*`, gerado com `keytool` fora do repo) ou artefato CI; capturas de tela não são evidência de desempenho.
 5. Comandos do roteiro: `adb shell am force-stop <pkg>` + `am start -W -S -n <pkg>/.MainActivity` (startup frio ×3), cenário fixo Projetos → detalhe → voltar; `adb shell dumpsys gfxinfo <pkg> reset` → cenário → `dumpsys gfxinfo <pkg> framestats`; métricas: tempo total de startup, proporção de frames lentos, p95 por frame (referência 16,7 ms a 60 Hz / 8,3 ms a 120 Hz). Registrar dispositivo, taxa de atualização, 3 execuções e variação. Mesmo build/dispositivo antes (NB-01) e depois (NB-34).
 
 **Aceite:** baseline reproduzível com números reais; roteiro executável por outra pessoa; nenhuma afirmação de desempenho a partir apenas do código.
@@ -441,7 +441,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. Atualizar consultas de visibilidade (Home, lista global, agenda).
 4. Cobrir erros: email inexistente, membro duplicado, permissão negada em cada mutação.
 
-**Validação:** `./gradlew :core:domain:test :core:data:testDevDebugUnitTest` + Kover. **Aceite:** matriz Q20 aplicada no domínio; migração 4→5 sem perda.
+**Validação:** `./gradlew :core:domain:test :core:data:testDebugUnitTest` + Kover. **Aceite:** matriz Q20 aplicada no domínio; migração 4→5 sem perda.
 
 #### NB-13 — Semântica de prazo, lembretes e reclassificação
 
@@ -454,7 +454,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. `DeadlineWorker` revalida gatilho × prazo atual antes de publicar.
 4. UI de prazo (em NB-09/NB-20) consome o novo contrato; semântica de feriado preservada.
 
-**Validação:** `:core:domain:test`, `:core:data:testDevDebugUnitTest`, `:app:testDevDebugUnitTest` (worker). **Aceite:** zero lembrete obsoleto nos cenários testados.
+**Validação:** `:core:domain:test`, `:core:data:testDebugUnitTest`, `:app:testDebugUnitTest` (worker). **Aceite:** zero lembrete obsoleto nos cenários testados.
 
 #### NB-14 — Regras de DONE editável
 
@@ -479,7 +479,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. Associação/desassociação via `replaceProjectTags` existente; **não** enfileirar TAG UPDATE (descartado pelo dispatcher); aviso local na UI (NB-19/NB-26).
 4. Preservar unicidade `(owner_id, name)` e validações 1–30 / `#RRGGBB`.
 
-**Validação:** `:core:domain:test`, `:core:data:testDevDebugUnitTest`. **Aceite:** Q18 completo localmente; nenhuma promessa de sync de rename/recore.
+**Validação:** `:core:domain:test`, `:core:data:testDebugUnitTest`. **Aceite:** Q18 completo localmente; nenhuma promessa de sync de rename/recore.
 
 #### NB-16 — Consultas de agenda e filtros globais
 
@@ -506,7 +506,7 @@ Cada tarefa: verificar dependências → produzir o artefato → executar a vali
 3. Preservar `saveState/restoreState`, `singleTop`; detalhe e subrotas sem barra indevida; um único proprietário de insets (corrigir duplo padding de Scaffolds).
 4. Testes 599/600 e 839/840 dp, rotação, altura < 480 dp, IME, back (incluindo preditivo quando disponível).
 
-**Validação:** `./gradlew :app:testDevDebugUnitTest` + inspeção em emuladores 320/600/840/1024. **Aceite:** cinco abas restauram estado; sem padding duplicado.
+**Validação:** `./gradlew :app:testDebugUnitTest` + inspeção em emuladores 320/600/840/1024. **Aceite:** cinco abas restauram estado; sem padding duplicado.
 
 #### NB-18 — Correção do ciclo assíncrono de criação de projeto
 
@@ -789,38 +789,38 @@ Esperado: contraste/paridade dos documentos de design e consistência deste road
 ```bash
 ./gradlew :core:domain:test
 ./gradlew :core:ui:testDebugUnitTest
-./gradlew :core:data:testDevDebugUnitTest
+./gradlew :core:data:testDebugUnitTest
 ./gradlew :feature:projects:testDebugUnitTest
 ./gradlew :feature:tasks:testDebugUnitTest
 ./gradlew :feature:auth:testDebugUnitTest
 ./gradlew :feature:settings:testDebugUnitTest
-./gradlew :app:testDevDebugUnitTest
+./gradlew :app:testDebugUnitTest
 ```
 
-Features não têm flavor próprio (`testDebugUnitTest`); `:app`/`:core:data` usam variantes dev/prod. **Auditoria de 02/10/2026:** a CI **não** listava os `testDebugUnitTest` por feature — `ci.yml` roda apenas `testDevDebugUnitTest` (que alcança `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain`) e, em outro job, `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Nenhum workflow citava `:feature:*`. **Atualização (FIX-02, issue #90):** a dívida do §1.3 item 2 foi paga — o job `unit-tests` agora executa as quatro tarefas explicitamente no passo `Run feature unit tests (explicit)`, aditivo aos gates existentes. Os comandos por feature abaixo continuam válidos como feedback rápido local.
+Nenhum módulo tem flavor desde a transição local (#212): o agregador `testDebugUnitTest` alcança `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain` — mas **não** as features nem o `:core:ui`, e por isso a CI os lista explicitamente. **Auditoria de 02/10/2026:** a CI **não** listava os `testDebugUnitTest` por feature — `ci.yml` rodava apenas a variante `testDevDebugUnitTest` (que alcançava `:app`, `:core:data` e, pelo wire-up do `projectsEvaluated`, `:core:domain`) e, em outro job, `:core:data:testDevDebugUnitTest :app:testDevDebugUnitTest`. Nenhum workflow citava `:feature:*`. **Atualização (FIX-02, issue #90):** a dívida do §1.3 item 2 foi paga — o job `unit-tests` agora executa as quatro tarefas explicitamente no passo `Run feature unit tests (explicit)`, aditivo aos gates existentes. Os comandos por feature abaixo continuam válidos como feedback rápido local.
 
 ### Gates antes de publicar código e ao finalizar
 
 ```bash
 ./gradlew ktlintCheck detekt
-./gradlew testDevDebugUnitTest :core:domain:koverVerify :core:data:koverVerify
+./gradlew testDebugUnitTest :core:domain:koverVerify :core:data:koverVerify
 ./gradlew :feature:projects:testDebugUnitTest :feature:tasks:testDebugUnitTest \
   :feature:auth:testDebugUnitTest :feature:settings:testDebugUnitTest
-./gradlew :app:lintDevDebug
+./gradlew :app:lintDebug
 ./gradlew :feature:auth:lintDebug :feature:projects:lintDebug :feature:tasks:lintDebug :feature:settings:lintDebug
-./gradlew :app:assembleDevDebug
+./gradlew :app:assembleDebug
 ```
 
-Esperado: checks verdes, Kover ≥ 60% em domain/data, traduções completas, sem novos erros de lint. UI/features sem gate Kover novo. `testDevDebugUnitTest` cobre `:app`/`:core:data`; os comandos explícitos por feature cobrem as features (paridade com a CI).
+Esperado: checks verdes, Kover ≥ 60% em domain/data, traduções completas, sem novos erros de lint. UI/features sem gate Kover novo. `testDebugUnitTest` cobre `:app`/`:core:data`; os comandos explícitos por feature cobrem as features (paridade com a CI).
 
 ### Dispositivo/emulador e build de medição
 
 ```bash
-./gradlew connectedDevDebugAndroidTest
-./gradlew :app:assembleDevRelease
+./gradlew connectedDebugAndroidTest
+./gradlew :app:assembleRelease
 ```
 
-O primeiro exige dispositivo/emulador e backend adequados. O segundo gera a variante de medição; instalar exige assinatura local (seção 8). Não usar `prod` (URL placeholder) para simular integração.
+O primeiro exige dispositivo/emulador. O segundo gera o build de release — sem assinatura, a menos que as secrets `BRAINOUT_*` estejam cadastradas (seção 8).
 
 ## 10. QA e evidências
 
