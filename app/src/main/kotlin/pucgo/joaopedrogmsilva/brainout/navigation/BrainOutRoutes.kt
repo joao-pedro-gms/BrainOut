@@ -3,6 +3,8 @@
 
 package pucgo.joaopedrogmsilva.brainout.navigation
 
+import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail.ProjectDetailViewModel
+
 /**
  * Rotas top-level do NavHost do BrainOut.
  *
@@ -21,9 +23,21 @@ object BrainOutRoutes {
     const val Register: String = "register"
     const val Home: String = "home"
     const val Settings: String = "settings"
-    const val ProjectDetailPattern: String = "project/{projectId}"
-    const val ProjectIdArg: String = "projectId"
+    private const val PROJECT_DETAIL_PREFIX: String = "project"
+
+    /**
+     * Nome do argumento que leva o id do projeto na rota do detalhe.
+     *
+     * O valor vem do [ProjectDetailViewModel], que é quem **lê** o
+     * argumento: o registro central tem de honrar a chave que o
+     * destino consome. Declarar o nome nos dois lados permitia que
+     * divergissem — e nenhum teste pegaria, porque os dois lados do
+     * teste citariam a própria constante.
+     */
+    const val ProjectIdArg: String = ProjectDetailViewModel.PROJECT_ID_ARG
+
+    const val ProjectDetailPattern: String = "$PROJECT_DETAIL_PREFIX/{$ProjectIdArg}"
 
     /** Constrói a rota concreta do ProjectDetail a partir do id. */
-    fun projectDetail(projectId: String): String = "project/$projectId"
+    fun projectDetail(projectId: String): String = "$PROJECT_DETAIL_PREFIX/$projectId"
 }
