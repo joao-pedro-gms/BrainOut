@@ -3,8 +3,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -16,8 +14,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import java.time.Instant
 
@@ -39,12 +37,7 @@ class TaskSaveAuditTest {
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database =
-            Room
-                .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+        database = inMemoryDatabase()
         projectDao = database.projectDao()
         taskDao = database.taskDao()
     }
@@ -298,36 +291,4 @@ class TaskSaveAuditTest {
             // Nenhum caminho revalidou RN01 na reabertura.
             assertThat(taskDao.countActiveByProject("p-1")).isEqualTo(51)
         }
-
-    private fun sampleProject(
-        id: String = "p-1",
-        ownerId: String = "u-1",
-        isCompleted: Boolean = false,
-    ): ProjectEntity =
-        ProjectEntity(
-            id = id,
-            ownerId = ownerId,
-            name = "Projeto",
-            description = null,
-            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-            isCompleted = isCompleted,
-        )
-
-    private fun sampleTask(
-        id: String,
-        projectId: String = "p-1",
-        status: String = "TODO",
-        completedAt: Instant? = null,
-    ): TaskEntity =
-        TaskEntity(
-            id = id,
-            projectId = projectId,
-            title = "Tarefa $id",
-            priorityCode = 1,
-            status = status,
-            assigneeId = null,
-            dueDate = null,
-            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-            completedAt = completedAt,
-        )
 }

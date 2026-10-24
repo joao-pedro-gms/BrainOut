@@ -2,7 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -20,6 +19,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ThemePreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.FixedPepperProvider
@@ -63,8 +63,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `export e restore preservam ids e vinculos em outra instalacao`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val exported = ByteArrayOutputStream()
@@ -99,8 +99,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `conta restaurada autentica com a senha do backup no aparelho novo`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val exported = ByteArrayOutputStream()
@@ -122,8 +122,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `conta que ja existe no aparelho mantem o hash local`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val localHasher = PasswordHasherImpl(FixedPepperProvider(PEPPER_TARGET))
@@ -153,7 +153,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `arquivo que nao e backup falha sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
                 val error =
@@ -173,7 +173,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `arquivo truncado falha sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
                 val exported = ByteArrayOutputStream()
@@ -195,7 +195,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `versao desconhecida falha sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
                 val exported = ByteArrayOutputStream()
@@ -219,7 +219,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `senha errada falha sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
                 val exported = ByteArrayOutputStream()
@@ -241,7 +241,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `arquivo acima do limite falha sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
 
@@ -260,7 +260,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `backup com referencia orfa e recusado sem alterar os dados`() =
         runTest {
-            val target = newDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(target)
                 val orphaned =
@@ -304,8 +304,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `sessao e invalidada depois da restauracao`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val sessionStore = SessionStore(context.authDataStore)
@@ -325,8 +325,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `tema e ordenacao do backup sao reaplicados`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val dataStore = context.authDataStore
@@ -349,8 +349,8 @@ class BackupRepositoryImplTest {
     @Test
     fun `tarefas com prazo geram lembretes e as demais nao`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 seed(source)
                 val exported = ByteArrayOutputStream()
@@ -375,7 +375,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `currentTaskIds devolve os ids das tarefas gravadas`() =
         runTest {
-            val database = newDatabase()
+            val database = inMemoryDatabase()
             try {
                 seed(database)
 
@@ -388,7 +388,7 @@ class BackupRepositoryImplTest {
     @Test
     fun `exportacao nao inclui hash de senha no arquivo`() =
         runTest {
-            val database = newDatabase()
+            val database = inMemoryDatabase()
             try {
                 seed(database)
                 val exported = ByteArrayOutputStream()
@@ -404,12 +404,6 @@ class BackupRepositoryImplTest {
         }
 
     // --- helpers ---
-
-    private fun newDatabase(): BrainOutDatabase =
-        Room
-            .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
 
     private fun newRepository(
         database: BrainOutDatabase,

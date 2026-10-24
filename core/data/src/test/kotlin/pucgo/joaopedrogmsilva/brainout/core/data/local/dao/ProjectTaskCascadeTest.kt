@@ -3,8 +3,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -15,8 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import java.time.Instant
 
 /**
@@ -48,12 +45,7 @@ class ProjectTaskCascadeTest {
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database =
-            Room
-                .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+        database = inMemoryDatabase()
         projectDao = database.projectDao()
         taskDao = database.taskDao()
     }
@@ -62,38 +54,6 @@ class ProjectTaskCascadeTest {
     fun tearDown() {
         database.close()
     }
-
-    private fun sampleProject(
-        id: String = "p-1",
-        ownerId: String = "u-1",
-        isCompleted: Boolean = false,
-    ): ProjectEntity =
-        ProjectEntity(
-            id = id,
-            ownerId = ownerId,
-            name = "Projeto",
-            description = null,
-            createdAt = Instant.parse("2026-09-21T10:00:00Z"),
-            isCompleted = isCompleted,
-        )
-
-    private fun sampleTask(
-        id: String = "t-1",
-        projectId: String = "p-1",
-        status: String = "TODO",
-        completedAt: Instant? = null,
-    ): TaskEntity =
-        TaskEntity(
-            id = id,
-            projectId = projectId,
-            title = "Tarefa $id",
-            priorityCode = 1,
-            status = status,
-            assigneeId = null,
-            dueDate = null,
-            createdAt = Instant.parse("2026-09-21T10:00:00Z"),
-            completedAt = completedAt,
-        )
 
     @Test
     fun `concluir ultima tarefa ativa marca projeto como concluido`() =
