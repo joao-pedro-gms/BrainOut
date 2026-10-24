@@ -91,16 +91,13 @@
   dispositivos físicos (E5.3) permanece pendente —
   `docs/DISPOSITIVOS.md` ainda tem campos `⏳` no primário e o
   secundário não tem modelo definido. **Veredito único: Parcial.**
-  Registrando a divergência entre documentos, sem editar os demais:
-  `docs/RELATORIO-TECNICO.md:159` afirma **Atendido** e cita o teste
-  em dois dispositivos como registrado, mas não existe registro de
-  execução — nem em `docs/DISPOSITIVOS.md`, nem em run log, nem em
-  roteiro; e `docs/ROADMAP.md:688` mantém **E5.3 como `[ ]`
-  (não entregue)**, que é o estado real. Este apêndice adota o veredito
-  **Parcial**, coerente com o ROADMAP. **Pêndice:** alinhar
-  `RELATORIO-TECNICO.md:159` ao mesmo veredito antes da entrega N2 —
-  os dois documentos não podem afirmar coisas diferentes sobre o mesmo
-  requisito.
+  A divergência entre documentos **está resolvida**: a linha R14 de
+  `docs/RELATORIO-TECNICO.md:178` também adota o veredito **Parcial** e
+  dá a mesma razão — a geração do pacote está entregue (E3.7), o teste
+  em ≥ 2 dispositivos físicos não (E5.3), e `docs/DISPOSITIVOS.md`
+  continua com campos `⏳`. O `docs/ROADMAP.md:694` mantém **E5.3 como
+  `[ ]` (não entregue)**, que é o estado real. Os três documentos
+  concordam.
 - **R13:** `README.md` atende E1.10 e o marco E5.2 consta como
   entregue no ROADMAP, com troubleshooting e links para o relatório
   técnico e para o documento norteador.
