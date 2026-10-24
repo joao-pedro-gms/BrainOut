@@ -29,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -135,8 +137,19 @@ internal fun TasksContent(
         item {
             when {
                 state.errorMessage != null -> TasksErrorBanner(state.errorMessage, onRetry, onDismissError)
-                state.isLoading ->
-                    CircularProgressIndicator(modifier = Modifier.testTag(TasksTestTags.LOADING))
+                state.isLoading -> {
+                    val loadingLabel = stringResource(id = R.string.tasks_loading_aria_label)
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier
+                                .testTag(TasksTestTags.LOADING)
+                                // O indicador é visual — um spinner nu não
+                                // anuncia nada. O `contentDescription` dá ao
+                                // TalkBack o que está acontecendo, sem
+                                // alterar o desenho.
+                                .semantics { contentDescription = loadingLabel },
+                    )
+                }
                 state.rows.isEmpty() ->
                     TasksEmptyState(Modifier.fillMaxWidth().testTag(TasksTestTags.EMPTY))
             }

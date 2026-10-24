@@ -26,11 +26,6 @@
     <string name="dashboard_projects_active">Active</string>
     <string name="dashboard_projects_completed">Completed</string>
     <string name="dashboard_priority_title">Tasks by priority</string>
-    <string name="dashboard_priority_short_low">L</string>
-    <string name="dashboard_priority_short_medium">M</string>
-    <string name="dashboard_priority_short_high">H</string>
-    <string name="dashboard_priority_short_urgent">U</string>
-    <string name="dashboard_priority_short_critical">C</string>
     <string name="dashboard_weekly_rate_title">Weekly completion rate</string>
     <string name="dashboard_overall_rate_title">Overall completion rate</string>
     <string name="dashboard_rate_percent">%1$d%%</string>
