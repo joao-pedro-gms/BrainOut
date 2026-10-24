@@ -30,11 +30,11 @@ import java.time.ZoneOffset
 class CheckDeadlineUseCaseTest {
     private val holidays2026: List<Holiday> =
         listOf(
-            Holiday(LocalDate.parse("2026-01-01"), "Confraternização mundial", "national"),
-            Holiday(LocalDate.parse("2026-04-21"), "Tiradentes", "national"),
-            Holiday(LocalDate.parse("2026-05-01"), "Dia do trabalho", "national"),
-            Holiday(LocalDate.parse("2026-09-07"), "Independência", "national"),
-            Holiday(LocalDate.parse("2026-12-25"), "Natal", "national"),
+            Holiday(LocalDate.parse("2026-01-01"), "Confraternização mundial", Holiday.TYPE_NATIONAL),
+            Holiday(LocalDate.parse("2026-04-21"), "Tiradentes", Holiday.TYPE_NATIONAL),
+            Holiday(LocalDate.parse("2026-05-01"), "Dia do trabalho", Holiday.TYPE_NATIONAL),
+            Holiday(LocalDate.parse("2026-09-07"), "Independência", Holiday.TYPE_NATIONAL),
+            Holiday(LocalDate.parse("2026-12-25"), "Natal", Holiday.TYPE_NATIONAL),
         )
 
     /**

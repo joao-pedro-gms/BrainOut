@@ -35,7 +35,7 @@ class CheckDeadlineUseCase
             val holidays =
                 (start.year..date.year)
                     .flatMap { holidayRepository.getHolidays(it) }
-                    .filter { it.type == "national" }
+                    .filter { it.type == Holiday.TYPE_NATIONAL }
             val businessDay =
                 date.dayOfWeek != DayOfWeek.SATURDAY &&
                     date.dayOfWeek != DayOfWeek.SUNDAY &&
