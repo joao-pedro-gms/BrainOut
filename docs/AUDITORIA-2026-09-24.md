@@ -587,6 +587,7 @@ duas cópias fixavam o **mesmo** conhecimento, elas viraram uma fonte só.
 | #329 | `sampleProject` / `sampleTag` / `sampleTask` (domínio) | 2 → 1 |
 | #330 | `deadlineWorkerFactory` / `completeTaskWorkerFactory` | 6 → 1 |
 | #331 | `FakeProjectDao` (13 métodos da interface) | 2 → 1 |
+| #343 | `FakeTagDao` (o completo — o `ProjectRepositoryImpl` usa só `findById`) | 2 → 1 |
 | #332 | `NeoTokenParityTest` passa a ler o contrato | 8 grupos |
 
 **Nenhum dado de teste mudou.** As sete cópias do banco usavam o mesmo
@@ -602,6 +603,17 @@ entre eles (as cascatas agiam em um e não no outro) viviam no meio do
 código repetido. Agora há um fake só, com as três operações de cascata
 `open` — o `TaskRepositoryImplTest` as sobrescreve para registrarem a
 chamada, o `ProjectRepositoryImplTest` usa a implementação padrão.
+
+O `FakeTagDao` estava na lista do que ficaria de fora, e saiu de lá
+depois: as duas versões tinham comportamentos diferentes — a de
+`TagRepositoryImplTest` reproduz o índice UNIQUE `(owner_id, name)` e
+monta `observeForProjects` a partir das associações — e a versão
+completa recusaria a segunda tag de mesmo owner em `create substitui
+associacoes de tags atomicamente`. Só que o `ProjectRepositoryImpl`
+usa **apenas** `findById` do DAO de tags (as tags são gravadas direto
+no mapa pelo teste, nunca por `insert`), então a versão completa serve
+às duas suítes — e o caminho que parecia blocking nunca chegou a ser
+exercitado por ela. O fake único saiu no #343.
 
 ### O teste de paridade dos tokens prometia uma coisa e fazia outra
 
@@ -629,11 +641,6 @@ declarados batem com os tokens`. Antes as duas passavam.
 
 ### O que ficou de fora, e por quê
 
-- **`FakeTagDao`** — as duas versões têm comportamentos diferentes: a de
-  `TagRepositoryImplTest` reproduz o índice UNIQUE `(owner_id, name)` e
-  monta `observeForProjects` a partir das associações. Unificar quebraria
-  `create substitui associacoes de tags atomicamente`, que insere duas
-  tags de mesmo owner.
 - **O `setMain`/`resetMain` dos testes de ViewModel** — o boilerplate do
   dispatcher aparece em 8 suítes de 4 módulos. É glue de framework, e
   unificá-lo exigiria um `testFixtures` compartilhado entre módulos — uma
