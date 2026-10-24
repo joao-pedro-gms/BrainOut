@@ -9,6 +9,8 @@
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import androidx.compose.material3.Surface
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -82,6 +84,22 @@ class TasksScreenTest {
     }
 
     @Test
+    fun `estado de carregamento anuncia o que esta acontecendo`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    TasksContent(state = TasksUiState(rows = emptyList(), isLoading = true))
+                }
+            }
+        }
+
+        // O indicador é visual: um spinner nu não diz nada ao TalkBack.
+        composeRule
+            .onNodeWithTag(TasksTestTags.LOADING)
+            .assert(hasContentDescription("Carregando tarefas"))
+    }
+
+    @Test
     fun `estado vazio expõe a tag de empty`() {
         composeRule.setContent {
             BrainOutTheme {
@@ -129,5 +147,20 @@ class TasksScreenEnglishTest {
         }
 
         composeRule.onNodeWithText("(no project)").assertExists()
+    }
+
+    @Test
+    fun `estado de carregamento anuncia em ingles`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    TasksContent(state = TasksUiState(rows = emptyList(), isLoading = true))
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag(TasksTestTags.LOADING)
+            .assert(hasContentDescription("Loading tasks"))
     }
 }
