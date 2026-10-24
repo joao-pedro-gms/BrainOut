@@ -32,9 +32,6 @@ android {
 
     testOptions {
         unitTests {
-            // DEF-27: o teste de insets de IME usa Robolectric e precisa dos
-            // recursos Android (strings.xml) mesclados no classpath de teste.
-            isIncludeAndroidResources = true
             // ViewModels logam via android.util.Log; sem isso os testes
             // JVM puros falham com "Method d in android.util.Log not mocked".
             isReturnDefaultValues = true

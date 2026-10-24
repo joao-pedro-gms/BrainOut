@@ -154,6 +154,36 @@ subprojects {
     }
 }
 
+// ---- Testes unitários: os recursos Android entram no classpath --------
+// DEF-23b — os testes de UI Compose (`createComposeRule` roda em JVM via
+// Robolectric) precisam dos recursos Android mesclados no classpath de
+// teste, senão `stringResource` devolve vazio e toda asserção sobre
+// texto/`contentDescription` passa a mentir.
+//
+// A flag estava declarada em seis módulos; aqui ela é uma regra só.
+//
+// A exceção é o `:core:data`, que **opta por fora**: no modo legado de
+// recursos do Robolectric, os testes de DataStore dele quebram com
+// "Failed to interact with raw FileDescriptor internals" — e eles não
+// precisam dos recursos Android.
+//
+// O `isReturnDefaultValues` **não** vem para a raiz de propósito: ele
+// faz o Android devolver 0/null em vez de estourar "not mocked", o que
+// **esconde** um teste que chama API Android sem querer. Fica por módulo,
+// onde a decisão é consciente.
+subprojects {
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+            testOptions.unitTests.isIncludeAndroidResources = true
+        }
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+            testOptions.unitTests.isIncludeAndroidResources = true
+        }
+    }
+}
+
 // ---- Lint: o gate de i18n é do projeto inteiro ----------------------------
 // O bloco `lint { }` estava nos OITO módulos Android. A política é uma:
 //

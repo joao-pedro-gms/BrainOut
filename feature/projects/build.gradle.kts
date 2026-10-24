@@ -34,11 +34,6 @@ android {
             // ViewModels logam via android.util.Log; sem isso os testes
             // JVM puros falham com "Method d in android.util.Log not mocked".
             isReturnDefaultValues = true
-            // DEF-23b — os testes de UI Compose (createComposeRule roda em
-            // JVM via Robolectric) precisam dos recursos Android mesclados
-            // no classpath de teste, senão `stringResource` devolve vazio e
-            // toda asserção sobre texto/`contentDescription` passa a mentir.
-            isIncludeAndroidResources = true
         }
     }
 
