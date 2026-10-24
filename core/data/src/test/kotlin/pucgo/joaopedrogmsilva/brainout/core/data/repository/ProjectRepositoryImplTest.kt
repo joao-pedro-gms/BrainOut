@@ -26,9 +26,13 @@ import java.time.Instant
 /**
  * Testes diretos do [ProjectRepositoryImpl].
  *
- * Cobre a escrita dual (Room + `pending_ops`), a validação de
- * propriedade das tags via `validateTagOwnership` (RN05) e os fluxos
- * de observação reativa.
+ * Cobre a gravação transacional (a entidade e as associações de tags
+ * entram juntas ou não entram), a validação de propriedade das tags
+ * via `validateTagOwnership` (RN05) e os fluxos de observação reativa.
+ *
+ * A escrita dupla (Room + `pending_ops`) deixou de existir com a
+ * remoção da camada de rede (#212) — o que these testes verificam hoje é
+ * a **atomicidade** da gravação local.
  */
 class ProjectRepositoryImplTest {
     private val ownerId: String = "u1"
@@ -92,8 +96,8 @@ class ProjectRepositoryImplTest {
                     .exceptionOrNull()
 
             assertThat(thrown).isInstanceOf(TagNotFoundException::class.java)
-            // Escrita dual aborta: a op não é enfileirada quando a
-            // validação de tag lança (write() lança antes de insert).
+            // A validação de tag lança **dentro** da transação, então a
+            // inserção do projeto é desfeita: nada fica gravado.
         }
 
     @Test
