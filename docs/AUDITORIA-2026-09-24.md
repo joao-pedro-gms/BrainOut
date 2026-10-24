@@ -58,6 +58,19 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > cadastro — o `Scaffold` escrito duas vezes, linha por linha — virou um
 > só, o que **zerou de novo a duplicação na produção**.
 >
+> E com mais seis (#342 a #349): o `FakeTagDao` saiu da lista do que
+> ficaria de fora (o `ProjectRepositoryImpl` usa só `findById`, então a
+> versão completa do fake serve às duas suítes); a **varredura de
+> literais** — strings repetidas entre arquivos, fora de comentário —
+> encontrou o tipo de duplicação que a varredura de blocos não
+> alcança: o mesmo conhecimento escrito em **duas camadas** (as 17
+> chaves do JSON de backup, a categoria do feriado, o nome do argumento
+> da rota), sempre com **modo de falha silencioso** e **sem teste que
+> pegasse**; e o **DEF-81** registrou a última duplicação da camada de
+> teste, que é *entre módulos* e só sai com uma variante `testFixtures`
+> em `:core:domain` — mudança de topologia do build, que é decisão do
+> responsável.
+>
 > **O que está aberto hoje** (o *ledger* é a fonte da verdade):
 > **DEF-24** (contraste dos empty states — decisão de design),
 > **DEF-74** (a semana do Painel não se renova com a tela aberta),
@@ -65,8 +78,9 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > **DEF-76** (a sombra rígida da identidade não é adotada),
 > **DEF-77** (o diálogo "Editar projeto" e o `DeleteTagUseCase` sem tela),
 > **DEF-78**, **DEF-79** e **DEF-80** (a autoavaliação e os documentos de
-> entrega da N2 ainda descrevem a arquitetura com rede removida).
-> Todos os oito são **decisão do responsável** — de produto, de identidade
+> entrega da N2 ainda descrevem a arquitetura com rede removida) e
+> **DEF-81** (a duplicação entre módulos, que exige `testFixtures`).
+> Todos os nove são **decisão do responsável** — de produto, de identidade
 > ou acadêmica — e nenhum é corrigível por conta própria sem mexer nessa
 > decisão.
 
@@ -701,3 +715,48 @@ entre arquivos distintos) sobre os 186 arquivos de produção **não acha
 nenhum** bloco duplicado. A varredura de código morto continua sem
 achado, e as nove supressões de produção têm todas a justificativa no
 lugar.
+
+---
+
+## Constantes e chaves em duas camadas (24/10/2026)
+
+A varredura de **literais** (strings repetidas em arquivos distintos,
+fora de comentário) encontrou um tipo de duplicação que a varredura de
+blocos não alcança: o mesmo **conhecimento** escrito em duas camadas
+que não se enxergam.
+
+| PR | O que estava duplicado | Modo de falha |
+|---|---|---|
+| #346 | As 17 chaves do JSON do payload de backup, escritas como literal no `encode*` **e** no `decode*` (34 repetições) | Uma chave grafada diferente nos dois lados perdia o dado **em silêncio** — o backup saía "correto" e a restauração devolvia o campo vazio |
+| #347 | A categoria `"national"` do feriado, literal em `:core:data` (produtor), em `:core:domain` (consumidor) e em dois módulos de teste | Se o produtor gravasse diferente do consumidor, o filtro não casaria com nada e a dica de "próximo feriado" sumiria **sem erro** — e nenhum teste pegaria, porque o teste do caso de uso monta o próprio feriado |
+| #349 | O nome do argumento da rota do detalhe (`"projectId"`), declarado em `BrainOutRoutes` (`:app`) e em `ProjectDetailViewModel` (`:feature:projects`) | A tela do detalhe quebraria em execução, no `checkNotNull` do ViewModel — e nenhum teste pegaria, porque os dois lados do teste eram autorreferentes |
+
+Nos três casos, **os testes existentes não cobriam a divergência**:
+ou comparavam a constante com ela mesma, ou montavam o dado com a
+constante do próprio lado. A correção foi dar **uma fonte só** — no
+domínio quando a regra é de domínio (`Holiday.TYPE_NATIONAL`), na
+camada mais baixa quando é contrato entre módulos
+(`ProjectDetailViewModel.PROJECT_ID_ARG`, que o `:app` passa a
+honrar).
+
+### O que ficou de fora, e por quê
+
+- **As chaves de ordenação** (`name_asc`, `name_desc`, `created_desc`,
+  `created_asc`) — o domínio emite (`SortOrder.toStorageKey()`) e o
+  `ProjectDao` compara em SQL. A duplicação é **deliberada e
+  documentada** (no `AGENTS.md` e no KDoc do DAO) e está guardada: o
+  `ProjectDaoSearchSortOrderTest` roda a query real contra um banco
+  Room em memória alimentando-a com `toStorageKey()`, e um caso fixa as
+  quatro grafias. Interpolar as constantes no SQL trocaria a
+  legibilidade do `CASE WHEN` por uma garantia que o teste já dá.
+- **Os nomes de coluna do Room** (`created_at`, `owner_id`,
+  `project_id`) — cada entidade declara as suas; uma constante
+  compartilhada acopla as entidades entre si sem ganho.
+- **A regra "não pode ser vazio"** dos modelos de domínio — o
+  `require(x.isNotBlank()) { "x não pode ser vazio" }` inline é a
+  forma mais clara da regra, e a mensagem é por entidade.
+
+### Verificação
+
+675 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes.
