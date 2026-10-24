@@ -154,6 +154,33 @@ subprojects {
     }
 }
 
+// ---- Toolchain de teste comum -----------------------------------------------
+// A base de teste de todo o projeto é a mesma: JUnit 4, Truth (as
+// asserções) e kotlinx-coroutines-test (runTest). Ela estava declarada
+// nos OITO módulos — oito cópias da mesma decisão, que um módulo novo
+// podia esquecer. Aqui ela é escrita uma vez.
+//
+// O que fica no módulo é só o que é específico dele: Turbine e MockK
+// (usados pelas features), Robolectric e `androidx.test.core` (nos que
+// rodam Room/compose em JVM), o `ui-test-manifest` e as dependências
+// instrumentadas.
+//
+// O gatilho são os três ids de plugin que os módulos do repo usam:
+// AGP para biblioteca (`:core:*` e `:feature:*`), AGP para aplicação
+// (`:app`) e Kotlin JVM (`:core:domain`). O `java` não serve: o AGP 9
+// não o aplica, e o accessor `testImplementation(...)` também não
+// existe na raiz — por isso o `add("testImplementation", …)`.
+subprojects {
+    val project = this
+    listOf("com.android.application", "com.android.library", "org.jetbrains.kotlin.jvm").forEach { pluginId ->
+        plugins.withId(pluginId) {
+            project.dependencies.add("testImplementation", libs.junit)
+            project.dependencies.add("testImplementation", libs.truth)
+            project.dependencies.add("testImplementation", libs.kotlinx.coroutines.test)
+        }
+    }
+}
+
 // Relatório HTML conjunto das duas camadas (:core:domain + :core:data),
 // publicado como artifact do CI (critério E4.7).
 tasks.register("koverMergedHtmlReport") {

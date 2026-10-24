@@ -165,9 +165,6 @@ dependencies {
 
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    testImplementation(libs.junit)
-    testImplementation(libs.truth)
-    testImplementation(libs.kotlinx.coroutines.test)
     // E3.6 — testes do CompleteTaskWorker (Robolectric + ListenableWorker)
     // e do WorkManagerDeadlineScheduler (WorkManager de teste).
     testImplementation(libs.robolectric)

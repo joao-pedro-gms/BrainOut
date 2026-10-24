@@ -89,8 +89,6 @@ dependencies {
 
     // Testes unitários do tema (E4.4 — contraste WCAG AA via algoritmo
     // sRGB sobre os tokens em `Color.kt`).
-    testImplementation(libs.junit)
-    testImplementation(libs.truth)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
 

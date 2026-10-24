@@ -31,9 +31,6 @@ dependencies {
     // `javax.inject.Inject` é necessária.
     implementation(libs.javax.inject)
 
-    testImplementation(libs.junit)
-    testImplementation(libs.truth)
-    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
 }
 
