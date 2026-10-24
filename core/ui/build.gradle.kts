@@ -11,10 +11,8 @@ plugins {
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout.core.ui"
-    compileSdk = 37
 
     defaultConfig {
-        minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
     }
 

@@ -27,11 +27,9 @@ val hasReleaseSigning: Boolean =
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout"
-    compileSdk = 37
 
     defaultConfig {
         applicationId = "pucgo.joaopedrogmsilva.brainout"
-        minSdk = 24
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0-alpha01"
