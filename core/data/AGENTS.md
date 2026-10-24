@@ -57,6 +57,18 @@ via androidComponents. A CI verifica ambos no APK de testes para evitar execuç�
 vazia. O teste instrumentado MigrationTest cobre as migrations históricas e a 4→5; executar
 connectedDebugAndroidTest requer emulador/dispositivo.
 
+**Os fakes são compartilhados, não uma cópia por suíte.** No pacote
+`core.data.repository` estão `FakeProjectDao`, `FakeTagDao` e
+`FakeLocalTransaction`; no pacote `core.data.local.dao`, os fixtures de
+entidade (`sampleProject`, `sampleTask`, `sampleTag`) e o
+`inMemoryDatabase()` do banco em memória. Usar os existentes em vez de
+declarar outro fake: a interface do DAO tem 13 métodos, e uma cópia
+local quebra a cada método novo — foi o que aconteceu com
+`FakeProjectDao` e `FakeTagDao`, que estavam duplicados até 24/10/2026.
+Fake de um DAO que só uma suíte usa (`FakeTaskDao`, `FakeUserDao`) pode
+ficar dentro dela; quando uma segunda suíte precisar, ele sobe para
+arquivo próprio no pacote.
+
 Kover exige 60% de linhas. Não enfraquecer exclusões para fazer o gate passar.
 A dívida conhecida de lint NewApi de java.time/Base64 com minSdk24 permanece
 separada (#201): abortOnError=false não é evidência de ausência de problemas.
