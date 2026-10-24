@@ -23,8 +23,11 @@ reintroduzir contratos remotos descritos nos documentos históricos.
 
 ## Convenções
 
-- Toda escrita de repositório usa LocalTransaction.run; cascatas dos DAOs
-  continuam @Transaction. Uma falha de validação desfaz toda a escrita.
+- Toda escrita de repositório que precisa ser **atômica com outra** usa
+  LocalTransaction.run; cascatas dos DAOs continuam @Transaction. Uma falha
+  de validação desfaz toda a escrita. Uma escrita isolada
+  (`UserRepositoryImpl.save`, `TaskRepositoryImpl.repairCompletedProject`)
+  já é atômica no Room e não é envolvida.
 - Nunca usar fallbackToDestructiveMigration. Acrescentar Migration manual,
   schema exportado e teste para cada mudança de versão.
 - DAOs suspend/Flow já isolam o I/O do Room; não adicionar Dispatchers.IO. A exceção é o KDF de senha (`PasswordHasherImpl`): PBKDF2-HMAC-SHA256 com 120 000 iterações é trabalho de CPU (não I/O de banco) e trava a interface se rodar no dispatcher principal — por isso o `withContext(Dispatchers.IO)` dentro do KDF.
