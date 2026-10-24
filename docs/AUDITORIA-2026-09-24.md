@@ -164,7 +164,7 @@ Status conferido um a um contra o código em `main`
 - ✅ **RESOLVIDO** — `TasksViewModel.ERROR_LOAD_FAILED` / `DashboardViewModel.ERROR_LOAD_FAILED` hardcoded PT (UI usa `R.string.tasks_error_load_failed`). As constantes não existem mais.
 - ✅ **RESOLVIDO** — Pré-visualizações sem `BrainOutTheme { Surface { ... } }`. As três previews do módulo de tarefas embrulham o conteúdo em `Surface(color = MaterialTheme.colorScheme.background)` — o mesmo fundo que a `Scaffold` da tela produz em produção. Antes, o preview pintava o fundo do IDE, e não o do tema.
 - ✅ **RESOLVIDO** — `TasksTestTags.LOADING/EMPTY/LIST` dead (composables não recebem `testTag`). As três chaves passaram a ser aplicadas em `TasksContent` (a lista, o indicador de carregamento e o empty state), e três testes novos as exercitam; no dashboard as equivalentes (`DashboardTestTags.LOADING` e `EMPTY`) já eram aplicadas por `DashboardLoading` e `DashboardEmptyState`.
-- 🟡 **PARCIAL** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; falta o `TasksRoutesTest`, que cobriria as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
+- ✅ **RESOLVIDO** — Sem `TasksScreenTest` + `TasksRoutesTest`. O `TasksScreenTest` existe; o `TasksRoutesTest` (novo, PR #335) monta o grafo de verdade e cobre as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`).
 - ✅ **RESOLVIDO** — `abortOnError = false` em `feature/tasks/build.gradle.kts:57` esconde mais que só `Instant.parse` — fix com `@SuppressLint` ou baseline, restaurar gate `MissingTranslation`. O `Instant#parse` do preview deixou de ser problema quando o módulo passou a usar `coreLibraryDesugaring` (DEF-63); o lint do módulo roda com zero erros e o gate voltou a ser rígido, com `MissingTranslation` promovido a erro.
 
 ### feature/settings
@@ -280,7 +280,8 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 > `SplashScreen` (P2). **Parciais:** a
 > `HomeScreen`/`ProjectDetailScreen` (há suíte de componente, não da
 > tela inteira), a `RegisterScreen` (coberta pelo caso de IME), a
-> `TasksScreen` (falta o `TasksRoutesTest`) e a `SettingsScreen` (não há
+> `TasksScreen` (coberta pelo `TasksScreenTest` + o `TasksRoutesTest`) e a
+> `SettingsScreen` (não há
 > ViewModel de settings — o backup tem o seu). **Obsoletos:** o
 > `BrainOutSyncDispatcher` e o `ConnectivityObserver` — a camada de sync
 > foi removida no #212.
@@ -303,7 +304,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
 | P1 | feature/projects | `DeadlineField.kt` | ✅ **RESOLVIDO** — `DeadlineFieldTest` cobre o round-trip `pickerDateToDeadline`/`deadlineToPickerDate`. |
 | P1 | feature/auth | `ui/register/RegisterScreen.kt` | ✅ **RESOLVIDO** — `RegisterScreenTest` (Robolectric, 5 casos): o erro de campo aparece no campo (semântica `Error`), o foco volta para o primeiro campo inválido, senhas diferentes barram o envio, o cadastro inválido não navega e o cadastro válido persiste a sessão e pede a navegação. |
 | P1 | feature/auth | `viewmodel/AuthViewModelTest.kt` | ✅ **RESOLVIDO** — o nome vazio, o erro de domínio e o erro inesperado estão cobertos, e o `validateName` ganhou os dois casos que faltavam: nome acima de `User.MAX_NAME_LENGTH` (erro `LongName`) e nome exatamente no limite (aceito). |
-| P1 | feature/tasks | `ui/TasksScreen.kt` | 🟡 **PARCIAL** — `TasksScreenTest` existe; falta o `TasksRoutesTest`. |
+| P1 | feature/tasks | `ui/TasksScreen.kt` | ✅ **RESOLVIDO** — `TasksScreenTest` cobre a tela e o `TasksRoutesTest` (novo) cobre as rotas que a feature expõe (`tasksGraph()` e `dashboardGraph()`), montando o grafo de verdade. |
 | P2 | core/data | `session/SessionStore.kt` | ✅ **RESOLVIDO** — `SessionStoreTest` cobre round-trip e `clear`. |
 | P2 | core/data | `local/dao/DashboardAggregates.kt` | ✅ **RESOLVIDO** — `TaskRepositoryImplTest` prova o preenchimento de `observeCountByPriority` de 0 a 4. |
 | P2 | core/domain | `TaskCompletionStats` / `TaskPriorityCount` / `SortOrder` | ✅ **RESOLVIDO** — `DashboardViewModelTest` exercita as duas agregações e `SortOrderStorageKeyTest` cobre o `SortOrder`. |

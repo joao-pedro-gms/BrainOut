@@ -70,6 +70,13 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
   `NavHost` — ele nasce morto. Se a feature expuser extensões de grafo,
   registre-as no `NavHost` no mesmo PR (estilo `tasksGraph()`); senão,
   use `BrainOutRoutes`.
+- **Como testar as rotas** — `TasksRoutesTest` (`:feature:tasks`) monta o
+  grafo de verdade com `NavController.createGraph(startDestination = …) { … }`
+  e percorre os destinos com o `iterator()` do `NavGraph`, que é público.
+  O `findNode` **não serve**: ele busca só um nível e não acha os destinos
+  de dentro de grafos aninhados. E **não é preciso** a dependência
+  `navigation-testing` — `createGraph` e `iterator()` são API pública do
+  `androidx.navigation` 2.10.
 
 ## WHERE TO LOOK
 
