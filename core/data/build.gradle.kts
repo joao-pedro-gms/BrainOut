@@ -68,13 +68,14 @@ android {
     // [NewApi] — o gate de lint volta a ser rígido, como nos demais
     // módulos. A dívida de `java.time`/`java.util.Base64` sem
     // desugaring (que mantinha `abortOnError = false`) está fechada.
-    //
-    // `MissingTranslation` continua NÃO promovido: este módulo não
-    // tem strings de interface (E4.6 trata apenas os módulos que
-    // têm `values/` e `values-en/`).
     lint {
-        abortOnError = true
-        checkReleaseBuilds = false
+        // O gate de lint do projeto (promoção de `MissingTranslation`,
+        // `abortOnError`, `checkReleaseBuilds`) está na raiz. Aqui o
+        // módulo **opta por fora** da promoção: não tem strings de
+        // interface (E4.6 trata apenas os módulos que têm `values/` e
+        // `values-en/`), e a promoção seria inócua aqui — mas fica
+        // explícito, para que a exceção não dependa de nenhum módulo.
+        error.remove("MissingTranslation")
     }
 }
 

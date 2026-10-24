@@ -48,19 +48,6 @@ android {
         compose = true
     }
 
-    // E4.6 — regressão de tradução: chave presente em `values/` sem
-    // tradução em `values-en/` é erro fatal (`MissingTranslation`).
-    lint {
-        // O gate voltou a ser rígido: o `Instant#parse` do
-        // `TasksScreenPopulatedPreview` que motivou o `abortOnError =
-        // false` deixou de ser problema quando o módulo passou a usar
-        // `coreLibraryDesugaring` (DEF-63) — o lint do módulo roda
-        // limpo, com zero erros.
-        abortOnError = true
-        error += "MissingTranslation"
-        checkReleaseBuilds = false
-    }
-
     // E2.7 — testes Robolectric do Dashboard precisam dos recursos
     // Android (strings.xml) mesclados no classpath de teste.
     testOptions {
