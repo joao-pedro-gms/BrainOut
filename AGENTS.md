@@ -67,7 +67,7 @@ Navigation (estado real, não o ideal):
 - Sign-out: `activeUserProvider.signOut()` then `navigate(login) { popUpTo(0) { inclusive = true } }`.
 
 Persistência local:
-- Toda escrita dos repositórios passa por `LocalTransaction.run { … }` — a transação Room que garante que entidade e associações são persistidas juntas (`core/data/.../local/LocalTransaction.kt`). A antiga fila `pending_ops` foi removida na migração 4→5.
+- Toda escrita dos repositórios que precisa ser **atômica com outra** passa por `LocalTransaction.run { … }` — a transação Room que garante que entidade e associações são persistidas juntas (`core/data/.../local/LocalTransaction.kt`). Uma escrita isolada (`UserRepositoryImpl.save`, `TaskRepositoryImpl.repairCompletedProject`) já é atômica no Room e não é envolvida. A antiga fila `pending_ops` foi removida na migração 4→5.
 - Cascatas usam métodos `@Transaction` do DAO (`cascadeCompleteTask`, `cascadeReopenTask`).
 - O lembrete de prazo tem **uma** regra, `reconcileTaskReminder` (`core/domain/.../notification/ReminderReconciler.kt`), usada por criar, editar e mudar status — o agendamento nunca diverge do estado da tarefa.
 
@@ -84,7 +84,7 @@ Persistência local:
 | `core/domain/src/main/kotlin/.../notification/DeadlineNotificationScheduler.kt` | Port interface; Android-free. |
 | `core/domain/src/main/kotlin/.../notification/ReminderReconciler.kt` | Regra única de agendamento/cancelamento do lembrete de prazo. |
 | `core/data/src/main/kotlin/.../local/BrainOutDatabase.kt` | Room DB v5. Schemas in `core/data/schemas/`. |
-| `core/data/src/main/kotlin/.../local/LocalTransaction.kt` | Transação Room que envolve toda escrita dos repositórios. |
+| `core/data/src/main/kotlin/.../local/LocalTransaction.kt` | Transação Room que envolve as escritas dos repositórios que precisam ser atômicas entre si. |
 | `core/data/src/main/kotlin/.../di/DataModule.kt` | DI wiring principal do `:core:data`. `PepperProvider.Factory` fica **fora**, no próprio arquivo de `security/`. |
 | `core/data/src/main/kotlin/.../security/PepperProvider.kt` | Pepper + `@Module object Factory` (segundo módulo Hilt do módulo). |
 | `core/data/src/main/kotlin/.../repository/` | Repository impls; cada escrita passa por `LocalTransaction`. |
@@ -148,7 +148,7 @@ A camada de rede foi removida no #212 e o diretorio `backend-stub/` foi apagado 
 - **State management** — immutable `data class XxxUiState(...)` (per-screen error slots as nullable fields, no sealed class); expose `val uiState: StateFlow<XxxUiState>` via `stateIn(viewModelScope, WhileSubscribed(5_000), initial)`. One-shot events via `Channel`/`SharedFlow` or `MutableStateFlow<String>` for errorMessage + retry pattern with `_retryToken` + `flatMapLatest`.
 - **Erros na UI são tipados, nunca texto solto** — o ViewModel emite um **enum** de erro (ex.: `AuthErrorType`) e a camada de UI escolhe o `stringResource`. O caminho antigo — ViewModel emitindo string em português e a UI fazendo `when` por casamento de texto — vazava português cru e quebrava silenciosamente em qualquer erro novo.
 - **Module marker** — `PackageMarker.kt` (`internal const val <MODULE>_PACKAGE: String`) existe nos **8** módulos. O Kover exclui `*.PackageMarker` por padrão.
-- **Repository mutations** — toda escrita passa por `LocalTransaction.run { … }` (uma transação Room). Cascade ops use `@Transaction` DAO methods (`cascadeCompleteTask`, `cascadeReopenTask`).
+- **Repository mutations** — toda escrita que precisa ser atômica com outra passa por `LocalTransaction.run { … }` (uma transação Room); uma escrita isolada já é atômica no Room. Cascade ops use `@Transaction` DAO methods (`cascadeCompleteTask`, `cascadeReopenTask`).
 - **Navigation** — never hardcode route strings; use `object XxxRoutes` constants + helper `fun xRoute(args)` builders. Só `:feature:tasks` expõe extensões `NavGraphBuilder.*Graph()` (registradas por `:app`); as demais features são registradas por funções privadas do `BrainOutNavHost`, que conhece os composables. `BrainOutRoutes` é o registro central — não crie um objeto de rotas paralelo (ver *Navigation*).
 - **Compose test tags** — colocated `object XxxTestTags` per screen (e.g. `project_detail_new_task_fab`); snake_case, screen-prefixed. Used by Robolectric + Compose UI tests via `onNodeWithTag`.
 - **Domain errors** — `DomainException` é a **raiz única** de `core.domain.error.*` e estende `IllegalArgumentException` (contrato de `kotlin.require()` nos modelos, coberto por testes). `BusinessRuleException` também estende `DomainException` (hierarquia única — um `catch (DomainException)` agora captura violações de RN). Filhos: `InvalidModelException`, `DuplicateEmailException`, `InvalidCredentialsException`, `InvalidStateTransitionException`, `TaskNotFoundException`, `ProjectNotFoundException`, `TagOwnershipException`, `TagNotFoundException`. Repositories throw domain exceptions; ViewModels catch and surface into `errorMessage`.
