@@ -170,8 +170,8 @@ seção "Achados manuais" abaixo.
 Passo a passo para o João:
 
 1. Instalar o app **Accessibility Scanner** pela Play Store.
-2. Compilar e instalar o app `devDebug` no S20 FE
-   (`./gradlew :app:installDevDebug`).
+2. Compilar e instalar o app `debug` no S20 FE
+   (`./gradlew :app:installDebug`).
 3. Abrir o Accessibility Scanner e conceder a permissão de
    sobreposição.
 4. Para cada tela abaixo, tocar em "Scan" e capturar o

@@ -31,9 +31,9 @@
   - ✅ **Aprovado** — resultado observado confere com o esperado.
   - ❌ **Reprovado** — resultado observado diverge; defeito registrado.
 - **Resultado observado:** preenchido durante a sessão manual. Permanece
-  `—` até a execução; os casos de sincronização (TF-09, TF-10)
-  dependem da conclusão de E3.3 e E3.4 (ver
-  [`docs/ROADMAP.md`](./ROADMAP.md)).
+  `—` até a execução; os casos de sincronização (TF-09, TF-10) não têm
+  execução possível depois da remoção da camada de rede (ver
+  [Pré-condições especiais](#5-pré-condições-especiais)).
 
 ## 2. Tabela de casos
 
@@ -87,12 +87,16 @@
 
 ## 5. Pré-condições especiais
 
-- **TF-09** e **TF-10** exigem que os marcos E3.3 e E3.4 do
-  [`docs/ROADMAP.md`](./ROADMAP.md) estejam concluídos. Enquanto
-  pendentes, os casos permanecem ⏳ e a coluna "Resultado observado"
-  fica em branco. A integração do backend `backend-stub/` deve estar
-  acessível no emulador (`10.0.2.2`) ou via Tailscale no dispositivo
-  físico, conforme `docs/CI-CD.md`.
+- **TF-09** e **TF-10** descrevem a **sincronização**, que saiu do
+  produto com a camada de rede (#212 e #218): os marcos E3.3 e E3.4
+  foram **cancelados**, não apenas deixados pendentes, e o
+  `backend-stub/` não existe mais. Os dois casos, portanto, **não têm
+  como rodar** como escritos — o banner "offline", o `OneTimeWorkRequest`
+  e a contagem remota que eles citam não existem. A coluna
+  "Resultado observado" fica em branco por isso, e não por execução
+  pendente. **Decisão do responsável** (registrada no ledger como
+  **DEF-80**): reescrever os dois casos para o produto local (ou
+  retirá-los do roteiro e reescopar R5/R6 na autoavaliação).
 - **TF-11** e **TF-12** dependem do E3.6 (já entregue em PR #45) e
   devem ser executados em **dispositivo físico** com Android 13+ para
   validar a permissão `POST_NOTIFICATIONS` de runtime.
@@ -109,6 +113,6 @@
 - [ ] Cada defeito reprovado (❌) está registrado no relatório de
       defeitos (E4.3) com severidade, evidência e referência ao caso
       (`TF-<id>`).
-- [ ] Os casos dependentes de E3.3/E3.4 (TF-09, TF-10) foram
-      reexecutados após a conclusão desses marcos, e o status atualizado
+- [ ] Os casos de sincronização (TF-09, TF-10) foram reescritos para o
+      produto local (ou retirados do roteiro), e o status atualizado
       para ✅ ou ❌ conforme a evidência.
