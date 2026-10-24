@@ -644,7 +644,12 @@ declarados batem com os tokens`. Antes as duas passavam.
 - **O `setMain`/`resetMain` dos testes de ViewModel** — o boilerplate do
   dispatcher aparece em 8 suítes de 4 módulos. É glue de framework, e
   unificá-lo exigiria um `testFixtures` compartilhado entre módulos — uma
-  mudança de topologia do build, não uma limpeza.
+  mudança de topologia do build, não uma limpeza. Registrado como
+  **DEF-81**.
+- **O `FakeDeadlineNotificationScheduler`** — duas cópias idênticas, uma
+  em `:core:domain/src/test/` e outra dentro da suíte de backup de
+  `:core:data`. Código de teste não é publicado entre módulos, então a
+  correção é a mesma do item acima — **DEF-81**.
 - **O `seed` das suítes de backup** — os valores (`USER_ID`, `CREATED_AT`,
   `DUE_DATE`) são dado de cenário, não boilerplate.
 
