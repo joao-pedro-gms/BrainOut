@@ -1,16 +1,12 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
-import android.database.sqlite.SQLiteConstraintException
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -139,38 +135,4 @@ class TagRepositoryImplTest {
         tagDao: TagDao = FakeTagDao(),
         localTransaction: LocalTransaction = FakeLocalTransaction(),
     ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
-
-    /** Fake mínimo de [TagDao]. */
-    private class FakeTagDao : TagDao {
-        val tags: MutableMap<String, TagEntity> = mutableMapOf()
-        val associations: MutableMap<String, List<String>> = mutableMapOf()
-
-        override fun observeForOwner(ownerId: String): Flow<List<TagEntity>> =
-            MutableStateFlow(tags.values.filter { it.ownerId == ownerId })
-
-        override suspend fun findById(id: String): TagEntity? = tags[id]
-
-        override fun observeForProjects(projectIds: List<String>): Flow<List<ProjectTagRow>> =
-            MutableStateFlow(
-                projectIds.flatMap { projectId ->
-                    associations[projectId].orEmpty().mapNotNull { tagId ->
-                        tags[tagId]?.let { ProjectTagRow(tag = it, projectId = projectId) }
-                    }
-                },
-            )
-
-        override suspend fun insert(tag: TagEntity): Long {
-            // O índice UNIQUE `(owner_id, name)` é o que o Room rejeita
-            // — o fake reproduz a mesma regra.
-            if (tags.values.any { it.ownerId == tag.ownerId && it.name == tag.name }) {
-                throw SQLiteConstraintException("UNIQUE constraint failed: tags.owner_id, tags.name")
-            }
-            tags[tag.id] = tag
-            return 1L
-        }
-
-        override suspend fun deleteById(id: String) {
-            tags.remove(id)
-        }
-    }
 }

@@ -2,8 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -11,7 +9,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
@@ -206,24 +203,4 @@ class ProjectRepositoryImplTest {
     ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, localTransaction)
 
     /** Fake mínimo de [TagDao]. */
-    private class FakeTagDao : TagDao {
-        val tags: MutableMap<String, TagEntity> = mutableMapOf()
-
-        override fun observeForOwner(ownerId: String): Flow<List<TagEntity>> =
-            MutableStateFlow(tags.values.filter { it.ownerId == ownerId })
-
-        override suspend fun findById(id: String): TagEntity? = tags[id]
-
-        override fun observeForProjects(projectIds: List<String>): Flow<List<ProjectTagRow>> =
-            MutableStateFlow(emptyList())
-
-        override suspend fun insert(tag: TagEntity): Long {
-            tags[tag.id] = tag
-            return 1L
-        }
-
-        override suspend fun deleteById(id: String) {
-            tags.remove(id)
-        }
-    }
 }
