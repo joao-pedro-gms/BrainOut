@@ -17,6 +17,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -92,7 +93,7 @@ fun BrainOutNavHost(
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addSplashRoute(navController: NavHostController) {
+private fun NavGraphBuilder.addSplashRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Splash) {
         SplashScreen(
             onStartClicked = {
@@ -105,7 +106,7 @@ private fun androidx.navigation.NavGraphBuilder.addSplashRoute(navController: Na
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: NavHostController) {
+private fun NavGraphBuilder.addLoginRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Login) {
         LoginScreen(
             onLoginSuccess = {
@@ -122,7 +123,7 @@ private fun androidx.navigation.NavGraphBuilder.addLoginRoute(navController: Nav
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: NavHostController) {
+private fun NavGraphBuilder.addRegisterRoute(navController: NavHostController) {
     composable(route = BrainOutRoutes.Register) {
         RegisterScreen(
             onRegisterSuccess = {
@@ -139,7 +140,7 @@ private fun androidx.navigation.NavGraphBuilder.addRegisterRoute(navController: 
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
+private fun NavGraphBuilder.addHomeRoute(
     navController: NavHostController,
     notificationPermissionStore: NotificationPermissionStore,
 ) {
@@ -158,7 +159,7 @@ private fun androidx.navigation.NavGraphBuilder.addHomeRoute(
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(navController: NavHostController) {
+private fun NavGraphBuilder.addProjectDetailRoute(navController: NavHostController) {
     composable(
         route = BrainOutRoutes.ProjectDetailPattern,
         arguments =
@@ -182,7 +183,7 @@ private fun androidx.navigation.NavGraphBuilder.addProjectDetailRoute(navControl
     }
 }
 
-private fun androidx.navigation.NavGraphBuilder.addSettingsRoute(
+private fun NavGraphBuilder.addSettingsRoute(
     navController: NavHostController,
     activeUserProvider: ActiveUserProvider,
 ) {
