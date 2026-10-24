@@ -75,14 +75,6 @@ android {
                 )
         }
     }
-
-    // E4.6 — regressão de tradução: chave presente em `values/` sem
-    // tradução em `values-en/` é erro fatal (`MissingTranslation`).
-    lint {
-        abortOnError = true
-        error += "MissingTranslation"
-        checkReleaseBuilds = false
-    }
 }
 
 dependencies {

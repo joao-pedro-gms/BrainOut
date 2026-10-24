@@ -154,6 +154,43 @@ subprojects {
     }
 }
 
+// ---- Lint: o gate de i18n é do projeto inteiro ----------------------------
+// O bloco `lint { }` estava nos OITO módulos Android. A política é uma:
+//
+// - o lint **aborta** (`abortOnError = true`);
+// - falta de tradução é erro (`MissingTranslation`).
+//
+// E4.6 — regressão de tradução: chave presente em `values/` sem tradução
+// em `values-en/` é erro fatal, então `./gradlew :app:lintDebug` falha
+// quando uma string nova não é traduzida. O escopo é o `res/` dos
+// nossos módulos — o lint já ignora `MissingTranslation` de bibliotecas
+// externas por padrão.
+//
+// A promoção vale para **todo** módulo Android, inclusive os que não têm
+// string de interface — para eles ela é inócua. Assim um módulo NOVO
+// com strings entra no gate sem que ninguém precise lembrar. `:core:data`
+// é a única exceção, e ela opta por fora (ver o `build.gradle.kts` dele).
+subprojects {
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+            lint.apply {
+                abortOnError = true
+                error += "MissingTranslation"
+                checkReleaseBuilds = false
+            }
+        }
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+            lint.apply {
+                abortOnError = true
+                error += "MissingTranslation"
+                checkReleaseBuilds = false
+            }
+        }
+    }
+}
+
 // ---- Detekt: uma config para o projeto inteiro ----------------------------
 // O bloco `detekt { }` estava nos OITO módulos, com o mesmo conteúdo —
 // uma mudança de regra na config seria oito edições, e um módulo novo

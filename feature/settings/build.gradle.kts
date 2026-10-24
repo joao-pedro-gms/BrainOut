@@ -48,14 +48,6 @@ android {
         compose = true
     }
 
-    // E4.6 — regressão de tradução: chave presente em `values/` sem
-    // tradução em `values-en/` é erro fatal (`MissingTranslation`).
-    lint {
-        abortOnError = true
-        error += "MissingTranslation"
-        checkReleaseBuilds = false
-    }
-
     // E1.3 — `SettingsScreenTest` é um teste Compose rodando na JVM via
     // Robolectric; sem `isIncludeAndroidResources` os recursos do tema e
     // dos ícones não são resolvidos. Mesmo ajuste aplicado em

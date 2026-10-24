@@ -109,17 +109,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    // E4.6 — regressão de tradução: chave presente em `values/` sem
-    // tradução em `values-en/` é erro fatal (`MissingTranslation`), então
-    // `./gradlew :app:lintDebug` falha quando uma string nova não é
-    // traduzida. O escopo é o res/ dos nossos módulos — o lint já ignora
-    // `MissingTranslation` de bibliotecas externas por padrão.
-    lint {
-        abortOnError = true
-        error += "MissingTranslation"
-        checkReleaseBuilds = false
-    }
 }
 
 dependencies {
