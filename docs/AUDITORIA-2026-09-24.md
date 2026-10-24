@@ -47,6 +47,28 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > que se achava necessária, porque o `NavGraph` é publicamente iterável —
 > e as nove supressões que restam em produção passaram a ter a
 > justificativa escrita no lugar.
+>
+> E com mais cinco (#337 a #341): os **documentos de entrega** foram
+> reconciliados com o código (o Apêndice C, o guia de CI/CD, o roteiro de
+> testes de QA, o plano do redesign e o guia de acessibilidade — todos
+> mandavam rodar comandos ou apontar para arquivos que não existem mais),
+> o **DEF-79** e o **DEF-80** passaram a registrar o drift que sobrou
+> (o relatório técnico da N2 e o roteiro de testes, que descrevem a
+> arquitetura com rede removida), e o esqueleto da tela de login e de
+> cadastro — o `Scaffold` escrito duas vezes, linha por linha — virou um
+> só, o que **zerou de novo a duplicação na produção**.
+>
+> **O que está aberto hoje** (o *ledger* é a fonte da verdade):
+> **DEF-24** (contraste dos empty states — decisão de design),
+> **DEF-74** (a semana do Painel não se renova com a tela aberta),
+> **DEF-75** (o pepper no `EncryptedSharedPreferences` depreciado),
+> **DEF-76** (a sombra rígida da identidade não é adotada),
+> **DEF-77** (o diálogo "Editar projeto" e o `DeleteTagUseCase` sem tela),
+> **DEF-78**, **DEF-79** e **DEF-80** (a autoavaliação e os documentos de
+> entrega da N2 ainda descrevem a arquitetura com rede removida).
+> Todos os oito são **decisão do responsável** — de produto, de identidade
+> ou acadêmica — e nenhum é corrigível por conta própria sem mexer nessa
+> decisão.
 
 > **⚠️ Base pré-transição local.** Esta página foi escrita contra a base que
 > ainda tinha camada de rede, flavors e fila `pending_ops`. A direção aprovada
@@ -631,5 +653,39 @@ sem cobertura descrito acima.
 
 ### Verificação
 
-670 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e os
+675 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e os
 gates de Kover de `:core:domain` e `:core:data` verdes.
+
+---
+
+## Documentos de entrega e o resto da rodada (24/10/2026)
+
+A camada de teste era o alvo da primeira metade. A segunda pegou os
+**documentos de entrega** — que mandavam o leitor (ou o agente de IA) rodar
+comandos e procurar arquivos que não existem mais desde a transição local.
+
+| PR | Documento | O que estava errado |
+|---|---|---|
+| #337 | `docs/APENDICE-C-CONFORMIDADE.md` | Registrava uma "pêndice" sobre R14 que já não valia: o `RELATORIO-TECNICO.md` **também** adota "Parcial". As duas referências de linha estavam deslocadas. |
+| #338 | `docs/CI-CD.md` | As seções **operacionais** (comandos locais e troubleshooting) estavam dentro do bloco histórico e mandavam rodar `testDevDebugUnitTest`, `lintDevDebug`, `connectedDevDebugAndroidTest` e o `backend-stub/` — tarefas que não existem. O guia apontava para o issue #208 como "a reconciliar", e o issue está **fechado**. |
+| #339 | `docs/ACESSIBILIDADE.md`, `docs/ROTEIRO-TESTES.md` | `installDevDebug` não existe; e TF-09/TF-10 eram descritos como *pendentes* quando os marcos E3.3/E3.4 foram **cancelados** com a camada de rede. |
+| #340 | `docs/plans/2026-10-01-redesign-neobrutalista.md` | O plano — que é explicitamente um plano *para um agente de IA executar* — mandava rodar sete tarefas com flavor. |
+| #341 | `feature/auth` | O `Scaffold` com a barra superior estava escrito duas vezes, linha por linha. Virou `AuthScreenScaffold` em `AuthForm.kt`, e os quatro `@OptIn(ExperimentalMaterial3Api::class)` que ficaram sem motivo saíram. |
+
+### O que sobrou para o responsável
+
+O **DEF-79** (o relatório técnico da N2 descreve a arquitetura com rede —
+a §10 afirma que `INTERNET` e `ACCESS_NETWORK_STATE` são concedidas, e o
+manifesto as remove) e o **DEF-80** (TF-09/TF-10 e o mapeamento de R5/R6
+no roteiro de QA) ficaram **registrados com o escopo técnico mapeado**,
+como o DEF-78. São alterações de documento **acadêmico** da entrega da N2:
+a campanha corrige o que é fato e deixa a decisão — reescrever ou
+reescopar — com o responsável.
+
+### A produção voltou a zero duplicação
+
+Depois do #341, a varredura de blocos (janelas de 8 linhas normalizadas,
+entre arquivos distintos) sobre os 186 arquivos de produção **não acha
+nenhum** bloco duplicado. A varredura de código morto continua sem
+achado, e as nove supressões de produção têm todas a justificativa no
+lugar.
