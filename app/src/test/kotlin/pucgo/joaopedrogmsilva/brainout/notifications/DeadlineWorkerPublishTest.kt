@@ -7,8 +7,6 @@ import android.app.Notification
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
 import com.google.common.truth.Truth.assertThat
@@ -67,21 +65,8 @@ class DeadlineWorkerPublishTest {
     private fun buildWorker(taskId: String = "t1"): DeadlineWorker =
         TestListenableWorkerBuilder<DeadlineWorker>(context)
             .setInputData(workDataOf(DeadlineKeys.TASK_ID to taskId))
-            .setWorkerFactory(
-                object : WorkerFactory() {
-                    override fun createWorker(
-                        appContext: Context,
-                        workerClassName: String,
-                        workerParameters: WorkerParameters,
-                    ): ListenableWorker =
-                        DeadlineWorker(
-                            appContext,
-                            workerParameters,
-                            taskRepository,
-                            projectRepository,
-                        )
-                },
-            ).build()
+            .setWorkerFactory(deadlineWorkerFactory(taskRepository, projectRepository))
+            .build()
 
     private fun notificationOf(taskId: String): Notification? =
         shadowOf(context.getSystemService(android.app.NotificationManager::class.java))
