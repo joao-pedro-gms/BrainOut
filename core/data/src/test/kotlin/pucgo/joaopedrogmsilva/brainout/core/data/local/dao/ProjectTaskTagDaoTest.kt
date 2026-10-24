@@ -3,8 +3,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -15,10 +13,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import java.time.Instant
 
 /**
@@ -47,12 +43,7 @@ class ProjectTaskTagDaoTest {
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database =
-            Room
-                .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+        database = inMemoryDatabase()
         projectDao = database.projectDao()
         taskDao = database.taskDao()
         tagDao = database.tagDao()
@@ -225,57 +216,4 @@ class ProjectTaskTagDaoTest {
             assertThat(loaded?.title).isEqualTo("Tarefa t-1")
             assertThat(loaded?.priorityCode).isEqualTo(1)
         }
-
-    private fun sampleProject(
-        id: String,
-        ownerId: String,
-        name: String = "Projeto $id",
-        description: String? = null,
-        createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
-        isCompleted: Boolean = false,
-    ): ProjectEntity =
-        ProjectEntity(
-            id = id,
-            ownerId = ownerId,
-            name = name,
-            description = description,
-            createdAt = createdAt,
-            isCompleted = isCompleted,
-        )
-
-    private fun sampleTask(
-        id: String,
-        projectId: String,
-        title: String = "Tarefa $id",
-        priorityCode: Int = 1,
-        status: String = "TODO",
-        assigneeId: String? = null,
-        dueDate: Instant? = null,
-        createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
-    ): TaskEntity =
-        TaskEntity(
-            id = id,
-            projectId = projectId,
-            title = title,
-            priorityCode = priorityCode,
-            status = status,
-            assigneeId = assigneeId,
-            dueDate = dueDate,
-            createdAt = createdAt,
-        )
-
-    private fun sampleTag(
-        id: String,
-        ownerId: String,
-        name: String,
-        color: String = "#FF0000",
-        createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
-    ): TagEntity =
-        TagEntity(
-            id = id,
-            ownerId = ownerId,
-            name = name,
-            color = color,
-            createdAt = createdAt,
-        )
 }

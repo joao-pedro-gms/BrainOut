@@ -2,7 +2,6 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -17,6 +16,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ThemePreferencesRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
@@ -66,8 +66,8 @@ class LocalBackupJourneyTest {
     @Test
     fun `jornada local completa — crud, exportacao, restauracao, login, sessao e lembretes`() =
         runTest {
-            val source = newDatabase()
-            val target = newDatabase()
+            val source = inMemoryDatabase()
+            val target = inMemoryDatabase()
             try {
                 val user = seed(source)
                 val exported = exportBackup(source)
@@ -191,12 +191,6 @@ class LocalBackupJourneyTest {
         assertThat(restored.reminders.first().taskId).isEqualTo(TASK_ID)
         assertThat(restored.reminders.first().dueDate).isEqualTo(DUE_DATE)
     }
-
-    private fun newDatabase(): BrainOutDatabase =
-        Room
-            .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
 
     private fun backupRepository(
         database: BrainOutDatabase,

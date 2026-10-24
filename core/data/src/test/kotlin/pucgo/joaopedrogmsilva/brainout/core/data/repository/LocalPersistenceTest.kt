@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -10,8 +8,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
@@ -25,7 +23,7 @@ class LocalPersistenceTest {
     @Test
     fun `falha ao associar tag desfaz inclusive o projeto inserido na transacao`() =
         runTest {
-            val db = newDatabase()
+            val db = inMemoryDatabase()
             try {
                 val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), RoomLocalTransaction(db))
                 val project = Project.create(name = "Projeto", ownerId = "u1")
@@ -40,7 +38,7 @@ class LocalPersistenceTest {
     @Test
     fun `crud local preserva tags e cascatas de conclusao reabertura e exclusao`() =
         runTest {
-            val db = newDatabase()
+            val db = inMemoryDatabase()
             try {
                 val tx = RoomLocalTransaction(db)
                 val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), tx)
@@ -75,7 +73,7 @@ class LocalPersistenceTest {
             // vazio devolve mapa vazio — sem "bail-out" que congelaria a
             // listagem da Home para quem nao tem projetos. Exercitado
             // contra o Room de verdade, porque a consulta usa `IN (:ids)`.
-            val db = newDatabase()
+            val db = inMemoryDatabase()
             try {
                 val tags = TagRepositoryImpl(db.tagDao(), RoomLocalTransaction(db))
 
@@ -84,10 +82,4 @@ class LocalPersistenceTest {
                 db.close()
             }
         }
-
-    private fun newDatabase(): BrainOutDatabase =
-        Room
-            .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), BrainOutDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
 }

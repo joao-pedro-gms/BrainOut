@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -13,6 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import java.time.Instant
 
 /**
@@ -31,12 +30,7 @@ class UserDaoTest {
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database =
-            Room
-                .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+        database = inMemoryDatabase()
         dao = database.userDao()
     }
 

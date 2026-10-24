@@ -3,8 +3,6 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.data.local.dao
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -16,9 +14,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import java.time.Instant
 
@@ -54,12 +51,7 @@ class ProjectDaoSearchSortOrderTest {
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        database =
-            Room
-                .inMemoryDatabaseBuilder(context, BrainOutDatabase::class.java)
-                .allowMainThreadQueries()
-                .build()
+        database = inMemoryDatabase()
         projectDao = database.projectDao()
         runBlocking { seedProjects() }
     }
@@ -223,52 +215,42 @@ class ProjectDaoSearchSortOrderTest {
      */
     private suspend fun seedProjects() {
         projectDao.insert(
-            ProjectEntity(
+            sampleProject(
                 id = "p-3",
                 ownerId = ownerId,
                 name = "Caju",
-                description = null,
                 createdAt = Instant.parse("2026-02-01T00:00:00Z"),
-                isCompleted = false,
             ),
         )
         projectDao.insert(
-            ProjectEntity(
+            sampleProject(
                 id = "p-1",
                 ownerId = ownerId,
                 name = "Abacaxi",
-                description = null,
                 createdAt = Instant.parse("2026-03-01T00:00:00Z"),
-                isCompleted = false,
             ),
         )
         projectDao.insert(
-            ProjectEntity(
+            sampleProject(
                 id = "p-2",
                 ownerId = ownerId,
                 name = "Banana",
-                description = null,
                 createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-                isCompleted = false,
             ),
         )
         database.tagDao().insert(
-            TagEntity(
+            sampleTag(
                 id = "tag-a",
                 ownerId = ownerId,
                 name = "Estudo",
-                color = "#FF0000",
-                createdAt = Instant.parse("2026-01-01T00:00:00Z"),
             ),
         )
         projectDao.insert(
-            ProjectEntity(
+            sampleProject(
                 id = "p-9",
                 ownerId = "u-2",
                 name = "Projeto de outro dono",
-                description = null,
                 createdAt = Instant.parse("2026-04-01T00:00:00Z"),
-                isCompleted = false,
             ),
         )
     }
