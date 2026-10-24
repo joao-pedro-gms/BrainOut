@@ -13,19 +13,20 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > a evidência (`arquivo:linha`) de cada correção. Onde um item de P1/P2
 > mudou de estado, ele está anotado no ponto em que aparece.
 
-> **⚠️ Estado em 22/10/2026.** A rodada de revisão de código fechou os
+> **⚠️ Estado em 23/10/2026.** A rodada de revisão de código fechou os
 > itens de P1/P2 que ainda dependiam só de decisão de execução, e o
 > *ledger* passou a ser a fonte da verdade do que está aberto:
-> [`docs/DEFEITOS.md`](DEFEITOS.md) (49 defeitos corrigidos; restam
-> DEF-02, que é operacional, DEF-24, que é decisão de design, e
-> DEF-36, que depende do modelo de participação do redesign). Desde
+> [`docs/DEFEITOS.md`](DEFEITOS.md) (**71 defeitos corrigidos**; restam
+> **DEF-24** (parcial — os empty states), **DEF-74** e **DEF-78**
+> (parcialmente corrigidos) e **DEF-75**, **DEF-76** e **DEF-77**
+> (abertos)). Desde
 > 08/10/2026, entre outras correções: o hash de senha saiu da thread
 > principal (DEF-71), a identidade da notificação de prazo deixou de
 > colidir (DEF-54), a Home parou de mostrar um usuário fake (DEF-72), os
 > diálogos passaram a ficar acima do teclado (DEF-46) e a barra inferior
 > virou abas de verdade, com o `when (currentTab)` morto removido. Os
 > alvos de decomposição de arquivos (1403/1027/593/583 linhas) hoje
-> estão todos abaixo de 415.
+> estão todos abaixo de 450 linhas.
 
 > **⚠️ Base pré-transição local.** Esta página foi escrita contra a base que
 > ainda tinha camada de rede, flavors e fila `pending_ops`. A direção aprovada
@@ -228,7 +229,7 @@ P0+P1 uncovered LoC ≈ 550 :core:data + 60 :core:domain + ~300 feature. Sem tes
   | #316 | O botão de voltar (2 features) e a string `common_back` | `NeoBackButton` + `neo_back` |
   | #318 | A receita da página (6 telas, 3 módulos) | `neoPageGutter` |
 
-  A string `common_back` era a **única** string de interface duplicada entre módulos do repositório inteiro — e ela ia para o `:core:ui` de qualquer jeito, que já é dono das strings compartilhadas da identidade. A varredura refeita depois da rodada sobrou com **um** bloco duplicado de 8 linhas: o cartão em `Surface`, que fica pendente de decisão (ver **DEF-76**, no [ledger](DEFEITOS.md)).
+  A string `common_back` era a **única** string de interface duplicada entre módulos do repositório inteiro — e ela ia para o `:core:ui` de qualquer jeito, que já é dono das strings compartilhadas da identidade. A varredura refeita depois da rodada (#325) devolve **zero** blocos duplicados: o último — o cartão de linhas de Configurações — virou `SettingsCard`.
 - 🟡 **PARCIAL** — **`@file:Suppress("TooManyFunctions", "MagicNumber", "LongMethod")`** suprime sinais de bloat (corrigir decompondo, não suprimindo). A supressão em bloco saiu e o `MagicNumber` deixou de ser suprimido. Restam supressões pontuais, cada uma com a justificativa escrita no próprio lugar — `LongMethod` em `RegisterScreen`; `LongParameterList` em `HomeViewModel` e `ProjectDetailViewModel`; `TooManyFunctions` em `DataModule` e `BackupDao`. As do `HomeListingPipeline` saíram no #295 (dependências e sinais agrupados, etapas extraídas), a do `HomeCreateProjectDialog` no #299 (nove parâmetros viraram `CreateProjectFields` + `CreateProjectCallbacks`) e a do `PasswordField` no #300 (`PasswordFieldLabels` + `PasswordFieldTags` viraram `PasswordFieldConfig`). As três que restavam como `@file:Suppress` — `HomeCreateProjectDialog`, `HomeProjectsContent` e `NewTaskDialog` — desceram para a função, com a justificativa no lugar. E as de `LoginScreen` e `HomeCreateProjectDialog` saíram por completo no #310: a rodada encolheu as duas funções abaixo do limiar, e a regra voltou a valer. A rodada seguinte levou as três restantes do `:feature:projects`: o orquestrador do detalhe de projeto (#312), a lista da Home (#313) e o menu de prioridade do diálogo de nova tarefa (#314) — cada uma decomposta em partes nomeadas, com a regra `LongMethod` de volta a valer. **As duas `LongParameterList` que ficam são construtores do Hilt** (oito dependências cada: quatro repositórios e quatro casos de uso na Home; um repositório, seis casos de uso e o `SavedStateHandle` no detalhe) — a regra conta parâmetros de funções chamadas à mão, e um construtor de DI é chamado pelo framework. A `LongParameterList` tem peso 1 na `config/detekt/detekt.yml` justamente porque a regra não serve às assinaturas de UI, que são agrupadas por outro caminho.
 - ✅ **RESOLVIDO (PR #267)** — **`SnapshotStateList<String>`** leak em `CreateProjectDialogBody:1225` — tipar `List<String>` + callbacks. A assinatura agora recebe `List<String>` e o estado da seleção volta por callback, sem expor o `SnapshotStateList`.
 - ✅ **RESOLVIDO (DEF-72, PR #261)** — **`HomeUser.kt:23-26`** `DefaultHomeUser("João Pedro"/"JP")` flashing em Loading/SignedOut. Trocar por shimmer/genérico. A `HomeTopBar` passou a aceitar `user: HomeUser?` — `null` significa "sem sessão": sem avatar, sem badge e a saudação genérica.
