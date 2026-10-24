@@ -4,8 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.notifications
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
@@ -47,42 +45,16 @@ class DeadlineWorkerTest {
     private fun buildWorker(): DeadlineWorker =
         TestListenableWorkerBuilder<DeadlineWorker>(context)
             .setInputData(workDataOf(DeadlineKeys.TASK_ID to "t1"))
-            .setWorkerFactory(
-                object : WorkerFactory() {
-                    override fun createWorker(
-                        appContext: Context,
-                        workerClassName: String,
-                        workerParameters: WorkerParameters,
-                    ): ListenableWorker =
-                        DeadlineWorker(
-                            appContext,
-                            workerParameters,
-                            taskRepository,
-                            projectRepository,
-                        )
-                },
-            ).build()
+            .setWorkerFactory(deadlineWorkerFactory(taskRepository, projectRepository))
+            .build()
 
     @Test
     fun `worker sem task_id falha imediatamente`() =
         runBlocking {
             val worker =
                 TestListenableWorkerBuilder<DeadlineWorker>(context)
-                    .setWorkerFactory(
-                        object : WorkerFactory() {
-                            override fun createWorker(
-                                appContext: Context,
-                                workerClassName: String,
-                                workerParameters: WorkerParameters,
-                            ): ListenableWorker =
-                                DeadlineWorker(
-                                    appContext,
-                                    workerParameters,
-                                    taskRepository,
-                                    projectRepository,
-                                )
-                        },
-                    ).build()
+                    .setWorkerFactory(deadlineWorkerFactory(taskRepository, projectRepository))
+                    .build()
 
             val result = worker.doWork()
 
