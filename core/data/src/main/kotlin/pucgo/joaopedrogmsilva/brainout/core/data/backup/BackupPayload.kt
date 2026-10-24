@@ -86,6 +86,42 @@ internal data class BackupPreferences(
 )
 
 /**
+ * Chaves do JSON do payload.
+ *
+ * Cada chave é escrita **uma vez** e usada no encode e no decode. A
+ * duplicação importa porque o formato é o que fica **no disco**: uma
+ * chave grafada diferente no lado da escrita e no lado da leitura
+ * perde o dado em silêncio — o backup sai "correto" e a restauração
+ * devolve o campo vazio.
+ */
+private const val KEY_USERS: String = "users"
+private const val KEY_PROJECTS: String = "projects"
+private const val KEY_TASKS: String = "tasks"
+private const val KEY_TAGS: String = "tags"
+private const val KEY_PROJECT_TAGS: String = "projectTags"
+private const val KEY_PREFERENCES: String = "preferences"
+private const val KEY_THEME_MODE: String = "themeMode"
+private const val KEY_SORT_ORDER_BY_USER: String = "sortOrderByUser"
+
+private const val KEY_ID: String = "id"
+private const val KEY_OWNER_ID: String = "ownerId"
+private const val KEY_NAME: String = "name"
+private const val KEY_EMAIL: String = "email"
+private const val KEY_ROLE: String = "role"
+private const val KEY_CREATED_AT_EPOCH_MILLIS: String = "createdAtEpochMillis"
+private const val KEY_DESCRIPTION: String = "description"
+private const val KEY_IS_COMPLETED: String = "isCompleted"
+private const val KEY_PROJECT_ID: String = "projectId"
+private const val KEY_TITLE: String = "title"
+private const val KEY_PRIORITY_CODE: String = "priorityCode"
+private const val KEY_STATUS: String = "status"
+private const val KEY_ASSIGNEE_ID: String = "assigneeId"
+private const val KEY_DUE_DATE_EPOCH_MILLIS: String = "dueDateEpochMillis"
+private const val KEY_COMPLETED_AT_EPOCH_MILLIS: String = "completedAtEpochMillis"
+private const val KEY_COLOR: String = "color"
+private const val KEY_TAG_ID: String = "tagId"
+
+/**
  * Codec do payload lógico do backup para JSON.
  *
  * Usa `org.json` (disponível na plataforma Android) em vez de
@@ -97,15 +133,6 @@ internal data class BackupPreferences(
  * permaneça pequeno e legível.
  */
 internal object BackupPayloadCodec {
-    private const val KEY_USERS: String = "users"
-    private const val KEY_PROJECTS: String = "projects"
-    private const val KEY_TASKS: String = "tasks"
-    private const val KEY_TAGS: String = "tags"
-    private const val KEY_PROJECT_TAGS: String = "projectTags"
-    private const val KEY_PREFERENCES: String = "preferences"
-    private const val KEY_THEME_MODE: String = "themeMode"
-    private const val KEY_SORT_ORDER_BY_USER: String = "sortOrderByUser"
-
     /** Serializa o payload em JSON UTF-8. */
     fun encode(payload: BackupPayload): ByteArray {
         val root =
@@ -162,97 +189,97 @@ private fun parsePayloadRoot(bytes: ByteArray): JSONObject =
 
 private fun encodeUser(user: BackupUser): JSONObject =
     JSONObject()
-        .put("id", user.id)
-        .put("name", user.name)
-        .put("email", user.email)
-        .put("role", user.role)
-        .put("createdAtEpochMillis", user.createdAtEpochMillis)
+        .put(KEY_ID, user.id)
+        .put(KEY_NAME, user.name)
+        .put(KEY_EMAIL, user.email)
+        .put(KEY_ROLE, user.role)
+        .put(KEY_CREATED_AT_EPOCH_MILLIS, user.createdAtEpochMillis)
 
 private fun encodeProject(project: BackupProject): JSONObject {
     val json =
         JSONObject()
-            .put("id", project.id)
-            .put("ownerId", project.ownerId)
-            .put("name", project.name)
-            .put("createdAtEpochMillis", project.createdAtEpochMillis)
-            .put("isCompleted", project.isCompleted)
-    if (project.description != null) json.put("description", project.description)
+            .put(KEY_ID, project.id)
+            .put(KEY_OWNER_ID, project.ownerId)
+            .put(KEY_NAME, project.name)
+            .put(KEY_CREATED_AT_EPOCH_MILLIS, project.createdAtEpochMillis)
+            .put(KEY_IS_COMPLETED, project.isCompleted)
+    if (project.description != null) json.put(KEY_DESCRIPTION, project.description)
     return json
 }
 
 private fun encodeTask(task: BackupTask): JSONObject {
     val json =
         JSONObject()
-            .put("id", task.id)
-            .put("projectId", task.projectId)
-            .put("title", task.title)
-            .put("priorityCode", task.priorityCode)
-            .put("status", task.status)
-            .put("createdAtEpochMillis", task.createdAtEpochMillis)
-    if (task.assigneeId != null) json.put("assigneeId", task.assigneeId)
-    if (task.dueDateEpochMillis != null) json.put("dueDateEpochMillis", task.dueDateEpochMillis)
-    if (task.completedAtEpochMillis != null) json.put("completedAtEpochMillis", task.completedAtEpochMillis)
+            .put(KEY_ID, task.id)
+            .put(KEY_PROJECT_ID, task.projectId)
+            .put(KEY_TITLE, task.title)
+            .put(KEY_PRIORITY_CODE, task.priorityCode)
+            .put(KEY_STATUS, task.status)
+            .put(KEY_CREATED_AT_EPOCH_MILLIS, task.createdAtEpochMillis)
+    if (task.assigneeId != null) json.put(KEY_ASSIGNEE_ID, task.assigneeId)
+    if (task.dueDateEpochMillis != null) json.put(KEY_DUE_DATE_EPOCH_MILLIS, task.dueDateEpochMillis)
+    if (task.completedAtEpochMillis != null) json.put(KEY_COMPLETED_AT_EPOCH_MILLIS, task.completedAtEpochMillis)
     return json
 }
 
 private fun encodeTag(tag: BackupTag): JSONObject =
     JSONObject()
-        .put("id", tag.id)
-        .put("ownerId", tag.ownerId)
-        .put("name", tag.name)
-        .put("color", tag.color)
-        .put("createdAtEpochMillis", tag.createdAtEpochMillis)
+        .put(KEY_ID, tag.id)
+        .put(KEY_OWNER_ID, tag.ownerId)
+        .put(KEY_NAME, tag.name)
+        .put(KEY_COLOR, tag.color)
+        .put(KEY_CREATED_AT_EPOCH_MILLIS, tag.createdAtEpochMillis)
 
 private fun encodeProjectTag(projectTag: BackupProjectTag): JSONObject =
     JSONObject()
-        .put("projectId", projectTag.projectId)
-        .put("tagId", projectTag.tagId)
+        .put(KEY_PROJECT_ID, projectTag.projectId)
+        .put(KEY_TAG_ID, projectTag.tagId)
 
 private fun decodeUser(json: JSONObject): BackupUser =
     BackupUser(
-        id = json.optString("id"),
-        name = json.optString("name"),
-        email = json.optString("email"),
-        role = json.optString("role"),
-        createdAtEpochMillis = json.optLong("createdAtEpochMillis"),
+        id = json.optString(KEY_ID),
+        name = json.optString(KEY_NAME),
+        email = json.optString(KEY_EMAIL),
+        role = json.optString(KEY_ROLE),
+        createdAtEpochMillis = json.optLong(KEY_CREATED_AT_EPOCH_MILLIS),
     )
 
 private fun decodeProject(json: JSONObject): BackupProject =
     BackupProject(
-        id = json.optString("id"),
-        ownerId = json.optString("ownerId"),
-        name = json.optString("name"),
-        description = json.optNullableString("description"),
-        createdAtEpochMillis = json.optLong("createdAtEpochMillis"),
-        isCompleted = json.optBoolean("isCompleted"),
+        id = json.optString(KEY_ID),
+        ownerId = json.optString(KEY_OWNER_ID),
+        name = json.optString(KEY_NAME),
+        description = json.optNullableString(KEY_DESCRIPTION),
+        createdAtEpochMillis = json.optLong(KEY_CREATED_AT_EPOCH_MILLIS),
+        isCompleted = json.optBoolean(KEY_IS_COMPLETED),
     )
 
 private fun decodeTask(json: JSONObject): BackupTask =
     BackupTask(
-        id = json.optString("id"),
-        projectId = json.optString("projectId"),
-        title = json.optString("title"),
-        priorityCode = json.optInt("priorityCode"),
-        status = json.optString("status"),
-        assigneeId = json.optNullableString("assigneeId"),
-        dueDateEpochMillis = json.optNullableLong("dueDateEpochMillis"),
-        createdAtEpochMillis = json.optLong("createdAtEpochMillis"),
-        completedAtEpochMillis = json.optNullableLong("completedAtEpochMillis"),
+        id = json.optString(KEY_ID),
+        projectId = json.optString(KEY_PROJECT_ID),
+        title = json.optString(KEY_TITLE),
+        priorityCode = json.optInt(KEY_PRIORITY_CODE),
+        status = json.optString(KEY_STATUS),
+        assigneeId = json.optNullableString(KEY_ASSIGNEE_ID),
+        dueDateEpochMillis = json.optNullableLong(KEY_DUE_DATE_EPOCH_MILLIS),
+        createdAtEpochMillis = json.optLong(KEY_CREATED_AT_EPOCH_MILLIS),
+        completedAtEpochMillis = json.optNullableLong(KEY_COMPLETED_AT_EPOCH_MILLIS),
     )
 
 private fun decodeTag(json: JSONObject): BackupTag =
     BackupTag(
-        id = json.optString("id"),
-        ownerId = json.optString("ownerId"),
-        name = json.optString("name"),
-        color = json.optString("color"),
-        createdAtEpochMillis = json.optLong("createdAtEpochMillis"),
+        id = json.optString(KEY_ID),
+        ownerId = json.optString(KEY_OWNER_ID),
+        name = json.optString(KEY_NAME),
+        color = json.optString(KEY_COLOR),
+        createdAtEpochMillis = json.optLong(KEY_CREATED_AT_EPOCH_MILLIS),
     )
 
 private fun decodeProjectTag(json: JSONObject): BackupProjectTag =
     BackupProjectTag(
-        projectId = json.optString("projectId"),
-        tagId = json.optString("tagId"),
+        projectId = json.optString(KEY_PROJECT_ID),
+        tagId = json.optString(KEY_TAG_ID),
     )
 
 /** Lê um array JSON opcional, mapeando cada elemento. */
