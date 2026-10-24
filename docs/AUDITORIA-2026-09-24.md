@@ -28,6 +28,17 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > alvos de decomposição de arquivos (1403/1027/593/583 linhas) hoje
 > estão todos abaixo de 450 linhas.
 
+> **⚠️ Estado em 24/10/2026.** A rodada seguinte atacou a **camada de
+> teste**, que a de 23/10 não alcançara: cinco PRs (#328 a #332) tiraram
+> da duplicação o que ainda estava duplicado — o `inMemoryDatabaseBuilder`
+> do Room (7 cópias), as fábricas de entidade (3), o
+> `FakeLocalTransaction` (3), a fábrica de worker (6) e o `FakeProjectDao`
+> (2 de ~80 linhas) — e fecharam a lacuna do teste de paridade dos
+> tokens, que prometia ler o contrato e repetia os valores. Uma varredura
+> de código morto sobre as 1 452 declarações da produção não achou
+> **nada**: o único símbolo sem uso (`NeoSizes.touchGap`) era um token do
+> design system sem cobertura — e agora tem.
+
 > **⚠️ Base pré-transição local.** Esta página foi escrita contra a base que
 > ainda tinha camada de rede, flavors e fila `pending_ops`. A direção aprovada
 > em 16/10/2026 ([TRANSICAO-LOCAL](TRANSICAO-LOCAL.md)) removeu esse código no
@@ -527,3 +538,88 @@ Registradas em `docs/DEFEITOS.md` com severidade, origem e plano:
 - **DEF-12** — `requirements.txt` não instala em Python 3.14 (`pydantic-core 2.23.4` sem wheel; PyO3 máx. 3.13). Os 16 testes do stub rodam.
 - **DEF-13** — **aberto**: `LoginScreenTest` compila mas os 3 testes falham em runtime no emulador API 37 — `NoSuchMethodException: android.hardware.input.InputManager.getInstance` no `Espresso.onIdle`; Espresso 3.6.1 é incompatível com `compileSdk 37`.
 - **DEF-14** — o gate do Kover exclui `*.remote.*` e `*.di.*` do denominador: **806 das 3 944 linhas** de produção de `:core:data` (20,4%), incluindo `RemoteDataSource` (253 linhas, 26 `catch`) e `HolidayRemoteDataSource`. Influi a métrica; não foi corrigido.
+
+---
+
+## Revisão da camada de teste (24/10/2026)
+
+A rodada de 23/10 cuidou da produção. Esta cuidou da **camada de teste**,
+que ainda tinha duplicação do mesmo tipo — e a mesma regra valendo: quando
+duas cópias fixavam o **mesmo** conhecimento, elas viraram uma fonte só.
+
+| PR | O que foi unificado | Cópias |
+|---|---|---|
+| #328 | `inMemoryDatabase()` — o `inMemoryDatabaseBuilder` do Room | 7 → 1 |
+| #328 | `sampleProject` / `sampleTask` / `sampleTag` (entidades) | 3 → 1 |
+| #329 | `FakeLocalTransaction` | 3 → 1 |
+| #329 | `sampleProject` / `sampleTag` / `sampleTask` (domínio) | 2 → 1 |
+| #330 | `deadlineWorkerFactory` / `completeTaskWorkerFactory` | 6 → 1 |
+| #331 | `FakeProjectDao` (13 métodos da interface) | 2 → 1 |
+| #332 | `NeoTokenParityTest` passa a ler o contrato | 8 grupos |
+
+**Nenhum dado de teste mudou.** As sete cópias do banco usavam o mesmo
+contexto (`ApplicationProvider`) e o mesmo `allowMainThreadQueries`; as
+fábricas de entidade já usavam exatamente os mesmos valores padrão
+(`"Projeto $id"`, `"Tarefa $id"`, `"#FF0000"`, `2026-01-01T00:00:00Z`). A
+única mudança de valor foi o nome padrão da tag de domínio (`"Tag"` →
+`"Urgente"`), numa suíte em que **nenhuma asserção lê o nome da tag**.
+
+O `FakeProjectDao` foi o caso mais caro e o mais instructive: são dois
+fakes de ~80 linhas para uma interface de 13 métodos, e as diferenças
+entre eles (as cascatas agiam em um e não no outro) viviam no meio do
+código repetido. Agora há um fake só, com as três operações de cascata
+`open` — o `TaskRepositoryImplTest` as sobrescreve para registrarem a
+chamada, o `ProjectRepositoryImplTest` usa a implementação padrão.
+
+### O teste de paridade dos tokens prometia uma coisa e fazia outra
+
+O `NeoTokenParityTest` diz no próprio KDoc que *"nada aqui replica
+constantes: os valores esperados vêm do arquivo"* — mas só as cores, os
+papéis e o espaçamento cumpriam. Raios, bordas, tamanhos e breakpoints
+repetiam os valores no código do teste, e as sombras repetiam os quatro
+níveis inteiros.
+
+Duas consequências:
+
+- **Mudar o contrato não reprovava nada.** O teste comparava a cópia
+  particular dele com o Kotlin, e os dois continuavam de acordo. A
+  paridade só existia no papel.
+- **`touchGap` não era verificado por lado nenhum** — declarado no
+  `tokens.json` e no `NeoSizes`, ausente da lista do teste e sem uso em
+  produção. Era o único símbolo da produção que a varredura de código
+  morto achou, e não era código morto: era um token sem cobertura.
+
+Depois da rodada (#332), cada grupo é lido do JSON e comparado com o
+conjunto de tokens do Kotlin pelo nome, e a prova de que o teste morde é
+por sabotagem: `"card": 8` → `"card": 12` reprova `raios declarados
+batem com os tokens`, e remover `touchGap` do contrato reprova `tamanhos
+declarados batem com os tokens`. Antes as duas passavam.
+
+### O que ficou de fora, e por quê
+
+- **`FakeTagDao`** — as duas versões têm comportamentos diferentes: a de
+  `TagRepositoryImplTest` reproduz o índice UNIQUE `(owner_id, name)` e
+  monta `observeForProjects` a partir das associações. Unificar quebraria
+  `create substitui associacoes de tags atomicamente`, que insere duas
+  tags de mesmo owner.
+- **O `setMain`/`resetMain` dos testes de ViewModel** — o boilerplate do
+  dispatcher aparece em 8 suítes de 4 módulos. É glue de framework, e
+  unificá-lo exigiria um `testFixtures` compartilhado entre módulos — uma
+  mudança de topologia do build, não uma limpeza.
+- **O `seed` das suítes de backup** — os valores (`USER_ID`, `CREATED_AT`,
+  `DUE_DATE`) são dado de cenário, não boilerplate.
+
+### Varreduras de código morto
+
+Duas varreduras sobre a produção (1 452 declarações, 1 012 nomes
+distintos, uso contado incluindo chamadas de método) não acharam
+**nenhum** código morto. Os cinco candidatos iniciais eram falsos
+positivos — `bindDeadlineScheduler` (`@Binds`), `NotificationModule`
+(`@Module`), `fromEpochMillis` e `toEpochMillis` (`@TypeConverter`) são
+chamados pelo framework — e o sexto, `NeoSizes.touchGap`, era o token
+sem cobertura descrito acima.
+
+### Verificação
+
+670 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e os
+gates de Kover de `:core:domain` e `:core:data` verdes.
