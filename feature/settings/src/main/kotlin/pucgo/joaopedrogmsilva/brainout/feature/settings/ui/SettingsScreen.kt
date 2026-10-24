@@ -44,7 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -100,8 +100,7 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
-                    .neoContentWidth()
-                    .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm),
+                    .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         ) {
             SettingsIdentityHeader()

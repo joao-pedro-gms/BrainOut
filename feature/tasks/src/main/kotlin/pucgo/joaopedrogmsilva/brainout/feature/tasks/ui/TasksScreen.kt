@@ -46,7 +46,8 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
@@ -124,8 +125,7 @@ internal fun TasksContent(
         modifier =
             modifier
                 .fillMaxSize()
-                .neoContentWidth()
-                .padding(horizontal = LocalNeoWindowInfo.current.margin)
+                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.none)
                 .testTag(TasksTestTags.LIST),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(vertical = 12.dp),

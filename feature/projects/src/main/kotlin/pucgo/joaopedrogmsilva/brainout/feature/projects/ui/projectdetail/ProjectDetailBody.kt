@@ -25,7 +25,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @Composable
@@ -39,8 +39,7 @@ internal fun ProjectDetailBody(
             Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .neoContentWidth()
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm),
+                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
         verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         contentPadding = PaddingValues(bottom = 88.dp),
     ) {
