@@ -100,7 +100,7 @@ class TasksTopBarTest {
         }
 
         // O TalkBack precisa dizer o que o botão faz, não só "botão".
-        // O rótulo vem de `common_back` e é o mesmo do ProjectDetail.
+        // O rótulo vem de `neo_back` (do `:core:ui`) e é o mesmo do ProjectDetail.
         //
         // `onNodeWithText` não encontra: `contentDescription` de um
         // `Icon` vira `SemanticsProperties.ContentDescription`, não

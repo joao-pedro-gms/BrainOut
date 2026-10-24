@@ -71,7 +71,6 @@
     <string name="home_create_project_confirm">Create</string>
 
     <!-- Common -->
-    <string name="common_back">Back</string>
     <string name="common_close">Close</string>
 
     <!-- Errors from ProjectDetailViewModel (E4.6 — UI resolves by key) -->

@@ -9,25 +9,22 @@
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoBackButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
-import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
-import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Barra superior das abas globais com `navigationIcon` de voltar.
  *
- * O rótulo "Voltar" é announced pelo TalkBack via `common_back`, e a
- * linha é exposta como nó de navegação (`navigationIcon` do
+ * O rótulo "Voltar" é announced pelo TalkBack via `neo_back` (do
+ * `:core:ui`), e a linha é exposta como nó de navegação
+ * (`navigationIcon` do
  * `TopAppBar`) — é isso que faz o gesto do sistema e o botão
  * anunciarem a mesma ação.
  */
@@ -47,15 +44,10 @@ internal fun TasksTopBar(
             )
         },
         navigationIcon = {
-            IconButton(
+            NeoBackButton(
                 onClick = onBackClicked,
                 modifier = Modifier.testTag(TasksTestTags.BACK_BUTTON),
-            ) {
-                Icon(
-                    painter = painterResource(UiR.drawable.neo_ic_arrow_back),
-                    contentDescription = stringResource(id = R.string.common_back),
-                )
-            }
+            )
         },
         colors =
             neoTopAppBarColors(
