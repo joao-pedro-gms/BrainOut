@@ -11,8 +11,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.CompletionStatsRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PriorityCountRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
@@ -50,7 +48,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
             val task = sampleTask()
 
             repository.create(task)
@@ -63,7 +61,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
             val task = sampleTask()
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
             val updated = task.copy(title = "Título novo")
@@ -90,7 +88,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
             val task = sampleTask(status = TaskStatus.DOING)
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
 
@@ -106,7 +104,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
@@ -121,7 +119,7 @@ class TaskRepositoryImplTest {
     fun `delete de tarefa ausente e idempotente`() =
         runTest {
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(FakeTaskDao(), FakeProjectDao(FakeTaskDao()), localTransaction)
+            val repository = TaskRepositoryImpl(FakeTaskDao(), RecordingProjectDao(FakeTaskDao()), localTransaction)
 
             repository.delete("ausente")
         }
@@ -130,7 +128,7 @@ class TaskRepositoryImplTest {
     fun `delete de tarefa ativa apaga a tarefa e dispara o cascade`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val projectDao = FakeProjectDao(taskDao)
+            val projectDao = RecordingProjectDao(taskDao)
             val localTransaction = FakeLocalTransaction()
             val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
             val task = sampleTask(status = TaskStatus.DOING)
@@ -161,7 +159,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
@@ -172,7 +170,7 @@ class TaskRepositoryImplTest {
     fun `completeAndCascade encadeia TODO ate DONE e chama cascadeCompleteTask`() =
         runTest {
             val taskDao = FakeTaskDao()
-            val projectDao = FakeProjectDao(taskDao)
+            val projectDao = RecordingProjectDao(taskDao)
             val localTransaction = FakeLocalTransaction()
             val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
             val todo = sampleTask(status = TaskStatus.TODO)
@@ -256,7 +254,7 @@ class TaskRepositoryImplTest {
         }
 
     private fun newRepository(taskDao: TaskDao): TaskRepositoryImpl =
-        TaskRepositoryImpl(taskDao, FakeProjectDao(taskDao), FakeLocalTransaction())
+        TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), FakeLocalTransaction())
 
     /** Registra uma chamada a `cascadeDeleteTask`. */
     private data class DeleteCall(
@@ -327,58 +325,18 @@ class TaskRepositoryImplTest {
     }
 
     /**
-     * Fake de [ProjectDao] que apenas registra as chamadas de cascata.
+     * Fake de [ProjectDao] que registra as chamadas de cascata.
      * As cascatas delegam para o [TaskDao] compartilhado para simular
      * a escrita real do Room.
+     *
+     * As demais operações vêm do [FakeProjectDao] compartilhado.
      */
-    private class FakeProjectDao(
+    private class RecordingProjectDao(
         private val taskDao: TaskDao,
-    ) : ProjectDao {
+    ) : FakeProjectDao() {
         val deleteCalls: MutableList<DeleteCall> = mutableListOf()
         val completeCalls: MutableList<CompleteCall> = mutableListOf()
         val reopenCalls: MutableList<Triple<String, String, String>> = mutableListOf()
-        val projects: MutableMap<String, ProjectEntity> = mutableMapOf()
-
-        override fun observeAllForOwner(ownerId: String): Flow<List<ProjectEntity>> =
-            MutableStateFlow(projects.values.filter { it.ownerId == ownerId })
-
-        override fun searchProjects(
-            ownerId: String,
-            query: String,
-            tagId: String?,
-            sort: String,
-        ): Flow<List<ProjectEntity>> = MutableStateFlow(emptyList())
-
-        override suspend fun findById(id: String): ProjectEntity? = projects[id]
-
-        override suspend fun insert(project: ProjectEntity) {
-            projects[project.id] = project
-        }
-
-        override suspend fun update(project: ProjectEntity) {
-            projects[project.id] = project
-        }
-
-        override suspend fun deleteById(id: String) {
-            projects.remove(id)
-        }
-
-        override suspend fun insertProjectTags(refs: List<ProjectTagCrossRef>) = Unit
-
-        override suspend fun clearProjectTags(projectId: String) = Unit
-
-        override suspend fun replaceProjectTags(
-            projectId: String,
-            tagIds: List<String>,
-        ) = Unit
-
-        override suspend fun updateIsCompleted(
-            id: String,
-            isCompleted: Boolean,
-        ) {
-            val current = projects[id] ?: return
-            projects[id] = current.copy(isCompleted = isCompleted)
-        }
 
         override suspend fun cascadeCompleteTask(
             taskDao: TaskDao,
