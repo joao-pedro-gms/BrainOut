@@ -56,6 +56,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
+import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
@@ -163,7 +164,6 @@ internal data class RegisterCallbacks(
  * o IME não redimensiona a janela, então sem isso o último campo e o botão
  * de envio ficariam atrás do teclado em paisagem ou em tela baixa.
  */
-@Suppress("LongMethod") // O formulário é uma unidade: quatro campos, o papel e o envio.
 @Composable
 internal fun RegisterBody(
     callbacks: RegisterCallbacks,
@@ -178,79 +178,19 @@ internal fun RegisterBody(
     AuthFormScaffold(scrollTestTag = RegisterTestTags.SCROLL, modifier = modifier) {
         AuthSubtitle(textRes = R.string.register_subtitle)
 
-        OutlinedTextField(
-            value = uiState.name,
-            onValueChange = callbacks.onNameChange,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(nameFocus)
-                    .testTag(RegisterTestTags.NAME_FIELD),
-            label = { Text(text = stringResource(id = R.string.register_name_label)) },
-            placeholder = { Text(text = stringResource(id = R.string.register_name_placeholder)) },
-            singleLine = true,
-            isError = uiState.nameError != null,
-            supportingText =
-                uiState.nameError?.let { errorType ->
-                    { Text(text = errorType.text()) }
-                },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions =
-                KeyboardActions(
-                    onNext = { emailFocus.requestFocus() },
-                    onDone = { emailFocus.requestFocus() },
-                ),
+        RegisterIdentityFields(
+            uiState = uiState,
+            callbacks = callbacks,
+            nameFocus = nameFocus,
+            emailFocus = emailFocus,
+            passwordFocus = passwordFocus,
         )
 
-        EmailField(
-            value = uiState.email,
-            errorMessage = uiState.emailError,
-            onValueChange = callbacks.onEmailChange,
-            focusRequester = emailFocus,
-            imeAction = ImeAction.Next,
-            onNext = { passwordFocus.requestFocus() },
-            config =
-                EmailFieldConfig(
-                    labelId = R.string.register_email_label,
-                    placeholderId = R.string.register_email_placeholder,
-                    fieldTestTag = RegisterTestTags.EMAIL_FIELD,
-                ),
-        )
-
-        PasswordField(
-            value = uiState.password,
-            errorMessage = uiState.passwordError,
-            onValueChange = callbacks.onPasswordChange,
-            focusRequester = passwordFocus,
-            imeAction = ImeAction.Next,
-            onDone = { passwordConfirmFocus.requestFocus() },
-            config =
-                PasswordFieldConfig(
-                    labelId = R.string.register_pwd_label,
-                    placeholderId = R.string.register_pwd_placeholder,
-                    showToggleId = R.string.register_visibility_show,
-                    hideToggleId = R.string.register_visibility_hide,
-                    fieldTestTag = RegisterTestTags.PASSWORD_FIELD,
-                    toggleTestTag = RegisterTestTags.PASSWORD_TOGGLE,
-                ),
-        )
-
-        PasswordField(
-            value = uiState.passwordConfirmation,
-            errorMessage = uiState.passwordConfirmationError,
-            onValueChange = callbacks.onPasswordConfirmationChange,
-            focusRequester = passwordConfirmFocus,
-            imeAction = ImeAction.Done,
-            onDone = callbacks.onSubmit,
-            config =
-                PasswordFieldConfig(
-                    labelId = R.string.register_pwd_confirm_label,
-                    placeholderId = R.string.register_pwd_confirm_placeholder,
-                    showToggleId = R.string.register_visibility_show,
-                    hideToggleId = R.string.register_visibility_hide,
-                    fieldTestTag = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
-                    toggleTestTag = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
-                ),
+        RegisterPasswordFields(
+            uiState = uiState,
+            callbacks = callbacks,
+            passwordFocus = passwordFocus,
+            passwordConfirmFocus = passwordConfirmFocus,
         )
 
         RoleSelector(
@@ -258,21 +198,11 @@ internal fun RegisterBody(
             onSelect = callbacks.onRoleChange,
         )
 
-        AuthErrorBanner(errorType = uiState.errorMessage, testTag = RegisterTestTags.ERROR_BANNER)
-
-        Spacer(modifier = Modifier.height(8.dp))
-        AuthSubmitButton(
-            labelRes = R.string.register_cta,
+        RegisterActions(
+            errorType = uiState.errorMessage,
             isLoading = uiState.isLoading,
-            testTag = RegisterTestTags.SUBMIT,
-            loadingTestTag = RegisterTestTags.LOADING,
-            onClick = callbacks.onSubmit,
-        )
-        AuthSecondaryButton(
-            labelRes = R.string.register_have_account,
-            enabled = !uiState.isLoading,
-            testTag = RegisterTestTags.HAVE_ACCOUNT,
-            onClick = callbacks.onHaveAccountClicked,
+            onSubmit = callbacks.onSubmit,
+            onHaveAccountClicked = callbacks.onHaveAccountClicked,
         )
     }
 
@@ -285,6 +215,132 @@ internal fun RegisterBody(
                 uiState.passwordConfirmationError,
             ),
         requesters = listOf(nameFocus, emailFocus, passwordFocus, passwordConfirmFocus),
+    )
+}
+
+/**
+ * Os campos de identidade: nome e e-mail.
+ *
+ * O nome é o único campo do cadastro que não tem componente próprio — o
+ * `EmailField` e o `PasswordField` são compartilhados com o login. Aqui
+ * ele ganha um par, e o formulário passa a listar as suas seções.
+ */
+@Composable
+private fun RegisterIdentityFields(
+    uiState: AuthUiState,
+    callbacks: RegisterCallbacks,
+    nameFocus: FocusRequester,
+    emailFocus: FocusRequester,
+    passwordFocus: FocusRequester,
+) {
+    OutlinedTextField(
+        value = uiState.name,
+        onValueChange = callbacks.onNameChange,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(nameFocus)
+                .testTag(RegisterTestTags.NAME_FIELD),
+        label = { Text(text = stringResource(id = R.string.register_name_label)) },
+        placeholder = { Text(text = stringResource(id = R.string.register_name_placeholder)) },
+        singleLine = true,
+        isError = uiState.nameError != null,
+        supportingText =
+            uiState.nameError?.let { errorType ->
+                { Text(text = errorType.text()) }
+            },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions =
+            KeyboardActions(
+                onNext = { emailFocus.requestFocus() },
+                onDone = { emailFocus.requestFocus() },
+            ),
+    )
+
+    EmailField(
+        value = uiState.email,
+        errorMessage = uiState.emailError,
+        onValueChange = callbacks.onEmailChange,
+        focusRequester = emailFocus,
+        imeAction = ImeAction.Next,
+        onNext = { passwordFocus.requestFocus() },
+        config =
+            EmailFieldConfig(
+                labelId = R.string.register_email_label,
+                placeholderId = R.string.register_email_placeholder,
+                fieldTestTag = RegisterTestTags.EMAIL_FIELD,
+            ),
+    )
+}
+
+/** Os dois campos de senha: a senha e a confirmação. */
+@Composable
+private fun RegisterPasswordFields(
+    uiState: AuthUiState,
+    callbacks: RegisterCallbacks,
+    passwordFocus: FocusRequester,
+    passwordConfirmFocus: FocusRequester,
+) {
+    PasswordField(
+        value = uiState.password,
+        errorMessage = uiState.passwordError,
+        onValueChange = callbacks.onPasswordChange,
+        focusRequester = passwordFocus,
+        imeAction = ImeAction.Next,
+        onDone = { passwordConfirmFocus.requestFocus() },
+        config =
+            PasswordFieldConfig(
+                labelId = R.string.register_pwd_label,
+                placeholderId = R.string.register_pwd_placeholder,
+                showToggleId = R.string.register_visibility_show,
+                hideToggleId = R.string.register_visibility_hide,
+                fieldTestTag = RegisterTestTags.PASSWORD_FIELD,
+                toggleTestTag = RegisterTestTags.PASSWORD_TOGGLE,
+            ),
+    )
+
+    PasswordField(
+        value = uiState.passwordConfirmation,
+        errorMessage = uiState.passwordConfirmationError,
+        onValueChange = callbacks.onPasswordConfirmationChange,
+        focusRequester = passwordConfirmFocus,
+        imeAction = ImeAction.Done,
+        onDone = callbacks.onSubmit,
+        config =
+            PasswordFieldConfig(
+                labelId = R.string.register_pwd_confirm_label,
+                placeholderId = R.string.register_pwd_confirm_placeholder,
+                showToggleId = R.string.register_visibility_show,
+                hideToggleId = R.string.register_visibility_hide,
+                fieldTestTag = RegisterTestTags.PASSWORD_CONFIRM_FIELD,
+                toggleTestTag = RegisterTestTags.PASSWORD_CONFIRM_TOGGLE,
+            ),
+    )
+}
+
+/** O erro do envio, o botão de envio e o atalho para o login. */
+@Composable
+private fun RegisterActions(
+    errorType: AuthErrorType?,
+    isLoading: Boolean,
+    onSubmit: () -> Unit,
+    onHaveAccountClicked: () -> Unit,
+) {
+    AuthErrorBanner(errorType = errorType, testTag = RegisterTestTags.ERROR_BANNER)
+
+    Spacer(modifier = Modifier.height(8.dp))
+    AuthSubmitButton(
+        labelRes = R.string.register_cta,
+        isLoading = isLoading,
+        testTag = RegisterTestTags.SUBMIT,
+        loadingTestTag = RegisterTestTags.LOADING,
+        onClick = onSubmit,
+    )
+    AuthSecondaryButton(
+        labelRes = R.string.register_have_account,
+        enabled = !isLoading,
+        testTag = RegisterTestTags.HAVE_ACCOUNT,
+        onClick = onHaveAccountClicked,
     )
 }
 
