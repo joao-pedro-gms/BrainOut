@@ -34,12 +34,6 @@ dependencies {
     testImplementation(libs.mockk)
 }
 
-detekt {
-    config.setFrom(rootProject.files("config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    autoCorrect = false
-}
-
 jacoco {
     toolVersion = libs.versions.jacoco.get()
 }

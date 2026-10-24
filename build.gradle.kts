@@ -154,6 +154,21 @@ subprojects {
     }
 }
 
+// ---- Detekt: uma config para o projeto inteiro ----------------------------
+// O bloco `detekt { }` estava nos OITO módulos, com o mesmo conteúdo —
+// uma mudança de regra na config seria oito edições, e um módulo novo
+// podia ficar com a config divergente. A config é única
+// (`config/detekt/detekt.yml`) e vale para todos.
+subprojects {
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+            config.setFrom(rootProject.files("config/detekt/detekt.yml"))
+            buildUponDefaultConfig = true
+            autoCorrect = false
+        }
+    }
+}
+
 // ---- Toolchain de teste comum -----------------------------------------------
 // A base de teste de todo o projeto é a mesma: JUnit 4, Truth (as
 // asserções) e kotlinx-coroutines-test (runTest). Ela estava declarada
