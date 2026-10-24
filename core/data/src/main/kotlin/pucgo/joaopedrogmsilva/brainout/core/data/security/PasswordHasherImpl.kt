@@ -164,6 +164,8 @@ class PasswordHasherImpl(
             append(BASE64_URL_ENCODER.encodeToString(derived))
         }
 
+    // Guard clauses: cada campo do hash é validado no ponto em que é
+    // extraído, e um hash corrompido sai já no primeiro campo inválido.
     @Suppress("ReturnCount")
     private fun parseHash(stored: String): ParsedHash? {
         val parts = stored.split(HASH_FIELD_SEPARATOR)
