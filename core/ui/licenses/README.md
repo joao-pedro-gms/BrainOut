@@ -3,7 +3,7 @@
 Índice dos textos de licença que acompanham os binários empacotados em
 `core/ui/src/main/res/`. Proveniência detalhada (origem fixada por commit,
 ferramenta, versão, sha256 e como reproduzir) está em
-[`docs/design/ASSETS.md`](../../docs/design/ASSETS.md).
+[`docs/design/ASSETS.md`](../../../docs/design/ASSETS.md).
 
 | Arquivo | Assets cobertos | Licença | Origem do texto |
 |---|---|---|---|

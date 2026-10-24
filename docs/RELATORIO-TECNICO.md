@@ -4,7 +4,7 @@
 > Desenvolvimento de Sistemas — PUC Goiás — 2026/2.
 >
 > Insumo direto do item **N2 item 4** do documento norteador
-> ([Documentos/Documento Norteador Projeto Integrador ADS 2026-2.pdf](../Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%2026-2.pdf)).
+> ([Documentos/Documento Norteador Projeto Integrador ADS 2026-2.pdf](../Documentos/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf)).
 > Consolida o mapeamento R1–R14 → componente, a cobertura de testes, o
 > pipeline de CI/CD, instruções de instalação e credenciais por perfil.
 >
