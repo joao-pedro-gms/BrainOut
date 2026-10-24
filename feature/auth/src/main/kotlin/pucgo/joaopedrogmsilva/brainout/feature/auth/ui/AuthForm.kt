@@ -4,6 +4,8 @@ package pucgo.joaopedrogmsilva.brainout.feature.auth.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -11,9 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -33,6 +38,36 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 // carregamento, botão secundário e o foco no primeiro campo inválido.
 // Estas funções são a implementação única; cada tela passa só os
 // textos e as tags que diferem.
+
+/**
+ * O esqueleto da tela: `Scaffold` com a barra superior e o fundo do tema.
+ *
+ * Login e Cadastro tinham o mesmo `Scaffold` escrito duas vezes — o que
+ * muda entre as duas telas é só o título da barra.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AuthScreenScaffold(
+    titleRes: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(id = titleRes),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+        content = content,
+    )
+}
 
 /**
  * Esqueleto comum dos formulários.
