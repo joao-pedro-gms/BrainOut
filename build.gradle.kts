@@ -154,6 +154,31 @@ subprojects {
     }
 }
 
+// ---- SDK: uma versão só para o projeto inteiro ---------------------------
+// `compileSdk` e `minSdk` estavam declarados nos sete módulos Android —
+// sete cópias do mesmo número. O SDK alvo é uma decisão do **projeto**:
+// a AGP exige coerência entre os módulos do mesmo build (o metadado do
+// AAR), então divergir era um erro silencioso esperando acontecer.
+//
+// O `targetSdk` fica só no `:app`, onde ele faz sentido (é o que a
+// loja lê), e o alvo do bytecode fica por módulo — o `kotlin { }` do
+// AGP 9 fica dentro de `android { }` e não é alcançável pela API
+// pública da AGP.
+subprojects {
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+            compileSdk = 37
+            defaultConfig { minSdk = 24 }
+        }
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+            compileSdk = 37
+            defaultConfig { minSdk = 24 }
+        }
+    }
+}
+
 // ---- Testes unitários: os recursos Android entram no classpath --------
 // DEF-23b — os testes de UI Compose (`createComposeRule` roda em JVM via
 // Robolectric) precisam dos recursos Android mesclados no classpath de

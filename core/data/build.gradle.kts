@@ -13,10 +13,8 @@ plugins {
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout.core.data"
-    compileSdk = 37
 
     defaultConfig {
-        minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

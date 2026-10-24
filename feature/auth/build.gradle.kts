@@ -12,10 +12,8 @@ plugins {
 
 android {
     namespace = "pucgo.joaopedrogmsilva.brainout.feature.auth"
-    compileSdk = 37
 
     defaultConfig {
-        minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
