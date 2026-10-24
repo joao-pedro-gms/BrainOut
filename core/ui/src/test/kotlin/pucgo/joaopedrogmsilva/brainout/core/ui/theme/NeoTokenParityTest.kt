@@ -3,7 +3,9 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -18,6 +20,9 @@ import org.junit.Test
  * mora no documento, não no código.
  *
  * Nada aqui replica constantes: os valores esperados vêm do arquivo.
+ * Cada grupo é lido por inteiro e comparado com o conjunto de tokens do
+ * Kotlin — um token novo no contrato sem o par correspondente (e vice-versa)
+ * reprova, e o nome do token no código vira a chave da comparação.
  */
 class NeoTokenParityTest {
     private val json: String = readTokensJson()
@@ -25,6 +30,22 @@ class NeoTokenParityTest {
     private fun hexToColor(hex: String): Color {
         val value = hex.removePrefix("#").toLong(16)
         return Color(0xFF000000L or value)
+    }
+
+    /**
+     * Compara um grupo numérico do JSON com os tokens Kotlin, pelo nome.
+     *
+     * Os dois lados precisam ter exatamente os mesmos nomes: token novo
+     * no Kotlin sem par no contrato (e vice-versa) reprova.
+     */
+    private fun assertDpParity(
+        declared: Map<String, Int>,
+        implemented: Map<String, Dp>,
+    ) {
+        assertThat(implemented.keys).containsExactlyElementsIn(declared.keys)
+        declared.forEach { (name, value) ->
+            assertThat(implemented.getValue(name)).isEqualTo(value.dp)
+        }
     }
 
     @Test
@@ -74,44 +95,54 @@ class NeoTokenParityTest {
 
     @Test
     fun `raios declarados batem com os tokens`() {
-        assertThat(NeoRadii.none).isEqualTo(0.dp)
-        assertThat(NeoRadii.chip).isEqualTo(4.dp)
-        assertThat(NeoRadii.field).isEqualTo(4.dp)
-        assertThat(NeoRadii.button).isEqualTo(8.dp)
-        assertThat(NeoRadii.card).isEqualTo(8.dp)
-        assertThat(NeoRadii.menu).isEqualTo(8.dp)
-        assertThat(NeoRadii.modal).isEqualTo(16.dp)
+        val declared = numericGroupFrom(json, "radii")
+        assertThat(declared).hasSize(7)
+        val implemented =
+            mapOf(
+                "none" to NeoRadii.none,
+                "chip" to NeoRadii.chip,
+                "field" to NeoRadii.field,
+                "button" to NeoRadii.button,
+                "card" to NeoRadii.card,
+                "menu" to NeoRadii.menu,
+                "modal" to NeoRadii.modal,
+            )
+        assertDpParity(declared, implemented)
     }
 
     @Test
     fun `bordas declaradas batem com os tokens`() {
-        assertThat(NeoBorders.subtle).isEqualTo(1.dp)
-        assertThat(NeoBorders.default).isEqualTo(2.dp)
-        assertThat(NeoBorders.focus).isEqualTo(3.dp)
-        assertThat(NeoBorders.focusGap).isEqualTo(2.dp)
+        val declared = numericGroupFrom(json, "borders")
+        assertThat(declared).hasSize(4)
+        val implemented =
+            mapOf(
+                "subtle" to NeoBorders.subtle,
+                "default" to NeoBorders.default,
+                "focus" to NeoBorders.focus,
+                "focusGap" to NeoBorders.focusGap,
+            )
+        assertDpParity(declared, implemented)
     }
 
     @Test
-    fun `sombra rigida nao tem blur nem spread no JSON nem no Kotlin`() {
-        val shadows = listOf(NeoShadows.none, NeoShadows.small, NeoShadows.medium, NeoShadows.display)
-        shadows.forEach { shadow ->
-            assertThat(shadow.blur).isEqualTo(0.dp)
-            assertThat(shadow.spread).isEqualTo(0.dp)
-        }
-        assertThat(listOf(NeoShadows.none, NeoShadows.small, NeoShadows.medium, NeoShadows.display))
-            .containsExactly(
-                NeoShadow(0.dp, 0.dp, 0.dp, 0.dp),
-                NeoShadow(2.dp, 2.dp, 0.dp, 0.dp),
-                NeoShadow(4.dp, 4.dp, 0.dp, 0.dp),
-                NeoShadow(6.dp, 6.dp, 0.dp, 0.dp),
+    fun `tamanhos declarados batem com os tokens`() {
+        val declared = numericGroupFrom(json, "sizes")
+        assertThat(declared).hasSize(11)
+        val implemented =
+            mapOf(
+                "touchMin" to NeoSizes.touchMin,
+                "touchGap" to NeoSizes.touchGap,
+                "buttonMinHeight" to NeoSizes.buttonMinHeight,
+                "fieldMinHeight" to NeoSizes.fieldMinHeight,
+                "fabMinHeight" to NeoSizes.fabMinHeight,
+                "rowMinHeight" to NeoSizes.rowMinHeight,
+                "icon" to NeoSizes.icon,
+                "iconMeta" to NeoSizes.iconMeta,
+                "iconEmpty" to NeoSizes.iconEmpty,
+                "badgeMinHeight" to NeoSizes.badgeMinHeight,
+                "navMinHeight" to NeoSizes.navMinHeight,
             )
-        // O JSON declara exatamente 4 sombras (none/small/medium/display).
-        val declaredShadowNames =
-            json
-                .substringAfter("\"shadows\"")
-                .substringBefore("\"sizes\"")
-                .let { Regex("\"(\\w+)\"\\s*:\\s*\\{").findAll(it).map { m -> m.groupValues[1] }.toList() }
-        assertThat(declaredShadowNames).containsExactly("none", "small", "medium", "display")
+        assertDpParity(declared, implemented)
     }
 
     @Test
@@ -125,28 +156,70 @@ class NeoTokenParityTest {
                 NeoSizes.rowMinHeight,
             )
         sizes.forEach { assertThat(it.value).isAtLeast(48f) }
-        assertThat(NeoSizes.icon).isEqualTo(24.dp)
-        assertThat(NeoSizes.iconMeta).isEqualTo(20.dp)
-        assertThat(NeoSizes.iconEmpty).isEqualTo(32.dp)
-        assertThat(NeoSizes.badgeMinHeight).isEqualTo(28.dp)
-        assertThat(NeoSizes.navMinHeight).isEqualTo(80.dp)
     }
 
     @Test
     fun `breakpoints e margens batem com o JSON`() {
-        assertThat(NeoLayout.mediumMinWidth).isEqualTo(600.dp)
-        assertThat(NeoLayout.expandedMinWidth).isEqualTo(840.dp)
-        assertThat(NeoLayout.largeMinWidth).isEqualTo(1200.dp)
-        assertThat(NeoLayout.compactHeightMaxExclusive).isEqualTo(480.dp)
-        assertThat(NeoLayout.compactMargin).isEqualTo(16.dp)
-        assertThat(NeoLayout.mediumMargin).isEqualTo(24.dp)
-        assertThat(NeoLayout.expandedMargin).isEqualTo(32.dp)
-        assertThat(NeoLayout.formMaxWidth).isEqualTo(480.dp)
-        assertThat(NeoLayout.contentMaxWidth).isEqualTo(1200.dp)
+        val declared = numericGroupFrom(json, "layout")
+        assertThat(declared).hasSize(9)
+        val implemented =
+            mapOf(
+                "mediumMinWidth" to NeoLayout.mediumMinWidth,
+                "expandedMinWidth" to NeoLayout.expandedMinWidth,
+                "largeMinWidth" to NeoLayout.largeMinWidth,
+                "compactHeightMaxExclusive" to NeoLayout.compactHeightMaxExclusive,
+                "compactMargin" to NeoLayout.compactMargin,
+                "mediumMargin" to NeoLayout.mediumMargin,
+                "expandedMargin" to NeoLayout.expandedMargin,
+                "formMaxWidth" to NeoLayout.formMaxWidth,
+                "contentMaxWidth" to NeoLayout.contentMaxWidth,
+            )
+        assertDpParity(declared, implemented)
+    }
+
+    @Test
+    fun `os slots de Shapes batem com o JSON`() {
+        val declared = numericGroupFrom(json, "materialShapes")
+        assertThat(declared).hasSize(5)
+        val implemented =
+            mapOf(
+                "extraSmall" to NeoShapes.extraSmall,
+                "small" to NeoShapes.small,
+                "medium" to NeoShapes.medium,
+                "large" to NeoShapes.large,
+                "extraLarge" to NeoShapes.extraLarge,
+            )
+        assertThat(implemented.keys).containsExactlyElementsIn(declared.keys)
+        declared.forEach { (name, value) ->
+            assertThat(implemented.getValue(name)).isEqualTo(RoundedCornerShape(value.dp))
+        }
+    }
+
+    @Test
+    fun `sombra rigida nao tem blur nem spread no JSON nem no Kotlin`() {
+        val declared = objectGroupFrom(json, "shadows")
+        assertThat(declared).hasSize(4)
+        val implemented =
+            mapOf(
+                "none" to NeoShadows.none,
+                "small" to NeoShadows.small,
+                "medium" to NeoShadows.medium,
+                "display" to NeoShadows.display,
+            )
+        assertThat(implemented.keys).containsExactlyElementsIn(declared.keys)
+        declared.forEach { (name, fields) ->
+            val shadow = implemented.getValue(name)
+            assertThat(shadow.x).isEqualTo(fields.getValue("x").dp)
+            assertThat(shadow.y).isEqualTo(fields.getValue("y").dp)
+            assertThat(shadow.blur).isEqualTo(fields.getValue("blur").dp)
+            assertThat(shadow.spread).isEqualTo(fields.getValue("spread").dp)
+            assertThat(shadow.blur).isEqualTo(0.dp)
+            assertThat(shadow.spread).isEqualTo(0.dp)
+        }
     }
 
     @Test
     fun `scrim e 56 por cento`() {
-        assertThat(NeoScrim.alpha).isWithin(0.0001f).of(0.56f)
+        assertThat(NeoScrim.alpha).isWithin(0.0001f).of(numberFrom(json, "scrimAlpha"))
     }
 }
