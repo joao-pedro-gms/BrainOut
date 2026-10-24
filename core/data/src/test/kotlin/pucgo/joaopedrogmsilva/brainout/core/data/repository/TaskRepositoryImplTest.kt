@@ -105,7 +105,7 @@ class TaskRepositoryImplTest {
         }
 
     @Test
-    fun `changeStatus rejeita transicao invalida sem enfileirar`() =
+    fun `changeStatus rejeita transicao invalida sem gravar`() =
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
@@ -121,7 +121,7 @@ class TaskRepositoryImplTest {
         }
 
     @Test
-    fun `delete de tarefa ausente e idempotente sem enfileirar`() =
+    fun `delete de tarefa ausente e idempotente`() =
         runTest {
             val localTransaction = FakeLocalTransaction()
             val repository = TaskRepositoryImpl(FakeTaskDao(), FakeProjectDao(FakeTaskDao()), localTransaction)
@@ -130,7 +130,7 @@ class TaskRepositoryImplTest {
         }
 
     @Test
-    fun `delete de tarefa ativa enfileira DELETE e chama cascadeDeleteTask`() =
+    fun `delete de tarefa ativa apaga a tarefa e dispara o cascade`() =
         runTest {
             val taskDao = FakeTaskDao()
             val projectDao = FakeProjectDao(taskDao)
@@ -429,8 +429,11 @@ class TaskRepositoryImplTest {
     }
 
     /**
-     * Fake de [LocalTransaction] que captura a ordem de enfileiramento
-     * para validar a escrita dual.
+     * Fake mínimo de [LocalTransaction]: executa o bloco.
+     *
+     * A escrita dupla (Room + `pending_ops`) deixou de existir com a
+     * remoção da camada de rede (#212) — não há mais ordem de
+     * enfileiramento para capturar.
      */
     private class FakeLocalTransaction : LocalTransaction {
         override suspend fun <T> run(block: suspend () -> T): T = block()
