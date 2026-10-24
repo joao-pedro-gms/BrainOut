@@ -10,7 +10,7 @@ import javax.inject.Inject
 class HolidayRepositoryImpl
     @Inject
     constructor() : HolidayRepository {
-        @Suppress("MagicNumber")
+        @Suppress("MagicNumber") // As constantes do calendário (1583..9999, meses e dias) são o próprio assunto.
         override suspend fun getHolidays(year: Int): List<Holiday> {
             require(year in 1583..9999) { "Ano fora do calendário gregoriano suportado" }
             val fixed =
@@ -44,7 +44,7 @@ class HolidayRepositoryImpl
         ): Holiday = Holiday(LocalDate.of(year, month, day), name, "national")
 
         /** Computus gregoriano (Meeus/Jones/Butcher), independente de rede ou fuso horário. */
-        @Suppress("MagicNumber")
+        @Suppress("MagicNumber") // As constantes do algoritmo de Meeus/Jones/Butcher são o próprio assunto.
         private fun easter(year: Int): LocalDate {
             val a = year % 19
             val b = year / 100

@@ -79,7 +79,7 @@ class PasswordHasherImpl(
     @Inject
     constructor(pepper: PepperProvider) : this(pepper, Dispatchers.IO)
 
-    @Suppress("MagicNumber")
+    @Suppress("MagicNumber") // As constantes do PBKDF2 são o próprio assunto.
     override suspend fun hash(rawPassword: String): String {
         require(rawPassword.isNotEmpty()) { "rawPassword não pode ser vazia" }
 
