@@ -205,3 +205,65 @@ internal fun themeFrom(
         .findAll(block)
         .associate { it.groupValues[1] to it.groupValues[2] }
 }
+
+/**
+ * O corpo do objeto que vem depois de `"group"`, com as chaves
+ * equilibradas.
+ *
+ * Os grupos do `tokens.json` são objetos simples (`"radii"`) ou objetos
+ * de objetos (`"shadows"`). O corte por chaves pega o grupo inteiro sem
+ * depender de qual grupo vem depois.
+ */
+internal fun objectAfter(
+    json: String,
+    group: String,
+): String {
+    val start = json.indexOf("\"$group\"")
+    require(start >= 0) { "grupo ausente no JSON: $group" }
+    val open = json.indexOf('{', start)
+    var depth = 0
+    for (i in open until json.length) {
+        when (json[i]) {
+            '{' -> depth++
+            '}' -> {
+                depth--
+                if (depth == 0) return json.substring(open + 1, i)
+            }
+        }
+    }
+    error("objeto nao fechado no JSON: $group")
+}
+
+/** Extrai `nome -> valor` de um grupo numérico do JSON (`"radii"`, `"sizes"`, …). */
+internal fun numericGroupFrom(
+    json: String,
+    group: String,
+): Map<String, Int> =
+    Regex("\"([A-Za-z]+)\"\\s*:\\s*(\\d+)")
+        .findAll(objectAfter(json, group))
+        .associate { it.groupValues[1] to it.groupValues[2].toInt() }
+
+/** Extrai `nome -> campo -> valor` de um grupo de objetos do JSON (`"shadows"`). */
+internal fun objectGroupFrom(
+    json: String,
+    group: String,
+): Map<String, Map<String, Int>> =
+    Regex("\"([A-Za-z]+)\"\\s*:\\s*\\{([^}]*)\\}")
+        .findAll(objectAfter(json, group))
+        .associate { nome ->
+            nome.groupValues[1] to
+                Regex("\"([A-Za-z]+)\"\\s*:\\s*(-?\\d+)")
+                    .findAll(nome.groupValues[2])
+                    .associate { it.groupValues[1] to it.groupValues[2].toInt() }
+        }
+
+/** Extrai um número (aceita decimal) de uma chave do JSON (`"scrimAlpha"`). */
+internal fun numberFrom(
+    json: String,
+    key: String,
+): Float {
+    val after = json.substringAfter("\"$key\"")
+    val value = Regex("(-?\\d+(?:\\.\\d+)?)").find(after)?.groupValues?.get(1)
+    requireNotNull(value) { "chave ausente no JSON: $key" }
+    return value.toFloat()
+}
