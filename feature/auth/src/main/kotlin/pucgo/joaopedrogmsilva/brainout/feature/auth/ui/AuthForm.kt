@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -24,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 
 // Peças compartilhadas pelos formulários de Login e Cadastro.
@@ -54,8 +53,7 @@ internal fun AuthFormScaffold(
             modifier
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .neoContentWidth(form = true)
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.sm)
+                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin, form = true)
                 .testTag(scrollTestTag),
         verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
         content = content,

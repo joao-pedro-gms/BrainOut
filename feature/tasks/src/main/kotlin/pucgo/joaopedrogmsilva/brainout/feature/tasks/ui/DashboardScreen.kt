@@ -40,7 +40,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoContentWidth
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
@@ -108,8 +108,7 @@ internal fun DashboardContent(
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .neoContentWidth()
-                .padding(horizontal = LocalNeoWindowInfo.current.margin, vertical = 12.dp),
+                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // DEF-22 — o título saiu daqui e foi para a `TasksTopBar`.
