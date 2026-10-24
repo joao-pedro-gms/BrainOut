@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -41,7 +40,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
@@ -112,40 +110,33 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = NeoSpacing.xxs, bottom = NeoSpacing.xxs),
                 )
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                    shape = RoundedCornerShape(NeoRadii.card),
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        section.options.forEachIndexed { index, option ->
-                            SettingsRow(
-                                option = option,
-                                onClick = {
-                                    when (option.kind) {
-                                        SettingsRowKind.SignOut -> onSignOut()
-                                        SettingsRowKind.Placeholder ->
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(comingSoonMessage)
-                                            }
-                                        // Ações locais (backup) não
-                                        // passam por aqui: a
-                                        // `BackupSection` as executa.
-                                        SettingsRowKind.Local -> Unit
-                                    }
-                                },
+                SettingsCard {
+                    section.options.forEachIndexed { index, option ->
+                        SettingsRow(
+                            option = option,
+                            onClick = {
+                                when (option.kind) {
+                                    SettingsRowKind.SignOut -> onSignOut()
+                                    SettingsRowKind.Placeholder ->
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(comingSoonMessage)
+                                        }
+                                    // Ações locais (backup) não
+                                    // passam por aqui: a
+                                    // `BackupSection` as executa.
+                                    SettingsRowKind.Local -> Unit
+                                }
+                            },
+                        )
+                        if (index < section.options.lastIndex) {
+                            // DEF-22 — divisor com o token cheio:
+                            // `outline` puro marca 16.10:1 / 15.95:1;
+                            // com `alpha = 0.3f` a separação entre
+                            // linhas caía para 1.93:1 / 2.59:1, abaixo
+                            // do mínimo de 3:1 (WCAG §1.4.11).
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outline,
                             )
-                            if (index < section.options.lastIndex) {
-                                // DEF-22 — divisor com o token cheio:
-                                // `outline` puro marca 16.10:1 / 15.95:1;
-                                // com `alpha = 0.3f` a separação entre
-                                // linhas caía para 1.93:1 / 2.59:1, abaixo
-                                // do mínimo de 3:1 (WCAG §1.4.11).
-                                HorizontalDivider(
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            }
                         }
                     }
                 }

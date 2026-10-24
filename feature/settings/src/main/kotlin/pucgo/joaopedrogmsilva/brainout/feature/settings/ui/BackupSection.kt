@@ -5,12 +5,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupUiState
@@ -151,40 +147,33 @@ internal fun BackupContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
         )
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 1.dp,
-            shape = RoundedCornerShape(NeoRadii.card),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                SettingsRow(
-                    option =
-                        SettingsOption(
-                            SettingsRowKind.Local,
-                            "export_backup",
-                            R.string.settings_option_export_backup,
-                        ),
-                    onClick = onExport,
-                    testTag = BackupTestTags.EXPORT_ROW,
-                    // Enquanto uma operação está em andamento as linhas
-                    // ficam inativas: sem isso, um segundo toque abriria
-                    // outro seletor de arquivos por cima do primeiro.
-                    enabled = !state.isBusy,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                SettingsRow(
-                    option =
-                        SettingsOption(
-                            SettingsRowKind.Local,
-                            "restore_backup",
-                            R.string.settings_option_restore_backup,
-                        ),
-                    onClick = onRestore,
-                    testTag = BackupTestTags.RESTORE_ROW,
-                    enabled = !state.isBusy,
-                )
-            }
+        SettingsCard {
+            SettingsRow(
+                option =
+                    SettingsOption(
+                        SettingsRowKind.Local,
+                        "export_backup",
+                        R.string.settings_option_export_backup,
+                    ),
+                onClick = onExport,
+                testTag = BackupTestTags.EXPORT_ROW,
+                // Enquanto uma operação está em andamento as linhas
+                // ficam inativas: sem isso, um segundo toque abriria
+                // outro seletor de arquivos por cima do primeiro.
+                enabled = !state.isBusy,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            SettingsRow(
+                option =
+                    SettingsOption(
+                        SettingsRowKind.Local,
+                        "restore_backup",
+                        R.string.settings_option_restore_backup,
+                    ),
+                onClick = onRestore,
+                testTag = BackupTestTags.RESTORE_ROW,
+                enabled = !state.isBusy,
+            )
         }
         Text(
             text = stringResource(id = R.string.settings_backup_description),
