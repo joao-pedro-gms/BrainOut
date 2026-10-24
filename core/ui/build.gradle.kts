@@ -106,9 +106,3 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
-
-detekt {
-    config.setFrom(rootProject.files("config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    autoCorrect = false
-}

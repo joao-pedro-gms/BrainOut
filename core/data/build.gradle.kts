@@ -129,9 +129,3 @@ dependencies {
     androidTestImplementation(libs.truth)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 }
-
-detekt {
-    config.setFrom(rootProject.files("config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    autoCorrect = false
-}
