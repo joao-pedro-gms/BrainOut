@@ -17,8 +17,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import java.time.Instant
@@ -210,33 +208,6 @@ class ProjectRepositoryImplTest {
         tagDao: TagDao = FakeTagDao(),
     ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, localTransaction)
 
-    private fun sampleProject(
-        id: String = "p1",
-        name: String = "Projeto",
-        owner: String = ownerId,
-    ): Project =
-        Project(
-            id = id,
-            name = name,
-            description = null,
-            ownerId = owner,
-            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-            isCompleted = false,
-        )
-
-    private fun sampleTag(
-        id: String = "t1",
-        ownerId: String = "u1",
-        name: String = "Tag",
-    ): Tag =
-        Tag(
-            id = id,
-            ownerId = ownerId,
-            name = name,
-            color = "#6750A4",
-            createdAt = Instant.parse("2026-01-01T00:00:00Z"),
-        )
-
     /**
      * Fake de [ProjectDao] usado por [ProjectRepositoryImpl]. Registra
      * as últimas chamadas para asserções e mantém a tabela de projetos.
@@ -345,10 +316,5 @@ class ProjectRepositoryImplTest {
         override suspend fun deleteById(id: String) {
             tags.remove(id)
         }
-    }
-
-    /** Fake mínimo de [LocalTransaction]. */
-    private class FakeLocalTransaction : LocalTransaction {
-        override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 }
