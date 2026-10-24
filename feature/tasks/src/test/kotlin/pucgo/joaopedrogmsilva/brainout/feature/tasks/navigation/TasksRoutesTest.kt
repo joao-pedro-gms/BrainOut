@@ -12,8 +12,8 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
-import androidx.navigation.createGraph
 import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.createGraph
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
@@ -82,9 +82,10 @@ class TasksRoutesTest {
  * público e devolve os filhos diretos, e um filho que é `NavGraph` tem os
  * seus. O `findNode` não serve aqui — ele busca só um nível.
  */
-private fun NavDestination.allRoutes(): List<String> = buildList {
-    route?.let { add(it) }
-    if (this@allRoutes is NavGraph) {
-        this@allRoutes.forEach { addAll(it.allRoutes()) }
+private fun NavDestination.allRoutes(): List<String> =
+    buildList {
+        route?.let { add(it) }
+        if (this@allRoutes is NavGraph) {
+            this@allRoutes.forEach { addAll(it.allRoutes()) }
+        }
     }
-}
