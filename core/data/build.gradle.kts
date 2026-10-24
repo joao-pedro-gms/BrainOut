@@ -43,6 +43,17 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            // A raiz aplica `isIncludeAndroidResources = true` em todo
+            // módulo Android; este módulo **opta por fora**: no modo
+            // legado de recursos do Robolectric, os testes de DataStore
+            // aqui quebram com "Failed to interact with raw FileDescriptor
+            // internals" — e eles não precisam dos recursos Android.
+            isIncludeAndroidResources = false
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

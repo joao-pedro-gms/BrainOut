@@ -52,11 +52,6 @@ android {
     // Robolectric; sem `isIncludeAndroidResources` os recursos do tema e
     // dos ícones não são resolvidos. Mesmo ajuste aplicado em
     // `:feature:tasks`.
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
-    }
 }
 
 dependencies {

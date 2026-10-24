@@ -46,11 +46,6 @@ android {
     // E4.5 — o teste Robolectric de seleção de ColorScheme precisa dos
     // recursos Android mesclados no classpath de teste para instanciar
     // ColorScheme/Color (Compose depende de Resources).
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
-    }
 }
 
 dependencies {
