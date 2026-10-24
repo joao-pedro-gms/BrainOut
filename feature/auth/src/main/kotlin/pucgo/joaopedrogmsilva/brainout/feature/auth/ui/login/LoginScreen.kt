@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +46,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthScreenScaffold
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
@@ -74,7 +72,6 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
  * @param viewModel injetado pelo Hilt; pode ser substituído por um
  *  fake nos `@Preview`/testes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -92,20 +89,7 @@ fun LoginScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.login_title),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
+    AuthScreenScaffold(titleRes = R.string.login_title, modifier = modifier) { innerPadding ->
         LoginBody(
             modifier =
                 Modifier
@@ -222,7 +206,6 @@ internal data class LoginCallbacks(
 )
 
 /** Toggle para tornar o campo de senha persistente entre composições. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PasswordField(
     value: String,
@@ -323,7 +306,6 @@ internal data class PasswordFieldConfig(
  * Wrapper interno do campo de e-mail para reuso entre Login e Register
  * sem duplicar lógica.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun EmailField(
     value: String,

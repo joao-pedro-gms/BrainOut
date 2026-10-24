@@ -19,14 +19,11 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +44,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthScreenScaffold
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
@@ -72,7 +70,6 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
  * @param viewModel injetado pelo Hilt; pode ser substituído por um
  *  fake nos `@Preview`/testes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
@@ -90,20 +87,7 @@ fun RegisterScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.register_title),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
+    AuthScreenScaffold(titleRes = R.string.register_title, modifier = modifier) { innerPadding ->
         RegisterBody(
             modifier =
                 Modifier
