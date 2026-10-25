@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -29,16 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoVisibilityToggle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
@@ -54,7 +50,6 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
-import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Tela de login — formulário funcional (E1.6).
@@ -243,35 +238,13 @@ internal fun PasswordField(
                 { Text(text = errorType.text()) }
             },
         trailingIcon = {
-            IconButton(
-                onClick = { passwordVisible = !passwordVisible },
-                modifier =
-                    Modifier
-                        .testTag(config.toggleTestTag)
-                        .semantics {
-                            contentDescription =
-                                if (passwordVisible) {
-                                    hideDescription
-                                } else {
-                                    showDescription
-                                }
-                        },
-            ) {
-                Icon(
-                    painter =
-                        if (passwordVisible) {
-                            painterResource(UiR.drawable.neo_ic_visibility_off)
-                        } else {
-                            painterResource(UiR.drawable.neo_ic_visibility)
-                        },
-                    contentDescription =
-                        if (passwordVisible) {
-                            hideDescription
-                        } else {
-                            showDescription
-                        },
-                )
-            }
+            NeoVisibilityToggle(
+                visible = passwordVisible,
+                showLabel = showDescription,
+                hideLabel = hideDescription,
+                onToggle = { passwordVisible = !passwordVisible },
+                modifier = Modifier.testTag(config.toggleTestTag),
+            )
         },
     )
 }
