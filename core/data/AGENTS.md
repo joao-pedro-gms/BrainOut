@@ -70,5 +70,9 @@ ficar dentro dela; quando uma segunda suíte precisar, ele sobe para
 arquivo próprio no pacote.
 
 Kover exige 60% de linhas. Não enfraquecer exclusões para fazer o gate passar.
-A dívida conhecida de lint NewApi de java.time/Base64 com minSdk24 permanece
-separada (#201): abortOnError=false não é evidência de ausência de problemas.
+A dívida de lint `NewApi` de `java.time`/`Base64` com minSdk 24 está **fechada**
+(DEF-63): o `coreLibraryDesugaring` está ligado neste módulo (ver
+`compileOptions` acima), então não há mais erro `[NewApi]` aqui — e o gate de
+lint voltou a ser rígido, como nos demais módulos. A política do gate mora na
+raiz (`build.gradle.kts`); este módulo só **opta por fora** da promoção de
+`MissingTranslation`, por não ter string de interface.

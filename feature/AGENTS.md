@@ -35,16 +35,17 @@ main/kotlin/pucgo/joaopedrogmsilva/brainout/feature/<name>/
   PackageMarker.kt                 // marcador de convenção (não deletar)
   navigation/<Name>Routes.kt       // só :feature:tasks (constantes + NavGraph)
   ui/                              // uma pasta por tela: Screen.kt + opcional ViewModel.kt
-  viewmodel/                       // SOMENTE :feature:auth usa este pacote
+  viewmodel/                       // :feature:auth e :feature:settings
 main/res/values/strings.xml        // pt-BR
 main/res/values-en/strings.xml      // en — obrigatório, paridade chave a chave
 test/kotlin/.../...                // espelha main; *Test.kt / *ViewModelTest / *ScreenTest
 androidTest/kotlin/...             // só :feature:auth usa (LoginScreenTest)
 ```
 
-**Inconsistência (sinalizar):** `:feature:auth` mantém VMs em pacote dedicado
-`viewmodel/` (AuthViewModel + AuthUiState). `:feature:projects` e
-`:feature:tasks` colacam VMs em `ui/<tela>/`. Ao criar feature nova, alinhe
+**Inconsistência (sinalizar):** `:feature:auth` e `:feature:settings`
+mantêm VMs em pacote dedicado `viewmodel/` (AuthViewModel +
+AuthUiState; BackupViewModel + BackupUiState). `:feature:projects` e
+`:feature:tasks` colocam VMs em `ui/<tela>/`. Ao criar feature nova, alinhe
 pelo padrão mais recente (colocation em `ui/`); não migrar `:feature:auth`
 agora (baixa prioridade, faria diff amplo).
 
@@ -84,19 +85,21 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
 |------------------------|-----------------------------------------------------------------------|--------------------------|----------------------|------------------------------------------------------------------------------------|
 | `:feature:auth` (R2)   | `ui/login/LoginScreen.kt`, `ui/register/RegisterScreen.kt`, `ui/splash/SplashScreen.kt` | `viewmodel/AuthViewModel.kt` + `AuthUiState.kt` + `AuthErrorType.kt` | — (`BrainOutRoutes`) | Único módulo com `androidTest/` (LoginScreenTest). VMs em `viewmodel/`. Erros tipados por enum, traduzidos na UI. |
 | `:feature:projects` (R3–R5) | `ui/home/HomeScreen.kt` (+ `HomeUser.kt`, `HomeProjectCard.kt`), `ui/projectdetail/ProjectDetailScreen.kt` (+ `DeadlineField.kt`) | `ui/home/HomeViewModel.kt`, `ui/projectdetail/ProjectDetailViewModel.kt` | — (`BrainOutRoutes`) | `DeadlineField.kt` é composable reutilizável de prazo; consome `CheckDeadlineUseCase` de `:core:domain`. |
-| `:feature:tasks` (R7–R8) | `ui/TasksScreen.kt`, `ui/DashboardScreen.kt`                        | `ui/TasksViewModel.kt`, `ui/DashboardViewModel.kt` | `navigation/TasksRoutes.kt` | **Única feature com `*Graph()`** (`tasksGraph()`/`dashboardGraph()`) — e por isso dona das rotas que usa; o `:app` as registra em `navigation/BrainOutShell.kt`. `DashboardScreenTest` roda em JVM via Robolectric (`@Config(qualifiers="pt-rBR")`). |
-| `:feature:settings` (R9) | `ui/SettingsScreen.kt` (+ `SettingsStructure.kt`)                   | — (sem VM)               | — (`BrainOutRoutes`) | **Maior gap de VM:** sem ViewModel; cobertura é `SettingsScreenTest` + `BackupSectionTest`. |
+| `:feature:tasks` (R7–R8) | `ui/TasksScreen.kt`, `ui/DashboardScreen.kt`                        | `ui/TasksViewModel.kt`, `ui/DashboardViewModel.kt` | `navigation/TasksRoutes.kt` | **Única feature com `*Graph()`** (`tasksGraph()`/`dashboardGraph()`) — e por isso dona das rotas que usa; o `:app` as registra em `navigation/BrainOutNavHost.kt`. `DashboardScreenTest` e `TasksScreenTest` rodam em JVM via Robolectric (`@Config(qualifiers="pt-rBR")`). |
+| `:feature:settings` (R9) | `ui/SettingsScreen.kt` (+ `SettingsStructure.kt`), `ui/BackupSection.kt` | `viewmodel/BackupViewModel.kt` + `BackupUiState.kt` | — (`BrainOutRoutes`) | A tela de configurações em si não tem VM; a seção de **backup** tem (`BackupViewModel`). Cobertura: `SettingsScreenTest` + `BackupSectionTest` + `BackupViewModelTest`. |
 
 ## CONVENTIONS
 
 - Nenhum módulo declara flavor e nenhum fixa `missingDimensionStrategy` —
   não existe dimensão `environment` para casar.
 - Toda string nova vai em `values/strings.xml` **e** `values-en/strings.xml`,
-  com a mesma chave. `:feature:auth`, `:feature:projects` e `:feature:settings`
-  usam `lint { abortOnError = true; error += "MissingTranslation" }`, que falha
-  o build se faltar a par — não suprimir. (`:feature:tasks` é a exceção: roda
-  `abortOnError = false` por causa de um `[NewApi]` pré-existente de
-  `Instant#parse` em `@Preview` com minSdk 24.)
+  com a mesma chave. O gate de i18n é **do projeto inteiro**: mora na raiz
+  (`build.gradle.kts`) e vale para todo módulo Android — `abortOnError = true`
+  com `MissingTranslation` como erro, então falta de par **quebra o build**.
+  Não suprima: traduza. A única exceção é `:core:data`, que **opta por fora**
+  (`error.remove("MissingTranslation")`) por não ter string de interface.
+  (`:feature:tasks` deixou de ser exceção no DEF-63: o `coreLibraryDesugaring`
+  eliminou o `[NewApi]` do `Instant#parse`.)
 - `@Preview` em todo composable reutilizável (telas inteiras e blocos
   parametrizados). Wrapper: **`BrainOutTheme`** de `:core:ui` — ela já delega
   para a identidade Neo (`BrainOutNeoTheme`), então basta
@@ -137,8 +140,10 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
 ## TESTES — pontos de atenção
 
 - Nomenclatura: `<Classe>Test.kt`. Tela Compose → `<Screen>ScreenTest.kt` (ex.:
-  `LoginScreenTest`, `DashboardScreenTest`). Não há mais `*RoutesTest.kt` — os
-  objetos de rota que só os testes usavam foram removidos.
+  `LoginScreenTest`, `DashboardScreenTest`). Os objetos de rota que só os
+  testes usavam foram removidos (`AuthRoutes`, `ProjectsRoutes`,
+  `SettingsRoutes`) — mas `TasksRoutesTest` **existe** e é o guard da
+  navegação: ele monta o grafo de verdade (ver a seção NAVEGAÇÃO).
 - **Task de execução:** `./gradlew :feature:<name>:testDebugUnitTest`.
   `:feature:auth` ainda tem `androidTest/` →
   `assembleDebugAndroidTest` / `connectedDebugAndroidTest`.
@@ -147,8 +152,13 @@ Estado verificado em `app/src/main/.../navigation/BrainOutNavHost.kt`:
 - `androidTest/` só em `:feature:auth` (gancho histórico para LoginScreenTest).
   Demais telas testam em JVM com Robolectric (`@Config(sdk=[34])`,
   `qualifiers="pt-rBR"` para garantir resolução de `values/`).
-- Gaps conhecidos: `:feature:settings` sem ViewModel (só `SettingsScreenTest` +
-  `BackupSectionTest`); `:feature:projects` e `:feature:tasks` sem Compose UI
-  test para `HomeScreen`, `ProjectDetailScreen` e `TasksScreen` (`:feature:tasks`
-  cobre `DashboardScreen`, mas não `TasksScreen`). Cobertura Compose não é gate
-  do CI; tratar antes do marco E5.1.
+- Gaps conhecidos: não há teste Compose **próprio** para os diálogos
+  `ProjectDialog` (`:feature:projects/ui/`), `ChangeTaskPriorityDialog`,
+  `DeleteProjectDialog` e `RenameTaskDialog` (`:feature:projects/ui/projectdetail/`),
+  nem para os componentes `DashboardMetricCard`, `DashboardProjectStateCard`
+  e `DashboardErrorBanner` (`:feature:tasks/ui/`) e `SettingsCard`
+  (`:feature:settings/ui/`). As **telas** têm teste: `HomeScreenTest`,
+  `ProjectDetailScreenTest`, `TasksScreenTest`, `DashboardScreenTest`,
+  `RegisterScreenTest`, `SplashScreenTest`, `SettingsScreenTest` e
+  `BackupSectionTest` — mais `LoginScreenTest` em `androidTest/`.
+  Cobertura Compose não é gate do CI; tratar antes do marco E5.1.

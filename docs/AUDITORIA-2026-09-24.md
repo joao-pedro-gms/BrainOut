@@ -991,3 +991,52 @@ formato. **Provado por sabotagem:** trocar o `ISO_LOCAL_DATE` por um
 
 688 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
 os gates de Kover de `:core:domain` e `:core:data` verdes.
+
+---
+
+## Os guias livres ainda descreviam um repositório que não existe (25/10/2026)
+
+A varredura por APIs legadas rendeu uma verificação lateral: os **guias
+livres** — os que não são do responsável (`feature/AGENTS.md`,
+`core/data/AGENTS.md`, `docs/CI-CD.md`, `docs/SMOKE-TEST-CRUD.md`) e o
+`build.gradle.kts` raiz — ainda afirmavam coisas que o próprio código
+contradizia. Cada afirmação foi conferida no código antes de ser
+corrigida; nenhuma foi "melhorada" por opinião.
+
+| Onde | O que o guia afirmava | O que o código faz |
+|---|---|---|
+| `feature/AGENTS.md` | "SOMENTE `:feature:auth` usa o pacote `viewmodel/`" | `:feature:settings` também usa (`BackupViewModel` + `BackupUiState`) |
+| `feature/AGENTS.md` | "`:feature:tasks` é a exceção: roda `abortOnError = false`" | o gate é **rígido em todo módulo Android** (regra na raiz, PR #357); a única exceção é `:core:data`, que opta por fora da promoção |
+| `feature/AGENTS.md` | "Não há mais `*RoutesTest.kt`" | o `TasksRoutesTest` existe e é o guard da navegação (PR #335) |
+| `feature/AGENTS.md` | "o `:app` as registra em `navigation/BrainOutShell.kt`" | `tasksGraph()`/`dashboardGraph()` são registradas no `BrainOutNavHost.kt` |
+| `feature/AGENTS.md` | "`:feature:settings` sem ViewModel" | existe `BackupViewModel`; a cobertura inclui `BackupViewModelTest` |
+| `feature/AGENTS.md` | "sem Compose UI test para `HomeScreen`, `ProjectDetailScreen` e `TasksScreen`" | os três **têm** teste (`HomeScreenTest`, `ProjectDetailScreenTest`, `TasksScreenTest`); os gaps reais são outros diálogos e componentes, agora listados um a um |
+| `core/data/AGENTS.md` | "a dívida de lint `NewApi` … permanece separada (#201): `abortOnError=false`" | o `coreLibraryDesugaring` está ligado (DEF-63) e o próprio `build.gradle.kts` do módulo diz que "a dívida está fechada" |
+| `docs/CI-CD.md` | "Três jobs; `unit-tests` e **`backend-integration`** dependem de `static-analysis`" | o terceiro job é `local-integration`; o `backend-integration` foi removido com a camada de rede |
+| `docs/CI-CD.md` | "Require linear history (evita merges de merge)" | o repositório adota **merge commit** — é o próprio `AGENTS.md` da raiz que manda mesclar assim |
+| `docs/CI-CD.md` | branch protection com **dois** checks | o `ci.yml` tem **três** jobs |
+| `docs/CI-CD.md` | Gradle 9.7.1, KGP 2.3.20, Room 2.8.4, detekt 1.23.7, Kover 0.9.9, Compose BOM 2024.10.01, Robolectric 4.15.1, "9 subprojetos", `ignoreFailures = true` | Gradle 9.8.1, KGP 2.4.21, Room 2.8.5, detekt 1.23.8, Kover 0.9.11, Compose BOM 2026.09.00, Robolectric 4.17, **8** módulos, gate **bloqueante** (DEF-10) |
+| `build.gradle.kts` (raiz) | "ktlint aplica no root e **cobre automaticamente** todos os subprojetos" | o plugin **não** se propaga — é o bloco `subprojects { }` mais abaixo que o registra em cada módulo (o próprio arquivo explica isso 110 linhas depois) |
+| `docs/SMOKE-TEST-CRUD.md` | "`MissingTranslation` permanece fatal no `lintDevDebug`" | a task é `lintDebug` (os flavors saíram no #212) |
+
+### A estrutura do `docs/CI-CD.md`
+
+O marcador "**Registro histórico anterior à migração local**" ficava na
+linha 32 — e o bloco histórico que ele protegia só terminava na linha 140.
+Ou seja, ~300 linhas de conteúdo **vigente** (gate de ktlint, workflows de
+release, cobertura, secrets, toolchain, branch protection) estavam dentro
+do bloco rotulado como histórico, e o marcador "Operação do pipeline
+atual" aparecia 380 linhas **depois** do conteúdo que ele deveria
+introduzir. Agora o marcador fica onde o registro realmente começa (antes
+de "Workflows") e o bloco histórico se fecha onde ele realmente termina
+(antes de "Escopo do gate de ktlint"), que virou seção de topo.
+
+### Verificação
+
+688 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e os
+gates de Kover de `:core:domain` e `:core:data` verdes. As âncoras dos
+documentos foram revalidadas: o único link quebrado que restava era o da
+seção removida ("Operação do pipeline atual"), e ele foi apontado para as
+seções que continuam válidas. As três âncoras restantes na auditoria
+(`#reverificacao-2026-10-08`) são falso positivo do verificador — a
+seção existe com um `<a id="…">` explícito.
