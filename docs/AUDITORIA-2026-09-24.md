@@ -1258,3 +1258,39 @@ A lista de defeitos em aberto estava desatualizada: citava seis
 (`DEF-24`, `DEF-74`, `DEF-75`, `DEF-76`, `DEF-77`, `DEF-78`) quando o
 ledger já registra **dez** — faltavam `DEF-79`, `DEF-80`, `DEF-81` e
 `DEF-82`. A contagem de corrigidos (71) continua a mesma.
+
+---
+
+## Os mappers do backup eram duas listas de campos (25/10/2026)
+
+A varredura de blocos repetidos **dentro do mesmo arquivo** achou, no
+`BackupRepositoryImpl`, o mesmo conjunto de campos escrito **duas
+vezes**: uma na exportação (entidade → payload) e outra na restauração
+(payload → entidade). O `BackupTask` virava `TaskEntity` e vice-versa,
+com a lista de campos repetida nos dois sentidos.
+
+O modo de falha: um campo novo no payload podia ser mapeado num sentido
+e esquecido no outro — e o dado se perdia **em silêncio**, sem erro nem
+aviso. O backup "funcionava", só não trazia o campo.
+
+`BackupMappers.kt` passa a ser o dono da conversão: uma função por
+sentido, dez no total. O `BackupRepositoryImpl` fica só com o I/O e o
+fluxo — de **413 para 323 linhas**, com o `readPayload` caindo de 69
+para ~35 linhas e o `applyPayload` de 60 para ~45.
+
+Um detalhe que a extração deixou explícito: o `BackupUser.toEntity()`
+recebe o `passwordHash` **por parâmetro**, porque ele não vem do
+arquivo. A conta que já existe conserva o hash local (derivado com o
+pepper deste aparelho) e a conta nova recebe a senha do backup,
+também derivada com o pepper local — o pepper do Android Keystore nunca
+sai do aparelho. Antes, essa regra estava escondida dentro do
+construtor da entidade.
+
+### Verificação
+
+694 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. As três
+suítes que guardam o contrato do backup — `BackupRepositoryImplTest`,
+`LocalBackupJourneyTest` e `BackupPayloadCodecTest` — passam sem
+alteração: o **formato do arquivo** não mudou, só mudou onde a
+conversão mora.

@@ -142,55 +142,11 @@ class BackupRepositoryImpl
                     user.id to order.toStorageKey()
                 }
             return BackupPayload(
-                users =
-                    users.map { user ->
-                        BackupUser(
-                            id = user.id,
-                            name = user.name,
-                            email = user.email,
-                            role = user.role,
-                            createdAtEpochMillis = user.createdAt.toEpochMilli(),
-                        )
-                    },
-                projects =
-                    projects.map { project ->
-                        BackupProject(
-                            id = project.id,
-                            ownerId = project.ownerId,
-                            name = project.name,
-                            description = project.description,
-                            createdAtEpochMillis = project.createdAt.toEpochMilli(),
-                            isCompleted = project.isCompleted,
-                        )
-                    },
-                tasks =
-                    tasks.map { task ->
-                        BackupTask(
-                            id = task.id,
-                            projectId = task.projectId,
-                            title = task.title,
-                            priorityCode = task.priorityCode,
-                            status = task.status,
-                            assigneeId = task.assigneeId,
-                            dueDateEpochMillis = task.dueDate?.toEpochMilli(),
-                            createdAtEpochMillis = task.createdAt.toEpochMilli(),
-                            completedAtEpochMillis = task.completedAt?.toEpochMilli(),
-                        )
-                    },
-                tags =
-                    tags.map { tag ->
-                        BackupTag(
-                            id = tag.id,
-                            ownerId = tag.ownerId,
-                            name = tag.name,
-                            color = tag.color,
-                            createdAtEpochMillis = tag.createdAt.toEpochMilli(),
-                        )
-                    },
-                projectTags =
-                    projectTags.map { ref ->
-                        BackupProjectTag(projectId = ref.project_id, tagId = ref.tag_id)
-                    },
+                users = users.map { it.toBackup() },
+                projects = projects.map { it.toBackup() },
+                tasks = tasks.map { it.toBackup() },
+                tags = tags.map { it.toBackup() },
+                projectTags = projectTags.map { it.toBackup() },
                 preferences =
                     BackupPreferences(
                         themeMode = themeMode,
@@ -249,45 +205,10 @@ class BackupRepositoryImpl
             passphrase: String,
         ): BackupRestoreResult {
             val restoredUsers = buildUsers(payload, passphrase)
-            val restoredProjects =
-                payload.projects.map { project ->
-                    ProjectEntity(
-                        id = project.id,
-                        ownerId = project.ownerId,
-                        name = project.name,
-                        description = project.description,
-                        createdAt = Instant.ofEpochMilli(project.createdAtEpochMillis),
-                        isCompleted = project.isCompleted,
-                    )
-                }
-            val restoredTasks =
-                payload.tasks.map { task ->
-                    TaskEntity(
-                        id = task.id,
-                        projectId = task.projectId,
-                        title = task.title,
-                        priorityCode = task.priorityCode,
-                        status = task.status,
-                        assigneeId = task.assigneeId,
-                        dueDate = task.dueDateEpochMillis?.let(Instant::ofEpochMilli),
-                        createdAt = Instant.ofEpochMilli(task.createdAtEpochMillis),
-                        completedAt = task.completedAtEpochMillis?.let(Instant::ofEpochMilli),
-                    )
-                }
-            val restoredTags =
-                payload.tags.map { tag ->
-                    TagEntity(
-                        id = tag.id,
-                        ownerId = tag.ownerId,
-                        name = tag.name,
-                        color = tag.color,
-                        createdAt = Instant.ofEpochMilli(tag.createdAtEpochMillis),
-                    )
-                }
-            val restoredLinks =
-                payload.projectTags.map { ref ->
-                    ProjectTagCrossRef(project_id = ref.projectId, tag_id = ref.tagId)
-                }
+            val restoredProjects = payload.projects.map { it.toEntity() }
+            val restoredTasks = payload.tasks.map { it.toEntity() }
+            val restoredTags = payload.tags.map { it.toEntity() }
+            val restoredLinks = payload.projectTags.map { it.toEntity() }
             writeAll(restoredUsers, restoredProjects, restoredTasks, restoredTags, restoredLinks)
             applyPreferences(payload)
             invalidateSession()
@@ -323,14 +244,7 @@ class BackupRepositoryImpl
             val existingHashes = backupDao.getAllUsers().associate { it.id to it.passwordHash }
             return payload.users.map { user ->
                 val hash = existingHashes[user.id] ?: passwordHasher.hash(passphrase)
-                UserEntity(
-                    id = user.id,
-                    name = user.name,
-                    email = user.email,
-                    passwordHash = hash,
-                    role = user.role,
-                    createdAt = Instant.ofEpochMilli(user.createdAtEpochMillis),
-                )
+                user.toEntity(hash)
             }
         }
 
