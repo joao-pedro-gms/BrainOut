@@ -37,9 +37,7 @@ class AuthenticateUserUseCase
             rawPassword: String,
         ): User {
             User.requireValidEmail(email)
-            require(rawPassword.length >= MIN_PASSWORD_LENGTH) {
-                "Senha deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
-            }
+            requireValidPassword(rawPassword)
 
             val normalizedEmail = email.trim()
             val user =

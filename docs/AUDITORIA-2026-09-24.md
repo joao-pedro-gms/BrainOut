@@ -819,3 +819,56 @@ existentes do `AuthViewModel` passaram **sem alteração** — a
 refatoração mudou a forma, não o contrato: credencial inválida
 continua no campo da senha, e-mail duplicado continua no campo do
 e-mail, e o cancelamento continua propagando.
+
+---
+
+## A mesma regra de senha reescrita em quatro lugares (25/10/2026)
+
+A varredura de **literais** repetidos achou uma string que aparece em
+dois arquivos do domínio: `"A senha do backup deve ter pelo menos
+$MIN_PASSWORD_LENGTH caracteres"`. O número já tinha uma fonte só
+(`MIN_PASSWORD_LENGTH`), mas a **guarda** — o `require` com a
+mensagem — estava reescrita em **quatro** casos de uso:
+
+| Onde | Forma |
+|---|---|
+| `CreateUserUseCase` | `require(rawPassword.length >= MIN_PASSWORD_LENGTH) { "Senha deve ter pelo menos … " }` |
+| `AuthenticateUserUseCase` | idem, com o mesmo texto |
+| `ExportBackupUseCase` | `require(passphrase.length >= MIN_PASSWORD_LENGTH) { "A senha do backup deve ter pelo menos … " }` |
+| `RestoreBackupUseCase` | idem, com o mesmo texto |
+
+O modo de falha é concreto: **a senha do backup é a senha da
+conta restaurada**. Se o export e o restore divergirem — um aceita
+uma senha que o outro recusa — o app grava um arquivo que ele mesmo
+não consegue restaurar, e o usuário só descobre no momento de
+restaurar, com o backup já feito.
+
+### A correção
+
+`PasswordPolicy.kt` é o dono da regra: a constante `MIN_PASSWORD_LENGTH`
+(movida de `CreateUserUseCase.kt`, **mesmo pacote** — nenhum import
+mudou) e a guarda `requireValidPassword(password, subject)`. Os quatro
+casos de uso agora chamam a guarda; o `subject` é o que distingue a
+senha de conta da senha de backup, e o texto sai de um lugar só.
+
+### A guarda é provada por sabotagem
+
+O teste (`PasswordPolicyTest`) compara os casos de uso **entre si** —
+comparar a constante com ela mesma não prova nada. Ele foi validado
+por duas sabotagens:
+
+- **Reintroduzir um `require` inline** no `AuthenticateUserUseCase`
+  com outro texto → `a mensagem de senha curta e a mesma em cada par
+  de casos de uso` **falha**.
+- **Mudar o limite** do `RestoreBackupUseCase` para `>` → `a senha no
+  limite e aceita pelos quatro casos de uso` **falha**.
+
+O texto da mensagem é fixado por literal ("pelo menos 8
+caracteres"), então o número também tem contrato escrito.
+
+### Verificação
+
+687 testes unitários, 0 falhas, 0 ignorados (3 novos no
+`PasswordPolicyTest`); `ktlintCheck`, `detekt` e os gates de Kover de
+`:core:domain` e `:core:data` verdes. O **texto** das mensagens e o
+**limite** não mudaram — só passaram a ter uma fonte só.
