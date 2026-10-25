@@ -20,7 +20,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +40,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
@@ -51,9 +49,9 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.FocusFirstInvalidField
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.rememberAuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
-import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -79,15 +77,7 @@ fun LoginScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            if (event is AuthEvent.NavigateHome) {
-                onLoginSuccess()
-            }
-        }
-    }
+    val uiState = rememberAuthUiState(viewModel, onLoginSuccess)
 
     AuthScreenScaffold(titleRes = R.string.login_title, modifier = modifier) { innerPadding ->
         LoginBody(

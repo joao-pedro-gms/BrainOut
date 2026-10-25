@@ -25,8 +25,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +36,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
@@ -53,9 +50,9 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldConfig
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.rememberAuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
-import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthEvent
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
 import androidx.compose.ui.semantics.Role as SemanticsRole
@@ -77,15 +74,7 @@ fun RegisterScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            if (event is AuthEvent.NavigateHome) {
-                onRegisterSuccess()
-            }
-        }
-    }
+    val uiState = rememberAuthUiState(viewModel, onRegisterSuccess)
 
     AuthScreenScaffold(titleRes = R.string.register_title, modifier = modifier) { innerPadding ->
         RegisterBody(
