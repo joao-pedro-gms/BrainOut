@@ -20,7 +20,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTextField
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
@@ -206,21 +206,21 @@ private fun RegisterIdentityFields(
     emailFocus: FocusRequester,
     passwordFocus: FocusRequester,
 ) {
-    OutlinedTextField(
+    NeoTextField(
         value = uiState.name,
         onValueChange = callbacks.onNameChange,
+        label = stringResource(id = R.string.register_name_label),
+        placeholder = stringResource(id = R.string.register_name_placeholder),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .focusRequester(nameFocus)
                 .testTag(RegisterTestTags.NAME_FIELD),
-        label = { Text(text = stringResource(id = R.string.register_name_label)) },
-        placeholder = { Text(text = stringResource(id = R.string.register_name_placeholder)) },
         singleLine = true,
         isError = uiState.nameError != null,
         supportingText =
             uiState.nameError?.let { errorType ->
-                { Text(text = errorType.text()) }
+                errorType.text()
             },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         keyboardActions =

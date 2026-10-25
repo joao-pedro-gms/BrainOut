@@ -1152,3 +1152,56 @@ duplicado.
 691 testes unitários, 0 falhas, 0 ignorados (3 novos no
 `NeoVisibilityToggleTest`); `ktlintCheck`, `detekt` e os gates de
 Kover de `:core:domain` e `:core:data` verdes.
+
+---
+
+## O campo de texto tinha quatro receitas (25/10/2026)
+
+A varredura de blocos repetidos **dentro do mesmo arquivo** (que a
+varredura por pares de arquivos não alcança) mostrou o `LoginScreen` com
+a mesma receita de `OutlinedTextField` escrita duas vezes no mesmo
+arquivo. Seguindo o rastro, a receita estava em **quatro** campos:
+
+| Onde | Campo |
+|---|---|
+| `:feature:auth` | nome do cadastro (`RegisterScreen`) |
+| `:feature:auth` | e-mail do login (`EmailField`, reusado no cadastro) |
+| `:feature:auth` | senha do login (`PasswordField`, reusado no cadastro) |
+| `:feature:settings` | senha do backup (`BackupPasswordField`) |
+
+A receita é a mesma: `OutlinedTextField` com rótulo, placeholder
+opcional, `singleLine`, estado de erro com texto de apoio,
+transformação visual e opções de teclado.
+
+O modo de falha: um ajuste na receita — o `singleLine`, a forma do
+texto de apoio, a cor do erro — tinha de ser feito em quatro campos, e
+nada impedia um deles de divergir dos outros. Como os quatro estão em
+**dois** módulos, e um `:feature:*` não pode importar outro
+`:feature:*`, a correção **não** era "o backup importar o auth": a
+receita tinha que subir para o `:core:ui`, que é o dono das receitas
+visuais.
+
+### `NeoTextField`
+
+O componente novo fica no `:core:ui` e recebe os textos **já
+resolvidos** (`String`), porque o `:core:ui` não tem string de
+interface — o mesmo padrão do `NeoEmptyState`, do `NeoErrorBanner` e
+do `NeoVisibilityToggle`. O `modifier` continua com o chamador: cada
+campo tem o seu `testTag` e o seu `FocusRequester`.
+
+### A cobertura que não existia
+
+Nenhum dos quatro campos tinha teste próprio: o `LoginScreenTest`, o
+`RegisterScreenTest` e o `BackupSectionTest` verificam a tela, não a
+receita. O `NeoTextFieldTest` cobre o contrato do componente — rótulo,
+texto de apoio no estado de erro, placeholder e digitação.
+
+Um detalhe do Material3 que o teste registra: o placeholder **só**
+aparece com o campo em foco (sem foco, o rótulo ocupa o centro), então
+o caso do placeholder foca o campo antes de procurar o texto.
+
+### Verificação
+
+694 testes unitários, 0 falhas, 0 ignorados (3 novos no
+`NeoTextFieldTest`); `ktlintCheck`, `detekt` e os gates de Kover de
+`:core:domain` e `:core:data` verdes.
