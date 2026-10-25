@@ -22,6 +22,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupIntegrityExceptio
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupRestoreException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupTooLargeException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.UnsupportedBackupVersionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ExportBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.RestoreBackupUseCase
 import javax.inject.Inject
@@ -62,30 +63,16 @@ class BackupViewModel
             uri: Uri,
             passphrase: String,
         ) {
-            if (_state.value.isBusy) return
-            _state.update { it.copy(isBusy = true, errorType = null, successType = null, summary = null) }
-            viewModelScope.launch {
-                try {
-                    val summary =
-                        withContext(Dispatchers.IO) {
-                            val output =
-                                context.contentResolver.openOutputStream(uri)
-                                    ?: throw BackupRestoreException(EXPORT_UNAVAILABLE_MESSAGE)
-                            output.use { stream -> exportBackupUseCase(stream, passphrase) }
-                        }
-                    Log.d(TAG, "Backup exportado: ${summary.projects} projetos, ${summary.tasks} tarefas")
-                    _state.update {
-                        it.copy(isBusy = false, successType = BackupSuccessType.Exported, summary = summary)
-                    }
-                } catch (error: CancellationException) {
-                    // Cancelamento da corrotina nao e falha de backup: propaga.
-                    throw error
-                } catch (error: Exception) {
-                    Log.e(TAG, "Falha ao exportar o backup", error)
-                    _state.update {
-                        it.copy(isBusy = false, errorType = errorTypeFor(error, exporting = true))
-                    }
-                }
+            runBackupOperation(
+                successLog = "Backup exportado",
+                failureLog = "Falha ao exportar o backup",
+                successType = BackupSuccessType.Exported,
+                exporting = true,
+            ) {
+                val output =
+                    context.contentResolver.openOutputStream(uri)
+                        ?: throw BackupRestoreException(EXPORT_UNAVAILABLE_MESSAGE)
+                output.use { stream -> exportBackupUseCase(stream, passphrase) }
             }
         }
 
@@ -100,35 +87,58 @@ class BackupViewModel
             uri: Uri,
             passphrase: String,
         ) {
+            runBackupOperation(
+                successLog = "Backup restaurado",
+                failureLog = "Falha ao restaurar o backup",
+                successType = BackupSuccessType.Restored,
+                exporting = false,
+            ) {
+                val input =
+                    context.contentResolver.openInputStream(uri)
+                        ?: throw BackupRestoreException(IMPORT_UNAVAILABLE_MESSAGE)
+                input.use { stream -> restoreBackupUseCase(stream, passphrase) }.summary
+            }
+        }
+
+        /**
+         * Executa uma operação de backup.
+         *
+         * Exportar e restaurar têm a **mesma** forma: recusar se já há
+         * uma operação em curso, marcar o formulário como ocupado,
+         * rodar a operação no [Dispatchers.IO], publicar o resumo e
+         * classificar a falha. A única diferença entre as duas é a
+         * operação em si — então o que é comum mora aqui, escrito uma
+         * vez.
+         *
+         * @param successLog texto do log de sucesso.
+         * @param failureLog texto do log de falha.
+         * @param successType o sucesso publicado no estado.
+         * @param exporting se a operação é a de exportação.
+         * @param operation a operação de backup (roda em [Dispatchers.IO]).
+         */
+        private fun runBackupOperation(
+            successLog: String,
+            failureLog: String,
+            successType: BackupSuccessType,
+            exporting: Boolean,
+            operation: suspend () -> BackupSummary,
+        ) {
             if (_state.value.isBusy) return
             _state.update { it.copy(isBusy = true, errorType = null, successType = null, summary = null) }
             viewModelScope.launch {
                 try {
-                    val result =
-                        withContext(Dispatchers.IO) {
-                            val input =
-                                context.contentResolver.openInputStream(uri)
-                                    ?: throw BackupRestoreException(IMPORT_UNAVAILABLE_MESSAGE)
-                            input.use { stream -> restoreBackupUseCase(stream, passphrase) }
-                        }
-                    Log.d(
-                        TAG,
-                        "Backup restaurado: ${result.summary.projects} projetos, ${result.summary.tasks} tarefas",
-                    )
+                    val summary = withContext(Dispatchers.IO) { operation() }
+                    Log.d(TAG, "$successLog: ${summary.projects} projetos, ${summary.tasks} tarefas")
                     _state.update {
-                        it.copy(
-                            isBusy = false,
-                            successType = BackupSuccessType.Restored,
-                            summary = result.summary,
-                        )
+                        it.copy(isBusy = false, successType = successType, summary = summary)
                     }
                 } catch (error: CancellationException) {
                     // Cancelamento da corrotina nao e falha de backup: propaga.
                     throw error
                 } catch (error: Exception) {
-                    Log.e(TAG, "Falha ao restaurar o backup", error)
+                    Log.e(TAG, failureLog, error)
                     _state.update {
-                        it.copy(isBusy = false, errorType = errorTypeFor(error, exporting = false))
+                        it.copy(isBusy = false, errorType = errorTypeFor(error, exporting = exporting))
                     }
                 }
             }
