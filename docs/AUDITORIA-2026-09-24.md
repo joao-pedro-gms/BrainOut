@@ -1294,3 +1294,38 @@ suítes que guardam o contrato do backup — `BackupRepositoryImplTest`,
 `LocalBackupJourneyTest` e `BackupPayloadCodecTest` — passam sem
 alteração: o **formato do arquivo** não mudou, só mudou onde a
 conversão mora.
+
+---
+
+## Os últimos números mágicos das listas (25/10/2026)
+
+A varredura por literais `.dp` que sobrou depois da rodada dos tokens
+apontou três resíduos.
+
+### O `88.dp` das listas de tela cheia
+
+O padding inferior da lista de projetos e da lista de tarefas estava
+escrito como literal em **dois** arquivos. O número não é arbitrário:
+é a barra de navegação (`NeoSizes.navMinHeight`, 80 dp) mais a folga
+do respiro entre a lista e ela (`NeoSpacing.xs`, 8 dp). Agora sai como
+a soma dos dois tokens — **80 + 8 = 88**, o valor não muda.
+
+### A condição da animação de entrada
+
+O `animateItem` da lista da Home recebia a mesma condição **duas
+vezes**, em sete linhas cada: uma para o `fadeInSpec` e outra para o
+`placementSpec` (que é `FiniteAnimationSpec<IntOffset>`, não `Float` —
+por isso não dá para compartilhar a mesma `val`). A condição agora
+mora uma vez (`semFiltro`), e as duas especificações saem dela.
+
+### O `resolveNameError`
+
+Era `internal`, mas só é usado no arquivo que o declara — a
+visibilidade certa era `private`.
+
+### Verificação
+
+694 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. Nenhum
+pixel muda: o inset continua 88 dp e a animação de entrada continua
+só quando a lista não está filtrada.

@@ -20,10 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -41,7 +41,9 @@ internal fun ProjectDetailBody(
                 .padding(contentPadding)
                 .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
         verticalArrangement = Arrangement.spacedBy(NeoSpacing.md),
-        contentPadding = PaddingValues(bottom = 88.dp),
+        // A barra de navegação (80 dp) mais a folga do respiro entre a
+        // lista e ela — o mesmo inset das listas de tela cheia.
+        contentPadding = PaddingValues(bottom = NeoSizes.navMinHeight + NeoSpacing.xs),
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.md)) {

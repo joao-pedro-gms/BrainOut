@@ -2,6 +2,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,10 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -71,6 +74,23 @@ internal fun HomeProjectsContent(
     actions: HomeProjectsActions,
 ) {
     val window = LocalNeoWindowInfo.current
+    // A animação de entrada só acontece quando a lista não está
+    // filtrada: reordenar durante uma busca faria o item "pular" na
+    // tela. A condição era escrita duas vezes (uma para o fade, outra
+    // para o placement) — agora mora uma vez.
+    val semFiltro = state.searchQuery.isBlank() && state.selectedTagId == null
+    val fadeDeEntrada: FiniteAnimationSpec<Float>? =
+        if (semFiltro) {
+            tween(durationMillis = NeoMotion.selection)
+        } else {
+            null
+        }
+    val placementDeEntrada: FiniteAnimationSpec<IntOffset>? =
+        if (semFiltro) {
+            tween(durationMillis = NeoMotion.selection)
+        } else {
+            null
+        }
     LazyVerticalGrid(
         columns = if (window.forceSingleColumn) GridCells.Fixed(1) else GridCells.Adaptive(240.dp),
         modifier =
@@ -80,7 +100,9 @@ internal fun HomeProjectsContent(
                 .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
         verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
         horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
-        contentPadding = PaddingValues(bottom = 88.dp),
+        // A barra de navegação (80 dp) mais a folga do respiro entre a
+        // lista e ela — o mesmo inset nas listas de tela cheia.
+        contentPadding = PaddingValues(bottom = NeoSizes.navMinHeight + NeoSpacing.xs),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             HomeProjectsHeader(state = state, actions = actions)
@@ -91,23 +113,9 @@ internal fun HomeProjectsContent(
         items(items = state.projects, key = { it.project.id }) { card ->
             androidx.compose.foundation.layout.Box(
                 Modifier.animateItem(
-                    fadeInSpec =
-                        if (state.searchQuery.isBlank() &&
-                            state.selectedTagId == null
-                        ) {
-                            tween(NeoMotion.selection)
-                        } else {
-                            null
-                        },
+                    fadeInSpec = fadeDeEntrada,
                     fadeOutSpec = null,
-                    placementSpec =
-                        if (state.searchQuery.isBlank() &&
-                            state.selectedTagId == null
-                        ) {
-                            tween(NeoMotion.selection)
-                        } else {
-                            null
-                        },
+                    placementSpec = placementDeEntrada,
                 ),
             ) {
                 ProjectCard(item = card, onClick = { actions.onOpenProject(card.project.id) })
