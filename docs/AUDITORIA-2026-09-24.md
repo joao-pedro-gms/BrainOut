@@ -13,13 +13,14 @@ Esta página é a síntese priorizada em P0/P1/P2 das não-conformidades e melho
 > a evidência (`arquivo:linha`) de cada correção. Onde um item de P1/P2
 > mudou de estado, ele está anotado no ponto em que aparece.
 
-> **⚠️ Estado em 23/10/2026.** A rodada de revisão de código fechou os
+> **⚠️ Estado em 25/10/2026.** A rodada de revisão de código fechou os
 > itens de P1/P2 que ainda dependiam só de decisão de execução, e o
 > *ledger* passou a ser a fonte da verdade do que está aberto:
 > [`docs/DEFEITOS.md`](DEFEITOS.md) (**71 defeitos corrigidos**; restam
-> **DEF-24** (parcial — os empty states), **DEF-74** e **DEF-78**
-> (parcialmente corrigidos) e **DEF-75**, **DEF-76** e **DEF-77**
-> (abertos)). Desde
+> **10** em aberto ou parciais: **DEF-24** (parcial — os empty states),
+> **DEF-74** e **DEF-78** (parcialmente corrigidos), **DEF-75**,
+> **DEF-76**, **DEF-77**, **DEF-79**, **DEF-80**, **DEF-81** e
+> **DEF-82** (abertos)). Desde
 > 08/10/2026, entre outras correções: o hash de senha saiu da thread
 > principal (DEF-71), a identidade da notificação de prazo deixou de
 > colidir (DEF-54), a Home parou de mostrar um usuário fake (DEF-72), os
@@ -1205,3 +1206,55 @@ o caso do placeholder foca o campo antes de procurar o texto.
 694 testes unitários, 0 falhas, 0 ignorados (3 novos no
 `NeoTextFieldTest`); `ktlintCheck`, `detekt` e os gates de Kover de
 `:core:domain` e `:core:data` verdes.
+
+---
+
+## Exportar e restaurar tinham o mesmo esqueleto (25/10/2026)
+
+A varredura de blocos repetidos **dentro do mesmo arquivo** achou o
+`BackupViewModel` com o mesmo preâmbulo escrito duas vezes. E o
+preâmbulo era o esqueleto inteiro das duas operações:
+
+```
+if (_state.value.isBusy) return
+_state.update { it.copy(isBusy = true, errorType = null, successType = null, summary = null) }
+viewModelScope.launch {
+    try { … withContext(Dispatchers.IO) { … } … }
+    catch (error: CancellationException) { throw error }
+    catch (error: Exception) { … }
+}
+```
+
+Exportar e restaurar são **simétricos por natureza**: recusar se já há
+uma operação em curso, marcar o formulário como ocupado, rodar no
+`Dispatchers.IO`, publicar o resumo e classificar a falha — e o
+cancelamento da corrotina propaga em vez de virar erro de backup.
+
+O modo de falha: um ajuste no tratamento — "não limpar o `summary` no
+início", o `CancellationException` não virar erro — tinha de ser feito
+nas duas operações, e nada impedia uma de divergir da outra. E elas já
+divergiam em detalhe: o export publicava o `BackupSummary` direto,
+enquanto o restore lia `result.summary` do `BackupRestoreResult`.
+
+### A correção
+
+`runBackupOperation` é o esqueleto, escrito uma vez. O que muda entre
+as duas — a operação em si, os textos de log, o `successType` e o
+`exporting` (que decide a falha genérica) — é parâmetro.
+
+### Verificação
+
+694 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. Os **9**
+casos do `BackupViewModelTest` passaram sem alteração — eles já
+cobriam os dois sentidos (exportação bem-sucedida, restauração
+bem-sucedida, falha ao gravar, senha errada, versão desconhecida,
+arquivo grande demais, arquivo inválido e falha inesperada na
+exportação).
+
+### A nota de estado do topo desta página
+
+A lista de defeitos em aberto estava desatualizada: citava seis
+(`DEF-24`, `DEF-74`, `DEF-75`, `DEF-76`, `DEF-77`, `DEF-78`) quando o
+ledger já registra **dez** — faltavam `DEF-79`, `DEF-80`, `DEF-81` e
+`DEF-82`. A contagem de corrigidos (71) continua a mesma.
