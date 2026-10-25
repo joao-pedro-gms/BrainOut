@@ -334,6 +334,42 @@ class AuthViewModelTest {
         }
 
     @Test
+    fun `submitLogin with domain error surfaces generic domain error`() =
+        runTest {
+            val authenticate = mockk<AuthenticateUserUseCase>()
+            coEvery { authenticate(any(), any()) } throws InvalidModelException("e-mail inválido")
+
+            val viewModel = newViewModel(authenticate = authenticate)
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+
+            viewModel.submitLogin()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.errorMessage).isEqualTo(AuthErrorType.DomainRejected)
+        }
+
+    @Test
+    fun `submitLogin with unexpected error surfaces unexpected error`() =
+        runTest {
+            val authenticate = mockk<AuthenticateUserUseCase>()
+            coEvery { authenticate(any(), any()) } throws RuntimeException("disco cheio")
+
+            val viewModel = newViewModel(authenticate = authenticate)
+            viewModel.onEmailChange("joao@example.com")
+            viewModel.onPasswordChange("fixture-pwd-AAA")
+
+            viewModel.submitLogin()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertThat(state.isLoading).isFalse()
+            assertThat(state.errorMessage).isEqualTo(AuthErrorType.Unexpected)
+        }
+
+    @Test
     fun `submitLogin with empty email keeps user in form`() =
         runTest {
             val viewModel = newViewModel()
