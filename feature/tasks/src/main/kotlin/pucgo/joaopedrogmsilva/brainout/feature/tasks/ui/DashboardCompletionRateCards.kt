@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 @Composable
@@ -22,8 +23,8 @@ internal fun CompletionRateCards(
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
         maxItemsInEachRow =
             if (LocalConfiguration.current.fontScale > 1.3f ||
                 LocalNeoWindowInfo.current.forceSingleColumn

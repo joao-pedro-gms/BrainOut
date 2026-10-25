@@ -38,9 +38,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
@@ -147,7 +147,7 @@ internal fun LoginBody(
 
         AuthErrorBanner(errorType = uiState.errorMessage, testTag = LoginTestTags.ERROR_BANNER)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(NeoSpacing.xs))
         AuthSubmitButton(
             labelRes = R.string.login_cta,
             isLoading = uiState.isLoading,

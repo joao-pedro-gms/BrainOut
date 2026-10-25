@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -38,6 +37,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
@@ -373,7 +373,7 @@ private fun ProjectDetailScreenPreview() {
         // IDE a preview não renderizava.
         Surface(color = MaterialTheme.colorScheme.background) {
             ProjectDetailBody(
-                contentPadding = PaddingValues(0.dp),
+                contentPadding = PaddingValues(NeoSpacing.none),
                 state =
                     ProjectDetailState(
                         tasks = emptyList(),

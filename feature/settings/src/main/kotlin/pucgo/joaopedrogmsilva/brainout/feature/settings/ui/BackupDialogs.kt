@@ -26,7 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
@@ -131,7 +131,7 @@ private fun BackupPassphraseDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(id = titleRes)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs)) {
                 Text(text = stringResource(id = messageRes))
                 BackupPasswordField(
                     value = passphraseState.passphrase,

@@ -1040,3 +1040,61 @@ seção removida ("Operação do pipeline atual"), e ele foi apontado para as
 seções que continuam válidas. As três âncoras restantes na auditoria
 (`#reverificacao-2026-10-08`) são falso positivo do verificador — a
 seção existe com um `<a id="…">` explícito.
+
+---
+
+## O espaçamento das telas tinha duas fontes (25/10/2026)
+
+A contagem de literais `.dp` nas features e no `:app` mostrou 68
+ocorrências. A esvaziaram-se em duas categorias bem diferentes:
+
+- **espaçamento** — `padding`, `spacedBy`, `Spacer`: o `:core:ui` é o
+  dono da escala (`NeoSpacing`, 11 degraus) e as telas **já** o usavam
+  em 44 lugares. O mesmo valor aparecia como literal em mais 33;
+- **tamanho, raio e elevação** — altura de card, tamanho de ícone,
+  `RoundedCornerShape(12.dp)`, `tonalElevation`: **não** são
+  espaçamento, e a escala `NeoSizes` é de altura mínima de componente,
+  não de card de estado. Esses 35 ficam como estão.
+
+O modo de falha: o valor do espaçamento estava duplicado entre o design
+system e as telas. O código dizia `12.dp` num lugar e
+`NeoSpacing.sm` — que é 12 dp — noutro, sem que ninguém perceba que são
+o mesmo número. E quando a escala muda (ou alguém ajusta uma tela), as
+duas fontes divergem em silêncio: a tela fica com o número antigo e o
+token com o novo, e nada acusa.
+
+### A correção
+
+33 literais viraram token, em 17 arquivos:
+
+| Literal | Token | Onde |
+|---|---|---|
+| `4.dp` | `NeoSpacing.xxs` | `RegisterScreen`, `BackupMessage`, `BackupSection`, `DashboardMetricCard` |
+| `8.dp` | `NeoSpacing.xs` | `LoginScreen`, `RegisterScreen`, `BackupDialogs`, `BackupSection`, `DashboardPriorityChart`, `TasksScreen` |
+| `12.dp` | `NeoSpacing.sm` | `BackupMessage`, `DashboardCompletionRateCards`, `DashboardLoading`, `DashboardMetricCard`, `DashboardScreen`, `TasksScreen` |
+| `16.dp` | `NeoSpacing.md` | `DashboardPriorityChart`, `DashboardProjectStateCard` |
+| `0.dp` | `NeoSpacing.none` | `HomeScreen`, `ProjectDetailScreen` |
+| `2.dp` (largura de traço) | `NeoBorders.default` | `AuthForm` |
+
+Efeito colateral: **11 imports `androidx.compose.ui.unit.dp` ficaram sem
+uso** — o `dp` só existia naquele literal — e saíram.
+
+### O que ficou de fora (e por quê)
+
+- **Os raios `12.dp`** (`TaskRow`, `SettingsScreen`) estão **fora** da
+  escala `NeoRadii` (0/4/8/16 dp). Adicionar 12 dp à escala, ou trocar
+  por 8 ou 16, é decisão de identidade — a mesma classe do **DEF-82**,
+  que registrou a receita de "estado vazio" com dois raios.
+- **As elevações `tonalElevation = 1.dp`** (`HomeProjectCard`,
+  `SettingsCard`) são o **DEF-76** — a sombra rígida da identidade.
+- **As alturas de card** (`160.dp`, `180.dp`, `240.dp`, `280.dp`) e os
+  tamanhos de ícone não têm token correspondente: `NeoSizes` é a
+  escala de altura mínima de componente, e um token novo para
+  "altura de estado vazio" é decisão de design.
+
+### Verificação
+
+688 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. Nenhum
+pixel muda: o valor do token é exatamente o do literal que ele
+substituiu.

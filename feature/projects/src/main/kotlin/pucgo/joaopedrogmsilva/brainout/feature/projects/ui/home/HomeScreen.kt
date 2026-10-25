@@ -17,11 +17,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 
 /** Lista de projetos; navegação global pertence ao shell do app. */
 @Composable
@@ -166,7 +166,7 @@ private fun HomeScreenPreview() {
     BrainOutTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
             HomeProjectsContent(
-                contentPadding = PaddingValues(0.dp),
+                contentPadding = PaddingValues(NeoSpacing.none),
                 state =
                     HomeProjectsState(
                         projects = emptyList(),

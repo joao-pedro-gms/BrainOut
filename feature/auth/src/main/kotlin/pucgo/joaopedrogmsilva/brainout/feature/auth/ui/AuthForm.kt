@@ -25,8 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
@@ -152,7 +152,7 @@ internal fun AuthSubmitButton(
                     Modifier
                         .height(NeoSpacing.mdPlus)
                         .testTag(loadingTestTag),
-                strokeWidth = 2.dp,
+                strokeWidth = NeoBorders.default,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {

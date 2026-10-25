@@ -34,10 +34,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthErrorBanner
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthFormScaffold
@@ -301,7 +301,7 @@ private fun RegisterActions(
 ) {
     AuthErrorBanner(errorType = errorType, testTag = RegisterTestTags.ERROR_BANNER)
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(NeoSpacing.xs))
     AuthSubmitButton(
         labelRes = R.string.register_cta,
         isLoading = isLoading,
@@ -325,7 +325,7 @@ private fun RoleSelector(
 ) {
     Column(
         modifier = modifier.selectableGroup(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xxs),
     ) {
         RoleRow(
             title = stringResource(id = R.string.register_role_owner),
@@ -361,11 +361,11 @@ private fun RoleRow(
                     role = SemanticsRole.RadioButton,
                     onClick = onSelect,
                 ).testTag(testTag)
-                .padding(vertical = 4.dp),
+                .padding(vertical = NeoSpacing.xxs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = null)
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(NeoSpacing.xs))
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = title, style = MaterialTheme.typography.titleSmall)
             Text(

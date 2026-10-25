@@ -18,9 +18,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupUiState
@@ -138,13 +138,13 @@ internal fun BackupContent(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
     ) {
         Text(
             text = stringResource(id = R.string.settings_section_backup).uppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = NeoSpacing.xxs, bottom = NeoSpacing.xxs),
         )
         SettingsCard {
             SettingsRow(
@@ -178,7 +178,7 @@ internal fun BackupContent(
             text = stringResource(id = R.string.settings_backup_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 4.dp),
+            modifier = Modifier.padding(horizontal = NeoSpacing.xxs),
         )
         BackupMessage(state = state, onDismiss = onDismissMessage)
     }
