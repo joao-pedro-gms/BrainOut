@@ -50,9 +50,7 @@ class RestoreBackupUseCase
             input: InputStream,
             passphrase: String,
         ): BackupRestoreResult {
-            require(passphrase.length >= MIN_PASSWORD_LENGTH) {
-                "A senha do backup deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
-            }
+            requireValidPassword(passphrase, subject = "A senha do backup")
             val previousTaskIds = backupRepository.currentTaskIds()
             val result = backupRepository.restoreFrom(input, passphrase)
             reconcileReminders(previousTaskIds, result)

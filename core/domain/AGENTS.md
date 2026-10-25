@@ -18,7 +18,7 @@ src/main/kotlin/.../core/domain/
 ├── notification/            # porta DeadlineNotificationScheduler (REMINDER_LEAD = 1h)
 ├── permission/              # requirePermission: o único ponto que consulta a matriz de papéis
 ├── repository/              # portas: User/Project/Task/Tag/Holiday/ListingPreferences + PasswordHasher + ActiveUserPort + DashboardStats
-└── usecase/                 # 14 use cases + UseCaseConstants (MAX_ACTIVE_TASKS_PER_PROJECT)
+└── usecase/                 # 14 use cases + UseCaseConstants (MAX_ACTIVE_TASKS_PER_PROJECT) + PasswordPolicy (a regra de senha)
 
 src/test/kotlin/.../core/domain/   # espelha main
 ├── CoreDomainSmokeTest.kt   # importa o marcador só pra validar o wiring
@@ -26,7 +26,7 @@ src/test/kotlin/.../core/domain/   # espelha main
 ├── model/                   # Project, Task, Tag (+TagInvariant), TaskPriority (+TaskPriorityRules), User, PermissionMatrix
 ├── notification/            # DeadlineNotificationSchedulerContractTest
 ├── repository/              # SortOrderStorageKeyTest (contrato de persistência da chave de ordenação)
-└── usecase/                 # 9 specs (ver GAPS abaixo)
+└── usecase/                 # 16 specs (14 use cases + ProjectCompletionTest + PasswordPolicyTest)
 ```
 
 ## WHERE TO LOOK
@@ -38,6 +38,7 @@ src/test/kotlin/.../core/domain/   # espelha main
 | Nova porta de repositório | `repository/` | `interface XxxRepository { suspend fun ... }`; sem impl aqui (vai em `:core:data`) |
 | Nova exceção de domínio | `error/` | **estender `DomainException`**, nunca `RuntimeException`/`Exception` crua |
 | Constantes de prazo | `usecase/UseCaseConstants.kt` + `notification/DeadlineNotificationScheduler.kt` | `REMINDER_LEAD = 1h` mora na porta; use cases calculam `dueDate - REMINDER_LEAD` |
+| Regra de senha | `usecase/PasswordPolicy.kt` | `MIN_PASSWORD_LENGTH` e `requireValidPassword` são a **fonte só** da regra — cadastro, login, exportação e restauração do backup chamam a mesma guarda. O `PasswordPolicyTest` compara os quatro casos de uso **entre si** (comparar a constante com ela mesma não prova nada) |
 | Contrato de serialização | `repository/ListingPreferencesRepository.kt` (`SortOrder`) | `toStorageKey()` emite `snake_case` — a **mesma** grafia que o `ORDER BY ... CASE WHEN` do `ProjectDao` compara; `fromStorageKey` aceita também a forma concatenada legada |
 
 ## HIERARQUIA DE EXCEÇÕES
@@ -93,6 +94,6 @@ para mensagem localizada.
 
 - Piso **Kover 60% linhas** (E4.7) verificado por `./gradlew :core:domain:koverVerify` (ver root para comando completo).
 - Wire‑up de CI: `gradle.projectsEvaluated` no root amarra `test*UnitTest` a `:core:domain:test`, então `./gradlew testDebugUnitTest` cobre este módulo.
-- Módulo tem **14 use cases**; **todos têm spec dedicada** em `src/test/.../usecase/` (`AuthenticateUser`, `ChangeTaskStatus`, `CheckDeadline`, `CreateProject`, `CreateTag`, `CreateTask`, `CreateUser`, `DeleteProject`, `DeleteTag`, `DeleteTask`, `ExportBackup`, `RestoreBackup`, `UpdateProject`, `UpdateTask`) — mais `ProjectCompletionTest.kt`, que cobre a transição de projeto concluído. Demais pastas (`error`, `model`, `notification`, `repository`) estão bem cobertas.
+- Módulo tem **14 use cases**; **todos têm spec dedicada** em `src/test/.../usecase/` (`AuthenticateUser`, `ChangeTaskStatus`, `CheckDeadline`, `CreateProject`, `CreateTag`, `CreateTask`, `CreateUser`, `DeleteProject`, `DeleteTag`, `DeleteTask`, `ExportBackup`, `RestoreBackup`, `UpdateProject`, `UpdateTask`) — mais `ProjectCompletionTest.kt`, que cobre a transição de projeto concluído, e `PasswordPolicyTest.kt`, que garante que os quatro casos de uso que exigem senha aplicam a **mesma** regra. Demais pastas (`error`, `model`, `notification`, `repository`) estão bem cobertas.
 - **Único use case sem caller de produção:** `DeleteTagUseCase` — a exclusão de tag entra com a biblioteca de tags do redesign (NB-19, "criar/renomear/recolorir/excluir/associação"). Não é código morto: é API com chamador planejado, e por isso tem spec desde já.
 - **`UpdateProjectUseCase` tem caller, mas a cadeia morre no ViewModel.** O `HomeViewModel.updateProject` é público e não é chamado por nenhuma tela — o diálogo "Editar projeto" não existe (DEF-77). O caso de uso está certo e tem spec; o que falta é a UI. Não conclua, por leitura deste guia, que o fluxo de edição está no ar.

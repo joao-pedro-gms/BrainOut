@@ -34,9 +34,7 @@ class ExportBackupUseCase
             output: OutputStream,
             passphrase: String,
         ): BackupSummary {
-            require(passphrase.length >= MIN_PASSWORD_LENGTH) {
-                "A senha do backup deve ter pelo menos $MIN_PASSWORD_LENGTH caracteres"
-            }
+            requireValidPassword(passphrase, subject = "A senha do backup")
             return backupRepository.exportTo(output, passphrase)
         }
     }
