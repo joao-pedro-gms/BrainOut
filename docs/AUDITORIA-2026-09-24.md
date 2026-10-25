@@ -872,3 +872,59 @@ caracteres"), então o número também tem contrato escrito.
 `PasswordPolicyTest`); `ktlintCheck`, `detekt` e os gates de Kover de
 `:core:domain` e `:core:data` verdes. O **texto** das mensagens e o
 **limite** não mudaram — só passaram a ter uma fonte só.
+
+---
+
+## O mesmo vínculo ViewModel↔tela em duas telas (25/10/2026)
+
+A varredura de duplicação por **linhas de código** (o script anterior
+contava linhas de fechamento como conteúdo, o que produzia falso
+positivo) apontou o par `LoginScreen` ↔ `RegisterScreen` com **10
+blocos** de 6 linhas iguais. O achado real é um bloco de 9 linhas,
+byte a byte igual nas duas telas:
+
+```kotlin
+val uiState by viewModel.state.collectAsStateWithLifecycle()
+
+LaunchedEffect(viewModel) {
+    viewModel.events.collect { event ->
+        if (event is AuthEvent.NavigateHome) {
+            on…Success()          // ← a única diferença: o nome do callback
+        }
+    }
+}
+```
+
+O modo de falha: o vínculo entre o ViewModel e a tela — coletar o
+estado e consumir o evento de navegação — é **uma** decisão, escrita
+duas vezes. Um evento novo (ex.: "sessão expirada, volte ao login")
+seria tratado em uma tela e esquecido na outra; e a forma de coletar o
+estado (com `collectAsStateWithLifecycle`, que respeita o ciclo de vida
+e não a `collectAsState` ingênua) só está garantida por causa da
+cópia — se alguém corrigir uma tela e não a outra, uma delas passa a
+coletar fora do ciclo de vida.
+
+### A correção
+
+`rememberAuthUiState(viewModel, onNavigateHome)` — em
+`feature/auth/.../ui/AuthScreenState.kt` — é o dono do vínculo. As
+duas telas passam a chamar uma linha:
+
+```kotlin
+val uiState = rememberAuthUiState(viewModel, onLoginSuccess)
+```
+
+O que muda entre elas (o nome do callback) continua explícito na
+chamada; o que é comum (coletar o estado, consumir o evento) passa a
+mora uma vez.
+
+### Verificação
+
+687 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. O caminho
+do **cadastro** é coberto pelo `RegisterScreenTest` (Robolectric, roda
+local): `cadastro valido persiste a sessao e navega para a home`
+afirma que `onRegisterSuccess` foi chamado uma vez. O caminho do
+**login** é coberto pelo `LoginScreenTest` instrumentado
+(`login_with_valid_credentials_navigates_to_home`), que compila no CI
+e roda em dispositivo.
