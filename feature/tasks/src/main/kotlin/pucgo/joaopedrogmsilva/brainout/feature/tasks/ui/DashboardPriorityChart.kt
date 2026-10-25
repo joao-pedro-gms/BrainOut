@@ -142,8 +142,8 @@ private fun PriorityBarsLegend(counts: List<Int>) {
     val labels = TaskPriority.entries.map { NeoTaskPriorityLabel(it) }
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
     ) {
         counts.forEachIndexed { index, count ->
             Column(

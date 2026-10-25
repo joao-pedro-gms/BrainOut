@@ -35,11 +35,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
@@ -109,7 +109,7 @@ internal fun DashboardContent(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
     ) {
         // DEF-22 — o título saiu daqui e foi para a `TasksTopBar`.
         // Repetir o mesmo texto no corpo faria o TalkBack anunciar
@@ -145,8 +145,8 @@ private fun DashboardBody(state: DashboardUiState) {
         return
     }
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
         maxItemsInEachRow =
             if (LocalNeoWindowInfo.current.isWide &&
                 !LocalNeoWindowInfo.current.forceSingleColumn
@@ -156,14 +156,14 @@ private fun DashboardBody(state: DashboardUiState) {
                 1
             },
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
             ProjectStateCard(
                 activeProjects = state.activeProjects,
                 completedProjects = state.completedProjects,
             )
             CompletionRateCards(state.weeklyCompletionPercent, state.overallCompletionPercent)
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
             PriorityChart(
                 counts = state.priorityCounts,
             )

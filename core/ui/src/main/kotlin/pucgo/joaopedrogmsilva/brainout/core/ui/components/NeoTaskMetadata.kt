@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
@@ -200,7 +199,7 @@ fun NeoPriorityLegend(modifier: Modifier = Modifier) {
                 priorityIcons.indices.forEach { code ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
                     ) {
                         NeoPriorityIndicator(code)
                         Text(stringResource(priorityLabels[code]), style = MaterialTheme.typography.bodySmall)
@@ -215,7 +214,7 @@ fun NeoPriorityLegend(modifier: Modifier = Modifier) {
 @Composable
 private fun NeoTaskMetadataPreview() {
     BrainOutTheme {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs)) {
             NeoPriorityIndicator(4)
             NeoStatusChip("Concluída", completed = true, inProgress = false)
         }

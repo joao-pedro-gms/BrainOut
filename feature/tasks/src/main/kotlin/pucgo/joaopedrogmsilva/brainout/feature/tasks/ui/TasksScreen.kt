@@ -129,8 +129,8 @@ internal fun TasksContent(
                 .fillMaxSize()
                 .neoPageGutter(margin = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.none)
                 .testTag(TasksTestTags.LIST),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+        contentPadding = PaddingValues(vertical = NeoSpacing.sm),
     ) {
         item { NeoPriorityLegend() }
         item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
@@ -228,8 +228,8 @@ private fun TaskCard(row: TaskRow) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
         ) {
             NeoTaskPriorityChip(priority = row.task.priority)
             NeoTaskStatusChip(status = row.task.status)

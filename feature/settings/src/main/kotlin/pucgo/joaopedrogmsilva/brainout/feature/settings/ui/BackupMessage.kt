@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
@@ -55,8 +55,8 @@ internal fun BackupMessage(
         shape = RoundedCornerShape(NeoRadii.card),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(NeoSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xxs),
         ) {
             Text(
                 text = stringResource(id = messageRes),
