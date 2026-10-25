@@ -22,15 +22,14 @@ lembretes locais e o upgrade cancela somente os trabalhos antigos de sync.
 
 Comandos atuais: `./gradlew ktlintCheck detekt testDebugUnitTest lintDebug`
 e `./gradlew :core:domain:koverVerify :core:data:koverVerify` em JDK21.
-As instruções de secrets/assinatura abaixo continuam aplicáveis; as seções
-de flavors, backend e contagens são **registro histórico** — o pipeline com
-`backend-integration` e os flavors `dev`/`prod` saíram com a camada de rede
-(#212), e o issue #208, que apontava essa reconciliação, está **fechado**.
-A seção [Operação do pipeline atual](#operação-do-pipeline-atual) é a que
-vale para o pipeline de hoje.
-
-## Registro histórico anterior à migração local
-
+As instruções de secrets/assinatura abaixo continuam aplicáveis; a seção
+[Registro histórico anterior à migração local](#registro-histórico-anterior-à-migração-local)
+guarda o pipeline com `backend-integration` e os flavors `dev`/`prod`, que
+sairam com a camada de rede (#212) — e o issue #208, que apontava essa
+reconciliação, está **fechado**. As seções
+[Escopo do gate de ktlint](#escopo-do-gate-de-ktlint) e
+[Operação local equivalente](#operação-local-equivalente) são as que valem
+para o pipeline de hoje.
 
 > Documento de operação dos pipelines de GitHub Actions. Atualize quando
 > secrets ou workflows mudarem. Item desejável 5.1 do documento norteador
@@ -48,10 +47,18 @@ vale para o pipeline de hoje.
 
 Configuração adicional:
 
-- `.github/dependabot.yml` — atualizações semanais de GitHub Actions,
-  Gradle e (quando existir) `backend-stub/`.
+- `.github/dependabot.yml` — atualizações semanais de GitHub Actions e
+  Gradle.
 - `.github/CODEOWNERS` — todo PR precisa de aprovação do
   `@joao-pedro-gms` (ajuste se necessário para revisão adicional).
+
+## Registro histórico anterior à migração local
+
+A partir daqui, o registro do pipeline **com a camada de rede**: três jobs
+com `backend-integration`, flavors `dev`/`prod` e as tarefas `*DevDebug*`.
+Nada abaixo é executável hoje — a descrição do pipeline vigente está no
+[topo deste documento](#operação-atual-após-212) e na seção
+[Operação local equivalente](#operação-local-equivalente).
 
 ## Workflows
 
@@ -138,7 +145,10 @@ verificadas por quem roda emulador, manualmente.** Se a cobertura de
 migração virar requisito de entrega, é preciso um runner self-hosted com
 emulador ou uma política explícita de verificação manual.
 
-### Escopo do gate de ktlint
+*(Fim do registro do pipeline com a camada de rede. O que vem abaixo
+descreve o build e o gate de estilo **atuais**.)*
+
+## Escopo do gate de ktlint
 
 O plugin ktlint **não** se propaga automaticamente para subprojetos.
 Aplicado apenas na raiz, `./gradlew ktlintCheck` inspecionava somente os
@@ -152,20 +162,20 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         android.set(true)
-        ignoreFailures.set(true)
+        ignoreFailures.set(false)
     }
 }
 ```
 
 `android = true` faz o analisador entender código Android/Compose.
-`ignoreFailures = true` é deliberado e **temporário**: a engine 1.x do
-ktlint 14.2.0 sinaliza **191 violações cosméticas de estilo em 17
-arquivos** já presentes no código (`standard:indent`,
-`multiline-expression-wrapping`, `function-signature`,
-`trailing-comma-on-call-site`, entre outras).
-Passar `ktlintCheck` a fiscalizar de verdade sem bloquear todo PR exige
-uma reformatação dedicada, que está **pendente**. Ela é o que fecha o
-gate: quando for feita, `ignoreFailures` volta a `false`.
+O `ignoreFailures` é **`false`** — o gate **bloqueia**. A engine 1.x do
+ktlint 14.2.0 sinalizava violações cosméticas de estilo
+(`standard:indent`, `multiline-expression-wrapping`, `function-signature`,
+`trailing-comma-on-call-site`, entre outras) que o código carregava há
+129 commits; o `ktlintFormat` nos 8 módulos (commit `b59318e`) mais o
+acerto das 9 violações não auto-corrigíveis (commit `b6db6e0`) zeraram o
+contador (DEF-10 fechado). Violação nova **quebra o PR** — que é o
+comportamento pretendido para um gate de estilo.
 
 O passo **Run detekt** é o que reprova de fato no CI — não o ktlint,
 enquanto a flag estiver em `true`.
@@ -348,24 +358,24 @@ assinatura do bundle é a de JAR, verificada por `jarsigner`.
 ## Toolchain
 
 Versões centralizadas em `gradle/libs.versions.toml`. A política é bump
-explícito no catálogo e cobertura por `./gradlew :app:assembleDevDebug test
-ktlintCheck detekt :app:lintDevDebug` antes de subir PR.
+explícito no catálogo e cobertura por `./gradlew :app:assembleDebug
+testDebugUnitTest ktlintCheck detekt lintDebug` antes de subir PR.
 
 | Componente                 | Versão          | Notas                                                       |
 |----------------------------|-----------------|-------------------------------------------------------------|
-| JDK (CI + local)           | 21 (Temurin)    | `ci.yml` e `release-apk.yml` provisionam Temurin 21 (unificado). Piso oficial do Gradle 9.7.1/AGP 9.4.1 é 17, mas todo o fluxo roda em 21. O bytecode alvo continua **Java 17**; sem JDK separado, o JBR do Android Studio serve (`export JAVA_HOME=/opt/android-studio/jbr`). |
-| Gradle (wrapper)           | 9.7.1           | Exigido pelo AGP 9.4 (`>= 9.6.0`). Não bumpar no toolchain. |
+| JDK (CI + local)           | 21 (Temurin)    | `ci.yml` e `release-apk.yml` provisionam Temurin 21 (unificado). Piso oficial do Gradle 9.8.1/AGP 9.4.1 é 17, mas todo o fluxo roda em 21. O bytecode alvo continua **Java 17**; sem JDK separado, o JBR do Android Studio serve (`export JAVA_HOME=/opt/android-studio/jbr`). |
+| Gradle (wrapper)           | 9.8.1           | Exigido pelo AGP 9.4 (`>= 9.6.0`). Não bumpar no toolchain. |
 | AGP                        | 9.4.1           | Bump de 8.7.3; habilita built-in Kotlin (ver abaixo).       |
-| Kotlin Gradle Plugin (KGP) | 2.3.20          | Exigido >= 2.2.10 pelo AGP 9; KGP 2.3.20 é o último 2.3.x estável. |
+| Kotlin Gradle Plugin (KGP) | 2.4.21          | Exigido >= 2.2.10 pelo AGP 9.                             |
 | KSP                        | 2.3.12          | Acima do piso 2.3.5 (corrige ciclo kapt/ksp do AGP 9).      |
 | Hilt                       | 2.60.1          | Mínimo 2.59 declarado pelo time do Hilt para AGP 9.         |
-| Room                       | 2.8.4           | Suporta KSP 2.3.x.                                          |
-| desugar_jdk_libs           | 2.1.5           | Habilita `coreLibraryDesugaring` no `:app` para `java.time.Instant` em minSdk 24. |
-| ktlint (plugin)            | 14.2.0          | Bump de 12.1.2; engine ktlint 1.x é estritamente mais rígida (chained-call, indentation). Aplicado aos 9 subprojetos com `ignoreFailures = true` — ver [Escopo do gate de ktlint](#escopo-do-gate-de-ktlint). |
-| detekt                     | 1.23.7          | Sem mudança. **Não roda localmente com o JBR 25** (rejeita `--jvm-target` derivado do JVM do Gradle); roda no CI em Temurin 21. |
-| Kover                      | 0.9.9           | Sem mudança.                                                |
-| Compose BOM                | 2024.10.01      | Sem mudança.                                                |
-| Robolectric                | 4.15.1          | Bump de 4.13 (4.14+ traz suporte a Android V/SDK 35; 4.15.1 mantém SDK 35 sem ainda suportar Baklava/SDK 36). |
+| Room                       | 2.8.5           | Suporta KSP 2.3.x.                                          |
+| desugar_jdk_libs           | 2.1.5           | Habilita `coreLibraryDesugaring` no `:app`, no `:core:data` e nas features para `java.time`/`java.util.Base64` em minSdk 24. |
+| ktlint (plugin)            | 14.2.0          | Bump de 12.1.2; engine ktlint 1.x é estritamente mais rígida (chained-call, indentation). Aplicado aos 8 módulos com `ignoreFailures = false` — o gate **bloqueia** — ver [Escopo do gate de ktlint](#escopo-do-gate-de-ktlint). |
+| detekt                     | 1.23.8          | **Não roda localmente com o JBR 25** (rejeita `--jvm-target` derivado do JVM do Gradle); roda no CI em Temurin 21. |
+| Kover                      | 0.9.11          | Bound de 60% em `:core:domain` e `:core:data`.              |
+| Compose BOM                | 2026.09.00      | Gerencia material3 e o grupo `material3.adaptive:*`.       |
+| Robolectric                | 4.17            | Sem suporte a Baklava/SDK 36 ainda.                        |
 | compileSdk / targetSdk     | 37              | Bump de 35: as dependências do PR #77 exigem compilar contra API 37 (`checkDebugAarMetadata` falhava em `:app`, `:core:data` e nos `feature/*`). `minSdk` segue 24. |
 
 ### Built-in Kotlin (AGP 9)
@@ -405,11 +415,6 @@ Android. Com isso:
   `Build.VERSION.SDK_INT >= O` em `ensureChannel`, `@SuppressLint`
   no `notify`, e `coreLibraryDesugaring` no `:app`.
 
-## Operação do pipeline atual
-
-Daqui para baixo, o que vale para o pipeline de hoje. A seção anterior é o
-registro do pipeline com a camada de rede.
-
 ## Branch protection recomendada
 
 Em **Settings → Branches → Branch protection rules → main**, ative:
@@ -418,9 +423,13 @@ Em **Settings → Branches → Branch protection rules → main**, ative:
 - ✅ Require approvals: **1** (ou 2 se necessário para revisão adicional)
 - ✅ Dismiss stale pull request approvals when new commits are pushed
 - ✅ Require status checks to pass before merging
-  - Selecione: `Static analysis (ktlint + detekt)` e `Unit tests (JUnit + Compose)`
+  - Selecione os **três** checks do `ci.yml`: `Static analysis (ktlint +
+    detekt)`, `Unit tests (JUnit + Compose)` e `Local build and
+    instrumentation compilation`
 - ✅ Require conversation resolution before merging
-- ✅ Require linear history (evita merges de merge)
+- ❌ **Não** exigir "linear history": o repositório adota **merge commit**
+  (as PRs são mescladas com `gh pr merge --merge`, e o histórico de
+  `main` é de merges, não de squash nem de rebase)
 - ✅ Include administrators
 
 ## Operação local equivalente

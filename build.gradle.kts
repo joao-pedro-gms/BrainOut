@@ -13,7 +13,8 @@ plugins {
     // Kover: cobertura de código + verificação de bound mínimo (E4.7).
     // Aplicado em :core:domain e :core:data (alvo do critério de 60%).
     alias(libs.plugins.kover) apply false
-    // ktlint aplica no root e cobre automaticamente todos os subprojetos.
+    // ktlint é aplicado a cada subprojeto pelo bloco `subprojects { }`
+    // mais abaixo — o plugin NÃO se propaga automaticamente.
     alias(libs.plugins.ktlint)
     // Plugin JaCoCo compartilhado entre subprojetos para reportar
     // cobertura. Plugin core do Gradle 8 — sem versão aqui.
@@ -24,9 +25,10 @@ plugins {
 // configuração centralizada em config/detekt/detekt.yml. Evita conflitos de
 // classpath quando aplicado via apply(from = ...) em subprojetos.
 //
-// ktlint roda no root e cobre todos os subprojetos automaticamente.
-// Sobrescritas por módulo (reporters extras, filtros, etc.) são feitas
-// configurando a extensão `ktlint` no `subprojects {}` quando necessário.
+// ktlint é aplicado pelo bloco `subprojects { }` mais abaixo, que o
+// registra em cada um dos 8 módulos. Sobrescritas por módulo
+// (reporters extras, filtros, etc.) são feitas configurando a extensão
+// `ktlint` nesse mesmo bloco quando necessário.
 
 // Garante que os testes do módulo puro Kotlin `:core:domain` rodem sempre
 // que algum módulo Android executar seus testes unitários. CI invoca
@@ -140,7 +142,7 @@ subprojects {
 // `ignoreFailures = true` como contorno deliberado para que o gate
 // passasse a produzir relatório sem bloquear todo PR.
 //
-// O DEF-10 foi fechado: `ktlintFormat` nos 9 subprojetos (commit
+// O DEF-10 foi fechado: `ktlintFormat` nos 8 subprojetos (commit
 // `b59318e`) mais o acerto das 9 violações não auto-corrigíveis
 // (commit `b6db6e0`) zeraram o contador. O `ignoreFailures` volta
 // para `false` — o gate agora bloqueia de verdade, que era o ponto
