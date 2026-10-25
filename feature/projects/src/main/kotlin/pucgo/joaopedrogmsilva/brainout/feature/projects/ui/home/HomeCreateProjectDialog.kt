@@ -167,7 +167,7 @@ internal fun CreateProjectDialog(
 }
 
 @Composable
-internal fun resolveNameError(error: HomeErrorType?): String? = error?.let { resolveHomeErrorMessage(it) }
+private fun resolveNameError(error: HomeErrorType?): String? = error?.let { resolveHomeErrorMessage(it) }
 
 @Composable
 private fun CreateProjectDialogBody(
