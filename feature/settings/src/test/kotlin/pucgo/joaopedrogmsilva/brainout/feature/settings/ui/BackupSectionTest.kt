@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +40,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupViewMode
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * Testes da seção de backup local da tela de Configurações
@@ -158,6 +160,15 @@ class BackupSectionTest {
 
         composeRule.onNodeWithTag(BackupTestTags.SUMMARY).assertIsDisplayed()
         composeRule.onNodeWithText("2 projetos e 3 tarefas.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `o nome sugerido do arquivo usa a data em ISO`() {
+        // O formato do nome é contrato: `docs/qa/LOCAL-03.md` registra
+        // `brainout-backup-2026-10-20.bnbak`, e o roteiro de QA depende
+        // dele para reencontrar o arquivo exportado.
+        assertThat(defaultBackupFileName(LocalDate.of(2026, 10, 20)))
+            .isEqualTo("brainout-backup-2026-10-20.bnbak")
     }
 
     private fun setContent(viewModel: BackupViewModel = newViewModel()) {
