@@ -935,3 +935,59 @@ afirma que `onRegisterSuccess` foi chamado uma vez. O caminho do
 **login** é coberto pelo `LoginScreenTest` instrumentado
 (`login_with_valid_credentials_navigates_to_home`), que compila no CI
 e roda em dispositivo.
+
+---
+
+## A última API legada da produção (25/10/2026)
+
+Uma varredura por APIs fora do padrão (`java.text.*`, `java.util.Date`,
+`java.util.Calendar`, `java.io.File*`, `java.util.Base64`,
+`android.util.Base64`) achou **um** resíduo em toda a produção: o nome
+sugerido do arquivo de backup.
+
+```kotlin
+// antes — `java.text` (a API que o JDK desaconselha)
+val stamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+return "brainout-backup-$stamp.$BACKUP_FILE_EXTENSION"
+```
+
+O projeto já tinha migrado para `java.time` — o `coreLibraryDesugaring`
+existe justamente para isso (o `AGENTS.md` da raiz registra: *"o que
+fecha a dívida de `java.time`/`java.util.Base64` com `minSdk 24`")* — e
+este era o **único** arquivo que ainda usava `java.text`/`java.util.Date`.
+Trocando por `LocalDate` + `DateTimeFormatter.ISO_LOCAL_DATE`:
+
+- o padrão ISO é **independente de locale** — o `Locale.US` era uma
+  trava explícita para garantir exatamente isso;
+- `DateTimeFormatter` é imutável e thread-safe, ao contrário do
+  `SimpleDateFormat`;
+- o fuso continua sendo o do aparelho (o `LocalDate.now()` usa o fuso
+  default, como o `SimpleDateFormat` sem timezone explícito), e o
+  resultado é byte a byte o mesmo.
+
+### O que **não** foi mexido (e por quê)
+
+A mesma varredura achou `android.util.Base64` em dois arquivos do
+`:core:data` e `java.util.Base64` em um terceiro. Os três usos são
+**justificados** e não são duplicação:
+
+| Onde | Por que é diferente |
+|---|---|
+| `PasswordHasherImpl` | precisa do encoder **URL-safe** (`getUrlEncoder().withoutPadding()`) — o hash vai para um campo textual sem aspas. O `android.util.Base64` não tem URL-safe |
+| `BackupCrypto` | o envelope é o **contrato do arquivo**; o decoder do `android.util.Base64` tolera whitespace, o `java.util.Base64` é estrito. Trocar mudaria o comportamento de leitura |
+| `PepperProvider` | gravado e lido só pelo app; está no **DEF-75**, sob decisão do responsável |
+
+### A guarda
+
+O formato do nome do arquivo é **contrato** — `docs/qa/LOCAL-03.md`
+registra `brainout-backup-2026-10-20.bnbak`, e o roteiro de QA depende
+dele para reencontrar o arquivo exportado. A função ficou `internal`
+(com a data por parâmetro) para poder ser testada, e o teste fixa o
+formato. **Provado por sabotagem:** trocar o `ISO_LOCAL_DATE` por um
+`ofPattern("dd/MM/yyyy")` faz o caso
+`o nome sugerido do arquivo usa a data em ISO` **falhar**.
+
+### Verificação
+
+688 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes.

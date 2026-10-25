@@ -25,9 +25,8 @@ import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupUiState
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /** Tipo MIME do arquivo de backup — o conteúdo é binário cifrado. */
 private const val BACKUP_MIME_TYPE: String = "application/octet-stream"
@@ -185,11 +184,16 @@ internal fun BackupContent(
     }
 }
 
-/** Nome de arquivo sugerido na exportação. */
-private fun defaultBackupFileName(): String {
-    val stamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-    return "brainout-backup-$stamp.$BACKUP_FILE_EXTENSION"
-}
+/**
+ * Nome de arquivo sugerido na exportação.
+ *
+ * A data é a de hoje, no fuso do aparelho, no formato ISO (`yyyy-MM-dd`)
+ * — o mesmo do arquivo registrado em `docs/qa/LOCAL-03.md`. O formato é
+ * independente do idioma do aparelho: o padrão ISO não depende de
+ * locale, ao contrário de um `SimpleDateFormat` com padrão livre.
+ */
+internal fun defaultBackupFileName(today: LocalDate = LocalDate.now()): String =
+    "brainout-backup-${today.format(DateTimeFormatter.ISO_LOCAL_DATE)}.$BACKUP_FILE_EXTENSION"
 
 /** Identificadores usados por testes Compose. */
 object BackupTestTags {
