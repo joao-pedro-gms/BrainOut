@@ -1098,3 +1098,57 @@ uso** — o `dp` só existia naquele literal — e saíram.
 os gates de Kover de `:core:domain` e `:core:data` verdes. Nenhum
 pixel muda: o valor do token é exatamente o do literal que ele
 substituiu.
+
+---
+
+## O botão de revelar a senha tinha duas receitas (25/10/2026)
+
+O `:core:ui` é o dono das receitas visuais — o `AGENTS.md` da raiz é
+explícito: *"antes de escrever um cartão, uma barra superior ou um
+botão novo na feature, verifique se já existe um aqui"*. O botão que
+**alterna a revelação de uma senha** — ícone de olho, descrição que
+acompanha o estado, `contentDescription` no botão — estava escrito
+**duas vezes**:
+
+| Onde | Forma |
+|---|---|
+| `:feature:auth` (`PasswordField`) | `IconButton` + `semantics { contentDescription }` + `Icon(painterResource(...))` |
+| `:feature:settings` (`BackupPasswordField`) | idem, palavra por palavra |
+
+A diferença entre os dois campos de senha (placeholder, erro, IME) é
+real e **continua** — o que se unifica é o botão, que era idêntico.
+
+### Por que a receita subiu para o `:core:ui`
+
+A duplicação cruzava **módulos**: um `:feature:*` não pode importar
+outro `:feature:*` (é a regra do grafo — as features dependem do
+`:core:data`, do `:core:domain` e do `:core:ui`, nunca uma da outra).
+Então a correção **não** era "o backup importar o auth": a receita
+tinha que subir para o módulo que é o dono dela, como o `NeoBackButton`
+já tinha subido antes.
+
+`NeoVisibilityToggle` fica no `:core:ui` e recebe os textos **já
+resolvidos** (`showLabel`/`hideLabel`), porque o `:core:ui` não tem
+string de interface — o mesmo padrão do `NeoEmptyState` e do
+`NeoErrorBanner`.
+
+### A cobertura que não existia
+
+**Nenhum** dos dois botões tinha teste: o `LoginScreenTest` e o
+`RegisterScreenTest` não tocam no toggle, e o `BackupSectionTest`
+também não. O `NeoVisibilityToggleTest` cobre os três pontos: a
+descrição anuncia *revelar* quando a senha está oculta, anuncia
+*ocultar* quando está revelada, e o botão é acionável.
+
+O teste também prova uma coisa que valia a pena conferir: o botão
+traz `semantics { contentDescription }` **e** o ícone traz
+`contentDescription` — o Compose **mescla** os dois nós, então há
+**um** só nó anunciado. `onNode(hasContentDescription(...))` falha
+quando encontra mais de um; o teste passa, logo não há anúncio
+duplicado.
+
+### Verificação
+
+691 testes unitários, 0 falhas, 0 ignorados (3 novos no
+`NeoVisibilityToggleTest`); `ktlintCheck`, `detekt` e os gates de
+Kover de `:core:domain` e `:core:data` verdes.

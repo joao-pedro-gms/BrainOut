@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,16 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoVisibilityToggle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
-import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
 
 /**
  * Diálogos da seção de backup.
@@ -221,27 +216,13 @@ private fun BackupPasswordField(
                 null
             } else {
                 {
-                    IconButton(
-                        onClick = onVisibilityChange,
-                        modifier =
-                            Modifier
-                                .testTag(BackupTestTags.PASSPHRASE_TOGGLE)
-                                .semantics {
-                                    contentDescription = if (visible) hideLabel else showLabel
-                                },
-                    ) {
-                        Icon(
-                            painter =
-                                if (visible) {
-                                    painterResource(
-                                        UiR.drawable.neo_ic_visibility_off,
-                                    )
-                                } else {
-                                    painterResource(UiR.drawable.neo_ic_visibility)
-                                },
-                            contentDescription = if (visible) hideLabel else showLabel,
-                        )
-                    }
+                    NeoVisibilityToggle(
+                        visible = visible,
+                        showLabel = showLabel,
+                        hideLabel = hideLabel,
+                        onToggle = { onVisibilityChange() },
+                        modifier = Modifier.testTag(BackupTestTags.PASSPHRASE_TOGGLE),
+                    )
                 }
             },
     )
