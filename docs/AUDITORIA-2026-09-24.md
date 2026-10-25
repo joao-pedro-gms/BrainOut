@@ -760,3 +760,62 @@ honrar).
 
 675 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
 os gates de Kover de `:core:domain` e `:core:data` verdes.
+
+---
+
+## O mesmo tratamento de erro em duas cópias (25/10/2026)
+
+A varredura de **blocos duplicados** já dava a produção por limpa (janela
+de 8 linhas), mas o critério dela é o bloco de código — e o
+`AuthViewModel` tinha uma duplicação que ela não alcançava: a
+**estrutura** do tratamento de erro de `submitLogin` e de
+`submitRegister` era a mesma, escrita duas vezes.
+
+| O que estava duplicado | Modo de falha |
+|---|---|
+| Três dos quatro blocos `catch` idênticos nos dois fluxos (`CancellationException` → propaga, `DomainException` → `DomainRejected`, `Exception` → `Unexpected`), mais o preâmbulo (guarda de `isLoading`, validação, marcação de loading) | Um erro **novo** no tratamento — uma exceção de domínio que devesse virar erro de campo, um desfecho intermediário — seria corrigido em um dos dois fluxos e esquecido no outro. O usuário veria "credenciais inválidas" no login e "falha inesperada" no cadastro **para a mesma causa** |
+
+### A correção
+
+`launchSubmission(operation, fieldError, block)` centraliza o
+tratamento: cancelamento propaga, erro de domínio vira
+`AuthErrorType.DomainRejected` e falha inesperada vira
+`AuthErrorType.Unexpected`. O que de fato muda entre os dois fluxos —
+**qual** erro de domínio pertence a um campo — virou parâmetro: o
+login mapeia `InvalidCredentialsException` para o campo de senha, o
+cadastro mapeia `DuplicateEmailException` para o campo de e-mail, e
+qualquer outro erro de domínio cai no banner.
+
+O mapeamento é **file-private** (`AuthField`, `AuthFieldError` e a
+extensão `AuthUiState.withFieldError`): nada de novo vazou para a API
+do módulo.
+
+### O que mais saiu no mesmo movimento
+
+As seis funções de validação (`validateLoginFields`,
+`validateRegisterFields`, `validateEmailFormat`,
+`validatePasswordLength`, `validateName`,
+`validatePasswordConfirmation`) e o `FieldErrors` foram para
+`AuthFieldValidation.kt`. São regras **de campo**, sem efeito
+colateral — não tocam o estado nem disparam evento; o ViewModel
+orquestra a submissão. Efeito colateral útil: a classe `AuthViewModel`
+saiu de **14 para 9 funções**, longe do `TooManyFunctions` do detekt
+(`thresholdInClasses: 15`).
+
+### A lacuna que a refatoração expôs
+
+O caminho de erro **genérico** (`DomainRejected` / `Unexpected`) só
+era exercitado pelo **cadastro** — o login tinha caso de credencial
+inválida, mas não de erro de domínio nem de falha inesperada. Com os
+dois fluxos passando pelo mesmo helper, essa assimetria deixou de
+fazer sentido: os dois casos foram acrescentados ao
+`AuthViewModelTest` (16 → 18 casos).
+
+### Verificação
+
+682 testes unitários, 0 falhas, 0 ignorados; `ktlintCheck`, `detekt` e
+os gates de Kover de `:core:domain` e `:core:data` verdes. Os casos
+existentes do `AuthViewModel` passaram **sem alteração** — a
+refatoração mudou a forma, não o contrato: credencial inválida
+continua no campo da senha, e-mail duplicado continua no campo do
+e-mail, e o cancelamento continua propagando.
