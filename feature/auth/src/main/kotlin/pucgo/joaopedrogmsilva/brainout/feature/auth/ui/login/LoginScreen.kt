@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +32,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTextField
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoVisibilityToggle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
@@ -204,16 +203,16 @@ internal fun PasswordField(
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     val showDescription = stringResource(id = config.showToggleId)
     val hideDescription = stringResource(id = config.hideToggleId)
-    OutlinedTextField(
+    NeoTextField(
         value = value,
         onValueChange = onValueChange,
+        label = stringResource(id = config.labelId),
+        placeholder = stringResource(id = config.placeholderId),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
                 .testTag(config.fieldTestTag),
-        label = { Text(text = stringResource(id = config.labelId)) },
-        placeholder = { Text(text = stringResource(id = config.placeholderId)) },
         singleLine = true,
         visualTransformation =
             if (passwordVisible) {
@@ -235,7 +234,7 @@ internal fun PasswordField(
         isError = errorMessage != null,
         supportingText =
             errorMessage?.let { errorType ->
-                { Text(text = errorType.text()) }
+                errorType.text()
             },
         trailingIcon = {
             NeoVisibilityToggle(
@@ -279,21 +278,21 @@ internal fun EmailField(
     onNext: () -> Unit,
     config: EmailFieldConfig = EmailFieldConfig.DEFAULT_LOGIN,
 ) {
-    OutlinedTextField(
+    NeoTextField(
         value = value,
         onValueChange = onValueChange,
+        label = stringResource(id = config.labelId),
+        placeholder = stringResource(id = config.placeholderId),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
                 .testTag(config.fieldTestTag),
-        label = { Text(text = stringResource(id = config.labelId)) },
-        placeholder = { Text(text = stringResource(id = config.placeholderId)) },
         singleLine = true,
         isError = errorMessage != null,
         supportingText =
             errorMessage?.let { errorType ->
-                { Text(text = errorType.text()) }
+                errorType.text()
             },
         keyboardOptions =
             KeyboardOptions(
