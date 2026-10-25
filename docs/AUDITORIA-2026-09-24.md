@@ -666,6 +666,13 @@ declarados batem com os tokens`. Antes as duas passavam.
   correção é a mesma do item acima — **DEF-81**.
 - **O `seed` das suítes de backup** — os valores (`USER_ID`, `CREATED_AT`,
   `DUE_DATE`) são dado de cenário, não boilerplate.
+- **A `EmptyTasksCard` do detalhe do projeto** — é a **sexta** cópia da
+  receita de "estado vazio": o `:core:ui` é o dono dela (`NeoEmptyState`),
+  que já atende as quatro telas de lista e painel, mas a `EmptyTasksCard`
+  reimplementa o esqueleto à mão. Unificar elimina a cópia, mas **decide a
+  aparência**: o mesmo estado vazio aparece hoje com raio 8 dp no detalhe
+  do projeto e 16 dp nas outras quatro telas. Escolher qual é o certo é
+  decisão de design — **DEF-82**.
 
 ### Varreduras de código morto
 
