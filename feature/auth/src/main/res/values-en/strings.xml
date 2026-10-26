@@ -8,9 +8,9 @@
 
     <!-- Login (E1.6 — formulários funcionais) -->
     <string name="login_title">Sign in</string>
-    <string name="login_subtitle">Sign in to an account on this device.</string>
-    <string name="login_email_label">Email</string>
-    <string name="login_email_placeholder">you@email.com</string>
+    <string name="login_subtitle">Sign in with your username and password. Usernames are case-sensitive.</string>
+    <string name="login_username_label">Username</string>
+    <string name="login_username_placeholder">Your username</string>
     <string name="login_pwd_label">Password</string>
     <string name="login_pwd_placeholder">••••••••</string>
     <string name="login_cta">Sign in</string>
@@ -23,34 +23,26 @@
 
     <!-- Register (E1.6 — formulários funcionais) -->
     <string name="register_title">Create account</string>
-    <string name="register_subtitle">Create an account on this device to get started.</string>
-    <string name="register_name_label">Name</string>
-    <string name="register_name_placeholder">Your full name</string>
-    <string name="register_email_label">Email</string>
-    <string name="register_email_placeholder">you@email.com</string>
+    <string name="register_subtitle">Create your local account. Your data stays separate from other accounts on this device.</string>
+    <string name="register_username_label">Username</string>
+    <string name="register_username_placeholder">E.g. Joao_123</string>
     <string name="register_pwd_label">Password</string>
     <string name="register_pwd_placeholder">Create a password</string>
     <string name="register_pwd_confirm_label">Confirm password</string>
     <string name="register_pwd_confirm_placeholder">Type the password again</string>
     <string name="register_cta">Sign up</string>
     <string name="register_have_account">I already have an account</string>
-    <string name="register_role_owner">Owner</string>
-    <string name="register_role_owner_help">Creates and manages projects on this device.</string>
-    <string name="register_role_member">Member</string>
-    <string name="register_role_member_help">Tracks project tasks.</string>
     <string name="register_visibility_show">Show</string>
     <string name="register_visibility_hide">Hide</string>
 
     <!-- Mensagens de erro inline (replicadas de AuthViewModel — usadas em
          testes Compose para localizar pelo id). -->
-    <string name="auth_error_empty_email">Enter your email.</string>
-    <string name="auth_error_invalid_email">Invalid email.</string>
+    <string name="auth_error_empty_username">Enter your username.</string>
+    <string name="auth_error_invalid_username">Use 3–30 letters A–Z/a–z, digits, dots or underscores. Usernames are case-sensitive.</string>
     <string name="auth_error_empty_pwd">Enter your password.</string>
     <string name="auth_error_short_pwd">The password must have at least 8 characters.</string>
-    <string name="auth_error_invalid_credentials">Incorrect email or password.</string>
-    <string name="auth_error_duplicate_email">An account with this email already exists.</string>
-    <string name="auth_error_empty_name">Enter your name.</string>
-    <string name="auth_error_long_name">The name must have at most 120 characters.</string>
+    <string name="auth_error_invalid_credentials">Incorrect username or password.</string>
+    <string name="auth_error_duplicate_username">This username is already taken.</string>
     <string name="auth_error_empty_pwd_confirmation">Confirm your password.</string>
     <string name="auth_error_pwd_mismatch">The passwords do not match.</string>
     <string name="auth_error_unexpected">Could not complete the operation. Try again.</string>

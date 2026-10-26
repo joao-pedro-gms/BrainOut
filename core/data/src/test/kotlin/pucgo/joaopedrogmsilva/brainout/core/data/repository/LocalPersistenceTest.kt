@@ -25,7 +25,7 @@ class LocalPersistenceTest {
         runTest {
             val db = inMemoryDatabase()
             try {
-                val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), RoomLocalTransaction(db))
+                val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), testAccess(RoomLocalTransaction(db)))
                 val project = Project.create(name = "Projeto", ownerId = "u1")
                 val error = runCatching { projects.create(project, listOf("inexistente")) }.exceptionOrNull()
                 assertThat(error).isInstanceOf(TagNotFoundException::class.java)
@@ -41,9 +41,9 @@ class LocalPersistenceTest {
             val db = inMemoryDatabase()
             try {
                 val tx = RoomLocalTransaction(db)
-                val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), tx)
-                val tags = TagRepositoryImpl(db.tagDao(), tx)
-                val tasks = TaskRepositoryImpl(db.taskDao(), db.projectDao(), tx)
+                val projects = ProjectRepositoryImpl(db.projectDao(), db.tagDao(), testAccess(tx))
+                val tags = TagRepositoryImpl(db.tagDao(), testAccess(tx), db.projectDao())
+                val tasks = TaskRepositoryImpl(db.taskDao(), db.projectDao(), testAccess(tx))
                 val tag =
                     tags.create(
                         Tag.create(ownerId = "u1", name = "Urgente", color = "#123456", now = Instant.EPOCH),
@@ -75,7 +75,7 @@ class LocalPersistenceTest {
             // contra o Room de verdade, porque a consulta usa `IN (:ids)`.
             val db = inMemoryDatabase()
             try {
-                val tags = TagRepositoryImpl(db.tagDao(), RoomLocalTransaction(db))
+                val tags = TagRepositoryImpl(db.tagDao(), testAccess(RoomLocalTransaction(db)), db.projectDao())
 
                 assertThat(tags.observeByProjectIds(emptySet()).first()).isEmpty()
             } finally {

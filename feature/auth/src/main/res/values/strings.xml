@@ -8,9 +8,9 @@
 
     <!-- Login (E1.6 — formulários funcionais) -->
     <string name="login_title">Entrar</string>
-    <string name="login_subtitle">Entre em uma conta deste aparelho.</string>
-    <string name="login_email_label">E-mail</string>
-    <string name="login_email_placeholder">seu@email.com</string>
+    <string name="login_subtitle">Entre com seu nome de usuário e senha. Maiúsculas fazem diferença.</string>
+    <string name="login_username_label">Nome de usuário</string>
+    <string name="login_username_placeholder">Seu nome de usuário</string>
     <string name="login_pwd_label">Senha</string>
     <string name="login_pwd_placeholder">••••••••</string>
     <string name="login_cta">Entrar</string>
@@ -23,34 +23,26 @@
 
     <!-- Register (E1.6 — formulários funcionais) -->
     <string name="register_title">Criar conta</string>
-    <string name="register_subtitle">Crie uma conta neste aparelho para começar.</string>
-    <string name="register_name_label">Nome</string>
-    <string name="register_name_placeholder">Seu nome completo</string>
-    <string name="register_email_label">E-mail</string>
-    <string name="register_email_placeholder">seu@email.com</string>
+    <string name="register_subtitle">Crie sua conta local. Seus dados ficam separados das outras contas deste aparelho.</string>
+    <string name="register_username_label">Nome de usuário</string>
+    <string name="register_username_placeholder">Ex.: Joao_123</string>
     <string name="register_pwd_label">Senha</string>
     <string name="register_pwd_placeholder">Crie uma senha</string>
     <string name="register_pwd_confirm_label">Confirmar senha</string>
     <string name="register_pwd_confirm_placeholder">Digite a senha novamente</string>
     <string name="register_cta">Cadastrar</string>
     <string name="register_have_account">Já tenho conta</string>
-    <string name="register_role_owner">Owner</string>
-    <string name="register_role_owner_help">Cria e gerencia projetos neste aparelho.</string>
-    <string name="register_role_member">Member</string>
-    <string name="register_role_member_help">Acompanha tarefas dos projetos.</string>
     <string name="register_visibility_show">Exibir</string>
     <string name="register_visibility_hide">Esconder</string>
 
     <!-- Mensagens de erro inline (replicadas de AuthViewModel — usadas em
          testes Compose para localizar pelo id). -->
-    <string name="auth_error_empty_email">Informe seu e-mail.</string>
-    <string name="auth_error_invalid_email">E-mail inválido.</string>
+    <string name="auth_error_empty_username">Informe o nome de usuário.</string>
+    <string name="auth_error_invalid_username">Use 3–30 letras A–Z/a–z, números, ponto ou sublinhado. Maiúsculas fazem diferença.</string>
     <string name="auth_error_empty_pwd">Informe sua senha.</string>
     <string name="auth_error_short_pwd">A senha deve ter pelo menos 8 caracteres.</string>
-    <string name="auth_error_invalid_credentials">E-mail ou senha incorretos.</string>
-    <string name="auth_error_duplicate_email">Já existe uma conta cadastrada com este e-mail.</string>
-    <string name="auth_error_empty_name">Informe seu nome.</string>
-    <string name="auth_error_long_name">O nome deve ter no máximo 120 caracteres.</string>
+    <string name="auth_error_invalid_credentials">Nome de usuário ou senha incorretos.</string>
+    <string name="auth_error_duplicate_username">Este nome de usuário já está em uso.</string>
     <string name="auth_error_empty_pwd_confirmation">Confirme sua senha.</string>
     <string name="auth_error_pwd_mismatch">As senhas não coincidem.</string>
     <string name="auth_error_unexpected">Não foi possível concluir a operação. Tente novamente.</string>

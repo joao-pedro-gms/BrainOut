@@ -14,11 +14,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.UserNotFoundException
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
@@ -30,18 +27,16 @@ class DeleteTaskUseCaseTest {
 
     private fun useCase() = DeleteTaskUseCase(repository, deadlineScheduler, activeUser)
 
-    private fun user(role: UserRole): User =
+    private fun user(): User =
         User.create(
-            name = "Pessoa",
-            email = "pessoa@example.com",
+            username = "pessoa",
             passwordHash = "hash",
-            role = role,
         )
 
     @Test
     fun `owner apaga a tarefa`() =
         runTest {
-            coEvery { activeUser.currentUser() } returns user(UserRole.OWNER)
+            coEvery { activeUser.currentUser() } returns user()
             coEvery { repository.delete("t1") } returns Unit
 
             useCase()("t1")
@@ -51,17 +46,16 @@ class DeleteTaskUseCaseTest {
         }
 
     @Test
-    fun `member nao apaga a tarefa e o repositorio nao e tocado`() =
+    fun `sem sessao nao apaga a tarefa e o repositorio nao e tocado`() =
         runTest {
-            coEvery { activeUser.currentUser() } returns user(UserRole.MEMBER)
+            coEvery { activeUser.currentUser() } returns null
 
             val failure =
                 runCatching {
                     useCase()("t1")
                 }.exceptionOrNull()
 
-            assertThat(failure).isInstanceOf(PermissionDeniedException::class.java)
-            assertThat((failure as PermissionDeniedException).permission).isEqualTo(Permission.DELETE_TASK)
+            assertThat(failure).isInstanceOf(UserNotFoundException::class.java)
             coVerify(exactly = 0) { repository.delete(any()) }
             coVerify(exactly = 0) { deadlineScheduler.cancel(any()) }
         }

@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResult
 import java.io.InputStream
@@ -35,6 +36,7 @@ class RestoreBackupUseCase
     constructor(
         private val backupRepository: BackupRepository,
         private val deadlineNotificationScheduler: DeadlineNotificationScheduler,
+        private val activeUser: ActiveUserPort,
     ) {
         /**
          * @param input origem do arquivo de backup.
@@ -49,11 +51,17 @@ class RestoreBackupUseCase
         suspend operator fun invoke(
             input: InputStream,
             passphrase: String,
+            sourceUserId: String? = null,
+            expectedUserId: String? = null,
         ): BackupRestoreResult {
             requireValidPassword(passphrase, subject = "A senha do backup")
+            val owner = expectedUserId ?: activeUser.currentUser()?.id
             val previousTaskIds = backupRepository.currentTaskIds()
-            val result = backupRepository.restoreFrom(input, passphrase)
-            reconcileReminders(previousTaskIds, result)
+            val result = backupRepository.restoreFrom(input, passphrase, sourceUserId, owner)
+            val restoredOwner = result.ownerId ?: owner
+            restoredOwner?.let { userId ->
+                activeUser.runIfCurrent(userId) { reconcileReminders(previousTaskIds, result) }
+            }
             return result
         }
 
@@ -69,7 +77,7 @@ class RestoreBackupUseCase
             (previousTaskIds - restoredTaskIds).forEach { taskId ->
                 deadlineNotificationScheduler.cancel(taskId)
             }
-            result.reminders.forEach { reminder ->
+            result.reminders.filter { it.dueDate.isAfter(java.time.Instant.now()) }.forEach { reminder ->
                 deadlineNotificationScheduler.schedule(
                     taskId = reminder.taskId,
                     triggerAt = reminder.dueDate.minus(DeadlineNotificationScheduler.REMINDER_LEAD),

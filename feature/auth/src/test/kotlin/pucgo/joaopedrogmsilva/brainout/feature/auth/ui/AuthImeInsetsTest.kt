@@ -46,7 +46,7 @@ private const val IME_FRACTION = 0.4f
 /** Callbacks inertes: o teste valida insets e rolagem, não submissão. */
 private val noopLoginCallbacks =
     LoginCallbacks(
-        onEmailChange = {},
+        onUsernameChange = {},
         onPasswordChange = {},
         onSubmit = {},
         onCreateAccountClicked = {},
@@ -54,11 +54,9 @@ private val noopLoginCallbacks =
 
 private val noopRegisterCallbacks =
     RegisterCallbacks(
-        onNameChange = {},
-        onEmailChange = {},
+        onUsernameChange = {},
         onPasswordChange = {},
         onPasswordConfirmationChange = {},
-        onRoleChange = {},
         onSubmit = {},
         onHaveAccountClicked = {},
     )

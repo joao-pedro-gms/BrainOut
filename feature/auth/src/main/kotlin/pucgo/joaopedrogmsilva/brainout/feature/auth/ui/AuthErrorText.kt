@@ -19,14 +19,12 @@ internal fun AuthErrorType.text(): String = stringResource(messageRes())
 /** Recurso de string que descreve este erro. */
 internal fun AuthErrorType.messageRes(): Int =
     when (this) {
-        AuthErrorType.EmptyEmail -> R.string.auth_error_empty_email
-        AuthErrorType.InvalidEmail -> R.string.auth_error_invalid_email
+        AuthErrorType.EmptyUsername -> R.string.auth_error_empty_username
+        AuthErrorType.InvalidUsername -> R.string.auth_error_invalid_username
         AuthErrorType.EmptyPassword -> R.string.auth_error_empty_pwd
         AuthErrorType.ShortPassword -> R.string.auth_error_short_pwd
         AuthErrorType.InvalidCredentials -> R.string.auth_error_invalid_credentials
-        AuthErrorType.DuplicateEmail -> R.string.auth_error_duplicate_email
-        AuthErrorType.EmptyName -> R.string.auth_error_empty_name
-        AuthErrorType.LongName -> R.string.auth_error_long_name
+        AuthErrorType.DuplicateUsername -> R.string.auth_error_duplicate_username
         AuthErrorType.EmptyPasswordConfirmation -> R.string.auth_error_empty_pwd_confirmation
         AuthErrorType.PasswordMismatch -> R.string.auth_error_pwd_mismatch
         AuthErrorType.DomainRejected -> R.string.auth_error_domain

@@ -23,7 +23,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.OwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectTaskLimitReachedException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskPriorityChangeForbiddenException
@@ -244,7 +246,7 @@ class ProjectDetailViewModel
                     // falha de gravação.
                     Log.w(TAG, "Projeto $projectId não existe mais")
                     _errorMessage.update { ProjectDetailError.ProjectNotFound }
-                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                } catch (e: InvalidModelException) {
                     Log.w(TAG, "Título de tarefa inválido: ${e.message}")
                     _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
@@ -285,7 +287,7 @@ class ProjectDetailViewModel
             viewModelScope.launch {
                 try {
                     changeStatus.invoke(taskId, target)
-                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException) {
+                } catch (e: InvalidStateTransitionException) {
                     Log.w(TAG, "Transição de status inválida para $taskId: ${e.message}")
                     _errorMessage.update { ProjectDetailError.InvalidTransition }
                 } catch (e: ProjectTaskLimitReachedException) {
@@ -328,7 +330,7 @@ class ProjectDetailViewModel
                     Log.w(TAG, "RN02: alteração de prioridade bloqueada para taskId=${task.id} (tarefa DONE)")
                     _errorMessage.update { ProjectDetailError.PriorityLocked }
                     return
-                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                } catch (e: InvalidModelException) {
                     _errorMessage.update { ProjectDetailError.InvalidTitle }
                     return
                 }
@@ -340,7 +342,7 @@ class ProjectDetailViewModel
                     // Persistência indica DONE (bypass via copy).
                     Log.w(TAG, "RN02: alteração de prioridade bloqueada pela persistência para taskId=${task.id}")
                     _errorMessage.update { ProjectDetailError.PriorityLocked }
-                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                } catch (e: InvalidModelException) {
                     _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
                     throw e
@@ -371,7 +373,7 @@ class ProjectDetailViewModel
                 try {
                     updateTask.invoke(task.rename(trimmed))
                     onSuccess()
-                } catch (e: pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException) {
+                } catch (e: InvalidModelException) {
                     _errorMessage.update { ProjectDetailError.InvalidTitle }
                 } catch (e: CancellationException) {
                     throw e
@@ -390,7 +392,7 @@ class ProjectDetailViewModel
                     deleteTask.invoke(task.id)
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: PermissionDeniedException) {
+                } catch (e: OwnershipException) {
                     // DEF-36 — o domínio recusou a exclusão: o papel do
                     // usuário ativo não tem `DELETE_TASK`.
                     Log.w(TAG, "Exclusão de tarefa ${task.id} recusada: ${e.message}")
@@ -412,7 +414,7 @@ class ProjectDetailViewModel
                     onDone()
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: PermissionDeniedException) {
+                } catch (e: OwnershipException) {
                     // DEF-36 — o domínio recusou a exclusão: o papel do
                     // usuário ativo não tem `DELETE_PROJECT`.
                     Log.w(TAG, "Exclusão do projeto $projectId recusada: ${e.message}")

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.PermissionDeniedException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.OwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
@@ -49,7 +49,7 @@ private fun runAction(
             // que houve, em vez da mensagem genérica de falha.
             Log.w(TAG, "Nome de tag duplicado: " + e.name)
             errorSink.value = HomeErrorType.DuplicateTagName
-        } catch (e: PermissionDeniedException) {
+        } catch (e: OwnershipException) {
             // DEF-36 — o domínio recusou a operação: o papel do usuário
             // ativo não tem a permissão exigida.
             Log.w(TAG, "Operacao recusada por falta de permissao: " + e.message)

@@ -211,3 +211,67 @@ private fun repairLegacyCompletionDefault(db: SupportSQLiteDatabase) {
     db.execSQL("CREATE INDEX `idx_tasks_project_id` ON `tasks` (`project_id`)")
     db.execSQL("CREATE INDEX `idx_tasks_status` ON `tasks` (`status`)")
 }
+
+/** v5 → v6: preserva identidades, hashes e relações antes de remover os campos antigos. */
+val MIGRATION_5_6: Migration =
+    object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE migration_projects AS SELECT * FROM projects")
+            db.execSQL("CREATE TABLE migration_tags AS SELECT * FROM tags")
+            db.execSQL("CREATE TABLE migration_tasks AS SELECT * FROM tasks")
+            db.execSQL("CREATE TABLE migration_project_tags AS SELECT * FROM project_tags")
+            db.execSQL("DROP TABLE project_tags")
+            db.execSQL("DROP TABLE tasks")
+            db.execSQL("DROP TABLE tags")
+            db.execSQL("DROP TABLE projects")
+            db.execSQL(
+                "CREATE TABLE users_new (id TEXT NOT NULL PRIMARY KEY, username TEXT COLLATE BINARY NOT " +
+                    "NULL, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL, legacy_login TEXT " +
+                    "DEFAULT NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO users_new SELECT u.id, 'conta_' || (SELECT COUNT(*) FROM users p WHERE " +
+                    "p.created_at < u.created_at OR (p.created_at = u.created_at AND p.id <= u.id)), " +
+                    "u.password_hash, u.created_at, u.email FROM users u",
+            )
+            db.execSQL("DROP TABLE users")
+            db.execSQL("ALTER TABLE users_new RENAME TO users")
+            db.execSQL("CREATE UNIQUE INDEX idx_users_username ON users(username COLLATE BINARY)")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `projects` (`id` TEXT NOT NULL, `owner_id` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `description` TEXT, `created_at` INTEGER NOT NULL, " +
+                    "`is_completed` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `idx_projects_owner_id` ON `projects` (`owner_id`)")
+            db.execSQL("INSERT INTO projects SELECT * FROM migration_projects")
+            db.execSQL("DROP TABLE migration_projects")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `tags` (`id` TEXT NOT NULL, `owner_id` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `color` TEXT NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY " +
+                    "KEY(`id`))",
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `idx_tags_owner_name` ON `tags` (`owner_id`, `name`)")
+            db.execSQL("INSERT INTO tags SELECT * FROM migration_tags")
+            db.execSQL("DROP TABLE migration_tags")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `tasks` (`id` TEXT NOT NULL, `project_id` TEXT NOT NULL, " +
+                    "`title` TEXT NOT NULL, `priority_code` INTEGER NOT NULL, `status` TEXT NOT NULL, " +
+                    "`assignee_id` TEXT, `due_date` INTEGER, `created_at` INTEGER NOT NULL, `completed_at` " +
+                    "INTEGER DEFAULT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`project_id`) REFERENCES " +
+                    "`projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `idx_tasks_project_id` ON `tasks` (`project_id`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `idx_tasks_status` ON `tasks` (`status`)")
+            db.execSQL("INSERT INTO tasks SELECT * FROM migration_tasks")
+            db.execSQL("DROP TABLE migration_tasks")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `project_tags` (`project_id` TEXT NOT NULL, `tag_id` TEXT " +
+                    "NOT NULL, PRIMARY KEY(`project_id`, `tag_id`), FOREIGN KEY(`project_id`) REFERENCES " +
+                    "`projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`tag_id`) " +
+                    "REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `idx_project_tags_tag_id` ON `project_tags` (`tag_id`)")
+            db.execSQL("INSERT INTO project_tags SELECT * FROM migration_project_tags")
+            db.execSQL("DROP TABLE migration_project_tags")
+        }
+    }

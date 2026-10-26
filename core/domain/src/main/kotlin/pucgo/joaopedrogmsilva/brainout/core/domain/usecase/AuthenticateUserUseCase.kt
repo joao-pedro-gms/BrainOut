@@ -7,45 +7,24 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 import javax.inject.Inject
 
-/**
- * Caso de uso responsável por autenticar um usuário a partir de e-mail
- * e senha em texto puro.
- *
- * Fluxo:
- * 1. Normaliza e valida o e-mail.
- * 2. Busca o [User] pelo e-mail.
- * 3. Compara a senha fornecida com o hash armazenado via
- *    [PasswordHasher.verify].
- *
- * Lança [InvalidCredentialsException] em qualquer falha (e-mail
- * inexistente, hash inválido ou senha incorreta) para evitar
- * enumeração de contas.
- */
+/** Autentica por comparação exata do nome; falhas não revelam se a conta existe. */
 class AuthenticateUserUseCase
     @Inject
     constructor(
         private val userRepository: UserRepository,
         private val passwordHasher: PasswordHasher,
     ) {
-        /**
-         * @param email E-mail do usuário.
-         * @param rawPassword Senha em texto puro.
-         * @return O [User] autenticado.
-         */
         suspend operator fun invoke(
-            email: String,
+            username: String,
             rawPassword: String,
         ): User {
-            User.requireValidEmail(email)
-            requireValidPassword(rawPassword)
-
-            val normalizedEmail = email.trim()
-            val user =
-                userRepository.findByEmail(normalizedEmail)
-                    ?: throw InvalidCredentialsException()
-
-            val valid = passwordHasher.verify(rawPassword, user.passwordHash)
-            if (!valid) throw InvalidCredentialsException()
+            val inputValid = User.USERNAME_REGEX.matches(username.trim()) && rawPassword.length >= MIN_PASSWORD_LENGTH
+            val user = if (inputValid) userRepository.findByUsername(username.trim()) else null
+            if (user == null ||
+                !passwordHasher.verify(rawPassword, user.passwordHash)
+            ) {
+                throw InvalidCredentialsException()
+            }
             return user
         }
     }

@@ -28,7 +28,6 @@ import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferences
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
@@ -109,7 +108,7 @@ class HomeViewModelTest {
     @Test
     fun `SignedIn owner surfaces owner role`() =
         runTest {
-            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.OWNER))
+            val userFlow = MutableStateFlow<User?>(sampleUser())
             coEvery { activeUserProvider.observeActiveUser() } returns userFlow
             val viewModel = newViewModel()
             advanceUntilIdle()
@@ -122,9 +121,8 @@ class HomeViewModelTest {
                 }
                 assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
                 val signedIn = emitted as HomeUserState.SignedIn
-                assertThat(signedIn.displayName).isEqualTo("João Pedro")
-                assertThat(signedIn.role).isEqualTo(HomeUserRole.Owner)
-                assertThat(signedIn.initials).isEqualTo("JP")
+                assertThat(signedIn.displayName).isEqualTo("joao")
+                assertThat(signedIn.initials).isEqualTo("JO")
                 cancelAndIgnoreRemainingEvents()
             }
 
@@ -134,7 +132,7 @@ class HomeViewModelTest {
     @Test
     fun `SignedIn member surfaces member role`() =
         runTest {
-            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
+            val userFlow = MutableStateFlow<User?>(sampleUser())
             coEvery { activeUserProvider.observeActiveUser() } returns userFlow
             val viewModel = newViewModel()
             advanceUntilIdle()
@@ -146,7 +144,6 @@ class HomeViewModelTest {
                 }
                 assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
                 val signedIn = emitted as HomeUserState.SignedIn
-                assertThat(signedIn.role).isEqualTo(HomeUserRole.Member)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -170,21 +167,6 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `onMemberFabClicked opens upgrade dialog`() =
-        runTest {
-            val userFlow = MutableStateFlow<User?>(sampleUser(role = UserRole.MEMBER))
-            coEvery { activeUserProvider.observeActiveUser() } returns userFlow
-            val viewModel = newViewModel()
-            advanceUntilIdle()
-
-            assertThat(viewModel.upgradeDialogVisible.value).isFalse()
-            viewModel.onMemberFabClicked()
-            assertThat(viewModel.upgradeDialogVisible.value).isTrue()
-            viewModel.dismissUpgradeDialog()
-            assertThat(viewModel.upgradeDialogVisible.value).isFalse()
-        }
-
-    @Test
     fun `computeInitials produces sensible monograms`() {
         assertThat(computeInitials("João Pedro")).isEqualTo("JP")
         assertThat(computeInitials("madonna")).isEqualTo("MA")
@@ -198,7 +180,7 @@ class HomeViewModelTest {
         runTest {
             val newProject = Project.create(name = "Novo", ownerId = "u1")
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { createProject.invoke(any(), any(), any(), any()) } returns newProject
 
             val viewModel = newViewModel()
@@ -230,7 +212,7 @@ class HomeViewModelTest {
             val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
             val tagsFlow = MutableStateFlow<List<Tag>>(emptyList())
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
             coEvery { tagRepository.observeForOwner("u1") } returns tagsFlow
 
@@ -276,7 +258,7 @@ class HomeViewModelTest {
     fun `E2 8 erro do Flow de busca popula errorMessage e sai do loading`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
                 flow {
                     throw IllegalStateException("boom")
@@ -309,7 +291,7 @@ class HomeViewModelTest {
         runTest {
             val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { tagRepository.observeForOwner("u1") } returns flowOf(emptyList())
             // Inicialmente falha; após retry, o mock é reconfigurado abaixo.
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
@@ -362,7 +344,7 @@ class HomeViewModelTest {
     fun `E2 8 pipeline emite estado vazio mesmo sem emissao das tags por projeto`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns flowOf(emptyList())
             // Contrato real do repositório: completa sem emitir.
             every { tagRepository.observeByProjectIds(any()) } returns emptyFlow()
@@ -391,7 +373,7 @@ class HomeViewModelTest {
     fun `E2 8 falha em createProject popula errorMessage de acao`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { createProject.invoke(any(), any(), any(), any()) } throws
                 IllegalStateException("disk full")
 
@@ -410,7 +392,7 @@ class HomeViewModelTest {
     fun `E2 8 clearError zera errorMessage`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { createProject.invoke(any(), any(), any(), any()) } throws
                 IllegalStateException("boom")
 
@@ -444,7 +426,7 @@ class HomeViewModelTest {
     fun `E2 8 dispensar o erro de carga limpa o banner`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns
                 flow {
                     throw IllegalStateException("boom")
@@ -477,7 +459,7 @@ class HomeViewModelTest {
     fun `E2 6 onSearchQueryChange persiste e expoe no searchQuery`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
 
             val viewModel = newViewModel()
             advanceUntilIdle()
@@ -502,7 +484,7 @@ class HomeViewModelTest {
     fun `E2 6 busca textual e propagada para observeSearch apos debounce`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
             coEvery {
                 projectRepository.observeSearch("u1", "app", any(), any())
@@ -539,7 +521,7 @@ class HomeViewModelTest {
     fun `E2 6 filtro por tag persiste e propaga para observeSearch`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
 
             val viewModel = newViewModel()
             advanceUntilIdle()
@@ -563,7 +545,7 @@ class HomeViewModelTest {
         runTest {
             val prefsFlow = MutableStateFlow(ListingPreferences(sortOrder = SortOrder.NameAsc))
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { listingPreferences.observe("u1") } returns prefsFlow
             coEvery { listingPreferences.setSortOrder("u1", SortOrder.NameAsc) } coAnswers {
                 prefsFlow.value = ListingPreferences(sortOrder = SortOrder.NameAsc)
@@ -602,7 +584,7 @@ class HomeViewModelTest {
     fun `E2 6 cada tecla nao refaz a consulta do Room`() =
         runTest {
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
             coEvery {
                 projectRepository.observeSearch(any(), any(), any(), any())
@@ -650,7 +632,7 @@ class HomeViewModelTest {
         runTest {
             val projectsFlow = MutableStateFlow<List<Project>>(emptyList())
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
-            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser(role = UserRole.OWNER))
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
             coEvery { projectRepository.observeSearch("u1", any(), any(), any()) } returns projectsFlow
 
             val viewModel = newViewModel()
@@ -663,13 +645,11 @@ class HomeViewModelTest {
             }
         }
 
-    private fun sampleUser(role: UserRole): User =
+    private fun sampleUser(): User =
         User(
-            id = "user-id-${role.name}",
-            name = "João Pedro",
-            email = "joao@example.com",
+            id = "user-id",
+            username = "joao",
             passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-            role = role,
             createdAt = Instant.parse("2026-09-18T10:00:00Z"),
         )
 }

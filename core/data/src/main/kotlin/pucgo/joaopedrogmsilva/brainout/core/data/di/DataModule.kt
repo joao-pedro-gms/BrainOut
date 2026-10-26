@@ -19,6 +19,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_1_2
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_2_3
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_3_4
 import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_4_5
+import pucgo.joaopedrogmsilva.brainout.core.data.local.MIGRATION_5_6
 import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
@@ -32,6 +33,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.repository.TagRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.UserRepositoryImpl
 import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
@@ -87,7 +89,7 @@ object DataModule {
             // ficam com `completed_at IS NULL`.
             // Migration v3 → v4 (E3.3): cria a tabela `pending_ops` da
             // fila de sincronização offline — não destrutiva.
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
 
     @Provides
@@ -118,23 +120,24 @@ object DataModule {
     fun provideProjectRepository(
         projectDao: ProjectDao,
         tagDao: TagDao,
-        localTransaction: LocalTransaction,
-    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, localTransaction)
+        access: AccountAccess,
+    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, access)
 
     @Provides
     @Singleton
     fun provideTaskRepository(
         taskDao: TaskDao,
         projectDao: ProjectDao,
-        localTransaction: LocalTransaction,
-    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
+        access: AccountAccess,
+    ): TaskRepository = TaskRepositoryImpl(taskDao, projectDao, access)
 
     @Provides
     @Singleton
     fun provideTagRepository(
         tagDao: TagDao,
-        localTransaction: LocalTransaction,
-    ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
+        access: AccountAccess,
+        projectDao: ProjectDao,
+    ): TagRepository = TagRepositoryImpl(tagDao, access, projectDao)
 
     /**
      * Bind de [ListingPreferencesRepository] para a implementação
