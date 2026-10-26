@@ -14,12 +14,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
-import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DomainException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateUsernameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
 import javax.inject.Inject
@@ -57,8 +55,8 @@ class AuthViewModel
 
         // --- Field updates --------------------------------------------------
 
-        fun onEmailChange(value: String) {
-            _state.update { it.copy(email = value, emailError = null, errorMessage = null) }
+        fun onUsernameChange(value: String) {
+            _state.update { it.copy(username = value, usernameError = null, errorMessage = null) }
         }
 
         fun onPasswordChange(value: String) {
@@ -71,10 +69,6 @@ class AuthViewModel
             }
         }
 
-        fun onNameChange(value: String) {
-            _state.update { it.copy(name = value, nameError = null, errorMessage = null) }
-        }
-
         fun onPasswordConfirmationChange(value: String) {
             _state.update {
                 it.copy(
@@ -83,10 +77,6 @@ class AuthViewModel
                     errorMessage = null,
                 )
             }
-        }
-
-        fun onRoleChange(role: UserRole) {
-            _state.update { it.copy(selectedRole = role) }
         }
 
         // --- Submission -----------------------------------------------------
@@ -99,7 +89,7 @@ class AuthViewModel
         fun submitLogin() {
             val current = _state.value
             if (current.isLoading) return
-            Log.d(TAG, "Submetendo login para e-mail: ${current.email.maskEmail()}")
+            Log.d(TAG, "Submetendo login local")
             val errors = validateLoginFields(current)
             if (errors.hasError) {
                 Log.w(TAG, "Validação de login falhou: ${errors.failedFields}")
@@ -107,7 +97,7 @@ class AuthViewModel
                 // O banner fica reservado para erros de domínio não-campo.
                 _state.update {
                     it.copy(
-                        emailError = errors.email,
+                        usernameError = errors.username,
                         passwordError = errors.password,
                         isLoading = false,
                     )
@@ -119,7 +109,7 @@ class AuthViewModel
                 operation = "submitLogin",
                 fieldError = { error ->
                     if (error is InvalidCredentialsException) {
-                        Log.w(TAG, "Credenciais inválidas para o e-mail: ${current.email.maskEmail()}")
+                        Log.w(TAG, "Credenciais locais inválidas")
                         AuthFieldError(AuthField.Password, AuthErrorType.InvalidCredentials)
                     } else {
                         null
@@ -128,7 +118,7 @@ class AuthViewModel
             ) {
                 val user =
                     authenticateUserUseCase(
-                        email = current.email,
+                        username = current.username,
                         rawPassword = current.password,
                     )
                 Log.d(TAG, "Autenticação bem-sucedida para userId=${user.id}")
@@ -144,15 +134,13 @@ class AuthViewModel
         fun submitRegister() {
             val current = _state.value
             if (current.isLoading) return
-            Log.d(TAG, "Submetendo cadastro com role=${current.selectedRole}, e-mail=${current.email.maskEmail()}")
             val errors = validateRegisterFields(current)
             if (errors.hasError) {
                 Log.w(TAG, "Validação de cadastro falhou: ${errors.failedFields}")
                 // para o campo; o banner fica para erros de domínio não-campo.
                 _state.update {
                     it.copy(
-                        nameError = errors.name,
-                        emailError = errors.email,
+                        usernameError = errors.username,
                         passwordError = errors.password,
                         passwordConfirmationError = errors.passwordConfirmation,
                         isLoading = false,
@@ -169,9 +157,9 @@ class AuthViewModel
             launchSubmission(
                 operation = "submitRegister",
                 fieldError = { error ->
-                    if (error is DuplicateEmailException) {
-                        Log.w(TAG, "E-mail duplicado ao cadastrar: ${current.email.maskEmail()}")
-                        AuthFieldError(AuthField.Email, AuthErrorType.DuplicateEmail)
+                    if (error is DuplicateUsernameException) {
+                        Log.w(TAG, "Nome de usuário indisponível no cadastro")
+                        AuthFieldError(AuthField.Username, AuthErrorType.DuplicateUsername)
                     } else {
                         null
                     }
@@ -179,10 +167,8 @@ class AuthViewModel
             ) {
                 val user =
                     createUserUseCase(
-                        name = current.name,
-                        email = current.email,
+                        username = current.username,
                         rawPassword = current.password,
-                        role = current.selectedRole,
                     )
                 Log.d(TAG, "Cadastro bem-sucedido para userId=${user.id}")
                 user
@@ -193,7 +179,7 @@ class AuthViewModel
 
         private suspend fun persistSessionAndNavigate(user: User) {
             sessionStore.saveUserId(user.id)
-            _state.update { it.copy(isLoading = false) }
+            _state.update { it.copy(isLoading = false, password = "", passwordConfirmation = "") }
             _events.send(AuthEvent.NavigateHome)
         }
 
@@ -248,8 +234,7 @@ class AuthViewModel
  * Campo do formulário que pode receber um erro vindo do domínio.
  */
 private enum class AuthField {
-    Name,
-    Email,
+    Username,
     Password,
 }
 
@@ -273,8 +258,7 @@ private data class AuthFieldError(
  */
 private fun AuthUiState.withFieldError(error: AuthFieldError): AuthUiState =
     when (error.field) {
-        AuthField.Name -> copy(nameError = error.type, isLoading = false)
-        AuthField.Email -> copy(emailError = error.type, isLoading = false)
+        AuthField.Username -> copy(usernameError = error.type, isLoading = false)
         AuthField.Password -> copy(passwordError = error.type, isLoading = false)
     }
 

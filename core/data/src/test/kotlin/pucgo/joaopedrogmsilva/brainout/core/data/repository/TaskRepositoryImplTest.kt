@@ -11,6 +11,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.CompletionStatsRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.PriorityCountRow
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
@@ -48,7 +49,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess(localTransaction))
             val task = sampleTask()
 
             repository.create(task)
@@ -61,7 +62,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess(localTransaction))
             val task = sampleTask()
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
             val updated = task.copy(title = "Título novo")
@@ -88,7 +89,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess(localTransaction))
             val task = sampleTask(status = TaskStatus.DOING)
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
 
@@ -104,7 +105,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess(localTransaction))
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
@@ -119,7 +120,8 @@ class TaskRepositoryImplTest {
     fun `delete de tarefa ausente e idempotente`() =
         runTest {
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(FakeTaskDao(), RecordingProjectDao(FakeTaskDao()), localTransaction)
+            val repository =
+                TaskRepositoryImpl(FakeTaskDao(), RecordingProjectDao(FakeTaskDao()), testAccess(localTransaction))
 
             repository.delete("ausente")
         }
@@ -130,7 +132,7 @@ class TaskRepositoryImplTest {
             val taskDao = FakeTaskDao()
             val projectDao = RecordingProjectDao(taskDao)
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, projectDao, testAccess(localTransaction))
             val task = sampleTask(status = TaskStatus.DOING)
             taskDao.storage[task.id] = TaskEntity.fromDomain(task)
 
@@ -159,7 +161,7 @@ class TaskRepositoryImplTest {
         runTest {
             val taskDao = FakeTaskDao()
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess(localTransaction))
             val done = sampleTask(status = TaskStatus.DONE)
             taskDao.storage[done.id] = TaskEntity.fromDomain(done)
 
@@ -172,7 +174,7 @@ class TaskRepositoryImplTest {
             val taskDao = FakeTaskDao()
             val projectDao = RecordingProjectDao(taskDao)
             val localTransaction = FakeLocalTransaction()
-            val repository = TaskRepositoryImpl(taskDao, projectDao, localTransaction)
+            val repository = TaskRepositoryImpl(taskDao, projectDao, testAccess(localTransaction))
             val todo = sampleTask(status = TaskStatus.TODO)
             taskDao.storage[todo.id] = TaskEntity.fromDomain(todo)
 
@@ -212,10 +214,10 @@ class TaskRepositoryImplTest {
     fun `observeCountByPriority preenche niveis 0 a 4 ausentes com zero`() =
         runTest {
             val taskDao = FakeTaskDao()
-            taskDao.priorityCounts["p1"] = PriorityCountRow(priorityCode = 2, taskCount = 3)
+            taskDao.priorityCounts["u1"] = PriorityCountRow(priorityCode = 2, taskCount = 3)
             val repository = newRepository(taskDao)
 
-            val counts = repository.observeCountByPriority("p1").first()
+            val counts = repository.observeCountByPriority("u1").first()
 
             assertThat(counts).hasSize(5)
             assertThat(counts.map { it.priorityCode }).containsExactly(0, 1, 2, 3, 4).inOrder()
@@ -238,7 +240,7 @@ class TaskRepositoryImplTest {
     fun `observeCompletionStats mapeia row para dominio`() =
         runTest {
             val taskDao = FakeTaskDao()
-            taskDao.completionStats["p1"] =
+            taskDao.completionStats["u1"] =
                 CompletionStatsRow(
                     totalCount = 10,
                     doneCount = 4,
@@ -246,7 +248,7 @@ class TaskRepositoryImplTest {
                 )
             val repository = newRepository(taskDao)
 
-            val stats = repository.observeCompletionStats("p1", 0L).first()
+            val stats = repository.observeCompletionStats("u1", 0L).first()
 
             assertThat(stats.totalCount).isEqualTo(10)
             assertThat(stats.doneCount).isEqualTo(4)
@@ -254,7 +256,7 @@ class TaskRepositoryImplTest {
         }
 
     private fun newRepository(taskDao: TaskDao): TaskRepositoryImpl =
-        TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), FakeLocalTransaction())
+        TaskRepositoryImpl(taskDao, RecordingProjectDao(taskDao), testAccess())
 
     /** Registra uma chamada a `cascadeDeleteTask`. */
     private data class DeleteCall(
@@ -334,6 +336,12 @@ class TaskRepositoryImplTest {
     private class RecordingProjectDao(
         private val taskDao: TaskDao,
     ) : FakeProjectDao() {
+        init {
+            projects["p1"] =
+                ProjectEntity
+                    .fromDomain(sampleProject())
+        }
+
         val deleteCalls: MutableList<DeleteCall> = mutableListOf()
         val completeCalls: MutableList<CompleteCall> = mutableListOf()
         val reopenCalls: MutableList<Triple<String, String, String>> = mutableListOf()

@@ -53,6 +53,11 @@ internal class FakeBackupRepository : BackupRepository {
     /** `true` quando [restoreFrom] foi chamada. */
     var restoreCalled: Boolean = false
 
+    override suspend fun inspect(
+        input: InputStream,
+        passphrase: String,
+    ): List<BackupAccountOption> = emptyList()
+
     override suspend fun exportTo(
         output: OutputStream,
         passphrase: String,
@@ -66,6 +71,8 @@ internal class FakeBackupRepository : BackupRepository {
     override suspend fun restoreFrom(
         input: InputStream,
         passphrase: String,
+        sourceUserId: String?,
+        expectedUserId: String?,
     ): BackupRestoreResult {
         restoreCalled = true
         restoredPassphrase = passphrase

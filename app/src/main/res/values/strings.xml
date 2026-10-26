@@ -23,4 +23,7 @@
     <string name="deadline_action_complete">Concluir</string>
     <string name="deadline_unknown_project">(sem projeto)</string>
     <string name="deadline_permission_denied_toast">Sem permissão de notificações — os lembretes de prazo não serão exibidos.</string>
+    <string name="account_migration_title">Novos nomes de usuário</string>
+    <string name="account_migration_message">As contas deste aparelho agora usam os nomes abaixo para entrar. As senhas e os dados foram preservados.</string>
+    <string name="account_migration_ack">Entendi</string>
 </resources>

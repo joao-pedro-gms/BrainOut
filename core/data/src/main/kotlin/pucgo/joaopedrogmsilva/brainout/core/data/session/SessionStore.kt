@@ -11,7 +11,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.OwnershipException
 
 private const val TAG = "BrainOut:SessionStore"
 
@@ -30,6 +33,18 @@ private const val TAG = "BrainOut:SessionStore"
 class SessionStore(
     private val dataStore: DataStore<Preferences>,
 ) {
+    private val accountMutex = Mutex()
+
+    /** Impede a troca de sessão durante uma escrita da conta capturada. */
+    suspend fun <T> withUser(
+        expectedId: String,
+        block: suspend () -> T,
+    ): T =
+        accountMutex.withLock {
+            if (currentUserId() != expectedId) throw OwnershipException()
+            block()
+        }
+
     /** Observa o id do usuário autenticado. `null` significa "sem sessão". */
     fun observeUserId(): Flow<String?> =
         dataStore.data.map { prefs ->
@@ -50,13 +65,14 @@ class SessionStore(
     }
 
     /** Persiste o [userId] como sessão ativa. */
-    suspend fun saveUserId(userId: String) {
-        require(userId.isNotBlank()) { "userId não pode ser vazio" }
-        logDebug(TAG, "Salvando userId no DataStore: $userId")
-        dataStore.edit { prefs ->
-            prefs[USER_ID_KEY] = userId
+    suspend fun saveUserId(userId: String): Unit =
+        accountMutex.withLock {
+            require(userId.isNotBlank()) { "userId não pode ser vazio" }
+            logDebug(TAG, "Salvando userId no DataStore: $userId")
+            dataStore.edit { prefs ->
+                prefs[USER_ID_KEY] = userId
+            }
         }
-    }
 
     /**
      * Limpa **todo** o estado persistido neste [DataStore]: a sessão
@@ -66,13 +82,14 @@ class SessionStore(
      * existe mais no Room. Para encerrar só a sessão (restauração de
      * backup), use [clearSession] — lá a permissão continua válida.
      */
-    suspend fun clearAll() {
-        logDebug(TAG, "Limpando sessão e marca de permissão no DataStore")
-        dataStore.edit { prefs ->
-            prefs.remove(USER_ID_KEY)
-            prefs.remove(NOTIFICATION_PERMISSION_ASKED_KEY)
+    suspend fun clearAll(): Unit =
+        accountMutex.withLock {
+            logDebug(TAG, "Limpando sessão e marca de permissão no DataStore")
+            dataStore.edit { prefs ->
+                prefs.remove(USER_ID_KEY)
+                prefs.remove(NOTIFICATION_PERMISSION_ASKED_KEY)
+            }
         }
-    }
 
     /**
      * Encerra **apenas** a sessão, preservando a marca de permissão de
@@ -84,12 +101,13 @@ class SessionStore(
      * notificação é independente da sessão e continua válida — pedir a
      * permissão de novo seria um transtorno desnecessário.
      */
-    suspend fun clearSession() {
-        logDebug(TAG, "Limpando apenas a sessão no DataStore (restauração de backup)")
-        dataStore.edit { prefs ->
-            prefs.remove(USER_ID_KEY)
+    suspend fun clearSession(): Unit =
+        accountMutex.withLock {
+            logDebug(TAG, "Limpando apenas a sessão no DataStore (restauração de backup)")
+            dataStore.edit { prefs ->
+                prefs.remove(USER_ID_KEY)
+            }
         }
-    }
 
     /**
      * `true` se a permissão `POST_NOTIFICATIONS` já foi pedida alguma

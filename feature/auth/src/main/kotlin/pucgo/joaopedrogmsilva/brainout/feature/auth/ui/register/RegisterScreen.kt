@@ -5,37 +5,22 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
-import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTextField
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
@@ -46,16 +31,14 @@ import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSecondaryButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubmitButton
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.AuthSubtitle
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.FocusFirstInvalidField
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailField
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.EmailFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordField
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.PasswordFieldConfig
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.UsernameField
+import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.login.UsernameFieldConfig
 import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.rememberAuthUiState
-import pucgo.joaopedrogmsilva.brainout.feature.auth.ui.text
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthUiState
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthViewModel
-import androidx.compose.ui.semantics.Role as SemanticsRole
 
 /**
  * Tela de cadastro — formulário funcional (E1.6).
@@ -85,11 +68,9 @@ fun RegisterScreen(
             uiState = uiState,
             callbacks =
                 RegisterCallbacks(
-                    onNameChange = viewModel::onNameChange,
-                    onEmailChange = viewModel::onEmailChange,
+                    onUsernameChange = viewModel::onUsernameChange,
                     onPasswordChange = viewModel::onPasswordChange,
                     onPasswordConfirmationChange = viewModel::onPasswordConfirmationChange,
-                    onRoleChange = viewModel::onRoleChange,
                     onSubmit = { viewModel.submitRegister() },
                     onHaveAccountClicked = onHaveAccountClicked,
                 ),
@@ -100,14 +81,11 @@ fun RegisterScreen(
 /** Identificadores usados por testes Compose. */
 object RegisterTestTags {
     const val SCROLL: String = "register_scroll"
-    const val NAME_FIELD: String = "register_name"
-    const val EMAIL_FIELD: String = "register_email"
+    const val USERNAME_FIELD: String = "register_username"
     const val PASSWORD_FIELD: String = "register_password"
     const val PASSWORD_CONFIRM_FIELD: String = "register_password_confirm"
     const val PASSWORD_TOGGLE: String = "register_password_toggle"
     const val PASSWORD_CONFIRM_TOGGLE: String = "register_password_confirm_toggle"
-    const val ROLE_OWNER: String = "register_role_owner"
-    const val ROLE_MEMBER: String = "register_role_member"
     const val SUBMIT: String = "register_submit"
     const val LOADING: String = "register_loading"
     const val ERROR_BANNER: String = "register_error"
@@ -120,11 +98,9 @@ object RegisterTestTags {
  * detekt.
  */
 internal data class RegisterCallbacks(
-    val onNameChange: (String) -> Unit,
-    val onEmailChange: (String) -> Unit,
+    val onUsernameChange: (String) -> Unit,
     val onPasswordChange: (String) -> Unit,
     val onPasswordConfirmationChange: (String) -> Unit,
-    val onRoleChange: (UserRole) -> Unit,
     val onSubmit: () -> Unit,
     val onHaveAccountClicked: () -> Unit,
 )
@@ -143,8 +119,7 @@ internal fun RegisterBody(
     uiState: AuthUiState,
     modifier: Modifier = Modifier,
 ) {
-    val nameFocus = remember { FocusRequester() }
-    val emailFocus = remember { FocusRequester() }
+    val usernameFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
     val passwordConfirmFocus = remember { FocusRequester() }
 
@@ -154,8 +129,7 @@ internal fun RegisterBody(
         RegisterIdentityFields(
             uiState = uiState,
             callbacks = callbacks,
-            nameFocus = nameFocus,
-            emailFocus = emailFocus,
+            usernameFocus = usernameFocus,
             passwordFocus = passwordFocus,
         )
 
@@ -164,11 +138,6 @@ internal fun RegisterBody(
             callbacks = callbacks,
             passwordFocus = passwordFocus,
             passwordConfirmFocus = passwordConfirmFocus,
-        )
-
-        RoleSelector(
-            selected = uiState.selectedRole,
-            onSelect = callbacks.onRoleChange,
         )
 
         RegisterActions(
@@ -182,12 +151,11 @@ internal fun RegisterBody(
     FocusFirstInvalidField(
         errors =
             listOf(
-                uiState.nameError,
-                uiState.emailError,
+                uiState.usernameError,
                 uiState.passwordError,
                 uiState.passwordConfirmationError,
             ),
-        requesters = listOf(nameFocus, emailFocus, passwordFocus, passwordConfirmFocus),
+        requesters = listOf(usernameFocus, passwordFocus, passwordConfirmFocus),
     )
 }
 
@@ -195,53 +163,28 @@ internal fun RegisterBody(
  * Os campos de identidade: nome e e-mail.
  *
  * O nome é o único campo do cadastro que não tem componente próprio — o
- * `EmailField` e o `PasswordField` são compartilhados com o login. Aqui
+ * `UsernameField` e o `PasswordField` são compartilhados com o login. Aqui
  * ele ganha um par, e o formulário passa a listar as suas seções.
  */
 @Composable
 private fun RegisterIdentityFields(
     uiState: AuthUiState,
     callbacks: RegisterCallbacks,
-    nameFocus: FocusRequester,
-    emailFocus: FocusRequester,
+    usernameFocus: FocusRequester,
     passwordFocus: FocusRequester,
 ) {
-    NeoTextField(
-        value = uiState.name,
-        onValueChange = callbacks.onNameChange,
-        label = stringResource(id = R.string.register_name_label),
-        placeholder = stringResource(id = R.string.register_name_placeholder),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .focusRequester(nameFocus)
-                .testTag(RegisterTestTags.NAME_FIELD),
-        singleLine = true,
-        isError = uiState.nameError != null,
-        supportingText =
-            uiState.nameError?.let { errorType ->
-                errorType.text()
-            },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        keyboardActions =
-            KeyboardActions(
-                onNext = { emailFocus.requestFocus() },
-                onDone = { emailFocus.requestFocus() },
-            ),
-    )
-
-    EmailField(
-        value = uiState.email,
-        errorMessage = uiState.emailError,
-        onValueChange = callbacks.onEmailChange,
-        focusRequester = emailFocus,
+    UsernameField(
+        value = uiState.username,
+        errorMessage = uiState.usernameError,
+        onValueChange = callbacks.onUsernameChange,
+        focusRequester = usernameFocus,
         imeAction = ImeAction.Next,
         onNext = { passwordFocus.requestFocus() },
         config =
-            EmailFieldConfig(
-                labelId = R.string.register_email_label,
-                placeholderId = R.string.register_email_placeholder,
-                fieldTestTag = RegisterTestTags.EMAIL_FIELD,
+            UsernameFieldConfig(
+                labelId = R.string.register_username_label,
+                placeholderId = R.string.register_username_placeholder,
+                fieldTestTag = RegisterTestTags.USERNAME_FIELD,
             ),
     )
 }
@@ -317,66 +260,6 @@ private fun RegisterActions(
     )
 }
 
-@Composable
-private fun RoleSelector(
-    selected: UserRole,
-    onSelect: (UserRole) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.selectableGroup(),
-        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xxs),
-    ) {
-        RoleRow(
-            title = stringResource(id = R.string.register_role_owner),
-            help = stringResource(id = R.string.register_role_owner_help),
-            selected = selected == UserRole.OWNER,
-            onSelect = { onSelect(UserRole.OWNER) },
-            testTag = RegisterTestTags.ROLE_OWNER,
-        )
-        RoleRow(
-            title = stringResource(id = R.string.register_role_member),
-            help = stringResource(id = R.string.register_role_member_help),
-            selected = selected == UserRole.MEMBER,
-            onSelect = { onSelect(UserRole.MEMBER) },
-            testTag = RegisterTestTags.ROLE_MEMBER,
-        )
-    }
-}
-
-@Composable
-private fun RoleRow(
-    title: String,
-    help: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-    testTag: String,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectable(
-                    selected = selected,
-                    role = SemanticsRole.RadioButton,
-                    onClick = onSelect,
-                ).testTag(testTag)
-                .padding(vertical = NeoSpacing.xxs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Spacer(modifier = Modifier.width(NeoSpacing.xs))
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = title, style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = help,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 /**
  * Preview do formulário de Cadastro.
  *
@@ -393,15 +276,13 @@ private fun RegisterScreenPreview() {
             RegisterBody(
                 callbacks =
                     RegisterCallbacks(
-                        onNameChange = {},
-                        onEmailChange = {},
+                        onUsernameChange = {},
                         onPasswordChange = {},
                         onPasswordConfirmationChange = {},
-                        onRoleChange = {},
                         onSubmit = {},
                         onHaveAccountClicked = {},
                     ),
-                uiState = AuthUiState(name = "João Pedro", email = "joao@example.com"),
+                uiState = AuthUiState(username = "Joao"),
             )
         }
     }

@@ -8,6 +8,7 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
 import pucgo.joaopedrogmsilva.brainout.maintenance.LegacySyncCleanup
+import pucgo.joaopedrogmsilva.brainout.notifications.AccountReminderCoordinator
 import pucgo.joaopedrogmsilva.brainout.notifications.WorkManagerDeadlineScheduler
 import javax.inject.Inject
 
@@ -19,11 +20,15 @@ class BrainOutApplication :
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var accountReminders: AccountReminderCoordinator
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Inicializando BrainOutApplication...")
         WorkManagerDeadlineScheduler.ensureChannel(this)
         LegacySyncCleanup.cancel(WorkManager.getInstance(this))
+        accountReminders.start()
     }
 
     override val workManagerConfiguration: Configuration

@@ -23,7 +23,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
@@ -96,17 +95,12 @@ class RegisterScreenTest {
     }
 
     private fun fill(
-        name: String? = "João Pedro",
-        email: String = "joao@example.com",
+        username: String = "joao",
         password: String = TEXTO_DE_TESTE,
         confirmation: String = TEXTO_DE_TESTE,
     ) {
-        if (name != null) {
-            scrollTo(RegisterTestTags.NAME_FIELD)
-            composeRule.onNodeWithTag(RegisterTestTags.NAME_FIELD).performTextInput(name)
-        }
-        scrollTo(RegisterTestTags.EMAIL_FIELD)
-        composeRule.onNodeWithTag(RegisterTestTags.EMAIL_FIELD).performTextInput(email)
+        scrollTo(RegisterTestTags.USERNAME_FIELD)
+        composeRule.onNodeWithTag(RegisterTestTags.USERNAME_FIELD).performTextInput(username)
         scrollTo(RegisterTestTags.PASSWORD_FIELD)
         composeRule.onNodeWithTag(RegisterTestTags.PASSWORD_FIELD).performTextInput(password)
         scrollTo(RegisterTestTags.PASSWORD_CONFIRM_FIELD)
@@ -130,11 +124,11 @@ class RegisterScreenTest {
         val viewModel = newViewModel()
         setContent(viewModel)
 
-        fill(name = null)
+        fill(username = "")
         submit()
 
-        scrollTo(RegisterTestTags.NAME_FIELD)
-        assertFieldHasError(RegisterTestTags.NAME_FIELD)
+        scrollTo(RegisterTestTags.USERNAME_FIELD)
+        assertFieldHasError(RegisterTestTags.USERNAME_FIELD)
     }
 
     @Test
@@ -142,11 +136,11 @@ class RegisterScreenTest {
         val viewModel = newViewModel()
         setContent(viewModel)
 
-        fill(name = null)
+        fill(username = "")
         submit()
 
-        scrollTo(RegisterTestTags.NAME_FIELD)
-        composeRule.onNodeWithTag(RegisterTestTags.NAME_FIELD).assertIsFocused()
+        scrollTo(RegisterTestTags.USERNAME_FIELD)
+        composeRule.onNodeWithTag(RegisterTestTags.USERNAME_FIELD).assertIsFocused()
     }
 
     @Test
@@ -167,7 +161,7 @@ class RegisterScreenTest {
         var successCount = 0
         setContent(viewModel) { successCount++ }
 
-        fill(name = null)
+        fill(username = "")
         submit()
 
         assertThat(successCount).isEqualTo(0)
@@ -178,14 +172,12 @@ class RegisterScreenTest {
         val usuario =
             User(
                 id = "user-1",
-                name = "João Pedro",
-                email = "joao@example.com",
+                username = "joao",
                 passwordHash = TEXTO_DE_TESTE,
-                role = UserRole.OWNER,
                 createdAt = Instant.parse("2026-09-01T00:00:00Z"),
             )
         val createUser = mockk<CreateUserUseCase>()
-        coEvery { createUser(any(), any(), any(), any()) } returns usuario
+        coEvery { createUser(any(), any()) } returns usuario
         val viewModel = newViewModel(createUser)
         var successCount = 0
         setContent(viewModel) { successCount++ }

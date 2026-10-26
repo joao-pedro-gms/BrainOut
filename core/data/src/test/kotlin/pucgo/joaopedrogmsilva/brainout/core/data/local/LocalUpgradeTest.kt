@@ -19,7 +19,7 @@ import java.io.File
 @Config(sdk = [34], manifest = Config.NONE)
 class LocalUpgradeTest {
     @Test
-    fun `cadeia completa da v1 ate a v5 preserva o cadastro original`() =
+    fun `cadeia completa da v1 ate a v6 preserva o cadastro original`() =
         runTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             val name = "upgrade-1-5.db"
@@ -28,12 +28,13 @@ class LocalUpgradeTest {
             val database =
                 Room
                     .databaseBuilder(context, BrainOutDatabase::class.java, name)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .allowMainThreadQueries()
                     .build()
             try {
                 assertThat(database.userDao().findById("u1")?.passwordHash).isEqualTo("hash-legado")
-                assertThat(database.openHelper.writableDatabase.version).isEqualTo(5)
+                assertThat(database.userDao().findById("u1")?.username).isEqualTo("conta_1")
+                assertThat(database.openHelper.writableDatabase.version).isEqualTo(6)
                 database.openHelper.writableDatabase
                     .query(
                         "SELECT name FROM sqlite_master WHERE name='pending_ops'",
@@ -61,11 +62,12 @@ class LocalUpgradeTest {
             val database =
                 Room
                     .databaseBuilder(context, BrainOutDatabase::class.java, name)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .allowMainThreadQueries()
                     .build()
             try {
                 assertThat(database.userDao().findById("u1")?.passwordHash).isEqualTo("hash-legado")
+                assertThat(database.userDao().findById("u1")?.username).isEqualTo("conta_1")
                 assertThat(database.projectDao().findById("p1")?.description).isEqualTo("Descrição")
                 val task = database.taskDao().findById("t1")!!
                 assertThat(task.title).isEqualTo("Tarefa legada")
@@ -80,7 +82,7 @@ class LocalUpgradeTest {
                 ).isEqualTo(4000L)
                 assertThat(database.tagDao().findById("g1")?.color).isEqualTo("#123456")
                 val sql = database.openHelper.writableDatabase
-                assertThat(sql.version).isEqualTo(5)
+                assertThat(sql.version).isEqualTo(6)
                 sql.query("SELECT tag_id FROM project_tags WHERE project_id='p1'").use {
                     assertThat(it.moveToFirst()).isTrue()
                     assertThat(it.getString(0)).isEqualTo("g1")

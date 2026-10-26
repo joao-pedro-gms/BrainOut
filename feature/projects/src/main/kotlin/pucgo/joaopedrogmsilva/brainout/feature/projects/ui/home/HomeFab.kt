@@ -1,14 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// FAB estendido da Home gated pelo papel (E1.7): Owner cria projeto,
-// Member dispara diálogo explicativo. `UpgradeDialog` explica a
-// limitação ao Member — resolve as strings do papel via recursos.
+// Ação de criar projeto para a conta pessoal conectada.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -17,40 +12,14 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCreateActionButton
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 @Composable
-internal fun HomeFloatingActionButton(
-    isOwner: Boolean,
-    onCreateProjectClicked: () -> Unit,
-    onMemberFabClicked: () -> Unit,
-) {
+internal fun HomeFloatingActionButton(onCreateProjectClicked: () -> Unit) {
     NeoCreateActionButton(
-        label = stringResource(if (isOwner) R.string.home_fab_create else R.string.home_fab_disabled_owner),
-        onClick = { if (isOwner) onCreateProjectClicked() else onMemberFabClicked() },
+        label = stringResource(R.string.home_fab_create),
+        onClick = onCreateProjectClicked,
         containerColor =
-            if (isOwner) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.primaryContainer,
         contentColor =
-            if (isOwner) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            MaterialTheme.colorScheme.onPrimaryContainer,
         modifier = Modifier.testTag(HomeTestTags.FAB),
-    )
-}
-
-@Composable
-internal fun UpgradeDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.testTag(HomeTestTags.UPGRADE_DIALOG_ACK),
-            ) {
-                Text(text = stringResource(id = R.string.home_role_member_dialog_ack))
-            }
-        },
-        title = {
-            Text(text = stringResource(id = R.string.home_role_member_dialog_title))
-        },
-        text = {
-            Text(text = stringResource(id = R.string.home_role_member_dialog_body))
-        },
-        modifier = Modifier.testTag(HomeTestTags.UPGRADE_DIALOG),
     )
 }

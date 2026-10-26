@@ -180,7 +180,7 @@ class ProjectRepositoryImplTest {
             val projectDao = FakeProjectDao()
             val repository = newRepository(projectDao)
 
-            repository.observeSearch(ownerId, "query", "tag-1", SortOrder.NameAsc)
+            repository.observeSearch(ownerId, "query", "tag-1", SortOrder.NameAsc).first()
 
             assertThat(projectDao.lastSearch).isNotNull()
             val search = projectDao.lastSearch!!
@@ -200,7 +200,7 @@ class ProjectRepositoryImplTest {
         projectDao: ProjectDao = FakeProjectDao(),
         localTransaction: LocalTransaction = FakeLocalTransaction(),
         tagDao: TagDao = FakeTagDao(),
-    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, localTransaction)
+    ): ProjectRepository = ProjectRepositoryImpl(projectDao, tagDao, testAccess(localTransaction))
 
     /** Fake mínimo de [TagDao]. */
 }

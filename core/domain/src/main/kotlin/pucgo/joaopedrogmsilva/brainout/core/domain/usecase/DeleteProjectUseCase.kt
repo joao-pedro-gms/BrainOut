@@ -1,8 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
-import pucgo.joaopedrogmsilva.brainout.core.domain.permission.requirePermission
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import javax.inject.Inject
@@ -26,7 +24,8 @@ class DeleteProjectUseCase
     ) {
         /** @param projectId Identificador do projeto a remover. */
         suspend operator fun invoke(projectId: String) {
-            activeUser.requirePermission(Permission.DELETE_PROJECT)
+            activeUser.currentUser() ?: throw pucgo.joaopedrogmsilva.brainout.core.domain.error
+                .UserNotFoundException()
             repository.delete(projectId)
         }
     }

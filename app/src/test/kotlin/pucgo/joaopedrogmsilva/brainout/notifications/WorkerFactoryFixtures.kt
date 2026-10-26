@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ChangeTaskStatusUseCase
@@ -33,6 +34,10 @@ internal fun deadlineWorkerFactory(
                 workerParameters,
                 taskRepository,
                 projectRepository,
+                io.mockk.mockk<SessionStore>(relaxed = true).also { session ->
+                    io.mockk.coEvery { session.withUser<Unit>(any(), any()) } coAnswers
+                        { secondArg<suspend () -> Unit>().invoke() }
+                },
             )
     }
 

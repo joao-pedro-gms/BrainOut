@@ -19,6 +19,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import pucgo.joaopedrogmsilva.brainout.R
+import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
@@ -67,6 +68,7 @@ class DeadlineWorker
         @Assisted params: WorkerParameters,
         private val taskRepository: TaskRepository,
         private val projectRepository: ProjectRepository,
+        private val session: SessionStore,
     ) : CoroutineWorker(appContext, params) {
         override suspend fun doWork(): Result {
             val taskId = inputData.getString(DeadlineKeys.TASK_ID)
@@ -117,9 +119,8 @@ class DeadlineWorker
                 return
             }
 
-            val projectName =
-                projectRepository.findById(task.projectId)?.name
-                    ?: applicationContext.getString(R.string.deadline_unknown_project)
+            val project = projectRepository.findById(task.projectId) ?: return
+            val projectName = project.name
 
             if (!hasNotificationPermission(applicationContext)) {
                 Log.w(TAG, "Lembrete não exibido: permissão POST_NOTIFICATIONS negada")
@@ -170,9 +171,9 @@ class DeadlineWorker
             // aqui usamos `@RequiresPermission` para silenciar o lint com
             // garantia documentada (a verificação é feita na linha 68).
             @SuppressLint("MissingPermission")
-            NotificationManagerCompat
-                .from(applicationContext)
-                .notify(notificationTag, notificationId, notification)
+            session.withUser(project.ownerId) {
+                NotificationManagerCompat.from(applicationContext).notify(notificationTag, notificationId, notification)
+            }
             Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
         }
 

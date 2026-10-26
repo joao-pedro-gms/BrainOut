@@ -12,10 +12,10 @@ package pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel
  */
 enum class AuthErrorType {
     /** Campo de e-mail vazio. */
-    EmptyEmail,
+    EmptyUsername,
 
     /** E-mail fora do formato válido. */
-    InvalidEmail,
+    InvalidUsername,
 
     /** Campo de senha vazio. */
     EmptyPassword,
@@ -27,13 +27,7 @@ enum class AuthErrorType {
     InvalidCredentials,
 
     /** Já existe uma conta cadastrada com este e-mail. */
-    DuplicateEmail,
-
-    /** Campo de nome vazio. */
-    EmptyName,
-
-    /** Nome mais longo que o máximo aceito pelo domínio. */
-    LongName,
+    DuplicateUsername,
 
     /** Confirmação de senha vazia. */
     EmptyPasswordConfirmation,

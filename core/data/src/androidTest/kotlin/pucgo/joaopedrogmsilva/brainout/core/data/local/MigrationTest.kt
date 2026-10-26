@@ -300,6 +300,44 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun migrate_5_para_6_preserva_identidades_e_relacoes() {
+        val dbName = "migration-5-6.db"
+        helper.createDatabase(dbName, 5).use { db ->
+            db.execSQL("INSERT INTO users VALUES('b','Nome','b@exemplo.com','hash-b','MEMBER',1000)")
+            db.execSQL("INSERT INTO users VALUES('a','Nome','a@exemplo.com','hash-a','OWNER',1000)")
+            seedProjectAndTask(db)
+            db.execSQL("INSERT INTO tags VALUES('g1','u1','Tag','#123456',1000)")
+            db.execSQL("INSERT INTO project_tags VALUES('p1','g1')")
+        }
+        helper.runMigrationsAndValidate(dbName, 6, true, MIGRATION_5_6).use { db ->
+            db.cursor("SELECT username, password_hash FROM users ORDER BY id").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("conta_1")
+                assertThat(cursor.getString(1)).isEqualTo("hash-a")
+                assertThat(cursor.moveToNext()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("conta_2")
+            }
+            db.cursor("SELECT tag_id FROM project_tags WHERE project_id='p1'").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getString(0)).isEqualTo("g1")
+            }
+            db.cursor("PRAGMA foreign_key_check").use { assertThat(it.moveToFirst()).isFalse() }
+        }
+    }
+
+    @Test
+    fun migrate_5_para_6_aceita_base_vazia() {
+        val dbName = "migration-empty-5-6.db"
+        helper.createDatabase(dbName, 5).close()
+        helper.runMigrationsAndValidate(dbName, 6, true, MIGRATION_5_6).use { db ->
+            db.cursor("SELECT COUNT(*) FROM users").use { cursor ->
+                assertThat(cursor.moveToFirst()).isTrue()
+                assertThat(cursor.getInt(0)).isEqualTo(0)
+            }
+        }
+    }
+
     private fun seedProjectAndTask(db: SupportSQLiteDatabase) {
         db.execSQL(
             "INSERT INTO projects(id, owner_id, name, description, created_at, is_completed) " +

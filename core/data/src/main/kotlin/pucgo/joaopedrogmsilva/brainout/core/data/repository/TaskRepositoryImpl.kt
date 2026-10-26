@@ -2,14 +2,17 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.OwnershipException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
@@ -30,19 +33,36 @@ class TaskRepositoryImpl
     constructor(
         private val taskDao: TaskDao,
         private val projectDao: ProjectDao,
-        private val localTransaction: LocalTransaction,
+        private val access: AccountAccess,
     ) : TaskRepository {
         override fun observeForProject(projectId: String): Flow<List<Task>> =
-            taskDao.observeForProject(projectId).map { rows -> rows.map { it.toDomain() } }
+            access.observe(emptyList()) { owner ->
+                if (projectDao.findById(projectId)?.ownerId == owner) {
+                    taskDao.observeForProject(projectId).map { rows -> rows.map { it.toDomain() } }
+                } else {
+                    flowOf(emptyList())
+                }
+            }
 
         override fun observeAllForOwner(ownerId: String): Flow<List<Task>> =
-            taskDao.observeAllForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
+            access.observeOwner(ownerId, emptyList()) {
+                taskDao.observeAllForOwner(ownerId).map { rows ->
+                    rows.map { it.toDomain() }
+                }
+            }
 
-        override suspend fun findById(id: String): Task? = taskDao.findById(id)?.toDomain()
+        override suspend fun findById(id: String): Task? =
+            taskDao
+                .findById(id)
+                ?.takeIf {
+                    access.owns(ownerOf(it.projectId))
+                }?.toDomain()
 
         override suspend fun create(task: Task): Task {
             logDebug(TAG, "Criando tarefa id=${task.id}, title=${task.title}, projectId=${task.projectId}")
-            localTransaction.run {
+            val owner = ownerOf(task.projectId)
+            access.write(owner) {
+                validateAssignee(task, owner)
                 taskDao.insert(TaskEntity.fromDomain(task))
             }
             return task
@@ -54,7 +74,11 @@ class TaskRepositoryImpl
                 logWarn(TAG, "update ignorado: tarefa id=${task.id} não existe no Room")
                 throw TaskNotFoundException(task.id)
             }
-            localTransaction.run {
+            val stored = findById(task.id) ?: throw TaskNotFoundException(task.id)
+            if (stored.projectId != task.projectId) throw OwnershipException()
+            val owner = ownerOf(stored.projectId)
+            access.write(owner) {
+                if (task.assigneeId != stored.assigneeId) validateAssignee(task, owner)
                 taskDao.update(TaskEntity.fromDomain(task))
             }
             return task
@@ -66,10 +90,10 @@ class TaskRepositoryImpl
         ): Task {
             logDebug(TAG, "Alterando status da tarefa id=$id para target=$target")
             val current =
-                taskDao.findById(id)?.toDomain()
+                taskDao.findById(id)?.takeIf { access.owns(ownerOf(it.projectId)) }?.toDomain()
                     ?: throw TaskNotFoundException(id)
             val updated = current.transitionTo(target)
-            localTransaction.run {
+            access.write(ownerOf(current.projectId)) {
                 taskDao.update(TaskEntity.fromDomain(updated))
             }
             return updated
@@ -78,13 +102,13 @@ class TaskRepositoryImpl
         override suspend fun delete(id: String) {
             logDebug(TAG, "Deletando tarefa id=$id")
             val current =
-                taskDao.findById(id)
+                taskDao.findById(id)?.takeIf { access.owns(ownerOf(it.projectId)) }
                     ?: run {
                         logDebug(TAG, "Deleção de tarefa id=$id ignorada: não encontrada no Room")
                         return
                     }
             val wasActive = current.status != TaskStatus.DONE.name
-            localTransaction.run {
+            access.write(ownerOf(current.projectId)) {
                 projectDao.cascadeDeleteTask(
                     taskDao = taskDao,
                     taskId = id,
@@ -94,13 +118,18 @@ class TaskRepositoryImpl
             }
         }
 
-        override suspend fun countActiveByProject(projectId: String): Int = taskDao.countActiveByProject(projectId)
+        override suspend fun countActiveByProject(projectId: String): Int {
+            access.requireOwner(ownerOf(projectId))
+            return taskDao.countActiveByProject(projectId)
+        }
 
         override fun observeCountByPriority(ownerId: String): Flow<List<TaskPriorityCount>> =
-            taskDao.observeCountByPriority(ownerId).map { rows ->
-                val byCode = rows.associate { it.priorityCode to it.taskCount }
-                TaskPriority.VALID_CODES.map { code ->
-                    TaskPriorityCount(priorityCode = code, count = byCode[code] ?: 0)
+            access.observeOwner(ownerId, emptyList()) {
+                taskDao.observeCountByPriority(ownerId).map { rows ->
+                    val byCode = rows.associate { it.priorityCode to it.taskCount }
+                    TaskPriority.VALID_CODES.map { code ->
+                        TaskPriorityCount(priorityCode = code, count = byCode[code] ?: 0)
+                    }
                 }
             }
 
@@ -108,18 +137,20 @@ class TaskRepositoryImpl
             ownerId: String,
             weekStartMillis: Long,
         ): Flow<TaskCompletionStats> =
-            taskDao.observeCompletionStats(ownerId, weekStartMillis).map { row ->
-                TaskCompletionStats(
-                    totalCount = row.totalCount,
-                    doneCount = row.doneCount,
-                    doneThisWeekCount = row.doneThisWeekCount,
-                )
+            access.observeOwner(ownerId, TaskCompletionStats(0, 0, 0)) {
+                taskDao.observeCompletionStats(ownerId, weekStartMillis).map { row ->
+                    TaskCompletionStats(
+                        totalCount = row.totalCount,
+                        doneCount = row.doneCount,
+                        doneThisWeekCount = row.doneThisWeekCount,
+                    )
+                }
             }
 
         override suspend fun completeAndCascade(taskId: String): Task {
             logDebug(TAG, "Concluindo tarefa id=$taskId em cascata com projeto")
             val current =
-                taskDao.findById(taskId)?.toDomain()
+                findById(taskId)
                     ?: throw TaskNotFoundException(taskId)
             if (current.status == TaskStatus.DONE) {
                 logDebug(TAG, "completeAndCascade: tarefa $taskId já em DONE — reidratando a cascata do projeto")
@@ -132,7 +163,7 @@ class TaskRepositoryImpl
             val completedAt =
                 done.completedAt
                     ?: Instant.now() // fallback defensivo: transitionTo popula
-            localTransaction.run {
+            access.write(ownerOf(current.projectId)) {
                 projectDao.cascadeCompleteTask(
                     taskDao = taskDao,
                     taskId = taskId,
@@ -147,7 +178,7 @@ class TaskRepositoryImpl
         private suspend fun repairCompletedProject(current: Task): Task {
             val activeAfter = taskDao.countActiveByProject(current.projectId)
             if (activeAfter == 0) {
-                projectDao.updateIsCompleted(current.projectId, true)
+                access.write(ownerOf(current.projectId)) { projectDao.updateIsCompleted(current.projectId, true) }
                 logDebug(TAG, "Cascata RN03 reidratada: projeto ${current.projectId} marcado como concluído")
             }
             return current
@@ -162,7 +193,7 @@ class TaskRepositoryImpl
                 "reopenAndCascade aceita apenas estados ativos; use completeAndCascade para DONE"
             }
             val current =
-                taskDao.findById(taskId)?.toDomain()
+                findById(taskId)
                     ?: throw TaskNotFoundException(taskId)
             if (current.status != TaskStatus.DONE) {
                 // Não está em DONE — não há reabertura a fazer; o caller
@@ -173,7 +204,7 @@ class TaskRepositoryImpl
                 )
             }
             val updated = current.transitionTo(target)
-            localTransaction.run {
+            access.write(ownerOf(current.projectId)) {
                 // cascadeReopenTask é @Transaction — a reabertura da
                 // tarefa e a desmarcação do projeto são aplicadas
                 // atomicamente na transação local.
@@ -186,4 +217,14 @@ class TaskRepositoryImpl
             }
             return updated
         }
+
+        private suspend fun ownerOf(projectId: String): String =
+            projectDao.findById(projectId)?.ownerId ?: throw ProjectNotFoundException(projectId)
     }
+
+private fun validateAssignee(
+    task: Task,
+    owner: String,
+) {
+    if (task.assigneeId != null && task.assigneeId != owner) throw OwnershipException()
+}

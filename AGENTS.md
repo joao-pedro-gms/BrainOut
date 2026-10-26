@@ -1,5 +1,14 @@
 # Repository Guidelines
 
+> Atualização de contas locais (26/10/2026): identidade `User(id, username,
+> passwordHash, createdAt)`; username ASCII de 3–30 caracteres, case-sensitive.
+> Não há UserRole/Permission nem autenticação por e-mail. Todas as contas
+> gerenciam os próprios dados; AccountAccess protege leituras e escritas nos
+> repositórios e serializa escritas com trocas de sessão. Room v6 usa a migration
+> 5→6, preservando hashes/UUIDs. Backup v2 é por conta e lê v1 com seleção;
+> restauração preserva credenciais e demais contas. Referências a papéis/v5
+> abaixo são históricas. Não restaurar matriz OWNER/MEMBER.
+
 ## Approved product direction — 2026-10-16
 
 The owner approved a fully local Android product. Read

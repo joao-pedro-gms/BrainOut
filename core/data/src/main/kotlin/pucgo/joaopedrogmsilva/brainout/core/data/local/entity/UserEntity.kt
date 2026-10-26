@@ -6,73 +6,20 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import java.time.Instant
 
-/**
- * Linha da tabela `users` no Room.
- *
- * Mantém o mapeamento 1:1 com [User] do domínio. O id é uma `String`
- * (UUID gerado em [User.create]) e usamos como chave primária.
- *
- * O `password_hash` é armazenado como `String` no formato produzido por
- * [pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl]
- * (`alg$iter$salt$hash` Base64). Persistir apenas o hash é o suficiente:
- * sal e iterações são regeneráveis a partir do próprio valor.
- *
- * @property id UUID do usuário (chave primária).
- * @property name Nome completo (1..120 caracteres).
- * @property email Endereço de e-mail (normalizado em [User.create]).
- * @property passwordHash Hash+salt+iter no formato opaco do hasher.
- * @property role Nome do [UserRole] (enum estável — `OWNER` ou `MEMBER`).
- * @property createdAt Instante de criação em epoch millis.
- */
-@Entity(
-    tableName = "users",
-    indices = [
-        Index(
-            value = ["email"],
-            name = "idx_users_email",
-            unique = true,
-        ),
-    ],
-)
+/** Identidade persistente; índice BINARY preserva a distinção entre Joao e joao. */
+@Entity(tableName = "users", indices = [Index(value = ["username"], name = "idx_users_username", unique = true)])
 data class UserEntity(
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: String,
-    @ColumnInfo(name = "name")
-    val name: String,
-    @ColumnInfo(name = "email")
-    val email: String,
-    @ColumnInfo(name = "password_hash")
-    val passwordHash: String,
-    @ColumnInfo(name = "role")
-    val role: String,
-    @ColumnInfo(name = "created_at")
-    val createdAt: Instant,
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "username", collate = ColumnInfo.BINARY) val username: String,
+    @ColumnInfo(name = "password_hash") val passwordHash: String,
+    @ColumnInfo(name = "created_at") val createdAt: Instant,
+    @ColumnInfo(name = "legacy_login", defaultValue = "NULL") val legacyLogin: String? = null,
 ) {
-    /** Converte a linha para o modelo imutável de domínio [User]. */
-    fun toDomain(): User =
-        User(
-            id = id,
-            name = name,
-            email = email,
-            passwordHash = passwordHash,
-            role = UserRole.valueOf(role),
-            createdAt = createdAt,
-        )
+    fun toDomain(): User = User(id, username, passwordHash, createdAt)
 
     companion object {
-        /** Constrói a entidade a partir de um [User] de domínio. */
-        fun fromDomain(user: User): UserEntity =
-            UserEntity(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                passwordHash = user.passwordHash,
-                role = user.role.name,
-                createdAt = user.createdAt,
-            )
+        fun fromDomain(user: User): UserEntity = UserEntity(user.id, user.username, user.passwordHash, user.createdAt)
     }
 }

@@ -9,14 +9,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
-
-/** Mapeia [UserRole] (domínio) para a enumeração visual [HomeUserRole]. */
-internal fun UserRole.toHomeRole(): HomeUserRole =
-    when (this) {
-        UserRole.OWNER -> HomeUserRole.Owner
-        UserRole.MEMBER -> HomeUserRole.Member
-    }
 
 /** Converte um [User] ativo em [HomeUserState] consumido pela UI. */
 internal fun User?.toHomeUserState(): HomeUserState =
@@ -24,9 +16,8 @@ internal fun User?.toHomeUserState(): HomeUserState =
         null -> HomeUserState.SignedOut
         else ->
             HomeUserState.SignedIn(
-                displayName = name,
-                initials = computeInitials(name),
-                role = role.toHomeRole(),
+                displayName = username,
+                initials = computeInitials(username),
             )
     }
 

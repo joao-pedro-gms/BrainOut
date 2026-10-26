@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
+import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
@@ -134,5 +135,17 @@ class TagRepositoryImplTest {
     private fun newRepository(
         tagDao: TagDao = FakeTagDao(),
         localTransaction: LocalTransaction = FakeLocalTransaction(),
-    ): TagRepository = TagRepositoryImpl(tagDao, localTransaction)
+    ): TagRepository =
+        TagRepositoryImpl(
+            tagDao,
+            testAccess(localTransaction),
+            FakeProjectDao().apply {
+                projects["p1"] =
+                    ProjectEntity
+                        .fromDomain(sampleProject())
+                ; projects["p2"] =
+                    ProjectEntity
+                        .fromDomain(sampleProject(id = "p2"))
+            },
+        )
 }
