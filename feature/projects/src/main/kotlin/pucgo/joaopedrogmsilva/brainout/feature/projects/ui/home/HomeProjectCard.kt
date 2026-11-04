@@ -12,22 +12,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPressFeedback
+import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
 internal const val MAX_TAG_CHIPS_PREVIEW: Int = 4
 
@@ -48,6 +54,7 @@ private val HEX_COLOR_FALLBACK: Color = Color(0xFF9E9E9E)
 internal fun ProjectCard(
     item: ProjectCardItem,
     onClick: () -> Unit,
+    onEditClick: () -> Unit = {},
 ) {
     val interaction = remember { MutableInteractionSource() }
     Surface(
@@ -91,6 +98,16 @@ internal fun ProjectCard(
                         TagChipView(chip = chip, selected = true)
                     }
                 }
+            }
+            TextButton(
+                onClick = onEditClick,
+                modifier =
+                    Modifier
+                        .align(Alignment.End)
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${item.project.id}"),
+            ) {
+                Text(text = stringResource(id = R.string.home_edit_project_action))
             }
         }
     }

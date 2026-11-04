@@ -36,6 +36,8 @@ fun HomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
+    var editingProjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingItem = listState.projects.firstOrNull { it.project.id == editingProjectId }
 
     // DEF-72 — sem sessão (carregando ou sem login) a Home não
     // inventa uma identidade: a TopAppBar mostra a saudação genérica.
@@ -83,6 +85,7 @@ fun HomeScreen(
                     onSearchQueryChange = viewModel::onSearchQueryChange,
                     onTagFilterChange = viewModel::onTagFilterChange,
                     onSortOrderChange = viewModel::onSortOrderChange,
+                    onEditProject = { editingProjectId = it },
                 ),
         )
     }
@@ -98,6 +101,19 @@ fun HomeScreen(
             },
         )
     }
+
+    editingItem?.let { item ->
+        EditProjectDialog(
+            item = item,
+            errorMessage = listState.errorMessage?.let { resolveHomeErrorMessage(it) },
+            availableTags = listState.availableTags,
+            onDismiss = { editingProjectId = null },
+            onCreateTag = { name, color -> viewModel.createTag(name, color) },
+            onUpdateProject = { project, tagIds ->
+                viewModel.updateProject(project, tagIds) { editingProjectId = null }
+            },
+        )
+    }
 }
 
 /** Identificadores usados por testes Compose. */
@@ -106,11 +122,22 @@ object HomeTestTags {
     const val ROLE_BADGE: String = "home_role_badge"
     const val UPGRADE_DIALOG: String = "home_upgrade_dialog"
     const val UPGRADE_DIALOG_ACK: String = "home_upgrade_dialog_ack"
-    const val CREATE_PROJECT_DIALOG: String = "home_create_project_dialog"
-    const val CREATE_PROJECT_NAME: String = "home_create_project_name"
-    const val CREATE_PROJECT_DESCRIPTION: String = "home_create_project_description"
-    const val CREATE_PROJECT_CONFIRM: String = "home_create_project_confirm"
-    const val CREATE_PROJECT_ADD_TAG: String = "home_create_project_add_tag"
+    const val CREATE_PROJECT_FORM_PREFIX: String = "home_create_project"
+    const val CREATE_PROJECT_DIALOG: String = "${CREATE_PROJECT_FORM_PREFIX}_dialog"
+    const val CREATE_PROJECT_NAME: String = "${CREATE_PROJECT_FORM_PREFIX}_name"
+    const val CREATE_PROJECT_DESCRIPTION: String = "${CREATE_PROJECT_FORM_PREFIX}_description"
+    const val CREATE_PROJECT_CONFIRM: String = "${CREATE_PROJECT_FORM_PREFIX}_confirm"
+    const val CREATE_PROJECT_ADD_TAG: String = "${CREATE_PROJECT_FORM_PREFIX}_add_tag"
+    const val CREATE_PROJECT_ERROR: String = "${CREATE_PROJECT_FORM_PREFIX}_error"
+    const val EDIT_PROJECT_BUTTON: String = "home_edit_project_button"
+    const val EDIT_PROJECT_FORM_PREFIX: String = "home_edit_project"
+    const val EDIT_PROJECT_DIALOG: String = "${EDIT_PROJECT_FORM_PREFIX}_dialog"
+    const val EDIT_PROJECT_NAME: String = "${EDIT_PROJECT_FORM_PREFIX}_name"
+    const val EDIT_PROJECT_DESCRIPTION: String = "${EDIT_PROJECT_FORM_PREFIX}_description"
+    const val EDIT_PROJECT_CONFIRM: String = "${EDIT_PROJECT_FORM_PREFIX}_confirm"
+    const val EDIT_PROJECT_ADD_TAG: String = "${EDIT_PROJECT_FORM_PREFIX}_add_tag"
+    const val EDIT_PROJECT_ERROR: String = "${EDIT_PROJECT_FORM_PREFIX}_error"
+    const val EDIT_PROJECT_TAG: String = "${EDIT_PROJECT_FORM_PREFIX}_tag"
 
     /**
      * Chip de tag selecionável no diálogo de criação de projeto.

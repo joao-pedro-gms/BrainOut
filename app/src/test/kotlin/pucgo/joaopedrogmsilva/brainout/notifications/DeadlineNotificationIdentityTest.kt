@@ -6,6 +6,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +39,11 @@ class DeadlineNotificationIdentityTest {
         NotificationManagerCompat.from(context).cancelAll()
     }
 
+    @After
+    fun tearDown() {
+        NotificationManagerCompat.from(context).cancelAll()
+    }
+
     private fun notification(title: String): NotificationCompat.Builder =
         NotificationCompat
             .Builder(context, WorkManagerDeadlineScheduler.CHANNEL_ID)
@@ -59,7 +65,12 @@ class DeadlineNotificationIdentityTest {
             notification("Tarefa B").build(),
         )
 
-        assertThat(manager.activeNotifications).hasSize(2)
+        val publicadas = manager.ownedNotifications()
+        assertThat(publicadas.map { it.tag })
+            .containsExactly(
+                DeadlineNotificationId.tagOf(first),
+                DeadlineNotificationId.tagOf(second),
+            )
     }
 
     @Test
@@ -79,8 +90,12 @@ class DeadlineNotificationIdentityTest {
 
         NotificationDismissal.dismiss(context, first)
 
-        val restantes = manager.activeNotifications
-        assertThat(restantes).hasSize(1)
-        assertThat(restantes.single().tag).isEqualTo(DeadlineNotificationId.tagOf(second))
+        val restantes = manager.ownedNotifications()
+        assertThat(restantes.map { it.tag }).containsExactly(DeadlineNotificationId.tagOf(second))
     }
+
+    private fun NotificationManagerCompat.ownedNotifications() =
+        activeNotifications.filter {
+            it.tag == DeadlineNotificationId.tagOf(first) || it.tag == DeadlineNotificationId.tagOf(second)
+        }
 }

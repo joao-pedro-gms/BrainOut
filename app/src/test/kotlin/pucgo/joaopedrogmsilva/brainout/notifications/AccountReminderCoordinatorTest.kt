@@ -11,6 +11,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -68,7 +69,8 @@ class AccountReminderCoordinatorTest {
 
                     override fun cancel(taskId: String) = Unit
                 }
-            AccountReminderCoordinator(context, session, snapshot, scheduler).startIn(backgroundScope)
+            val reconciliationJob =
+                AccountReminderCoordinator(context, session, snapshot, scheduler).startIn(backgroundScope)
             runCurrent()
             advanceTimeBy(500)
             runCurrent()
@@ -79,5 +81,6 @@ class AccountReminderCoordinatorTest {
             runCurrent()
             assertThat(scheduled).containsExactly("t1", "t2").inOrder()
             coVerify(exactly = 2) { snapshot.tasks("u1") }
+            reconciliationJob.cancelAndJoin()
         }
 }

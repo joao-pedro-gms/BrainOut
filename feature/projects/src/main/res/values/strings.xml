@@ -63,6 +63,9 @@
     <string name="home_create_project_add_tag_name_label">Nome da tag</string>
     <string name="home_create_project_add_tag_color_label">Cor (#RRGGBB)</string>
     <string name="home_create_project_confirm">Criar</string>
+    <string name="home_edit_project_action">Editar</string>
+    <string name="home_edit_project_title">Editar projeto</string>
+    <string name="home_edit_project_confirm">Salvar</string>
 
     <!-- Common -->
     <string name="common_close">Fechar</string>

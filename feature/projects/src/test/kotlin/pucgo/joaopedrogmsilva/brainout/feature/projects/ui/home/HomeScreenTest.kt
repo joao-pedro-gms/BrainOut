@@ -3,14 +3,17 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -93,14 +96,14 @@ class HomeScreenTest {
             createdAt = Instant.parse("2026-09-18T10:00:00Z"),
         )
 
-    private fun newViewModel(): HomeViewModel =
+    private fun newViewModel(updateProject: UpdateProjectUseCase = mockk(relaxed = true)): HomeViewModel =
         HomeViewModel(
             projectRepository = projectRepository,
             tagRepository = tagRepository,
             activeUserProvider = activeUserProvider,
             listingPreferences = listingPreferences,
             createProject = mockk<CreateProjectUseCase>(relaxed = true),
-            updateProject = mockk<UpdateProjectUseCase>(relaxed = true),
+            updateProject = updateProject,
             deleteProject = mockk<DeleteProjectUseCase>(relaxed = true),
             createTag = mockk<CreateTagUseCase>(relaxed = true),
         )
@@ -169,6 +172,60 @@ class HomeScreenTest {
         composeRule.onNodeWithTag(HomeTestTags.FAB).performClick()
 
         composeRule.onNodeWithTag(HomeTestTags.CREATE_PROJECT_DIALOG).assertExists()
+    }
+
+    @Test
+    fun `botao editar abre o dialogo preenchido sem abrir o detalhe`() {
+        val projeto = Project.create(name = "Projeto Um", ownerId = "u1")
+        coEvery { projectRepository.observeSearch(any(), any(), any(), any()) } returns flowOf(listOf(projeto))
+        var aberto: String? = null
+
+        setContent(onOpenProject = { aberto = it })
+        composeRule.onNodeWithTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${projeto.id}").performClick()
+
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_DIALOG).assertExists()
+        composeRule
+            .onNodeWithTag(HomeTestTags.EDIT_PROJECT_NAME)
+            .assertTextEquals("Nome", "Projeto Um")
+        assertThat(aberto).isNull()
+    }
+
+    @Test
+    fun `atualizacao concluida fecha o dialogo de edicao`() {
+        val projeto = Project.create(name = "Projeto Um", ownerId = "u1")
+        val updateProject = mockk<UpdateProjectUseCase>()
+        coEvery { projectRepository.observeSearch(any(), any(), any(), any()) } returns flowOf(listOf(projeto))
+        coEvery { updateProject.invoke(any(), any()) } answers { firstArg() }
+
+        setContent(viewModel = newViewModel(updateProject = updateProject))
+        composeRule.onNodeWithTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${projeto.id}").performClick()
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_NAME).performTextReplacement("Projeto editado")
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_CONFIRM).performClick()
+
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_DIALOG).assertDoesNotExist()
+        coVerify {
+            updateProject.invoke(
+                match { it.id == projeto.id && it.name == "Projeto editado" },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `falha na atualizacao mantem o dialogo e mostra o erro tipado`() {
+        val projeto = Project.create(name = "Projeto Um", ownerId = "u1")
+        val updateProject = mockk<UpdateProjectUseCase>()
+        coEvery { projectRepository.observeSearch(any(), any(), any(), any()) } returns flowOf(listOf(projeto))
+        coEvery { updateProject.invoke(any(), any()) } throws IllegalStateException("disk full")
+
+        setContent(viewModel = newViewModel(updateProject = updateProject))
+        composeRule.onNodeWithTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${projeto.id}").performClick()
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_CONFIRM).performClick()
+
+        composeRule.onNodeWithTag(HomeTestTags.EDIT_PROJECT_DIALOG).assertExists()
+        composeRule
+            .onNodeWithTag(HomeTestTags.EDIT_PROJECT_ERROR)
+            .assertTextEquals(context().getString(R.string.home_error_action_failed))
     }
 
     @Test

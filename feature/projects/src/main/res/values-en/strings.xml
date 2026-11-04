@@ -63,6 +63,9 @@
     <string name="home_create_project_add_tag_name_label">Tag name</string>
     <string name="home_create_project_add_tag_color_label">Color (#RRGGBB)</string>
     <string name="home_create_project_confirm">Create</string>
+    <string name="home_edit_project_action">Edit</string>
+    <string name="home_edit_project_title">Edit project</string>
+    <string name="home_edit_project_confirm">Save</string>
 
     <!-- Common -->
     <string name="common_close">Close</string>
