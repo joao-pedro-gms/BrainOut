@@ -64,6 +64,12 @@ interface BackupDao {
     @Query("SELECT id FROM tasks")
     suspend fun getAllTaskIds(): List<String>
 
+    @Query("DELETE FROM projects WHERE owner_id = :ownerId")
+    suspend fun deleteProjectsForOwner(ownerId: String)
+
+    @Query("DELETE FROM tags WHERE owner_id = :ownerId")
+    suspend fun deleteTagsForOwner(ownerId: String)
+
     // --- Escrita ---
 
     /** Grava as contas restauradas. */

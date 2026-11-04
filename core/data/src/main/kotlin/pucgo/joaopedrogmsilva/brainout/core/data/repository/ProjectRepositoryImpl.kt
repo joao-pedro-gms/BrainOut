@@ -3,11 +3,12 @@ package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.ProjectNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagOwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
@@ -25,10 +26,14 @@ class ProjectRepositoryImpl
     constructor(
         private val projectDao: ProjectDao,
         private val tagDao: TagDao,
-        private val localTransaction: LocalTransaction,
+        private val access: AccountAccess,
     ) : ProjectRepository {
         override fun observeAllForOwner(ownerId: String): Flow<List<Project>> =
-            projectDao.observeAllForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
+            access.observeOwner(ownerId, emptyList()) {
+                projectDao.observeAllForOwner(ownerId).map { rows ->
+                    rows.map { it.toDomain() }
+                }
+            }
 
         override fun observeSearch(
             ownerId: String,
@@ -36,15 +41,22 @@ class ProjectRepositoryImpl
             tagId: String?,
             sortOrder: SortOrder,
         ): Flow<List<Project>> =
-            projectDao
-                .searchProjects(
-                    ownerId = ownerId,
-                    query = query,
-                    tagId = tagId,
-                    sort = sortOrder.toStorageKey(),
-                ).map { rows -> rows.map { it.toDomain() } }
+            access.observeOwner(ownerId, emptyList()) {
+                projectDao
+                    .searchProjects(
+                        ownerId = ownerId,
+                        query = query,
+                        tagId = tagId,
+                        sort = sortOrder.toStorageKey(),
+                    ).map { rows -> rows.map { it.toDomain() } }
+            }
 
-        override suspend fun findById(id: String): Project? = projectDao.findById(id)?.toDomain()
+        override suspend fun findById(id: String): Project? =
+            projectDao
+                .findById(id)
+                ?.takeIf {
+                    access.owns(it.ownerId)
+                }?.toDomain()
 
         override suspend fun create(
             project: Project,
@@ -62,13 +74,16 @@ class ProjectRepositoryImpl
         ): Project {
             logDebug(TAG, "Atualizando projeto id=${project.id}, name=${project.name}, tagsCount=${tagIds.size}")
             return persistProject(project, tagIds) {
+                val persisted = projectDao.findById(project.id) ?: throw ProjectNotFoundException(project.id)
+                access.requireOwner(persisted.ownerId)
                 projectDao.update(ProjectEntity.fromDomain(project))
             }
         }
 
         override suspend fun delete(id: String) {
             logDebug(TAG, "Deletando projeto id=$id")
-            localTransaction.run {
+            val project = findById(id) ?: throw ProjectNotFoundException(id)
+            access.write(project.ownerId) {
                 projectDao.deleteById(id)
             }
         }
@@ -84,7 +99,7 @@ class ProjectRepositoryImpl
             tagIds: List<String>,
             writeEntity: suspend () -> Unit,
         ): Project {
-            localTransaction.run {
+            access.write(project.ownerId) {
                 writeEntity()
                 validateTagOwnership(tagIds, project.ownerId)
                 projectDao.replaceProjectTags(project.id, tagIds)

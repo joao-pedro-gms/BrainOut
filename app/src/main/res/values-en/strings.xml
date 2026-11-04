@@ -23,4 +23,7 @@
     <string name="deadline_action_complete">Complete</string>
     <string name="deadline_unknown_project">(no project)</string>
     <string name="deadline_permission_denied_toast">Notifications permission denied — deadline reminders won\'t be shown.</string>
+    <string name="account_migration_title">New usernames</string>
+    <string name="account_migration_message">Accounts on this device now sign in with the names below. Passwords and data have been preserved.</string>
+    <string name="account_migration_ack">Got it</string>
 </resources>

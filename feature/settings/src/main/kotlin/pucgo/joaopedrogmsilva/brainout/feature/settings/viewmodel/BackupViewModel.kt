@@ -23,7 +23,9 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupRestoreException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupTooLargeException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.UnsupportedBackupVersionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ExportBackupUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.InspectBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.RestoreBackupUseCase
 import javax.inject.Inject
 
@@ -46,12 +48,75 @@ private const val TAG = "BrainOut:BackupVM"
 class BackupViewModel
     @Inject
     constructor(
+        private val inspectBackupUseCase: InspectBackupUseCase,
+        private val activeUser: ActiveUserPort,
         private val exportBackupUseCase: ExportBackupUseCase,
         private val restoreBackupUseCase: RestoreBackupUseCase,
         @ApplicationContext private val context: Context,
     ) : ViewModel() {
         private val _state: MutableStateFlow<BackupUiState> = MutableStateFlow(BackupUiState())
         val state: StateFlow<BackupUiState> = _state.asStateFlow()
+
+        private var pendingRestore: PendingRestore? = null
+
+        private data class PendingRestore(
+            val uri: Uri,
+            val passphrase: String,
+            val ownerId: String,
+        )
+
+        /** Decifra para seleção, sem gravar e sem persistir a senha. */
+        fun inspect(
+            uri: Uri,
+            passphrase: String,
+        ) {
+            if (_state.value.isBusy) return
+            cancelRestore()
+            _state.update { it.copy(isBusy = true, errorType = null, successType = null) }
+            viewModelScope.launch {
+                try {
+                    val owner = requireAccount()
+                    val accounts =
+                        withContext(Dispatchers.IO) {
+                            val input =
+                                context.contentResolver.openInputStream(uri)
+                                    ?: throw BackupRestoreException(IMPORT_UNAVAILABLE_MESSAGE)
+                            input.use { inspectBackupUseCase(it, passphrase) }
+                        }
+                    requireAccount(owner)
+                    pendingRestore = PendingRestore(uri, passphrase, owner)
+                    _state.update { it.copy(isBusy = false, restoreAccounts = accounts) }
+                } catch (error: CancellationException) {
+                    cancelRestore()
+                    throw error
+                } catch (error: Exception) {
+                    cancelRestore()
+                    _state.update { it.copy(isBusy = false, errorType = errorTypeFor(error, false)) }
+                }
+            }
+        }
+
+        private suspend fun requireAccount(expected: String? = null): String {
+            val current = activeUser.currentUser()?.id ?: throw BackupRestoreException("Sessão ausente")
+            if (expected != null && current != expected) throw BackupRestoreException("Sessão alterada")
+            return current
+        }
+
+        fun cancelRestore() {
+            pendingRestore = null
+            _state.update { it.copy(restoreAccounts = emptyList()) }
+        }
+
+        fun restoreSelected(sourceUserId: String) {
+            val pending = pendingRestore ?: return
+            cancelRestore()
+            restore(pending.uri, pending.passphrase, sourceUserId, pending.ownerId)
+        }
+
+        override fun onCleared() {
+            cancelRestore()
+            super.onCleared()
+        }
 
         /**
          * Exporta o conteúdo local para o arquivo escolhido.
@@ -86,6 +151,8 @@ class BackupViewModel
         fun restore(
             uri: Uri,
             passphrase: String,
+            sourceUserId: String? = null,
+            expectedUserId: String? = null,
         ) {
             runBackupOperation(
                 successLog = "Backup restaurado",
@@ -96,7 +163,7 @@ class BackupViewModel
                 val input =
                     context.contentResolver.openInputStream(uri)
                         ?: throw BackupRestoreException(IMPORT_UNAVAILABLE_MESSAGE)
-                input.use { stream -> restoreBackupUseCase(stream, passphrase) }.summary
+                input.use { stream -> restoreBackupUseCase(stream, passphrase, sourceUserId, expectedUserId) }.summary
             }
         }
 

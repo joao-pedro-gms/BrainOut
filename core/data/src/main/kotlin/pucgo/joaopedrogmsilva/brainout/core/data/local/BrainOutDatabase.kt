@@ -39,7 +39,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
         TagEntity::class,
         ProjectTagCrossRef::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)

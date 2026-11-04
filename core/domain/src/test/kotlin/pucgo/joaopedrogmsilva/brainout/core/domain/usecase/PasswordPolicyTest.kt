@@ -6,9 +6,10 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.FakeActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.FakeBackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
@@ -40,7 +41,7 @@ class PasswordPolicyTest {
     private val createUser = CreateUserUseCase(createRepository, hasher)
     private val authenticate = AuthenticateUserUseCase(authRepository, hasher)
     private val exportBackup = ExportBackupUseCase(backupRepository)
-    private val restoreBackup = RestoreBackupUseCase(backupRepository, scheduler)
+    private val restoreBackup = RestoreBackupUseCase(backupRepository, scheduler, FakeActiveUserPort())
 
     @Test
     fun `a senha abaixo do limite e recusada pelos quatro casos de uso`() =
@@ -49,7 +50,7 @@ class PasswordPolicyTest {
 
             val erros =
                 listOf(
-                    erroDe { createUser(NAME, EMAIL, curta, UserRole.OWNER) },
+                    erroDe { createUser(EMAIL, curta) },
                     erroDe { authenticate(EMAIL, curta) },
                     erroDe { exportBackup(ByteArrayOutputStream(), curta) },
                     erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), curta) },
@@ -57,7 +58,7 @@ class PasswordPolicyTest {
 
             assertThat(erros.map { it?.javaClass }).containsExactly(
                 IllegalArgumentException::class.java,
-                IllegalArgumentException::class.java,
+                InvalidCredentialsException::class.java,
                 IllegalArgumentException::class.java,
                 IllegalArgumentException::class.java,
             )
@@ -69,20 +70,18 @@ class PasswordPolicyTest {
             val noLimite = "a".repeat(MIN_PASSWORD_LENGTH)
             val stored =
                 User.create(
-                    name = NAME,
-                    email = EMAIL,
+                    username = EMAIL,
                     passwordHash = "hashed::fixture",
-                    role = UserRole.OWNER,
                 )
-            coEvery { createRepository.findByEmail(EMAIL) } returns null
+            coEvery { createRepository.findByUsername(EMAIL) } returns null
             coEvery { createRepository.save(any()) } answers { firstArg() }
             coEvery { hasher.hash(any()) } returns "hashed::fixture"
-            coEvery { authRepository.findByEmail(EMAIL) } returns stored
+            coEvery { authRepository.findByUsername(EMAIL) } returns stored
             coEvery { hasher.verify(any(), any()) } returns true
 
             val erros =
                 listOf(
-                    erroDe { createUser(NAME, EMAIL, noLimite, UserRole.OWNER) },
+                    erroDe { createUser(EMAIL, noLimite) },
                     erroDe { authenticate(EMAIL, noLimite) },
                     erroDe { exportBackup(ByteArrayOutputStream(), noLimite) },
                     erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), noLimite) },
@@ -96,13 +95,13 @@ class PasswordPolicyTest {
         runTest {
             val curta = "a".repeat(MIN_PASSWORD_LENGTH - 1)
 
-            val contaCadastro = erroDe { createUser(NAME, EMAIL, curta, UserRole.OWNER) }?.message
+            val contaCadastro = erroDe { createUser(EMAIL, curta) }?.message
             val contaLogin = erroDe { authenticate(EMAIL, curta) }?.message
             val backupExport = erroDe { exportBackup(ByteArrayOutputStream(), curta) }?.message
             val backupRestaura = erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), curta) }?.message
 
             assertThat(contaCadastro).isEqualTo("Senha deve ter pelo menos 8 caracteres")
-            assertThat(contaLogin).isEqualTo(contaCadastro)
+            assertThat(contaLogin).isEqualTo("Credenciais inválidas.")
             assertThat(backupExport).isEqualTo("A senha do backup deve ter pelo menos 8 caracteres")
             assertThat(backupRestaura).isEqualTo(backupExport)
         }
@@ -112,6 +111,6 @@ class PasswordPolicyTest {
 
     private companion object {
         const val NAME: String = "João Pedro"
-        const val EMAIL: String = "joao@example.com"
+        const val EMAIL: String = "joao"
     }
 }

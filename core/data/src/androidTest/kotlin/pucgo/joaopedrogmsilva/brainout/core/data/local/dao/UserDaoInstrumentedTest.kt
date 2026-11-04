@@ -50,20 +50,18 @@ class UserDaoInstrumentedTest {
     }
 
     @Test
-    fun insert_and_findByEmail_returns_inserted_entity() =
+    fun insert_and_findByUsername_returns_inserted_entity() =
         runTest {
             val entity =
                 UserEntity(
                     id = "id-1",
-                    name = "João",
-                    email = "joao@example.com",
+                    username = "joao",
                     passwordHash = "x",
-                    role = "MEMBER",
                     createdAt = Instant.parse("2026-01-01T00:00:00Z"),
                 )
 
             dao.insert(entity)
-            val loaded = dao.findByEmail("joao@example.com")
+            val loaded = dao.findByUsername("joao")
 
             assertThat(loaded).isEqualTo(entity)
         }

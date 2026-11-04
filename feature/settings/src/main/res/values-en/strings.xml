@@ -43,7 +43,7 @@
     <string name="settings_backup_error_short_pwd">The password must have at least 8 characters.</string>
     <string name="settings_backup_error_pwd_mismatch">The passwords do not match.</string>
     <string name="settings_backup_success_exported">Backup exported successfully.</string>
-    <string name="settings_backup_success_restored">Backup restored. Sign in with your password to continue.</string>
+    <string name="settings_backup_success_restored">The backup contains only the signed-in account’s data. Restoring replaces your projects, tasks and tags while preserving your password and other accounts.</string>
     <string name="settings_backup_summary">%1$s and %2$s.</string>
     <plurals name="settings_backup_projects">
         <item quantity="one">%d project</item>
@@ -53,4 +53,6 @@
         <item quantity="one">%d task</item>
         <item quantity="other">%d tasks</item>
     </plurals>
+    <string name="settings_backup_select_account">Choose an account from the file</string>
+    <string name="settings_backup_select_account_help">Tap an account to replace only your projects, tasks and tags. Your username and password stay the same.</string>
 </resources>

@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.session
 
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.OwnershipException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import javax.inject.Inject
@@ -21,6 +22,20 @@ class SessionActiveUserPort
     @Inject
     constructor(
         private val activeUserProvider: ActiveUserProvider,
+        private val session: SessionStore,
     ) : ActiveUserPort {
         override suspend fun currentUser(): User? = activeUserProvider.currentActiveUser()
+
+        override suspend fun runIfCurrent(
+            userId: String,
+            action: () -> Unit,
+        ): Boolean =
+            try {
+                session.withUser(userId) {
+                    action()
+                    true
+                }
+            } catch (error: OwnershipException) {
+                false
+            }
     }

@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.ThemeMode
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ThemePreferencesRepository
@@ -81,6 +82,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var themePreferencesRepository: ThemePreferencesRepository
 
+    @Inject
+    lateinit var userDao: UserDao
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: Inicializando MainActivity")
@@ -93,6 +97,7 @@ class MainActivity : ComponentActivity() {
             val resolvedDarkTheme = (themeMode ?: ThemeMode.SYSTEM).resolvesToDark(systemInDarkTheme)
 
             BrainOutTheme(darkTheme = resolvedDarkTheme) {
+                LegacyAccountNotice(userDao)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,

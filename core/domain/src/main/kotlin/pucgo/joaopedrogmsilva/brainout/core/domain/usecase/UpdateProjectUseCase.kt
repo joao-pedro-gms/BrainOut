@@ -1,9 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
-import pucgo.joaopedrogmsilva.brainout.core.domain.permission.requirePermission
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import javax.inject.Inject
@@ -34,7 +32,8 @@ class UpdateProjectUseCase
             project: Project,
             tagIds: List<String>,
         ): Project {
-            activeUser.requirePermission(Permission.EDIT_PROJECT)
+            activeUser.currentUser() ?: throw pucgo.joaopedrogmsilva.brainout.core.domain.error
+                .UserNotFoundException()
             return repository.update(project, tagIds)
         }
     }

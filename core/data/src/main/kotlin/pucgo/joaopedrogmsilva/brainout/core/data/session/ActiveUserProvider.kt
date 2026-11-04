@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logWarn
-import pucgo.joaopedrogmsilva.brainout.core.data.util.maskEmail
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 import javax.inject.Inject
@@ -61,12 +60,12 @@ class ActiveUserProvider
                                     TAG,
                                     "Sessão órfã detectada para id=$id (usuário não existe no Room). Limpando sessão.",
                                 )
-                                sessionStore.clearAll()
+                                sessionStore.clearSession()
                                 emit(null)
                             } else {
                                 logDebug(
                                     TAG,
-                                    "Usuário ativo reidratado: id=${user.id}, e-mail=${user.email.maskEmail()}",
+                                    "Usuário ativo reidratado: id=${user.id}, e-mail=${user.id}",
                                 )
                                 emit(user)
                             }
@@ -96,13 +95,13 @@ class ActiveUserProvider
         suspend fun currentActiveUser(): User? {
             val id = sessionStore.currentUserId() ?: return null
             val user = userRepository.findById(id)
-            logDebug(TAG, "currentActiveUser: id=$id -> usuário=${user?.email?.maskEmail()}")
+            logDebug(TAG, "currentActiveUser: id=$id -> usuário=${user?.id}")
             return user
         }
 
         /** Encerra a sessão atual (logout). */
         suspend fun signOut() {
             logDebug(TAG, "Encerrando sessão via signOut()")
-            sessionStore.clearAll()
+            sessionStore.clearSession()
         }
     }

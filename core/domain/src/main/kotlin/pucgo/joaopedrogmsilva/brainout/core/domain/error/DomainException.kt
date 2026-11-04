@@ -1,9 +1,6 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.domain.error
 
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
-
 /**
  * Exceção base da camada de domínio.
  *
@@ -39,9 +36,9 @@ class InvalidModelException(
 ) : DomainException(message)
 
 /** Tentativa de criar um [User] com e-mail já utilizado. */
-class DuplicateEmailException(
-    val email: String,
-) : DomainException("E-mail já cadastrado: $email")
+class DuplicateUsernameException(
+    val username: String,
+) : DomainException("Nome de usuário já cadastrado: $username")
 
 /** Credenciais informadas não correspondem a um usuário válido. */
 class InvalidCredentialsException : DomainException("Credenciais inválidas.")
@@ -78,16 +75,8 @@ class DuplicateTagNameException(
     val name: String,
 ) : DomainException("Já existe uma tag com o nome: $name")
 
-/**
- * O usuário ativo não tem a permissão exigida pela operação.
- *
- * A regra vem da matriz `UserRole`/`Permission`; quem a consulta é o
- * caso de uso de mutação, antes de escrever (DEF-36).
- */
-class PermissionDeniedException(
-    val role: UserRole,
-    val permission: Permission,
-) : DomainException("O papel $role não tem a permissão $permission")
+/** A conta autenticada não é dona do recurso solicitado. */
+class OwnershipException : DomainException("Recurso indisponível para esta conta")
 
 /** Não há usuário autenticado para executar a operação. */
 class UserNotFoundException : DomainException("Não há usuário autenticado")

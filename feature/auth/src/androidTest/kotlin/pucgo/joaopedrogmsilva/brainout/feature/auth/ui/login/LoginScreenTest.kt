@@ -24,7 +24,6 @@ import org.junit.runner.RunWith
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
@@ -68,7 +67,7 @@ class LoginScreenTest {
         )
 
     @Test
-    fun submitting_with_empty_email_shows_email_error_and_focuses_email() {
+    fun submitting_with_empty_username_shows_username_error_and_focuses_username() {
         val viewModel = newViewModel()
         var navigationCount = 0
 
@@ -103,13 +102,13 @@ class LoginScreenTest {
         // `Error` da semântica do campo, sem depender do idioma do
         // emulador.
         composeTestRule
-            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+            .onNodeWithTag(LoginTestTags.USERNAME_FIELD)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
             .assertIsDisplayed()
 
         // Foco volta para o primeiro campo inválido (E1.6).
         composeTestRule
-            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
+            .onNodeWithTag(LoginTestTags.USERNAME_FIELD)
             .assertIsFocused()
 
         // Não navegou porque a validação falhou.
@@ -137,8 +136,8 @@ class LoginScreenTest {
         }
 
         composeTestRule
-            .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
-            .performTextInput("joao@example.com")
+            .onNodeWithTag(LoginTestTags.USERNAME_FIELD)
+            .performTextInput("joao")
         composeTestRule
             .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
             .performTextInput("wrong-password")
@@ -163,7 +162,7 @@ class LoginScreenTest {
 
         // Nenhuma navegação após credenciais inválidas.
         assertThat(navigationCount).isEqualTo(0)
-        coVerify(exactly = 1) { authenticate("joao@example.com", "wrong-password") }
+        coVerify(exactly = 1) { authenticate("joao", "wrong-password") }
     }
 
     @Test
@@ -174,10 +173,8 @@ class LoginScreenTest {
             val user =
                 User(
                     id = "user-id",
-                    name = "João Pedro",
-                    email = "joao@example.com",
+                    username = "joao",
                     passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-                    role = UserRole.OWNER,
                     createdAt = Instant.parse("2026-09-18T10:00:00Z"),
                 )
             coEvery { authenticate(any(), any()) } returns user
@@ -199,8 +196,8 @@ class LoginScreenTest {
             }
 
             composeTestRule
-                .onNodeWithTag(LoginTestTags.EMAIL_FIELD)
-                .performTextInput("joao@example.com")
+                .onNodeWithTag(LoginTestTags.USERNAME_FIELD)
+                .performTextInput("joao")
             composeTestRule
                 .onNodeWithTag(LoginTestTags.PASSWORD_FIELD)
                 .performTextInput("correct-password")
@@ -211,7 +208,7 @@ class LoginScreenTest {
             composeTestRule.waitForIdle()
 
             assertThat(navigationCount).isEqualTo(1)
-            coVerify { authenticate("joao@example.com", "correct-password") }
+            coVerify { authenticate("joao", "correct-password") }
             coVerify { sessionStore.saveUserId("user-id") }
         }
 }

@@ -101,6 +101,10 @@ fun BackupSection(
         onDismissMessage = viewModel::dismissMessage,
     )
 
+    if (state.restoreAccounts.isNotEmpty()) {
+        BackupAccountDialog(state.restoreAccounts, viewModel::restoreSelected, viewModel::cancelRestore)
+    }
+
     BackupDialogs(
         passphraseState = passphraseState,
         showReplaceConfirm = showReplaceConfirm,
@@ -115,7 +119,7 @@ fun BackupSection(
             if (passphraseState.validate(confirmation) && uri != null) {
                 passphraseState.mode = null
                 passphraseState.pendingRestoreUri = null
-                viewModel.restore(uri, passphraseState.passphrase)
+                viewModel.inspect(uri, passphraseState.passphrase)
                 passphraseState.clear()
             }
         },

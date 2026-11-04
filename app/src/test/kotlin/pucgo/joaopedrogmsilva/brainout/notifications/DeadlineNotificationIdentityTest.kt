@@ -35,6 +35,7 @@ class DeadlineNotificationIdentityTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        NotificationManagerCompat.from(context).cancelAll()
     }
 
     private fun notification(title: String): NotificationCompat.Builder =

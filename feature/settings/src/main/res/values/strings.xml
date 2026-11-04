@@ -21,7 +21,7 @@
     <string name="settings_option_restore_backup">Restaurar backup</string>
     <string name="settings_backup_description">Copia os dados deste aparelho para um arquivo cifrado. O arquivo é protegido por senha e não é enviado para nenhum servidor.</string>
     <string name="settings_backup_export_dialog_title">Proteger o backup</string>
-    <string name="settings_backup_export_dialog_message">Escolha uma senha para cifrar o arquivo. Ela será a senha das contas restauradas neste aparelho.</string>
+    <string name="settings_backup_export_dialog_message">O backup contém apenas os dados da conta conectada. Restaurar substitui seus projetos, tarefas e etiquetas, preservando sua senha e as outras contas.</string>
     <string name="settings_backup_restore_dialog_title">Abrir o backup</string>
     <string name="settings_backup_restore_dialog_message">Informe a senha usada na exportação. As contas que ainda não existirem neste aparelho passam a usar esta senha.</string>
     <string name="settings_backup_replace_title">Substituir os dados locais?</string>
@@ -53,4 +53,6 @@
         <item quantity="one">%d tarefa</item>
         <item quantity="other">%d tarefas</item>
     </plurals>
+    <string name="settings_backup_select_account">Escolha a conta do arquivo</string>
+    <string name="settings_backup_select_account_help">Ao tocar na conta, você substitui somente seus projetos, tarefas e etiquetas. Seu nome de usuário e sua senha continuam iguais.</string>
 </resources>

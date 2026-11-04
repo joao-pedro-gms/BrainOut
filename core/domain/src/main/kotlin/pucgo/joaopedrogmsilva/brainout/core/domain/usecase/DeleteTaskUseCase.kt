@@ -3,9 +3,7 @@
 
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.Permission
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
-import pucgo.joaopedrogmsilva.brainout.core.domain.permission.requirePermission
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import javax.inject.Inject
@@ -28,7 +26,8 @@ class DeleteTaskUseCase
     ) {
         /** @param taskId Identificador da tarefa a remover. */
         suspend operator fun invoke(taskId: String) {
-            activeUser.requirePermission(Permission.DELETE_TASK)
+            activeUser.currentUser() ?: throw pucgo.joaopedrogmsilva.brainout.core.domain.error
+                .UserNotFoundException()
             repository.delete(taskId)
             deadlineScheduler.cancel(taskId)
         }

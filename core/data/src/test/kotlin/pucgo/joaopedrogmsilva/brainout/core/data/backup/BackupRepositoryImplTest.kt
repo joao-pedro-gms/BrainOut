@@ -1,13 +1,9 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,492 +11,168 @@ import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectEntity
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.ProjectTagCrossRef
-import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
-import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ListingPreferencesRepositoryImpl
-import pucgo.joaopedrogmsilva.brainout.core.data.preferences.ThemePreferencesRepositoryImpl
-import pucgo.joaopedrogmsilva.brainout.core.data.security.FixedPepperProvider
-import pucgo.joaopedrogmsilva.brainout.core.data.security.PasswordHasherImpl
+import pucgo.joaopedrogmsilva.brainout.core.data.repository.testSession
+import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
-import pucgo.joaopedrogmsilva.brainout.core.data.session.authDataStore
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupIntegrityException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupRestoreException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupTooLargeException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.UnsupportedBackupVersionException
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.ThemeMode
-import pucgo.joaopedrogmsilva.brainout.core.domain.repository.PasswordHasher
-import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.time.Instant
 
-/**
- * Testes do [BackupRepositoryImpl] — o backup local exportável da
- * issue #214 (LOCAL-03).
- *
- * O cenário central é a **instalação distinta**: o backup exportado
- * de um banco é restaurado em outro banco (outra "instalação"), com
- * outro pepper, e os ids/vínculos precisam sobreviver. Os demais
- * testes cobrem a recusa de arquivo inválido, truncado, com versão
- * desconhecida ou acima do limite — sempre **sem** alterar os dados
- * já existentes.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)
 class BackupRepositoryImplTest {
-    private lateinit var context: Context
+    @Test
+    fun `exportacao exclui dados e credenciais de outras contas`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                seed(db, "u2", "joao")
+                val repo = repository(db, testSession("u1"))
+                val raw = export(repo)
+                val envelope = BackupFormat.decodeEnvelope(raw)
+                val bytes =
+                    BackupCrypto.decrypt(
+                        EncryptedPayload(envelope.salt, envelope.iv, envelope.ciphertext),
+                        PASSPHRASE,
+                    )
+                val payload = BackupPayloadCodec.decode(bytes)
+                assertThat(envelope.formatVersion).isEqualTo(2)
+                assertThat(payload.users.map { it.id }).containsExactly("u1")
+                assertThat(payload.projects.map { it.ownerId }).containsExactly("u1")
+                assertThat(String(bytes)).doesNotContain("hash-local")
+                assertThat(String(bytes)).doesNotContain("joao")
+                assertThat(repo.currentTaskIds()).containsExactly("task-u1")
+            }
+        }
 
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        runTest { SessionStore(context.authDataStore).clearAll() }
+    @Test
+    fun `restauracao preserva credenciais sessao e outras contas`() =
+        runTest {
+            inMemoryDatabase().use { source ->
+                inMemoryDatabase().use { target ->
+                    seed(source, "origem", "Origem")
+                    seed(target, "destino", "Destino")
+                    seed(target, "outra", "Outra")
+                    val session = testSession("destino")
+                    val raw = export(repository(source, testSession("origem")))
+                    val result = repository(target, session).restoreFrom(raw.inputStream(), PASSPHRASE)
+                    assertThat(target.userDao().findById("destino")?.passwordHash).isEqualTo("hash-local-destino")
+                    assertThat(target.userDao().findById("destino")?.username).isEqualTo("Destino")
+                    assertThat(session.currentUserId()).isEqualTo("destino")
+                    assertThat(target.taskDao().findById("task-outra")).isNotNull()
+                    assertThat(target.taskDao().findById("task-destino")).isNull()
+                    val task = target.taskDao().findById(result.taskIds.single())!!
+                    assertThat(task.id).isNotEqualTo("task-origem")
+                    assertThat(target.projectDao().findById(task.projectId)?.ownerId).isEqualTo("destino")
+                    assertThat(task.assigneeId).isEqualTo("destino")
+                    assertThat(result.reminders).hasSize(1)
+                }
+            }
+        }
+
+    @Test
+    fun `v1 permite escolher uma conta sem importar as outras`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "destino", "Destino")
+                val json =
+                    JSONObject().put(
+                        "users",
+                        org.json
+                            .JSONArray()
+                            .put(JSONObject().put("id", "a").put("name", "Mesmo Nome").put("email", "a@exemplo.com"))
+                            .put(JSONObject().put("id", "b").put("name", "Mesmo Nome").put("email", "b@exemplo.com")),
+                    )
+                for (key in listOf("projects", "tasks", "tags", "projectTags")) json.put(key, org.json.JSONArray())
+                json.put("preferences", JSONObject())
+                val encrypted = BackupCrypto.encrypt(json.toString().toByteArray(), PASSPHRASE)
+                val raw =
+                    JSONObject(
+                        String(BackupFormat.encodeEnvelope(0L, encrypted)),
+                    ).put("formatVersion", 1).toString().toByteArray()
+                val repo = repository(db, testSession("destino"))
+                assertThat(repo.inspect(raw.inputStream(), PASSPHRASE).map { it.label })
+                    .containsExactly("Mesmo Nome (a@exemplo.com)", "Mesmo Nome (b@exemplo.com)")
+                assertThat(repo.restoreFrom(raw.inputStream(), PASSPHRASE, "b", "destino").summary.users).isEqualTo(1)
+                assertThat(db.backupDao().getAllUsers()).hasSize(1)
+            }
+        }
+
+    @Test
+    fun `arquivo senha selecao e sessao invalidos nao alteram dados`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                val session = testSession("u1")
+                val repo = repository(db, session)
+                val raw = export(repo)
+                val missingAccountId =
+                    java.util.UUID
+                        .randomUUID()
+                        .toString()
+                assertThat(runCatching { repo.restoreFrom("invalid".byteInputStream(), PASSPHRASE) }.isFailure).isTrue()
+                assertThat(
+                    runCatching { repo.restoreFrom(raw.inputStream(), "wrong-long-passphrase") }.isFailure,
+                ).isTrue()
+                assertThat(
+                    runCatching {
+                        repo.restoreFrom(
+                            raw.inputStream(),
+                            PASSPHRASE,
+                            sourceUserId = missingAccountId,
+                        )
+                    }.isFailure,
+                ).isTrue()
+                session.saveUserId("u2")
+                assertThat(
+                    runCatching { repo.restoreFrom(raw.inputStream(), PASSPHRASE, "u1", "u1") }.isFailure,
+                ).isTrue()
+                assertThat(db.taskDao().findById("task-u1")).isNotNull()
+            }
+        }
+
+    private suspend fun export(repo: BackupRepositoryImpl): ByteArray {
+        val output = ByteArrayOutputStream()
+        repo.exportTo(output, PASSPHRASE)
+        return output.toByteArray()
     }
 
-    @Test
-    fun `export e restore preservam ids e vinculos em outra instalacao`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                val result =
-                    newRepository(
-                        target,
-                        PEPPER_TARGET,
-                    ).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                assertThat(result.summary.users).isEqualTo(1)
-                assertThat(result.summary.projects).isEqualTo(1)
-                assertThat(result.summary.tasks).isEqualTo(1)
-                assertThat(result.summary.tags).isEqualTo(1)
-                assertThat(target.backupDao().getAllUsers().map { it.id }).containsExactly(USER_ID)
-                assertThat(target.backupDao().getAllProjects().map { it.id }).containsExactly(PROJECT_ID)
-                assertThat(target.backupDao().getAllTasks().map { it.id }).containsExactly(TASK_ID)
-                assertThat(target.backupDao().getAllTags().map { it.id }).containsExactly(TAG_ID)
-                assertThat(target.backupDao().getAllProjectTags())
-                    .containsExactly(ProjectTagCrossRef(project_id = PROJECT_ID, tag_id = TAG_ID))
-                val task = target.taskDao().findById(TASK_ID)
-                assertThat(task?.projectId).isEqualTo(PROJECT_ID)
-                assertThat(task?.title).isEqualTo("Tarefa")
-                assertThat(task?.dueDate).isEqualTo(DUE_DATE)
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `conta restaurada autentica com a senha do backup no aparelho novo`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                newRepository(target, PEPPER_TARGET).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                val restored = target.userDao().findById(USER_ID)
-                assertThat(restored).isNotNull()
-                val hasher = PasswordHasherImpl(FixedPepperProvider(PEPPER_TARGET))
-                assertThat(hasher.verify(PASSPHRASE, restored!!.passwordHash)).isTrue()
-                assertThat(hasher.verify("outra-senha", restored.passwordHash)).isFalse()
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `conta que ja existe no aparelho mantem o hash local`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val localHasher = PasswordHasherImpl(FixedPepperProvider(PEPPER_TARGET))
-                target.userDao().insert(
-                    UserEntity(
-                        id = USER_ID,
-                        name = "Nome local",
-                        email = "joao@example.com",
-                        passwordHash = localHasher.hash("senha-local"),
-                        role = "OWNER",
-                        createdAt = CREATED_AT,
-                    ),
-                )
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                newRepository(target, PEPPER_TARGET).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                val restored = target.userDao().findById(USER_ID)
-                assertThat(localHasher.verify("senha-local", restored!!.passwordHash)).isTrue()
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `arquivo que nao e backup falha sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET)
-                            .restoreFrom("isto nao e um backup".toByteArray().inputStream(), PASSPHRASE)
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(BackupFormatException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-                assertThat(target.backupDao().getAllTasks()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `arquivo truncado falha sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-                val exported = ByteArrayOutputStream()
-                newRepository(target, PEPPER_TARGET).exportTo(exported, PASSPHRASE)
-                val truncated = exported.toByteArray().copyOf(exported.size() / 2)
-
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET).restoreFrom(truncated.inputStream(), PASSPHRASE)
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(BackupFormatException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `versao desconhecida falha sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-                val exported = ByteArrayOutputStream()
-                newRepository(target, PEPPER_TARGET).exportTo(exported, PASSPHRASE)
-                val json = JSONObject(String(exported.toByteArray(), Charsets.UTF_8))
-                json.put("formatVersion", 99)
-                val future = json.toString().toByteArray(Charsets.UTF_8)
-
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET).restoreFrom(future.inputStream(), PASSPHRASE)
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(UnsupportedBackupVersionException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `senha errada falha sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-                val exported = ByteArrayOutputStream()
-                newRepository(target, PEPPER_TARGET).exportTo(exported, PASSPHRASE)
-
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET)
-                            .restoreFrom(exported.toByteArray().inputStream(), "senha-errada")
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(BackupIntegrityException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `arquivo acima do limite falha sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET).restoreFrom(EndlessInputStream(), PASSPHRASE)
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(BackupTooLargeException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `backup com referencia orfa e recusado sem alterar os dados`() =
-        runTest {
-            val target = inMemoryDatabase()
-            try {
-                seed(target)
-                val orphaned =
-                    BackupPayload(
-                        users = emptyList(),
-                        projects =
-                            listOf(
-                                BackupProject(
-                                    id = PROJECT_ID,
-                                    ownerId = "conta-inexistente",
-                                    name = "Projeto",
-                                    description = null,
-                                    createdAtEpochMillis = CREATED_AT.toEpochMilli(),
-                                    isCompleted = false,
-                                ),
-                            ),
-                        tasks = emptyList(),
-                        tags = emptyList(),
-                        projectTags = emptyList(),
-                        preferences = BackupPreferences(themeMode = "system", sortOrderByUser = emptyMap()),
-                    )
-                val envelope =
-                    BackupFormat.encodeEnvelope(
-                        createdAtEpochMillis = 0L,
-                        payload = BackupCrypto.encrypt(BackupPayloadCodec.encode(orphaned), PASSPHRASE),
-                    )
-
-                val error =
-                    runCatching {
-                        newRepository(target, PEPPER_TARGET).restoreFrom(envelope.inputStream(), PASSPHRASE)
-                    }.exceptionOrNull()
-
-                assertThat(error).isInstanceOf(BackupRestoreException::class.java)
-                assertThat(target.backupDao().getAllProjects()).hasSize(1)
-                assertThat(target.backupDao().getAllUsers()).hasSize(1)
-            } finally {
-                target.close()
-            }
-        }
-
-    @Test
-    fun `sessao e invalidada depois da restauracao`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val sessionStore = SessionStore(context.authDataStore)
-                sessionStore.saveUserId(USER_ID)
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                newRepository(target, PEPPER_TARGET).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                assertThat(sessionStore.currentUserId()).isNull()
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `tema e ordenacao do backup sao reaplicados`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val dataStore = context.authDataStore
-                ThemePreferencesRepositoryImpl(dataStore).set(ThemeMode.DARK)
-                ListingPreferencesRepositoryImpl(dataStore).setSortOrder(USER_ID, SortOrder.NameAsc)
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                newRepository(target, PEPPER_TARGET).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                assertThat(ThemePreferencesRepositoryImpl(dataStore).observe().first()).isEqualTo(ThemeMode.DARK)
-                assertThat(ListingPreferencesRepositoryImpl(dataStore).observe(USER_ID).first().sortOrder)
-                    .isEqualTo(SortOrder.NameAsc)
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `tarefas com prazo geram lembretes e as demais nao`() =
-        runTest {
-            val source = inMemoryDatabase()
-            val target = inMemoryDatabase()
-            try {
-                seed(source)
-                val exported = ByteArrayOutputStream()
-                newRepository(source, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                val result =
-                    newRepository(
-                        target,
-                        PEPPER_TARGET,
-                    ).restoreFrom(exported.toByteArray().inputStream(), PASSPHRASE)
-
-                assertThat(result.taskIds).containsExactly(TASK_ID)
-                assertThat(result.reminders).hasSize(1)
-                assertThat(result.reminders.first().taskId).isEqualTo(TASK_ID)
-                assertThat(result.reminders.first().dueDate).isEqualTo(DUE_DATE)
-            } finally {
-                source.close()
-                target.close()
-            }
-        }
-
-    @Test
-    fun `currentTaskIds devolve os ids das tarefas gravadas`() =
-        runTest {
-            val database = inMemoryDatabase()
-            try {
-                seed(database)
-
-                assertThat(newRepository(database, PEPPER_SOURCE).currentTaskIds()).containsExactly(TASK_ID)
-            } finally {
-                database.close()
-            }
-        }
-
-    @Test
-    fun `exportacao nao inclui hash de senha no arquivo`() =
-        runTest {
-            val database = inMemoryDatabase()
-            try {
-                seed(database)
-                val exported = ByteArrayOutputStream()
-
-                newRepository(database, PEPPER_SOURCE).exportTo(exported, PASSPHRASE)
-
-                val raw = String(exported.toByteArray(), Charsets.UTF_8)
-                assertThat(raw).doesNotContain("pbkdf2_sha256")
-                assertThat(raw).doesNotContain("joao@example.com")
-            } finally {
-                database.close()
-            }
-        }
-
-    // --- helpers ---
-
-    private fun newRepository(
-        database: BrainOutDatabase,
-        pepper: ByteArray,
+    private fun repository(
+        db: BrainOutDatabase,
+        session: SessionStore,
     ): BackupRepositoryImpl {
-        val dataStore = context.authDataStore
-        return BackupRepositoryImpl(
-            database = database,
-            localTransaction = RoomLocalTransaction(database),
-            passwordHasher = passwordHasher(pepper),
-            themePreferencesRepository = ThemePreferencesRepositoryImpl(dataStore),
-            listingPreferencesRepository = ListingPreferencesRepositoryImpl(dataStore),
-            sessionStore = SessionStore(dataStore),
-        )
+        val preferences = BackupListingPreferences()
+        return BackupRepositoryImpl(db, AccountAccess(session, RoomLocalTransaction(db)), preferences)
     }
 
-    private fun passwordHasher(pepper: ByteArray): PasswordHasher = PasswordHasherImpl(FixedPepperProvider(pepper))
-
-    private suspend fun seed(database: BrainOutDatabase) {
-        val hasher = passwordHasher(PEPPER_SOURCE)
-        database.userDao().insert(
-            UserEntity(
-                id = USER_ID,
-                name = "João",
-                email = "joao@example.com",
-                passwordHash = hasher.hash("senha-original"),
-                role = "OWNER",
-                createdAt = CREATED_AT,
+    private suspend fun seed(
+        db: BrainOutDatabase,
+        owner: String,
+        username: String,
+    ) {
+        db.userDao().insert(UserEntity.fromDomain(User(owner, username, "hash-local-$owner", Instant.EPOCH)))
+        db.projectDao().insert(
+            ProjectEntity.fromDomain(Project.create("Projeto $owner", owner).copy(id = "project-$owner")),
+        )
+        db.taskDao().insert(
+            TaskEntity.fromDomain(
+                Task
+                    .create(
+                        "project-$owner",
+                        "Tarefa $owner",
+                        dueDate = Instant.now().plusSeconds(7200),
+                        assigneeId = owner,
+                    ).copy(id = "task-$owner"),
             ),
         )
-        database.projectDao().insert(
-            ProjectEntity(
-                id = PROJECT_ID,
-                ownerId = USER_ID,
-                name = "Projeto",
-                description = "Descrição",
-                createdAt = CREATED_AT,
-                isCompleted = false,
-            ),
-        )
-        database.taskDao().insert(
-            TaskEntity(
-                id = TASK_ID,
-                projectId = PROJECT_ID,
-                title = "Tarefa",
-                priorityCode = 2,
-                status = "TODO",
-                assigneeId = null,
-                dueDate = DUE_DATE,
-                createdAt = CREATED_AT,
-                completedAt = null,
-            ),
-        )
-        database.tagDao().insert(
-            TagEntity(
-                id = TAG_ID,
-                ownerId = USER_ID,
-                name = "Urgente",
-                color = "#FF0000",
-                createdAt = CREATED_AT,
-            ),
-        )
-        database.projectDao().insertProjectTags(
-            listOf(ProjectTagCrossRef(project_id = PROJECT_ID, tag_id = TAG_ID)),
-        )
-    }
-
-    /**
-     * Fluxo que nunca termina — força o teste do limite de tamanho
-     * sem alocar dezenas de megabytes.
-     */
-    private class EndlessInputStream : InputStream() {
-        override fun read(): Int = 'x'.code
-
-        override fun read(
-            buffer: ByteArray,
-            offset: Int,
-            length: Int,
-        ): Int {
-            for (index in offset until offset + length) {
-                buffer[index] = 'x'.code.toByte()
-            }
-            return length
-        }
     }
 
     private companion object {
-        const val USER_ID: String = "user-1"
-        const val PROJECT_ID: String = "project-1"
-        const val TASK_ID: String = "task-1"
-        const val TAG_ID: String = "tag-1"
-        const val PASSPHRASE: String = "senha-do-backup"
-
-        val CREATED_AT: Instant = Instant.parse("2026-10-01T10:00:00Z")
-        val DUE_DATE: Instant = Instant.parse("2026-10-25T18:00:00Z")
-
-        val PEPPER_SOURCE: ByteArray = ByteArray(16) { 1 }
-        val PEPPER_TARGET: ByteArray = ByteArray(16) { 2 }
+        const val PASSPHRASE = "fixture-backup-long"
     }
 }

@@ -68,17 +68,6 @@ class HomeViewModel
                     initialValue = HomeUserState.Loading,
                 )
 
-        private val _upgradeDialogVisible: MutableStateFlow<Boolean> = MutableStateFlow(false)
-        val upgradeDialogVisible: StateFlow<Boolean> = _upgradeDialogVisible.asStateFlow()
-
-        fun onMemberFabClicked() {
-            _upgradeDialogVisible.value = true
-        }
-
-        fun dismissUpgradeDialog() {
-            _upgradeDialogVisible.value = false
-        }
-
         /** Filtro estrutural ativo da lista de projetos (E2.5 — RN03). */
         private val _projectFilter: MutableStateFlow<HomeProjectFilter> =
             MutableStateFlow(HomeProjectFilter.Active)

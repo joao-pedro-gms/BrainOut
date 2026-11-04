@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
 
 /**
  * Estado da seção de backup local (issue #214 — LOCAL-03).
@@ -13,6 +14,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
  * @property summary contagem do conteúdo exportado ou restaurado.
  */
 data class BackupUiState(
+    val restoreAccounts: List<BackupAccountOption> = emptyList(),
     val isBusy: Boolean = false,
     val errorType: BackupErrorType? = null,
     val successType: BackupSuccessType? = null,

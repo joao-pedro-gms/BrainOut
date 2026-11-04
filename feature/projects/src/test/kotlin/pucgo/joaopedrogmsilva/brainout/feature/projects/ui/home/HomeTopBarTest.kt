@@ -41,7 +41,7 @@ class HomeTopBarTest {
     }
 
     @Test
-    fun `com sessao a barra sauda pelo nome e mostra o badge de papel`() {
+    fun `com sessao a barra mostra identidade sem papel`() {
         composeRule.setContent {
             BrainOutTheme {
                 Surface {
@@ -50,7 +50,6 @@ class HomeTopBarTest {
                             HomeUser(
                                 displayName = "Maria Silva",
                                 initials = "MS",
-                                role = HomeUserRole.Owner,
                             ),
                     )
                 }
@@ -58,6 +57,6 @@ class HomeTopBarTest {
         }
 
         composeRule.onNodeWithText("Olá, Maria Silva").assertIsDisplayed()
-        composeRule.onNodeWithTag(HomeTestTags.ROLE_BADGE).assertIsDisplayed()
+        composeRule.onNodeWithTag(HomeTestTags.ROLE_BADGE).assertDoesNotExist()
     }
 }

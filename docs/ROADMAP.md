@@ -1,5 +1,14 @@
 # BrainOut — Roadmap de implementação
 
+> **Contas locais — direção aprovada em 26/10/2026:** cadastro com nome de usuário,
+> senha e confirmação; login por nome e senha, com distinção de maiúsculas.
+> Uma sessão ativa e dados independentes por conta. Papéis OWNER/MEMBER e e-mail
+> deixam o fluxo atual. Room v6 preserva bases anteriores; backup pessoal v2
+> importa dados para a conta conectada e lê arquivos v1 mediante seleção.
+> Ver [decisão de contas](adr/0002-contas-locais-independentes.md) e [contrato de backup](BACKUP.md).
+> As referências históricas abaixo a papéis e backup do aparelho inteiro não
+> representam esse novo contrato.
+
 > **Replanejamento aprovado em 16/10/2026:** o produto alvo é totalmente
 > local. Para trabalho novo, seguir [TRANSICAO-LOCAL.md](TRANSICAO-LOCAL.md)
 > e o épico #211. Os ciclos e decisões remotas abaixo ficam como histórico;

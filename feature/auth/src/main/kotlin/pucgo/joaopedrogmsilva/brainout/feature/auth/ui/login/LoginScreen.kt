@@ -82,7 +82,7 @@ fun LoginScreen(
             uiState = uiState,
             callbacks =
                 LoginCallbacks(
-                    onEmailChange = viewModel::onEmailChange,
+                    onUsernameChange = viewModel::onUsernameChange,
                     onPasswordChange = viewModel::onPasswordChange,
                     onSubmit = { viewModel.submitLogin() },
                     onCreateAccountClicked = onCreateAccountClicked,
@@ -106,17 +106,17 @@ internal fun LoginBody(
     uiState: AuthUiState,
     modifier: Modifier = Modifier,
 ) {
-    val emailFocus = remember { FocusRequester() }
+    val usernameFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
 
     AuthFormScaffold(scrollTestTag = LoginTestTags.SCROLL, modifier = modifier) {
         AuthSubtitle(textRes = R.string.login_subtitle)
 
-        EmailField(
-            value = uiState.email,
-            errorMessage = uiState.emailError,
-            onValueChange = callbacks.onEmailChange,
-            focusRequester = emailFocus,
+        UsernameField(
+            value = uiState.username,
+            errorMessage = uiState.usernameError,
+            onValueChange = callbacks.onUsernameChange,
+            focusRequester = usernameFocus,
             imeAction = ImeAction.Next,
             onNext = { passwordFocus.requestFocus() },
         )
@@ -157,18 +157,18 @@ internal fun LoginBody(
         )
     }
 
-    // Reage a mudanças em emailError/passwordError para devolver o foco
+    // Reage a mudanças em usernameError/passwordError para devolver o foco
     // ao primeiro campo inválido, como exigido pelo roadmap E1.6.
     FocusFirstInvalidField(
-        errors = listOf(uiState.emailError, uiState.passwordError),
-        requesters = listOf(emailFocus, passwordFocus),
+        errors = listOf(uiState.usernameError, uiState.passwordError),
+        requesters = listOf(usernameFocus, passwordFocus),
     )
 }
 
 /** Identificadores usados por testes Compose. */
 object LoginTestTags {
     const val SCROLL: String = "login_scroll"
-    const val EMAIL_FIELD: String = "login_email"
+    const val USERNAME_FIELD: String = "login_username"
     const val PASSWORD_FIELD: String = "login_password"
     const val PASSWORD_TOGGLE: String = "login_visibility_toggle"
     const val SUBMIT: String = "login_submit"
@@ -183,7 +183,7 @@ object LoginTestTags {
  * detekt.
  */
 internal data class LoginCallbacks(
-    val onEmailChange: (String) -> Unit,
+    val onUsernameChange: (String) -> Unit,
     val onPasswordChange: (String) -> Unit,
     val onSubmit: () -> Unit,
     val onCreateAccountClicked: () -> Unit,
@@ -253,7 +253,7 @@ internal fun PasswordField(
  *
  * Agrupada em um único parâmetro para manter a assinatura da função
  * abaixo do limite de `LongParameterList` do detekt — o mesmo desenho
- * do [EmailFieldConfig].
+ * do [UsernameFieldConfig].
  */
 internal data class PasswordFieldConfig(
     @androidx.annotation.StringRes val labelId: Int,
@@ -269,14 +269,14 @@ internal data class PasswordFieldConfig(
  * sem duplicar lógica.
  */
 @Composable
-internal fun EmailField(
+internal fun UsernameField(
     value: String,
     errorMessage: AuthErrorType?,
     onValueChange: (String) -> Unit,
     focusRequester: FocusRequester,
     imeAction: ImeAction,
     onNext: () -> Unit,
-    config: EmailFieldConfig = EmailFieldConfig.DEFAULT_LOGIN,
+    config: UsernameFieldConfig = UsernameFieldConfig.DEFAULT_LOGIN,
 ) {
     NeoTextField(
         value = value,
@@ -296,7 +296,7 @@ internal fun EmailField(
             },
         keyboardOptions =
             KeyboardOptions(
-                keyboardType = KeyboardType.Email,
+                keyboardType = KeyboardType.Ascii,
                 imeAction = imeAction,
             ),
         keyboardActions =
@@ -307,18 +307,18 @@ internal fun EmailField(
     )
 }
 
-/** Configuração textual + tag do [EmailField]. */
-internal data class EmailFieldConfig(
+/** Configuração textual + tag do [UsernameField]. */
+internal data class UsernameFieldConfig(
     @androidx.annotation.StringRes val labelId: Int,
     @androidx.annotation.StringRes val placeholderId: Int,
     val fieldTestTag: String,
 ) {
     companion object {
-        val DEFAULT_LOGIN: EmailFieldConfig =
-            EmailFieldConfig(
-                labelId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_label,
-                placeholderId = pucgo.joaopedrogmsilva.brainout.feature.auth.R.string.login_email_placeholder,
-                fieldTestTag = LoginTestTags.EMAIL_FIELD,
+        val DEFAULT_LOGIN: UsernameFieldConfig =
+            UsernameFieldConfig(
+                labelId = R.string.login_username_label,
+                placeholderId = R.string.login_username_placeholder,
+                fieldTestTag = LoginTestTags.USERNAME_FIELD,
             )
     }
 }
@@ -339,12 +339,12 @@ private fun LoginScreenPreview() {
             LoginBody(
                 callbacks =
                     LoginCallbacks(
-                        onEmailChange = {},
+                        onUsernameChange = {},
                         onPasswordChange = {},
                         onSubmit = {},
                         onCreateAccountClicked = {},
                     ),
-                uiState = AuthUiState(email = "joao@example.com", password = "senha-de-exemplo"),
+                uiState = AuthUiState(username = "joao@example.com", password = "senha-de-exemplo"),
             )
         }
     }

@@ -49,6 +49,22 @@ class WorkManagerDeadlineSchedulerTest {
             .get()
 
     @Test
+    fun `cancel tambem dispensa uma notificacao ja exibida`() {
+        WorkManagerDeadlineScheduler.ensureChannel(context)
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val notification =
+            android.app.Notification
+                .Builder(context, WorkManagerDeadlineScheduler.CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("Tarefa antiga")
+                .build()
+        manager.notify(DeadlineNotificationId.tagOf("antiga"), DeadlineNotificationId.of("antiga"), notification)
+        assertThat(manager.activeNotifications).hasLength(1)
+        scheduler.cancel("antiga")
+        assertThat(manager.activeNotifications).isEmpty()
+    }
+
+    @Test
     fun `schedule registra trabalho único com tag de lembrete`() {
         val triggerAt = Instant.now().plus(java.time.Duration.ofHours(2))
         scheduler.schedule("t1", triggerAt)

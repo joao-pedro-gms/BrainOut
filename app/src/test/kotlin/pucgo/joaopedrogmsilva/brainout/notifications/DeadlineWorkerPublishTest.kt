@@ -143,7 +143,7 @@ class DeadlineWorkerPublishTest {
         }
 
     @Test
-    fun `usa o texto de projeto desconhecido quando o projeto nao existe`() =
+    fun `nao publica quando nao pode acessar o projeto`() =
         runBlocking {
             val tarefa = Task.create(projectId = "p1", title = "Tarefa")
             coEvery { taskRepository.findById("t1") } returns tarefa
@@ -152,14 +152,6 @@ class DeadlineWorkerPublishTest {
             val result = buildWorker().doWork()
 
             assertThat(result).isEqualTo(ListenableWorker.Result.success())
-            val notification = notificationOf(tarefa.id)
-            assertThat(notification).isNotNull()
-            assertThat(textOf(notification!!, Notification.EXTRA_TEXT))
-                .isEqualTo(
-                    context.getString(
-                        R.string.deadline_notification_body,
-                        context.getString(R.string.deadline_unknown_project),
-                    ),
-                )
+            assertThat(notificationOf(tarefa.id)).isNull()
         }
 }

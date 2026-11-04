@@ -25,6 +25,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
@@ -122,7 +123,7 @@ class TasksViewModelTest {
             val activeUserProvider: ActiveUserProvider = mockk()
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-            val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
+            val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
             val taskRepository: TaskRepository = mockk()
             coEvery { taskRepository.observeAllForOwner("u1") } returns tasksFlow
 
@@ -144,7 +145,7 @@ class TasksViewModelTest {
                 // Emite a primeira lista.
                 tasksFlow.value =
                     listOf(
-                        pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
+                        Task.create(
                             projectId = "p1",
                             title = "T",
                         ),
@@ -210,7 +211,7 @@ class TasksViewModelTest {
             val activeUserProvider: ActiveUserProvider = mockk()
             coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
 
-            val tasksFlow = MutableStateFlow<List<pucgo.joaopedrogmsilva.brainout.core.domain.model.Task>>(emptyList())
+            val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
             val taskRepository: TaskRepository = mockk()
             coEvery { taskRepository.observeAllForOwner("u1") } returns
                 flow {

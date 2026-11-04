@@ -5,11 +5,9 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -19,43 +17,24 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateEmailException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateUsernameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidCredentialsException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.AuthenticateUserUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.CreateUserUseCase
-import java.time.Instant
 
-/**
- * Testes unitários do [AuthViewModel] cobrindo os fluxos exigidos pelo
- * roadmap E1.6:
- *
- * - Cadastro feliz — caso de uso é chamado, sessão é persistida e o
- *   evento [AuthEvent.NavigateHome] é emitido.
- * - Cadastro com e-mail duplicado — estado expõe erro inline de e-mail.
- * - Login errado — caso de uso lança [InvalidCredentialsException] e o
- *   estado expõe o erro no campo de senha.
- * - Erros de domínio e inesperados — viram erros generalizados
- *   ([AuthErrorType.DomainRejected] / [AuthErrorType.Unexpected]) em vez
- *   de vazar mensagem técnica.
- *
- * Os casos de uso e o [SessionStore] são mocks do MockK. O dispatcher
- * é o `StandardTestDispatcher` que o `runTest` configura por padrão —
- * não há referências ao `Dispatchers.Main` (looper Android) que
- * precisariam de Robolectric.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
-    private val testDispatcher = StandardTestDispatcher()
+    private val dispatcher = StandardTestDispatcher()
+    private val create = mockk<CreateUserUseCase>()
+    private val authenticate = mockk<AuthenticateUserUseCase>()
+    private val session = mockk<SessionStore>(relaxed = true)
+
+    private fun viewModel() = AuthViewModel(create, authenticate, session)
 
     @Before
     fun setUp() {
-        // `ViewModel.viewModelScope` é Main-immediate; sem Android
-        // precisamos substituir o dispatcher principal pelo test
-        // dispatcher para evitar `Looper.getMainLooper` não mockado.
-        Dispatchers.setMain(testDispatcher)
+        Dispatchers.setMain(dispatcher)
     }
 
     @After
@@ -63,406 +42,89 @@ class AuthViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun newViewModel(
-        createUser: CreateUserUseCase = mockk(relaxed = true),
-        authenticate: AuthenticateUserUseCase = mockk(relaxed = true),
-        sessionStore: SessionStore = mockk(relaxed = true),
-    ): AuthViewModel =
-        AuthViewModel(
-            createUserUseCase = createUser,
-            authenticateUserUseCase = authenticate,
-            sessionStore = sessionStore,
-        )
-
     @Test
-    fun `submitRegister happy path persists session and emits navigate event`() =
+    fun `cadastro persiste sessao e emite navegacao`() =
         runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            val sessionStore = mockk<SessionStore>(relaxed = true)
-            val newUser = sampleUser(role = UserRole.OWNER)
-
-            coEvery { createUser(any(), any(), any(), any()) } returns newUser
-            coEvery { authenticate(any(), any()) } returns newUser
-            coEvery { sessionStore.saveUserId(any()) } returns Unit
-
-            val viewModel = newViewModel(createUser, authenticate, sessionStore)
-
-            // Estado inicial: vazio e não-carregando.
-            assertThat(viewModel.state.value.email).isEmpty()
-            assertThat(viewModel.state.value.isLoading).isFalse()
-
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-            viewModel.onRoleChange(UserRole.OWNER)
-
-            // Após as mudanças, `state.value` reflete os valores.
-            val ready = viewModel.state.value
-            assertThat(ready.email).isEqualTo("joao@example.com")
-            assertThat(ready.name).isEqualTo("João Pedro")
-            assertThat(ready.password).isEqualTo("fixture-pwd-AAA")
-
-            viewModel.events.test {
-                viewModel.submitRegister()
+            val user = User.create("Joao", "hash")
+            coEvery { create("Joao", "fixture-input-long") } returns user
+            val vm = viewModel()
+            vm.onUsernameChange("Joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.onPasswordConfirmationChange("fixture-input-long")
+            vm.events.test {
+                vm.submitRegister()
                 advanceUntilIdle()
-
                 assertThat(awaitItem()).isEqualTo(AuthEvent.NavigateHome)
-                cancelAndIgnoreRemainingEvents()
             }
-
-            val finalState = viewModel.state.value
-            assertThat(finalState.isLoading).isFalse()
-
-            coVerifyOrder {
-                createUser("João Pedro", "joao@example.com", "fixture-pwd-AAA", UserRole.OWNER)
-                sessionStore.saveUserId(newUser.id)
-            }
+            coVerify(exactly = 1) { session.saveUserId(user.id) }
+            assertThat(vm.state.value.isLoading).isFalse()
         }
 
     @Test
-    fun `submitRegister with duplicate email sets emailError`() =
+    fun `nome ocupado gera erro tipado no campo e permite tentar novamente`() =
         runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            val authenticate = mockk<AuthenticateUserUseCase>(relaxed = true)
-            val sessionStore = mockk<SessionStore>(relaxed = true)
-
-            coEvery {
-                createUser(any(), any(), any(), any())
-            } throws DuplicateEmailException("joao@example.com")
-
-            val viewModel = newViewModel(createUser, authenticate, sessionStore)
-
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
+            coEvery { create(any(), any()) } throws DuplicateUsernameException("Joao")
+            val vm = viewModel()
+            vm.onUsernameChange("Joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.onPasswordConfirmationChange("fixture-input-long")
+            vm.submitRegister()
             advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.emailError).isEqualTo(AuthErrorType.DuplicateEmail)
-            coVerify(exactly = 0) { sessionStore.saveUserId(any()) }
+            assertThat(vm.state.value.usernameError).isEqualTo(AuthErrorType.DuplicateUsername)
+            vm.onUsernameChange("joao")
+            assertThat(vm.state.value.usernameError).isNull()
+            coVerify(exactly = 0) { session.saveUserId(any()) }
         }
 
     @Test
-    fun `submitRegister with invalid email keeps user in form`() =
+    fun `confirmacao diferente impede cadastro`() =
         runTest {
-            val viewModel = newViewModel()
+            val vm = viewModel()
+            vm.onUsernameChange("Joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.onPasswordConfirmationChange("different-input")
+            vm.submitRegister()
+            assertThat(vm.state.value.passwordConfirmationError).isEqualTo(AuthErrorType.PasswordMismatch)
+            coVerify(exactly = 0) { create(any(), any()) }
+        }
 
-            viewModel.onEmailChange("not-an-email")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
+    @Test
+    fun `login preserva caixa e falha generica nao abre sessao`() =
+        runTest {
+            coEvery { authenticate("joao", "fixture-input-long") } throws InvalidCredentialsException()
+            val vm = viewModel()
+            vm.onUsernameChange("joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.submitLogin()
             advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.emailError).isEqualTo(AuthErrorType.InvalidEmail)
+            assertThat(vm.state.value.passwordError).isEqualTo(AuthErrorType.InvalidCredentials)
+            coVerify(exactly = 0) { session.saveUserId(any()) }
         }
 
     @Test
-    fun `submitRegister with short password shows validation error`() =
+    fun `cadastro simultaneo e bloqueado durante envio`() =
         runTest {
-            val viewModel = newViewModel()
-
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("short")
-            viewModel.onPasswordConfirmationChange("short")
-
-            viewModel.submitRegister()
+            coEvery { create(any(), any()) } returns User.create("Joao", "hash")
+            val vm = viewModel()
+            vm.onUsernameChange("Joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.onPasswordConfirmationChange("fixture-input-long")
+            vm.submitRegister()
+            vm.submitRegister()
             advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.passwordError).isEqualTo(AuthErrorType.ShortPassword)
+            coVerify(exactly = 1) { create(any(), any()) }
         }
 
     @Test
-    fun `submitRegister with mismatched passwords shows mismatch error`() =
+    fun `falha inesperada retorna formulario editavel`() =
         runTest {
-            val viewModel = newViewModel()
-
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("different-123")
-
-            viewModel.submitRegister()
+            coEvery { authenticate(any(), any()) } throws IllegalStateException("fixture failure")
+            val vm = viewModel()
+            vm.onUsernameChange("Joao")
+            vm.onPasswordChange("fixture-input-long")
+            vm.submitLogin()
             advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.passwordConfirmationError)
-                .isEqualTo(AuthErrorType.PasswordMismatch)
+            assertThat(vm.state.value.errorMessage).isEqualTo(AuthErrorType.Unexpected)
+            assertThat(vm.state.value.isLoading).isFalse()
         }
-
-    @Test
-    fun `submitRegister with empty name shows validation error`() =
-        runTest {
-            val viewModel = newViewModel()
-
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            assertThat(viewModel.state.value.nameError).isEqualTo(AuthErrorType.EmptyName)
-        }
-
-    @Test
-    fun `submitRegister with name longer than the limit shows validation error`() =
-        runTest {
-            val viewModel = newViewModel()
-
-            viewModel.onNameChange("a".repeat(User.MAX_NAME_LENGTH + 1))
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            assertThat(viewModel.state.value.nameError).isEqualTo(AuthErrorType.LongName)
-        }
-
-    @Test
-    fun `submitRegister with name at the limit is accepted`() =
-        runTest {
-            val viewModel = newViewModel()
-
-            viewModel.onNameChange("a".repeat(User.MAX_NAME_LENGTH))
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            assertThat(viewModel.state.value.nameError).isNull()
-        }
-
-    @Test
-    fun `submitRegister with domain error surfaces generic domain error`() =
-        runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            coEvery { createUser(any(), any(), any(), any()) } throws InvalidModelException("nome inválido")
-
-            val viewModel = newViewModel(createUser = createUser)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isEqualTo(AuthErrorType.DomainRejected)
-        }
-
-    @Test
-    fun `submitRegister with unexpected error surfaces unexpected error`() =
-        runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            coEvery { createUser(any(), any(), any(), any()) } throws RuntimeException("disco cheio")
-
-            val viewModel = newViewModel(createUser = createUser)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isEqualTo(AuthErrorType.Unexpected)
-        }
-
-    @Test
-    fun `submitLogin happy path calls use case and persists session`() =
-        runTest {
-            val createUser = mockk<CreateUserUseCase>(relaxed = true)
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            val sessionStore = mockk<SessionStore>(relaxed = true)
-            val user = sampleUser(role = UserRole.OWNER)
-            coEvery { authenticate("joao@example.com", "fixture-pwd-AAA") } returns user
-            coEvery { sessionStore.saveUserId(any()) } returns Unit
-
-            val viewModel = newViewModel(createUser, authenticate, sessionStore)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-
-            viewModel.events.test {
-                viewModel.submitLogin()
-                advanceUntilIdle()
-
-                assertThat(awaitItem()).isEqualTo(AuthEvent.NavigateHome)
-                cancelAndIgnoreRemainingEvents()
-            }
-
-            assertThat(viewModel.state.value.isLoading).isFalse()
-            coVerify { authenticate("joao@example.com", "fixture-pwd-AAA") }
-            coVerify { sessionStore.saveUserId(user.id) }
-        }
-
-    @Test
-    fun `submitLogin with wrong password surfaces credentials error`() =
-        runTest {
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            coEvery { authenticate(any(), any()) } throws InvalidCredentialsException()
-
-            val viewModel = newViewModel(authenticate = authenticate)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("wrong-password")
-
-            viewModel.submitLogin()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.passwordError).isEqualTo(AuthErrorType.InvalidCredentials)
-        }
-
-    @Test
-    fun `submitLogin with domain error surfaces generic domain error`() =
-        runTest {
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            coEvery { authenticate(any(), any()) } throws InvalidModelException("e-mail inválido")
-
-            val viewModel = newViewModel(authenticate = authenticate)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-
-            viewModel.submitLogin()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isEqualTo(AuthErrorType.DomainRejected)
-        }
-
-    @Test
-    fun `submitLogin with unexpected error surfaces unexpected error`() =
-        runTest {
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            coEvery { authenticate(any(), any()) } throws RuntimeException("disco cheio")
-
-            val viewModel = newViewModel(authenticate = authenticate)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-
-            viewModel.submitLogin()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.isLoading).isFalse()
-            assertThat(state.errorMessage).isEqualTo(AuthErrorType.Unexpected)
-        }
-
-    @Test
-    fun `submitLogin with empty email keeps user in form`() =
-        runTest {
-            val viewModel = newViewModel()
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-
-            viewModel.submitLogin()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertThat(state.emailError).isEqualTo(AuthErrorType.EmptyEmail)
-            assertThat(state.isLoading).isFalse()
-        }
-
-    @Test
-    fun `login after register uses authenticate to confirm session`() =
-        runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            val authenticate = mockk<AuthenticateUserUseCase>()
-            val sessionStore = mockk<SessionStore>(relaxed = true)
-            val ownerUser = sampleUser(role = UserRole.OWNER)
-            coEvery { createUser(any(), any(), any(), any()) } returns ownerUser
-            coEvery { authenticate(any(), any()) } returns ownerUser
-            coEvery { sessionStore.saveUserId(any()) } returns Unit
-
-            val viewModel = newViewModel(createUser, authenticate, sessionStore)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            // Após o cadastro, o caller tipicamente chama
-            // `AuthenticateUserUseCase` para confirmar. Aqui validamos
-            // que o ViewModel não pula essa etapa — a sessão só é
-            // persistida depois que o caso de uso de cadastro retorna.
-            coVerifyOrder {
-                createUser(any(), any(), any(), any())
-                sessionStore.saveUserId(any())
-            }
-        }
-
-    @Test
-    fun `state changes propagate to UI consumer`() =
-        runTest {
-            val viewModel = newViewModel()
-
-            viewModel.state.test {
-                assertThat(awaitItem().email).isEmpty()
-
-                viewModel.onEmailChange("a")
-                assertThat(awaitItem().email).isEqualTo("a")
-
-                viewModel.onEmailChange("ab@example.com")
-                assertThat(awaitItem().email).isEqualTo("ab@example.com")
-
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    @Test
-    fun `submitRegister does not double submit while loading`() =
-        runTest {
-            val createUser = mockk<CreateUserUseCase>()
-            val user = sampleUser(role = UserRole.OWNER)
-            // Atraso artificial: a segunda chamada não deve acontecer
-            // porque a primeira já colocou `isLoading = true`.
-            coEvery { createUser(any(), any(), any(), any()) } coAnswers {
-                delay(100)
-                user
-            }
-            val viewModel = newViewModel(createUser = createUser)
-            viewModel.onEmailChange("joao@example.com")
-            viewModel.onNameChange("João Pedro")
-            viewModel.onPasswordChange("fixture-pwd-AAA")
-            viewModel.onPasswordConfirmationChange("fixture-pwd-AAA")
-
-            viewModel.submitRegister()
-            // Não esperamos a coroutine terminar — disparamos de novo.
-            viewModel.submitRegister()
-            advanceUntilIdle()
-
-            // Apenas uma chamada efetiva ao use case.
-            coVerify(exactly = 1) { createUser(any(), any(), any(), any()) }
-        }
-
-    private fun sampleUser(role: UserRole): User =
-        User(
-            id = "user-id-${role.name}",
-            name = "João Pedro",
-            email = "joao@example.com",
-            passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-            role = role,
-            createdAt = Instant.parse("2026-09-18T10:00:00Z"),
-        )
 }

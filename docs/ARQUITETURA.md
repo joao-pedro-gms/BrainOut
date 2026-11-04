@@ -1,5 +1,14 @@
 # BrainOut — arquitetura
 
+> **Contas locais — direção aprovada em 26/10/2026:** cadastro com nome de usuário,
+> senha e confirmação; login por nome e senha, com distinção de maiúsculas.
+> Uma sessão ativa e dados independentes por conta. Papéis OWNER/MEMBER e e-mail
+> deixam o fluxo atual. Room v6 preserva bases anteriores; backup pessoal v2
+> importa dados para a conta conectada e lê arquivos v1 mediante seleção.
+> Ver [decisão de contas](adr/0002-contas-locais-independentes.md) e [contrato de backup](BACKUP.md).
+> As referências históricas abaixo a papéis e backup do aparelho inteiro não
+> representam esse novo contrato.
+
 > **Decisão posterior (16/10/2026): produto totalmente local.** Este texto
 > registra a arquitetura legada, removida na implementação #212. A direção alvo,
 > as diferenças para a implementação e a ordem de migração estão em

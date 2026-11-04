@@ -17,6 +17,9 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.RoomLocalTransaction
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TaskEntity
 import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.TaskRepositoryImpl
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import java.time.Instant
 
 /**
@@ -47,7 +50,13 @@ class TaskSaveAuditTest {
         database.close()
     }
 
-    private fun repository() = TaskRepositoryImpl(taskDao, projectDao, RoomLocalTransaction(database))
+    private fun repository() =
+        TaskRepositoryImpl(
+            taskDao,
+            projectDao,
+            pucgo.joaopedrogmsilva.brainout.core.data.repository
+                .testAccess(RoomLocalTransaction(database), "u-1"),
+        )
 
     // ------------------------------------------------------------------
     // HIPÓTESE REFUTADA — `SUM(...)` devolve NULL quando a agregação
@@ -120,7 +129,7 @@ class TaskSaveAuditTest {
     fun `ACHADO 2 update de tarefa inexistente lanca sem criar registro`() =
         runTest {
             val fantasma =
-                pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
+                Task.create(
                     projectId = "p-inexistente",
                     title = "Tarefa fantasma",
                 )
@@ -128,7 +137,7 @@ class TaskSaveAuditTest {
             val thrown = runCatching { repository().update(fantasma) }.exceptionOrNull()
 
             assertThat(thrown).isInstanceOf(
-                pucgo.joaopedrogmsilva.brainout.core.domain.error.TaskNotFoundException::class.java,
+                TaskNotFoundException::class.java,
             )
             assertThat(taskDao.findById(fantasma.id)).isNull()
         }
@@ -138,11 +147,11 @@ class TaskSaveAuditTest {
         runTest {
             projectDao.insert(sampleProject())
             val comPrazo =
-                pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
+                Task.create(
                     projectId = "p-1",
                     title = "Tarefa com prazo",
                     dueDate = Instant.parse("2026-12-31T00:00:00Z"),
-                    assigneeId = "u-7",
+                    assigneeId = "u-1",
                 )
             taskDao.insert(TaskEntity.fromDomain(comPrazo))
 
@@ -150,7 +159,7 @@ class TaskSaveAuditTest {
 
             val saved = taskDao.findById(comPrazo.id)!!
             assertThat(saved.dueDate).isEqualTo(comPrazo.dueDate)
-            assertThat(saved.assigneeId).isEqualTo("u-7")
+            assertThat(saved.assigneeId).isEqualTo("u-1")
         }
 
     // ------------------------------------------------------------------
@@ -198,7 +207,7 @@ class TaskSaveAuditTest {
         runTest {
             projectDao.insert(sampleProject())
             val base =
-                pucgo.joaopedrogmsilva.brainout.core.domain.model.Task.create(
+                Task.create(
                     projectId = "p-1",
                     title = "Tarefa",
                 )
@@ -264,7 +273,7 @@ class TaskSaveAuditTest {
 
             repository().reopenAndCascade(
                 "t-1",
-                pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus.DOING,
+                TaskStatus.DOING,
             )
 
             val relida = taskDao.findById("t-1")
@@ -286,7 +295,7 @@ class TaskSaveAuditTest {
 
             assertThat(taskDao.countActiveByProject("p-1")).isEqualTo(50)
 
-            repository().reopenAndCascade("z-done", pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus.DOING)
+            repository().reopenAndCascade("z-done", TaskStatus.DOING)
 
             // Nenhum caminho revalidou RN01 na reabertura.
             assertThat(taskDao.countActiveByProject("p-1")).isEqualTo(51)

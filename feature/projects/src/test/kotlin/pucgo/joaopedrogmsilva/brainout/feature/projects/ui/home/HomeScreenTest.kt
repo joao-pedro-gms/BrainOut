@@ -28,7 +28,6 @@ import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferences
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
@@ -89,10 +88,8 @@ class HomeScreenTest {
     private fun sampleUser(): User =
         User(
             id = "user-1",
-            name = "João Pedro",
-            email = "joao@example.com",
+            username = "joao",
             passwordHash = "hash-de-teste",
-            role = UserRole.OWNER,
             createdAt = Instant.parse("2026-09-18T10:00:00Z"),
         )
 

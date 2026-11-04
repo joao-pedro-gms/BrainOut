@@ -31,7 +31,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val userState by viewModel.userState.collectAsStateWithLifecycle()
-    val upgradeDialogVisible by viewModel.upgradeDialogVisible.collectAsStateWithLifecycle()
     val listState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentFilter by viewModel.projectFilter.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -47,13 +46,8 @@ fun HomeScreen(
                 HomeUser(
                     displayName = current.displayName,
                     initials = current.initials,
-                    role = current.role,
                 )
         }
-
-    // Sem sessão ainda, o FAB é o de criar projeto — o de membro só
-    // entra quando o papel do usuário é Member de verdade.
-    val isOwner = homeUser?.role != HomeUserRole.Member
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -62,9 +56,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             HomeFloatingActionButton(
-                isOwner = isOwner,
                 onCreateProjectClicked = { showCreateDialog = true },
-                onMemberFabClicked = viewModel::onMemberFabClicked,
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -105,10 +97,6 @@ fun HomeScreen(
                 viewModel.createProject(name, description, tagIds) { showCreateDialog = false }
             },
         )
-    }
-
-    if (upgradeDialogVisible) {
-        UpgradeDialog(onDismiss = viewModel::dismissUpgradeDialog)
     }
 }
 

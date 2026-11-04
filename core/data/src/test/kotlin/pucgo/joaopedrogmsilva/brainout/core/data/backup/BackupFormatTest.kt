@@ -44,7 +44,7 @@ class BackupFormatTest {
         val json = envelopeJson()
 
         assertThat(json.getString("format")).isEqualTo("brainout-backup")
-        assertThat(json.getInt("formatVersion")).isEqualTo(1)
+        assertThat(json.getInt("formatVersion")).isEqualTo(2)
     }
 
     /** O envelope serializado, como o app o grava em disco. */

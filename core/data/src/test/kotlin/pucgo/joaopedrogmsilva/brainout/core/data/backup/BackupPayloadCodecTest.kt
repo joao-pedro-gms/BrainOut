@@ -33,7 +33,7 @@ class BackupPayloadCodecTest {
         assertThat(json.keys().asSequence().toSet())
             .isEqualTo(setOf("users", "projects", "tasks", "tags", "projectTags", "preferences"))
         assertThat(json.keysOfFirst("users"))
-            .isEqualTo(setOf("id", "name", "email", "role", "createdAtEpochMillis"))
+            .isEqualTo(setOf("id", "username", "createdAtEpochMillis"))
         assertThat(json.keysOfFirst("projects"))
             .isEqualTo(setOf("id", "ownerId", "name", "description", "createdAtEpochMillis", "isCompleted"))
         assertThat(json.keysOfFirst("tasks"))
@@ -55,7 +55,7 @@ class BackupPayloadCodecTest {
         assertThat(json.keysOfFirst("projectTags"))
             .isEqualTo(setOf("projectId", "tagId"))
         assertThat(preferences.keys().asSequence().toSet())
-            .isEqualTo(setOf("themeMode", "sortOrderByUser"))
+            .isEqualTo(setOf("sortOrderByUser"))
     }
 
     @Test
@@ -90,7 +90,7 @@ class BackupPayloadCodecTest {
 
     private fun payloadCompleto(): BackupPayload =
         BackupPayload(
-            users = listOf(BackupUser("u1", "Ana", "ana@exemplo", "OWNER", 1L)),
+            users = listOf(BackupUser("u1", "Ana", 1L)),
             projects = listOf(BackupProject("p1", "u1", "Projeto", "descrição", 2L, false)),
             tasks = listOf(BackupTask("t1", "p1", "Tarefa", 2, "TODO", "u1", 3L, 4L, 5L)),
             tags = listOf(BackupTag("tag1", "u1", "Urgente", "#FF0000", 6L)),
@@ -100,7 +100,7 @@ class BackupPayloadCodecTest {
 
     private fun payloadMinimo(): BackupPayload =
         BackupPayload(
-            users = listOf(BackupUser("u1", "Ana", "ana@exemplo", "OWNER", 1L)),
+            users = listOf(BackupUser("u1", "Ana", 1L)),
             projects = listOf(BackupProject("p1", "u1", "Projeto", null, 2L, false)),
             tasks = listOf(BackupTask("t1", "p1", "Tarefa", 2, "TODO", null, null, 4L, null)),
             tags = listOf(BackupTag("tag1", "u1", "Urgente", "#FF0000", 6L)),

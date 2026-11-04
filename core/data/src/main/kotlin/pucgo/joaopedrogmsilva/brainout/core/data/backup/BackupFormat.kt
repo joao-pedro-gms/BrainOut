@@ -37,7 +37,7 @@ internal object BackupFormat {
     const val FORMAT_ID: String = "brainout-backup"
 
     /** Versão do formato que esta implementação sabe ler. */
-    const val SUPPORTED_FORMAT_VERSION: Int = 1
+    const val SUPPORTED_FORMAT_VERSION: Int = 2
 
     /**
      * Limite de tamanho do arquivo aceito na importação: 20 MiB.
@@ -121,7 +121,7 @@ internal object BackupFormat {
             throw BackupFormatException("O arquivo não é um backup do BrainOut.")
         }
         val version = root.optInt(KEY_FORMAT_VERSION, -1)
-        if (version != SUPPORTED_FORMAT_VERSION) {
+        if (version !in 1..SUPPORTED_FORMAT_VERSION) {
             throw UnsupportedBackupVersionException(version)
         }
         return version

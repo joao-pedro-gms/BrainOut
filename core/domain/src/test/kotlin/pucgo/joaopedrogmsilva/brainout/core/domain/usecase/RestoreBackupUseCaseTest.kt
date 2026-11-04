@@ -5,10 +5,13 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.FakeDeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupReminder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResult
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.FakeActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.FakeBackupRepository
 import java.io.ByteArrayInputStream
 import java.time.Duration
@@ -21,7 +24,7 @@ import java.time.Instant
 class RestoreBackupUseCaseTest {
     private val repository = FakeBackupRepository()
     private val scheduler = FakeDeadlineNotificationScheduler()
-    private val useCase = RestoreBackupUseCase(repository, scheduler)
+    private val useCase = RestoreBackupUseCase(repository, scheduler, FakeActiveUserPort())
 
     @Test
     fun `restaura e devolve o resultado da operacao`() =
@@ -51,7 +54,7 @@ class RestoreBackupUseCaseTest {
     @Test
     fun `reagenda o lembrete das tarefas restauradas com uma hora de antecedencia`() =
         runTest {
-            val dueDate = Instant.parse("2026-10-20T18:00:00Z")
+            val dueDate = Instant.now().plusSeconds(7200)
             repository.taskIds = emptySet()
             repository.restoreResult =
                 BackupRestoreResult(
@@ -125,6 +128,33 @@ class RestoreBackupUseCaseTest {
                 }.exceptionOrNull()
 
             assertThat(error).isSameInstanceAs(failure)
+            assertThat(scheduler.cancelled).isEmpty()
+            assertThat(scheduler.scheduled).isEmpty()
+        }
+
+    @Test
+    fun `troca de conta depois da gravacao impede reagendamento sem desfazer o sucesso`() =
+        runTest {
+            val session =
+                object : ActiveUserPort {
+                    override suspend fun currentUser() = User.create("Teste", "hash").copy(id = "u1")
+
+                    override suspend fun runIfCurrent(
+                        userId: String,
+                        action: () -> Unit,
+                    ): Boolean = false
+                }
+            repository.taskIds = setOf("antiga")
+            repository.restoreResult =
+                BackupRestoreResult(
+                    SUMMARY,
+                    setOf("nova"),
+                    listOf(BackupReminder("nova", Instant.now().plusSeconds(7200))),
+                    ownerId = "u1",
+                )
+            val result =
+                RestoreBackupUseCase(repository, scheduler, session)(ByteArrayInputStream(ByteArray(0)), PASSPHRASE)
+            assertThat(result.taskIds).containsExactly("nova")
             assertThat(scheduler.cancelled).isEmpty()
             assertThat(scheduler.scheduled).isEmpty()
         }

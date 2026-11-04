@@ -30,8 +30,13 @@ import java.time.Instant
  * @see RestoreBackupUseCase
  */
 interface BackupRepository {
+    suspend fun inspect(
+        input: InputStream,
+        passphrase: String,
+    ): List<BackupAccountOption>
+
     /**
-     * Escreve um backup cifrado do conteúdo local em [output].
+     * Escreve um backup cifrado dos dados da conta ativa em [output].
      *
      * @param output destino do arquivo (o chamador decide onde — SAF,
      *  `FileOutputStream`, `ByteArrayOutputStream` em teste).
@@ -44,8 +49,8 @@ interface BackupRepository {
     ): BackupSummary
 
     /**
-     * Lê um backup cifrado de [input] e substitui o conteúdo local
-     * pelo conteúdo do arquivo.
+     * Lê um backup cifrado de [input] e substitui somente os dados da conta ativa.
+     * A conta de origem é selecionada por [sourceUserId]; credenciais são preservadas.
      *
      * @param input origem do arquivo.
      * @param passphrase senha usada para decifrar o conteúdo.
@@ -55,10 +60,12 @@ interface BackupRepository {
     suspend fun restoreFrom(
         input: InputStream,
         passphrase: String,
+        sourceUserId: String? = null,
+        expectedUserId: String? = null,
     ): BackupRestoreResult
 
     /**
-     * Ids das tarefas atualmente gravadas no aparelho.
+     * Ids das tarefas da conta ativa.
      *
      * Usado pela reconciliação de lembretes: as tarefas que existiam
      * antes da restauração e não existem depois precisam ter o
@@ -81,6 +88,7 @@ data class BackupRestoreResult(
     val summary: BackupSummary,
     val taskIds: Set<String>,
     val reminders: List<BackupReminder>,
+    val ownerId: String? = null,
 )
 
 /**
@@ -92,4 +100,10 @@ data class BackupRestoreResult(
 data class BackupReminder(
     val taskId: String,
     val dueDate: Instant,
+)
+
+/** Conta identificável no arquivo; a seleção nunca altera a identidade da conta de destino. */
+data class BackupAccountOption(
+    val id: String,
+    val label: String,
 )

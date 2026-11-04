@@ -29,9 +29,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResult
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ExportBackupUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.InspectBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.RestoreBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
@@ -200,8 +205,13 @@ class BackupSectionTest {
     private fun newViewModel(): BackupViewModel {
         val context = ApplicationProvider.getApplicationContext<Context>()
         return BackupViewModel(
+            inspectBackupUseCase =
+                InspectBackupUseCase(
+                    FakeBackupRepository(),
+                ),
+            activeUser = io.mockk.mockk(relaxed = true),
             exportBackupUseCase = ExportBackupUseCase(FakeBackupRepository()),
-            restoreBackupUseCase = RestoreBackupUseCase(FakeBackupRepository(), NoOpScheduler),
+            restoreBackupUseCase = RestoreBackupUseCase(FakeBackupRepository(), NoOpScheduler, testBackupSession()),
             context = context,
         )
     }
@@ -209,6 +219,11 @@ class BackupSectionTest {
 
 /** [BackupRepository] sem efeito — a UI não escreve em disco no teste. */
 private class FakeBackupRepository : BackupRepository {
+    override suspend fun inspect(
+        input: InputStream,
+        passphrase: String,
+    ): List<BackupAccountOption> = emptyList()
+
     override suspend fun exportTo(
         output: OutputStream,
         passphrase: String,
@@ -217,6 +232,8 @@ private class FakeBackupRepository : BackupRepository {
     override suspend fun restoreFrom(
         input: InputStream,
         passphrase: String,
+        sourceUserId: String?,
+        expectedUserId: String?,
     ): BackupRestoreResult = BackupRestoreResult(SUMMARY, emptySet(), emptyList())
 
     override suspend fun currentTaskIds(): Set<String> = emptySet()
@@ -227,7 +244,7 @@ private class FakeBackupRepository : BackupRepository {
 }
 
 /** Agendador de lembretes sem efeito. */
-private object NoOpScheduler : pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler {
+private object NoOpScheduler : DeadlineNotificationScheduler {
     override fun schedule(
         taskId: String,
         triggerAt: Instant,
@@ -235,3 +252,16 @@ private object NoOpScheduler : pucgo.joaopedrogmsilva.brainout.core.domain.notif
 
     override fun cancel(taskId: String) = Unit
 }
+
+private fun testBackupSession(): ActiveUserPort =
+    object : ActiveUserPort {
+        override suspend fun currentUser(): User = User.create("Teste", "hash").copy(id = "u1")
+
+        override suspend fun runIfCurrent(
+            userId: String,
+            action: () -> Unit,
+        ): Boolean {
+            action()
+            return true
+        }
+    }

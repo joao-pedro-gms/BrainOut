@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
  * `TasksTopBar` é o componente compartilhado pelas duas abas; testá-lo
@@ -45,7 +46,7 @@ class TasksTopBarTest {
         composeRule.setContent {
             BrainOutTheme {
                 TasksTopBar(
-                    titleRes = pucgo.joaopedrogmsilva.brainout.feature.tasks.R.string.tasks_screen_title,
+                    titleRes = R.string.tasks_screen_title,
                     onBackClicked = {},
                 )
             }
@@ -59,7 +60,7 @@ class TasksTopBarTest {
         composeRule.setContent {
             BrainOutTheme {
                 TasksTopBar(
-                    titleRes = pucgo.joaopedrogmsilva.brainout.feature.tasks.R.string.dashboard_screen_title,
+                    titleRes = R.string.dashboard_screen_title,
                     onBackClicked = {},
                 )
             }
@@ -75,7 +76,7 @@ class TasksTopBarTest {
         composeRule.setContent {
             BrainOutTheme {
                 TasksTopBar(
-                    titleRes = pucgo.joaopedrogmsilva.brainout.feature.tasks.R.string.tasks_screen_title,
+                    titleRes = R.string.tasks_screen_title,
                     onBackClicked = { backClicks++ },
                 )
             }
@@ -93,7 +94,7 @@ class TasksTopBarTest {
         composeRule.setContent {
             BrainOutTheme {
                 TasksTopBar(
-                    titleRes = pucgo.joaopedrogmsilva.brainout.feature.tasks.R.string.tasks_screen_title,
+                    titleRes = R.string.tasks_screen_title,
                     onBackClicked = {},
                 )
             }

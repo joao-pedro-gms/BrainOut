@@ -4,7 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.core.data.local.entity
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import java.time.Instant
 
 /**
@@ -20,10 +19,8 @@ class UserEntityTest {
         val original =
             User(
                 id = "id-1",
-                name = "João Pedro",
-                email = "joao@example.com",
+                username = "joao",
                 passwordHash = "pbkdf2_sha256\$120000\$AAAA\$BBBB",
-                role = UserRole.OWNER,
                 createdAt = Instant.parse("2026-01-15T12:00:00Z"),
             )
 
@@ -31,7 +28,6 @@ class UserEntityTest {
         val back = entity.toDomain()
 
         assertThat(back).isEqualTo(original)
-        assertThat(entity.role).isEqualTo("OWNER")
     }
 
     @Test
@@ -39,16 +35,13 @@ class UserEntityTest {
         val original =
             User(
                 id = "id-2",
-                name = "Maria",
-                email = "maria@example.com",
+                username = "maria",
                 passwordHash = "x",
-                role = UserRole.MEMBER,
                 createdAt = Instant.parse("2026-02-01T08:30:00Z"),
             )
 
         val back = UserEntity.fromDomain(original).toDomain()
 
         assertThat(back).isEqualTo(original)
-        assertThat(back.role).isEqualTo(UserRole.MEMBER)
     }
 }

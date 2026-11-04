@@ -5,8 +5,6 @@
     <string name="home_topbar_greeting">Hi, %1$s</string>
     <!-- DEF-72 — greeting without a name, used while there is no session. -->
     <string name="home_topbar_greeting_generic">Hi!</string>
-    <string name="home_role_badge_owner">Owner</string>
-    <string name="home_role_badge_member">Member</string>
     <string name="home_section_title">Your projects</string>
     <string name="home_empty_title">No projects yet</string>
     <string name="home_empty_body">Tap the “+” button to create your first project.</string>
@@ -53,10 +51,6 @@
     <string name="project_detail_task_menu_more">More options</string>
 
     <!-- Home (E1.7 — papel exibido + gate do FAB) -->
-    <string name="home_role_member_dialog_title">Available for Owners only</string>
-    <string name="home_role_member_dialog_body">To create projects, sign in to a local account with the Owner role.</string>
-    <string name="home_role_member_dialog_ack">Got it</string>
-    <string name="home_fab_disabled_owner">Create project (coming soon)</string>
 
     <!-- Home (E2.1/E2.6 — diálogo de criar projeto + tag) -->
     <string name="home_create_project_title">New project</string>

@@ -207,12 +207,7 @@ private fun NavGraphBuilder.addSettingsRoute(
             backupContent = {
                 BackupSection(
                     onRestoreCompleted = {
-                        // A restauração substitui as contas do aparelho e
-                        // invalida a sessão — o usuário precisa entrar de
-                        // novo com a senha do backup (issue #214).
-                        Log.d(TAG, "Navegando: Settings -> Login (backup restaurado)")
-                        navController.clearMainBackStacks()
-                        navController.navigate(BrainOutRoutes.Login) {
+                        navController.navigate(BrainOutRoutes.MainGraph) {
                             popUpTo(0) { inclusive = true }
                         }
                     },

@@ -30,10 +30,11 @@ internal data class BackupPayload(
 /** Conta local exportada, sem material de senha. */
 internal data class BackupUser(
     val id: String,
-    val name: String,
-    val email: String,
-    val role: String,
+    val username: String,
     val createdAtEpochMillis: Long,
+    val name: String = "",
+    val email: String = "",
+    val role: String = "",
 )
 
 /** Projeto exportado. */
@@ -106,6 +107,7 @@ private const val KEY_SORT_ORDER_BY_USER: String = "sortOrderByUser"
 private const val KEY_ID: String = "id"
 private const val KEY_OWNER_ID: String = "ownerId"
 private const val KEY_NAME: String = "name"
+private const val KEY_USERNAME: String = "username"
 private const val KEY_EMAIL: String = "email"
 private const val KEY_ROLE: String = "role"
 private const val KEY_CREATED_AT_EPOCH_MILLIS: String = "createdAtEpochMillis"
@@ -145,7 +147,6 @@ internal object BackupPayloadCodec {
                 .put(
                     KEY_PREFERENCES,
                     JSONObject()
-                        .put(KEY_THEME_MODE, payload.preferences.themeMode)
                         .put(
                             KEY_SORT_ORDER_BY_USER,
                             JSONObject().apply {
@@ -169,7 +170,7 @@ internal object BackupPayloadCodec {
             projectTags = root.optJSONArray(KEY_PROJECT_TAGS).mapObjects(::decodeProjectTag),
             preferences =
                 BackupPreferences(
-                    themeMode = preferences.optString(KEY_THEME_MODE, ""),
+                    themeMode = preferences.optString(KEY_THEME_MODE, "system"),
                     sortOrderByUser =
                         sortOrders.keys().asSequence().associateWith { key ->
                             sortOrders.optString(key, "")
@@ -190,9 +191,7 @@ private fun parsePayloadRoot(bytes: ByteArray): JSONObject =
 private fun encodeUser(user: BackupUser): JSONObject =
     JSONObject()
         .put(KEY_ID, user.id)
-        .put(KEY_NAME, user.name)
-        .put(KEY_EMAIL, user.email)
-        .put(KEY_ROLE, user.role)
+        .put(KEY_USERNAME, user.username)
         .put(KEY_CREATED_AT_EPOCH_MILLIS, user.createdAtEpochMillis)
 
 private fun encodeProject(project: BackupProject): JSONObject {
@@ -239,6 +238,7 @@ private fun decodeUser(json: JSONObject): BackupUser =
     BackupUser(
         id = json.optString(KEY_ID),
         name = json.optString(KEY_NAME),
+        username = json.optString(KEY_USERNAME),
         email = json.optString(KEY_EMAIL),
         role = json.optString(KEY_ROLE),
         createdAtEpochMillis = json.optLong(KEY_CREATED_AT_EPOCH_MILLIS),

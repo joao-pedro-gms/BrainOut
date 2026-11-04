@@ -13,7 +13,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
 
 /**
@@ -53,10 +52,8 @@ class ActiveUserProviderTest {
     private fun usuario(id: String): User {
         val base =
             User.create(
-                name = "Pessoa",
-                email = "pessoa@example.com",
+                username = "pessoa",
                 passwordHash = "hash",
-                role = UserRole.OWNER,
             )
         return base.copy(id = id)
     }
@@ -154,7 +151,8 @@ private class FakeUserRepository : UserRepository {
     /** Ids consultados — para provar que o Room não foi tocado. */
     val consultas: MutableList<String> = mutableListOf()
 
-    override suspend fun findByEmail(email: String): User? = usuarios.values.firstOrNull { it.email == email }
+    override suspend fun findByUsername(username: String): User? =
+        usuarios.values.firstOrNull { it.username == username }
 
     override suspend fun save(user: User): User {
         usuarios[user.id] = user

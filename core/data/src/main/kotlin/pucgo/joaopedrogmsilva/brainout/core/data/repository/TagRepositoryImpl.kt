@@ -4,11 +4,13 @@ package pucgo.joaopedrogmsilva.brainout.core.data.repository
 import android.database.sqlite.SQLiteConstraintException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import pucgo.joaopedrogmsilva.brainout.core.data.local.LocalTransaction
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.ProjectDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TagDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.TagEntity
+import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.util.logDebug
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.TagNotFoundException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 import javax.inject.Inject
@@ -22,23 +24,36 @@ class TagRepositoryImpl
     @Inject
     constructor(
         private val tagDao: TagDao,
-        private val localTransaction: LocalTransaction,
+        private val access: AccountAccess,
+        private val projectDao: ProjectDao,
     ) : TagRepository {
         override fun observeForOwner(ownerId: String): Flow<List<Tag>> =
-            tagDao.observeForOwner(ownerId).map { rows -> rows.map { it.toDomain() } }
-
-        override fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>> =
-            tagDao.observeForProjects(ids.toList()).map { rows ->
-                val byProject = rows.groupBy({ it.projectId }, { it.tag.toDomain() })
-                ids.associateWith { projectId -> byProject[projectId].orEmpty() }
+            access.observeOwner(ownerId, emptyList()) {
+                tagDao.observeForOwner(ownerId).map { rows ->
+                    rows.map { it.toDomain() }
+                }
             }
 
-        override suspend fun findById(id: String): Tag? = tagDao.findById(id)?.toDomain()
+        override fun observeByProjectIds(ids: Set<String>): Flow<Map<String, List<Tag>>> =
+            access.observe(emptyMap()) { owner ->
+                val ownedIds = ids.filter { projectDao.findById(it)?.ownerId == owner }
+                tagDao.observeForProjects(ownedIds).map { rows ->
+                    val byProject =
+                        rows.filter { it.tag.ownerId == owner }.groupBy(
+                            { it.projectId },
+                            { it.tag.toDomain() },
+                        )
+                    ids.associateWith { projectId -> byProject[projectId].orEmpty() }
+                }
+            }
+
+        override suspend fun findById(id: String): Tag? =
+            tagDao.findById(id)?.takeIf { access.owns(it.ownerId) }?.toDomain()
 
         override suspend fun create(tag: Tag): Tag {
             logDebug(TAG, "Criando tag id=${tag.id}, name=${tag.name}, color=${tag.color}, ownerId=${tag.ownerId}")
             try {
-                localTransaction.run {
+                access.write(tag.ownerId) {
                     tagDao.insert(TagEntity.fromDomain(tag))
                 }
             } catch (e: SQLiteConstraintException) {
@@ -54,7 +69,8 @@ class TagRepositoryImpl
 
         override suspend fun delete(id: String) {
             logDebug(TAG, "Deletando tag id=$id")
-            localTransaction.run {
+            val tag = findById(id) ?: throw TagNotFoundException(id)
+            access.write(tag.ownerId) {
                 tagDao.deleteById(id)
             }
         }

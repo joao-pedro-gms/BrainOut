@@ -19,32 +19,9 @@ import java.time.Instant
 //
 // Aqui cada conversão mora uma vez, e o repositório fica só com o I/O.
 
-/** Entidade → payload. O hash da senha **não** vai para o arquivo. */
+/** Identidade descritiva; nunca transporta a senha. */
 internal fun UserEntity.toBackup(): BackupUser =
-    BackupUser(
-        id = id,
-        name = name,
-        email = email,
-        role = role,
-        createdAtEpochMillis = createdAt.toEpochMilli(),
-    )
-
-/**
- * Payload → entidade.
- *
- * O hash é parametro porque não vem do arquivo: a conta que já existe
- * conserva o hash local (derivado com o pepper deste aparelho) e a
- * conta nova recebe a senha do backup, derivada com o pepper local.
- */
-internal fun BackupUser.toEntity(passwordHash: String): UserEntity =
-    UserEntity(
-        id = id,
-        name = name,
-        email = email,
-        passwordHash = passwordHash,
-        role = role,
-        createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
-    )
+    BackupUser(id = id, username = username, createdAtEpochMillis = createdAt.toEpochMilli())
 
 /** Entidade → payload. */
 internal fun ProjectEntity.toBackup(): BackupProject =

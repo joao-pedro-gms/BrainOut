@@ -20,7 +20,6 @@ sealed interface HomeUserState {
     data class SignedIn(
         val displayName: String,
         val initials: String,
-        val role: HomeUserRole,
     ) : HomeUserState
 }
 

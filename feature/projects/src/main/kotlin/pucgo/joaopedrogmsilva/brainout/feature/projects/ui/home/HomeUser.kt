@@ -18,7 +18,4 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 data class HomeUser(
     val displayName: String,
     val initials: String,
-    val role: HomeUserRole,
 )
-
-enum class HomeUserRole { Owner, Member }

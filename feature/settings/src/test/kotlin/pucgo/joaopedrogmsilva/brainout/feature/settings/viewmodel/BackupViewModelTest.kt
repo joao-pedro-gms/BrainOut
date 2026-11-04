@@ -25,9 +25,14 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupRestoreException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupTooLargeException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.UnsupportedBackupVersionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
+import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResult
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.ExportBackupUseCase
+import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.InspectBackupUseCase
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.RestoreBackupUseCase
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -182,14 +187,48 @@ class BackupViewModelTest {
             assertThat(state.summary).isNull()
         }
 
+    @Test
+    fun `inspecao pede selecao e restaura somente a conta escolhida`() =
+        runTest(dispatcher) {
+            repository.accounts = listOf(BackupAccountOption("a", "Conta A"), BackupAccountOption("b", "Conta B"))
+            val vm = newViewModel()
+            vm.inspect(EXPORT_URI, PASSPHRASE)
+            val inspected = vm.state.first { it.restoreAccounts.isNotEmpty() }
+            assertThat(inspected.restoreAccounts).hasSize(2)
+            assertThat(repository.restoredPassphrase).isNull()
+            vm.restoreSelected("b")
+            vm.state.first { it.successType == BackupSuccessType.Restored }
+            assertThat(repository.selectedAccount).isEqualTo("b")
+            assertThat(repository.expectedOwner).isEqualTo("u1")
+            assertThat(vm.state.value.restoreAccounts).isEmpty()
+        }
+
+    @Test
+    fun `cancelar selecao limpa a operacao e impede restauracao posterior`() =
+        runTest(dispatcher) {
+            repository.accounts = listOf(BackupAccountOption("a", "Conta A"))
+            val vm = newViewModel()
+            vm.inspect(EXPORT_URI, PASSPHRASE)
+            vm.state.first { it.restoreAccounts.isNotEmpty() }
+            vm.cancelRestore()
+            vm.restoreSelected("a")
+            assertThat(repository.restoredPassphrase).isNull()
+            assertThat(vm.state.value.restoreAccounts).isEmpty()
+        }
+
     private fun newViewModel(): BackupViewModel {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val shadow = Shadows.shadowOf(context.contentResolver)
         shadow.registerOutputStream(EXPORT_URI, exportedContent)
         shadow.registerInputStream(EXPORT_URI, ByteArrayInputStream(ByteArray(0)))
         return BackupViewModel(
+            inspectBackupUseCase =
+                InspectBackupUseCase(
+                    repository,
+                ),
+            activeUser = testBackupSession(),
             exportBackupUseCase = ExportBackupUseCase(repository),
-            restoreBackupUseCase = RestoreBackupUseCase(repository, NoOpScheduler),
+            restoreBackupUseCase = RestoreBackupUseCase(repository, NoOpScheduler, testBackupSession()),
             context = context,
         )
     }
@@ -205,6 +244,15 @@ class BackupViewModelTest {
  * senhas recebidas e devolve erros programmed.
  */
 private class FakeBackupRepository : BackupRepository {
+    override suspend fun inspect(
+        input: InputStream,
+        passphrase: String,
+    ): List<BackupAccountOption> = accounts
+
+    var accounts: List<BackupAccountOption> = emptyList()
+    var selectedAccount: String? = null
+    var expectedOwner: String? = null
+
     var exportError: Throwable? = null
     var restoreError: Throwable? = null
     var exportedPassphrase: String? = null
@@ -222,8 +270,12 @@ private class FakeBackupRepository : BackupRepository {
     override suspend fun restoreFrom(
         input: InputStream,
         passphrase: String,
+        sourceUserId: String?,
+        expectedUserId: String?,
     ): BackupRestoreResult {
         restoredPassphrase = passphrase
+        selectedAccount = sourceUserId
+        expectedOwner = expectedUserId
         restoreError?.let { throw it }
         return BackupRestoreResult(summary = SUMMARY, taskIds = emptySet(), reminders = emptyList())
     }
@@ -244,7 +296,7 @@ private class FakeBackupRepository : BackupRepository {
 
 /** Agendador de lembretes que não registra nada. */
 private object NoOpScheduler :
-    pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler {
+    DeadlineNotificationScheduler {
     override fun schedule(
         taskId: String,
         triggerAt: Instant,
@@ -252,3 +304,16 @@ private object NoOpScheduler :
 
     override fun cancel(taskId: String) = Unit
 }
+
+private fun testBackupSession(): ActiveUserPort =
+    object : ActiveUserPort {
+        override suspend fun currentUser(): User = User.create("Teste", "hash").copy(id = "u1")
+
+        override suspend fun runIfCurrent(
+            userId: String,
+            action: () -> Unit,
+        ): Boolean {
+            action()
+            return true
+        }
+    }

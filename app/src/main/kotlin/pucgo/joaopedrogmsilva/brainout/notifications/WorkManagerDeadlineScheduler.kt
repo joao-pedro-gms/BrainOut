@@ -69,6 +69,7 @@ class WorkManagerDeadlineScheduler
         override fun cancel(taskId: String) {
             Log.d(TAG, "Cancelando trabalho de notificação para taskId=$taskId")
             WorkManager.getInstance(appContext).cancelUniqueWork(uniqueWorkName(taskId))
+            NotificationDismissal.dismiss(appContext, taskId)
         }
 
         companion object {

@@ -3,7 +3,6 @@ package pucgo.joaopedrogmsilva.brainout.core.domain
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
-import pucgo.joaopedrogmsilva.brainout.core.domain.model.UserRole
 
 /**
  * Smoke test do módulo :core:domain.
@@ -16,10 +15,5 @@ class CoreDomainSmokeTest {
     @Test
     fun `core domain package constant points to documented root`() {
         assertThat(CORE_DOMAIN_PACKAGE).isEqualTo("pucgo.joaopedrogmsilva.brainout.core.domain")
-    }
-
-    @Test
-    fun `module exposes Owner and Member roles`() {
-        assertThat(UserRole.entries).containsExactly(UserRole.OWNER, UserRole.MEMBER)
     }
 }

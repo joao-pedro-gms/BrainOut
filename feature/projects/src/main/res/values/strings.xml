@@ -5,8 +5,6 @@
     <string name="home_topbar_greeting">Olá, %1$s</string>
     <!-- DEF-72 — saudação sem nome, usada enquanto não há sessão. -->
     <string name="home_topbar_greeting_generic">Olá!</string>
-    <string name="home_role_badge_owner">Owner</string>
-    <string name="home_role_badge_member">Member</string>
     <string name="home_section_title">Seus projetos</string>
     <string name="home_empty_title">Nenhum projeto ainda</string>
     <string name="home_empty_body">Toque no botão “+” para criar o seu primeiro projeto.</string>
@@ -53,10 +51,6 @@
     <string name="project_detail_task_menu_more">Mais opções</string>
 
     <!-- Home (E1.7 — papel exibido + gate do FAB) -->
-    <string name="home_role_member_dialog_title">Disponível apenas para Owners</string>
-    <string name="home_role_member_dialog_body">Para criar projetos, entre em uma conta local com o papel Owner.</string>
-    <string name="home_role_member_dialog_ack">Entendi</string>
-    <string name="home_fab_disabled_owner">Criar projeto (em breve)</string>
 
     <!-- Home (E2.1/E2.6 — diálogo de criar projeto + tag) -->
     <string name="home_create_project_title">Novo projeto</string>
