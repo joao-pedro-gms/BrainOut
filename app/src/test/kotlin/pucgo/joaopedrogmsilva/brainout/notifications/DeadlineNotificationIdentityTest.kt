@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
  * cancelava a outra.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], manifest = Config.NONE, qualifiers = "en-rUS")
+@Config(sdk = [34], manifest = Config.NONE)
 class DeadlineNotificationIdentityTest {
     /** Par real de UUIDs com o mesmo `hashCode()`. */
     private val first = "c3f9f00e-1c18-433f-8115-b38ff7434044"
