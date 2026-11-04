@@ -6,6 +6,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +23,7 @@ import org.robolectric.annotation.Config
  * cancelava a outra.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], manifest = Config.NONE)
+@Config(sdk = [34], manifest = Config.NONE, qualifiers = "en-rUS")
 class DeadlineNotificationIdentityTest {
     /** Par real de UUIDs com o mesmo `hashCode()`. */
     private val first = "c3f9f00e-1c18-433f-8115-b38ff7434044"
@@ -35,6 +36,11 @@ class DeadlineNotificationIdentityTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        NotificationManagerCompat.from(context).cancelAll()
+    }
+
+    @After
+    fun tearDown() {
         NotificationManagerCompat.from(context).cancelAll()
     }
 
@@ -59,7 +65,12 @@ class DeadlineNotificationIdentityTest {
             notification("Tarefa B").build(),
         )
 
-        assertThat(manager.activeNotifications).hasSize(2)
+        val publicadas = manager.ownedNotifications()
+        assertThat(publicadas.map { it.tag })
+            .containsExactly(
+                DeadlineNotificationId.tagOf(first),
+                DeadlineNotificationId.tagOf(second),
+            )
     }
 
     @Test
@@ -79,8 +90,12 @@ class DeadlineNotificationIdentityTest {
 
         NotificationDismissal.dismiss(context, first)
 
-        val restantes = manager.activeNotifications
-        assertThat(restantes).hasSize(1)
-        assertThat(restantes.single().tag).isEqualTo(DeadlineNotificationId.tagOf(second))
+        val restantes = manager.ownedNotifications()
+        assertThat(restantes.map { it.tag }).containsExactly(DeadlineNotificationId.tagOf(second))
     }
+
+    private fun NotificationManagerCompat.ownedNotifications() =
+        activeNotifications.filter {
+            it.tag == DeadlineNotificationId.tagOf(first) || it.tag == DeadlineNotificationId.tagOf(second)
+        }
 }
