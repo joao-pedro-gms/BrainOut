@@ -227,6 +227,9 @@ histórico Git versionado continuamente.
       *Atende R3.* *Estimativa:* 8 PH.
       _Entregue em PRs #23, #24, #25, #26 — entities, repos/use cases,
       ProjectDetailViewModel, HomeViewModel com diálogo CRUD._
+      _Correção posterior do DEF-77 — a ação **Editar** no card da Home
+      abre o formulário preenchido e atualiza nome, descrição e tags por
+      `UpdateProjectUseCase`, com testes Compose do fluxo completo._
 
 - [x] **E2.2** — CRUD completo de `Task`. Subtelas: criação, edição,
       mudança de status (todo/doing/done), atribuição a membro.

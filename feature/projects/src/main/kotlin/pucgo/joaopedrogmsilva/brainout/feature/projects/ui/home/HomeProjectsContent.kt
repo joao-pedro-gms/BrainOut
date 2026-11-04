@@ -65,6 +65,7 @@ internal data class HomeProjectsActions(
     val onSearchQueryChange: (String) -> Unit,
     val onTagFilterChange: (String?) -> Unit,
     val onSortOrderChange: (SortOrder) -> Unit,
+    val onEditProject: (projectId: String) -> Unit = {},
 )
 
 @Composable
@@ -118,7 +119,11 @@ internal fun HomeProjectsContent(
                     placementSpec = placementDeEntrada,
                 ),
             ) {
-                ProjectCard(item = card, onClick = { actions.onOpenProject(card.project.id) })
+                ProjectCard(
+                    item = card,
+                    onClick = { actions.onOpenProject(card.project.id) },
+                    onEditClick = { actions.onEditProject(card.project.id) },
+                )
             }
         }
     }

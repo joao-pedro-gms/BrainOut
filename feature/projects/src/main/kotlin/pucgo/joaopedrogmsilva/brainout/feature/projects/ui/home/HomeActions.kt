@@ -108,9 +108,11 @@ internal fun runUpdateProject(
     project: Project,
     tagIds: List<String>,
     errorSink: MutableStateFlow<HomeErrorType?>,
+    onSuccess: () -> Unit = {},
 ) {
     runAction(scope, errorSink) {
         useCase.invoke(project, tagIds)
+        onSuccess()
     }
 }
 

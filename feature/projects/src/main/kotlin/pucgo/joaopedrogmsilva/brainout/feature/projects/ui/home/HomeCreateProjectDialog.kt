@@ -1,12 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Diálogo de criação de projeto (E2.1) com seleção de tags e o
+// Diálogos de criação e edição de projeto com seleção de tags e o
 // sub-diálogo `AddTagDialog`. Validação inline de nome obrigatório
 // (E2.8) via chave canônica + `resolveNameError`.
-//
-// `LongMethod` no orchestrator: o corpo é a sequência de campos do
-// formulário (nome, descrição, tags) mais a validação inline. Extrair
-// cada campo em sua própria função espalharia o estado entre chamadas
-// — a coesão do formulário vale mais que a métrica.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -20,18 +15,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -59,10 +58,17 @@ internal data class CreateProjectCallbacks(
     val onShowAddTag: () -> Unit,
 )
 
-/**
- * Orquestrador: os campos do formulário, a validação inline e os dois
- * diálogos.
- */
+/** Configuração que diferencia criar de editar sem duplicar o formulário. */
+private data class ProjectFormConfig(
+    val titleRes: Int,
+    val confirmRes: Int,
+    val testTagPrefix: String,
+    val initialName: String,
+    val initialDescription: String,
+    val initialTagIds: List<String>,
+)
+
+/** Orquestrador de criação; a API e os identificadores existentes permanecem estáveis. */
 @Composable
 internal fun CreateProjectDialog(
     availableTags: List<TagChip>,
@@ -71,26 +77,96 @@ internal fun CreateProjectDialog(
     onCreateProject: (name: String, description: String?, tagIds: List<String>) -> Unit,
     errorMessage: String? = null,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
+    ProjectFormDialog(
+        config =
+            ProjectFormConfig(
+                titleRes = R.string.home_create_project_title,
+                confirmRes = R.string.home_create_project_confirm,
+                testTagPrefix = HomeTestTags.CREATE_PROJECT_FORM_PREFIX,
+                initialName = "",
+                initialDescription = "",
+                initialTagIds = emptyList(),
+            ),
+        availableTags = availableTags,
+        onDismiss = onDismiss,
+        onCreateTag = onCreateTag,
+        onSubmit = onCreateProject,
+        errorMessage = errorMessage,
+    )
+}
+
+/** Edição do projeto e de suas associações de tags, usando o formulário de criação. */
+@Composable
+internal fun EditProjectDialog(
+    item: ProjectCardItem,
+    availableTags: List<TagChip>,
+    onDismiss: () -> Unit,
+    onCreateTag: (name: String, color: String) -> Unit,
+    onUpdateProject: (project: Project, tagIds: List<String>) -> Unit,
+    errorMessage: String? = null,
+) {
+    ProjectFormDialog(
+        config =
+            ProjectFormConfig(
+                titleRes = R.string.home_edit_project_title,
+                confirmRes = R.string.home_edit_project_confirm,
+                testTagPrefix = HomeTestTags.EDIT_PROJECT_FORM_PREFIX,
+                initialName = item.project.name,
+                initialDescription = item.project.description.orEmpty(),
+                initialTagIds = item.tags.map { it.id },
+            ),
+        availableTags = availableTags,
+        onDismiss = onDismiss,
+        onCreateTag = onCreateTag,
+        onSubmit = { name, description, tagIds ->
+            onUpdateProject(
+                item.project.copy(name = name, description = description),
+                tagIds,
+            )
+        },
+        errorMessage = errorMessage,
+    )
+}
+
+@Composable
+private fun rememberSelectedTagIds(initialTagIds: List<String>): SnapshotStateList<String> =
+    rememberSaveable(
+        saver =
+            androidx.compose.runtime.saveable.listSaver(
+                save = { it.toList() },
+                restore = { it.toMutableStateList() },
+            ),
+    ) { initialTagIds.toMutableStateList() }
+
+/** Campos, validação inline e criação de tag compartilhados por criar e editar. */
+@Composable
+private fun ProjectFormDialog(
+    config: ProjectFormConfig,
+    availableTags: List<TagChip>,
+    onDismiss: () -> Unit,
+    onCreateTag: (name: String, color: String) -> Unit,
+    onSubmit: (name: String, description: String?, tagIds: List<String>) -> Unit,
+    errorMessage: String? = null,
+) {
+    var name by rememberSaveable { mutableStateOf(config.initialName) }
+    var description by rememberSaveable { mutableStateOf(config.initialDescription) }
     var nameError by rememberSaveable { mutableStateOf<HomeErrorType?>(null) }
-    val selectedTagIds =
-        rememberSaveable(
-            saver =
-                androidx.compose.runtime.saveable.listSaver(
-                    save = { it.toList() },
-                    restore = { it.toMutableStateList() },
-                ),
-        ) { mutableStateListOf<String>() }
+    val selectedTagIds = rememberSelectedTagIds(config.initialTagIds)
     var showAddTag by rememberSaveable { mutableStateOf(false) }
 
     ProjectDialog(
-        titleRes = R.string.home_create_project_title,
+        titleRes = config.titleRes,
         onDismiss = onDismiss,
-        modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DIALOG),
+        modifier = Modifier.testTag("${config.testTagPrefix}_dialog"),
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                if (errorMessage != null) Text(errorMessage, color = MaterialTheme.colorScheme.error)
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("${config.testTagPrefix}_error"),
+                    )
+                }
 
                 CreateProjectDialogBody(
                     fields =
@@ -98,13 +174,8 @@ internal fun CreateProjectDialog(
                             name = name,
                             nameError = nameError,
                             description = description,
-                            // `toList()` materializa a lista **no escopo do
-                            // diálogo**: é essa leitura que registra a
-                            // dependência do snapshot, de modo que marcar uma
-                            // tag recomponha os chips. As funções abaixo recebem
-                            // só `List<String>` + um callback — o tipo de
-                            // snapshot do Compose não vaza para a assinatura
-                            // (P2 da auditoria de 24/09/2026).
+                            // A leitura no dono do estado registra a dependência
+                            // do snapshot e recompõe os chips ao marcar uma tag.
                             selectedTagIds = selectedTagIds.toList(),
                         ),
                     availableTags = availableTags,
@@ -112,9 +183,6 @@ internal fun CreateProjectDialog(
                         CreateProjectCallbacks(
                             onNameChange = {
                                 name = it
-                                // E2.8 — limpa o erro assim que o usuário
-                                // começa a digitar, evitando mensagem fixa no
-                                // campo enquanto a interação continua.
                                 if (nameError != null) nameError = null
                             },
                             onDescriptionChange = { description = it },
@@ -127,6 +195,7 @@ internal fun CreateProjectDialog(
                             },
                             onShowAddTag = { showAddTag = true },
                         ),
+                    testTagPrefix = config.testTagPrefix,
                 )
             }
         },
@@ -135,22 +204,18 @@ internal fun CreateProjectDialog(
                 onClick = {
                     val trimmedName = name.trim()
                     if (trimmedName.isEmpty()) {
-                        // E2.8 — validação inline: não fecha o
-                        // diálogo, marca `nameError` para o
-                        // `TextField` exibir `isError` +
-                        // `supportingText`.
                         nameError = HomeErrorType.NameRequired
                         return@TextButton
                     }
-                    onCreateProject(
+                    onSubmit(
                         trimmedName,
                         description.trim().takeIf { it.isNotEmpty() },
                         selectedTagIds.toList(),
                     )
                 },
-                modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_CONFIRM),
+                modifier = Modifier.testTag("${config.testTagPrefix}_confirm"),
             ) {
-                Text(text = stringResource(id = R.string.home_create_project_confirm))
+                Text(text = stringResource(id = config.confirmRes))
             }
         },
     )
@@ -174,6 +239,7 @@ private fun CreateProjectDialogBody(
     fields: CreateProjectFields,
     availableTags: List<TagChip>,
     callbacks: CreateProjectCallbacks,
+    testTagPrefix: String,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
         // E2.8 — `isError` + `supportingText` quando `nameError`
@@ -195,14 +261,14 @@ private fun CreateProjectDialogBody(
                     )
                 }
             },
-            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_NAME),
+            modifier = Modifier.testTag("${testTagPrefix}_name"),
         )
         OutlinedTextField(
             value = fields.description,
             onValueChange = callbacks.onDescriptionChange,
             label = { Text(text = stringResource(id = R.string.home_create_project_description_label)) },
             singleLine = false,
-            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_DESCRIPTION),
+            modifier = Modifier.testTag("${testTagPrefix}_description"),
         )
         Text(
             text = stringResource(id = R.string.home_create_project_tags_label),
@@ -219,11 +285,12 @@ private fun CreateProjectDialogBody(
                 availableTags = availableTags,
                 selectedTagIds = fields.selectedTagIds,
                 onTagToggle = callbacks.onTagToggle,
+                testTagPrefix = testTagPrefix,
             )
         }
         TextButton(
             onClick = callbacks.onShowAddTag,
-            modifier = Modifier.testTag(HomeTestTags.CREATE_PROJECT_ADD_TAG),
+            modifier = Modifier.testTag("${testTagPrefix}_add_tag"),
         ) {
             Text(text = stringResource(id = R.string.home_create_project_add_tag))
         }
@@ -236,6 +303,7 @@ private fun CreateProjectTagsFlow(
     availableTags: List<TagChip>,
     selectedTagIds: List<String>,
     onTagToggle: (String) -> Unit,
+    testTagPrefix: String,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
@@ -252,7 +320,7 @@ private fun CreateProjectTagsFlow(
                 modifier =
                     Modifier
                         .heightIn(min = NeoSizes.touchMin)
-                        .testTag("${HomeTestTags.CREATE_PROJECT_TAG}_${chip.id}"),
+                        .testTag("${testTagPrefix}_tag_${chip.id}"),
             )
         }
     }
@@ -298,4 +366,31 @@ private fun AddTagDialog(
             }
         },
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EditProjectDialogPreview() {
+    val urgent = TagChip(id = "urgent", name = "Urgente", color = "#BA1A1A")
+    val study = TagChip(id = "study", name = "Estudos", color = "#6750A4")
+    BrainOutTheme {
+        Surface {
+            EditProjectDialog(
+                item =
+                    ProjectCardItem(
+                        project =
+                            Project.create(
+                                name = "Projeto integrador",
+                                description = "Entrega da etapa final",
+                                ownerId = "preview",
+                            ),
+                        tags = listOf(urgent),
+                    ),
+                availableTags = listOf(urgent, study),
+                onDismiss = {},
+                onCreateTag = { _, _ -> },
+                onUpdateProject = { _, _ -> },
+            )
+        }
+    }
 }

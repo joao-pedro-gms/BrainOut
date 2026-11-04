@@ -176,9 +176,10 @@ class HomeViewModel
         fun updateProject(
             project: Project,
             tagIds: List<String>,
+            onSuccess: () -> Unit = {},
         ) {
             Log.d(TAG, "updateProject acionado: id=${project.id}, name=${project.name}")
-            runUpdateProject(viewModelScope, updateProject, project, tagIds, errorSink)
+            runUpdateProject(viewModelScope, updateProject, project, tagIds, errorSink, onSuccess)
         }
 
         /** Remove projeto (tarefas e `project_tags` em cascata). */
