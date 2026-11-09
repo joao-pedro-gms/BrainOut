@@ -3,7 +3,7 @@
 # AGP 9.4.1 — bump do 8.7.3. AGP 9 tem dependência runtime em KGP 2.2.10
 # (KGP/KSP abaixo desse limite são auto-upgraded); declarar versões
 # explícitas evita surpresas no CI (ver `build.gradle.kts` raiz).
-agp = "9.4.1"
+agp = "9.5.1"
 # KGP 2.3.20 — explícito acima do piso 2.2.10 do AGP 9; mantém compatibilidade
 # com Kotlin Compose Compiler (mesma versão do KGP), plugins Jetbrains e
 # Kover. Sobe de 2.0.21 para integrar com o toolchain novo. 2.3.20 é o
@@ -12,7 +12,7 @@ agp = "9.4.1"
 kotlin = "2.4.21"
 # KSP 2.3.12 — alinha com KGP; >= 2.3.5 elimina o ciclo kapt/ksp com built-in
 # Kotlin do AGP 9 (google/ksp#2743). Sobe de 2.0.21-1.0.27.
-ksp = "2.3.12"
+ksp = "2.3.13"
 # Hilt 2.60.1 — mínimo 2.59 declarado pelo time do Hilt para AGP 9. Sobe de 2.52.
 hilt = "2.60.1"
 # Room 2.8.4 — versão estável que aceita KSP 2.3.12 (KSP1/KSP2 ok). Sobe de 2.6.1.
@@ -40,7 +40,7 @@ composeBom = "2026.09.00"
 androidxWindow = "1.5.1"
 navigationCompose = "2.10.2"
 hiltLifecycleViewmodelCompose = "1.4.0"
-datastore = "1.1.1"
+datastore = "1.3.0"
 securityCrypto = "1.1.0"
 coroutines = "1.11.0"
 javaxInject = "1"
@@ -79,7 +79,7 @@ kover = "0.9.11"
 # usado pelo PepperProvider do :core:data) durante o R8 minify do :app.
 # Sem ele, `:app:minifyDevReleaseWithR8` falha com "Missing class
 # com.google.errorprone.annotations.CanIgnoreReturnValue".
-errorprone = "2.50.0"
+errorprone = "2.52.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
