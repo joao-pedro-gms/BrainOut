@@ -163,11 +163,11 @@ internal object BackupPayloadCodec {
         val preferences = root.optJSONObject(KEY_PREFERENCES) ?: JSONObject()
         val sortOrders = preferences.optJSONObject(KEY_SORT_ORDER_BY_USER) ?: JSONObject()
         return BackupPayload(
-            users = root.optJSONArray(KEY_USERS).mapObjects(::decodeUser),
-            projects = root.optJSONArray(KEY_PROJECTS).mapObjects(::decodeProject),
-            tasks = root.optJSONArray(KEY_TASKS).mapObjects(::decodeTask),
-            tags = root.optJSONArray(KEY_TAGS).mapObjects(::decodeTag),
-            projectTags = root.optJSONArray(KEY_PROJECT_TAGS).mapObjects(::decodeProjectTag),
+            users = root.requiredArray(KEY_USERS).mapObjects(::decodeUser),
+            projects = root.requiredArray(KEY_PROJECTS).mapObjects(::decodeProject),
+            tasks = root.requiredArray(KEY_TASKS).mapObjects(::decodeTask),
+            tags = root.requiredArray(KEY_TAGS).mapObjects(::decodeTag),
+            projectTags = root.requiredArray(KEY_PROJECT_TAGS).mapObjects(::decodeProjectTag),
             preferences =
                 BackupPreferences(
                     themeMode = preferences.optString(KEY_THEME_MODE, "system"),
@@ -179,6 +179,10 @@ internal object BackupPayloadCodec {
         )
     }
 }
+
+/** Requires a payload collection array instead of treating a missing collection as empty. */
+private fun JSONObject.requiredArray(key: String): JSONArray =
+    optJSONArray(key) ?: throw BackupFormatException("Campo '$key' do payload não é um array JSON.")
 
 /** Lê o JSON raiz do payload. */
 private fun parsePayloadRoot(bytes: ByteArray): JSONObject =
@@ -282,12 +286,12 @@ private fun decodeProjectTag(json: JSONObject): BackupProjectTag =
         tagId = json.optString(KEY_TAG_ID),
     )
 
-/** Lê um array JSON opcional, mapeando cada elemento. */
-private fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): List<T> {
-    if (this == null) return emptyList()
+/** Maps each required payload array element to its domain representation. */
+private fun <T> JSONArray.mapObjects(transform: (JSONObject) -> T): List<T> {
     val result = ArrayList<T>(length())
     for (index in 0 until length()) {
-        val element = optJSONObject(index) ?: continue
+        val element =
+            optJSONObject(index) ?: throw BackupFormatException("Elemento $index do payload não é um objeto JSON.")
         result.add(transform(element))
     }
     return result

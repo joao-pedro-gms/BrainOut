@@ -87,6 +87,28 @@ class PasswordHasherImplTest {
             assertThat(hasher.verify("any", "pbkdf2_sha256\$100\$!!notbase64\$\$\$")).isFalse()
         }
 
+    @Test
+    fun `verify rejects stored hashes with invalid salt or derived key lengths`() =
+        runTest {
+            val wrongSaltLength =
+                listOf(
+                    ALGORITHM_NAME,
+                    "100",
+                    encode(ByteArray(SALT_BYTES - 1)),
+                    encode(ByteArray(DERIVED_KEY_BYTES)),
+                ).joinToString(FIELD_SEPARATOR.toString())
+            val wrongDerivedLength =
+                listOf(
+                    ALGORITHM_NAME,
+                    "100",
+                    encode(ByteArray(SALT_BYTES)),
+                    encode(ByteArray(DERIVED_KEY_BYTES - 1)),
+                ).joinToString(FIELD_SEPARATOR.toString())
+
+            assertThat(hasher.verify("any", wrongSaltLength)).isFalse()
+            assertThat(hasher.verify("any", wrongDerivedLength)).isFalse()
+        }
+
     @Test(expected = IllegalArgumentException::class)
     fun `hash rejects empty password`() =
         runTest {

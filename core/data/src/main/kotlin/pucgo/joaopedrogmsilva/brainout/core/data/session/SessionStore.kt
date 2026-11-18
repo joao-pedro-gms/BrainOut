@@ -25,7 +25,7 @@ private const val TAG = "BrainOut:SessionStore"
  *
  * O arquivo `auth_prefs.preferences_pb` é gerenciado pela delegate
  * [Context.authDataStore]. O id é a única informação necessária
- * para reidratar a sessão — nome, e-mail e papel são lidos do Room
+ * para reidratar a sessão; os dados locais da conta são lidos do Room
  * usando `UserRepository.findById(id)`.
  *
  * Não armazena credenciais, tokens ou hash de senha.

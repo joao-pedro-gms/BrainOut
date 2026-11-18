@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
 
 /**
  * Testes do **formato** do payload de backup (issue #214 — LOCAL-03).
@@ -77,6 +78,32 @@ class BackupPayloadCodecTest {
         val lido = BackupPayloadCodec.decode(BackupPayloadCodec.encode(original))
 
         assertThat(lido).isEqualTo(original)
+    }
+
+    @Test
+    fun `elemento que nao e objeto json e rejeitado sem descartar registros`() {
+        val json = JSONObject(String(BackupPayloadCodec.encode(payloadCompleto()), Charsets.UTF_8))
+        json.getJSONArray("projects").put(0, "not-an-object")
+
+        val error =
+            runCatching {
+                BackupPayloadCodec.decode(json.toString().toByteArray(Charsets.UTF_8))
+            }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(BackupFormatException::class.java)
+    }
+
+    @Test
+    fun `colecao ausente e rejeitada em vez de restaurar sem seus dados`() {
+        val json = JSONObject(String(BackupPayloadCodec.encode(payloadCompleto()), Charsets.UTF_8))
+        json.remove("tasks")
+
+        val error =
+            runCatching {
+                BackupPayloadCodec.decode(json.toString().toByteArray(Charsets.UTF_8))
+            }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(BackupFormatException::class.java)
     }
 
     /** O primeiro elemento de um array do payload. */

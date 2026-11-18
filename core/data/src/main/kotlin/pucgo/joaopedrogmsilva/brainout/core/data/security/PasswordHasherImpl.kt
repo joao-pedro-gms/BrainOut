@@ -85,12 +85,16 @@ class PasswordHasherImpl(
 
         val salt = ByteArray(SALT_LENGTH_BYTES).also { secureRandom.nextBytes(it) }
         val derived = pbkdf2(rawPassword.toCharArray(), salt, PBKDF2_ITERATIONS)
-        return formatHash(
-            algorithm = ALGORITHM,
-            iterations = PBKDF2_ITERATIONS,
-            salt = salt,
-            derived = derived,
-        )
+        return try {
+            formatHash(
+                algorithm = ALGORITHM,
+                iterations = PBKDF2_ITERATIONS,
+                salt = salt,
+                derived = derived,
+            )
+        } finally {
+            derived.fill(0)
+        }
     }
 
     override suspend fun verify(
@@ -99,7 +103,13 @@ class PasswordHasherImpl(
     ): Boolean {
         val parsed = parseHashSafely(rawPassword, storedHash) ?: return false
         val candidate = pbkdf2(rawPassword.toCharArray(), parsed.salt, parsed.iterations)
-        return constantTimeEquals(candidate, parsed.derived)
+        return try {
+            constantTimeEquals(candidate, parsed.derived)
+        } finally {
+            candidate.fill(0)
+            parsed.salt.fill(0)
+            parsed.derived.fill(0)
+        }
     }
 
     private fun parseHashSafely(
@@ -121,25 +131,33 @@ class PasswordHasherImpl(
         require(iterations in MIN_PBKDF2_ITERATIONS..MAX_PBKDF2_ITERATIONS) {
             "iterations fora da faixa suportada: $iterations"
         }
-        val combined = password + pepperAsPasswordChars()
-        val spec =
-            PBEKeySpec(
-                combined,
-                salt,
-                iterations,
-                DERIVED_KEY_LENGTH_BITS,
-            )
-        return withContext(kdfDispatcher) {
-            try {
-                val factory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                factory.generateSecret(spec).encoded
-            } finally {
-                spec.clearPassword()
+        val pepperChars = pepperAsPasswordChars()
+        val combined = password + pepperChars
+        return try {
+            withContext(kdfDispatcher) {
+                val spec =
+                    PBEKeySpec(
+                        combined,
+                        salt,
+                        iterations,
+                        DERIVED_KEY_LENGTH_BITS,
+                    )
+                try {
+                    val factory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+                    factory.generateSecret(spec).encoded
+                } finally {
+                    spec.clearPassword()
+                }
             }
+        } finally {
+            password.fill(Char.MIN_VALUE)
+            pepperChars.fill(Char.MIN_VALUE)
+            combined.fill(Char.MIN_VALUE)
         }
     }
 
-    private fun pepperAsPasswordChars(): CharArray = String(pepper, Charsets.ISO_8859_1).toCharArray()
+    private fun pepperAsPasswordChars(): CharArray =
+        CharArray(pepper.size) { index -> pepper[index].toUByte().toInt().toChar() }
 
     private data class ParsedHash(
         val algorithm: String,
@@ -176,7 +194,9 @@ class PasswordHasherImpl(
                 ?.takeIf { it in MIN_PBKDF2_ITERATIONS..MAX_PBKDF2_ITERATIONS }
                 ?: return null
         val salt = parts[2].decodeBase64UrlOrNull() ?: return null
+        if (salt.size != SALT_LENGTH_BYTES) return null
         val derived = parts[3].decodeBase64UrlOrNull() ?: return null
+        if (derived.size != DERIVED_KEY_LENGTH_BITS / Byte.SIZE_BITS) return null
         return ParsedHash(parts[0], iterations, salt, derived)
     }
 

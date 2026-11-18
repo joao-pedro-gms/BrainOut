@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.data.backup
 
 import android.util.Base64
+import java.nio.CharBuffer
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -131,7 +132,7 @@ internal object BackupCrypto {
         salt: ByteArray,
         iterations: Int,
     ): SecretKeySpec {
-        val passwordBytes = String(passphrase).toByteArray(Charsets.UTF_8)
+        val passwordBytes = encodePassphrase(passphrase)
         try {
             val derived = pbkdf2(passwordBytes, salt, iterations, KEY_LENGTH_BITS / Byte.SIZE_BITS)
             // `SecretKeySpec` copia o array recebido — zera o buffer de
@@ -139,6 +140,15 @@ internal object BackupCrypto {
             return SecretKeySpec(derived, "AES").also { derived.fill(0) }
         } finally {
             passwordBytes.fill(0)
+        }
+    }
+
+    private fun encodePassphrase(passphrase: CharArray): ByteArray {
+        val encoded = Charsets.UTF_8.encode(CharBuffer.wrap(passphrase))
+        return try {
+            ByteArray(encoded.remaining()).also { bytes -> encoded.get(bytes) }
+        } finally {
+            if (encoded.hasArray()) encoded.array().fill(0)
         }
     }
 

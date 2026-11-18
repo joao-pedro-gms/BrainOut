@@ -1,27 +1,19 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.session
 
-import pucgo.joaopedrogmsilva.brainout.core.data.local.BrainOutDatabase
+import kotlinx.coroutines.flow.first
+import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.TaskDao
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import javax.inject.Inject
 
 class AccountReminderSnapshot
     @Inject
     constructor(
-        private val database: BrainOutDatabase,
+        private val taskDao: TaskDao,
+        private val access: AccountAccess,
     ) {
         suspend fun tasks(ownerId: String): List<Task> {
-            val projects =
-                database
-                    .backupDao()
-                    .getAllProjects()
-                    .filter { it.ownerId == ownerId }
-                    .map { it.id }
-                    .toSet()
-            return database
-                .backupDao()
-                .getAllTasks()
-                .filter { it.projectId in projects }
-                .map { it.toDomain() }
+            access.requireOwner(ownerId)
+            return taskDao.observeAllForOwner(ownerId).first().map { it.toDomain() }
         }
     }

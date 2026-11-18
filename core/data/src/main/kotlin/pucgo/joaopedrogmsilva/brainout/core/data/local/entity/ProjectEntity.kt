@@ -19,7 +19,7 @@ import java.time.Instant
  *
  * @property id UUID do projeto (chave primária).
  * @property ownerId [Project.ownerId] — id do [pucgo.joaopedrogmsilva.brainout.core.domain.model.User]
- *  que possui o projeto (papel OWNER).
+ *  que possui o projeto.
  * @property name Nome (1..120 caracteres, validado em [Project.init]).
  * @property description Descrição opcional (até 500 caracteres).
  * @property createdAt Instante de criação em epoch millis.

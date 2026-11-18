@@ -9,13 +9,11 @@ import java.time.Instant
 /**
  * Testes unitários do mapeamento [User] ↔ [UserEntity].
  *
- * Garantem que o round-trip preserva todos os campos e que o nome do
- * `UserRole` é usado como discriminador textual — o suficiente para
- * sobreviver a upgrades do app.
+ * Garantem que o round-trip preserva todos os campos persistidos.
  */
 class UserEntityTest {
     @Test
-    fun `fromDomain then toDomain is identity for an owner`() {
+    fun `fromDomain then toDomain preserves a user`() {
         val original =
             User(
                 id = "id-1",
@@ -31,7 +29,7 @@ class UserEntityTest {
     }
 
     @Test
-    fun `fromDomain then toDomain is identity for a member`() {
+    fun `fromDomain then toDomain preserves another user`() {
         val original =
             User(
                 id = "id-2",

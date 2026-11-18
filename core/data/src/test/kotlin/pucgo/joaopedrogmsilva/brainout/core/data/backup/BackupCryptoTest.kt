@@ -63,6 +63,16 @@ class BackupCryptoTest {
     }
 
     @Test
+    fun `senha unicode de backup cifra e decifra corretamente`() {
+        val plaintext = "conteúdo do backup".toByteArray(Charsets.UTF_8)
+        val passphrase = "senha-segura-çá"
+
+        val encrypted = BackupCrypto.encrypt(plaintext, passphrase)
+
+        assertThat(BackupCrypto.decrypt(encrypted, passphrase)).isEqualTo(plaintext)
+    }
+
+    @Test
     fun `senha errada falha com erro de integridade`() {
         val encrypted = BackupCrypto.encrypt("conteúdo".toByteArray(Charsets.UTF_8), PASSPHRASE)
 
