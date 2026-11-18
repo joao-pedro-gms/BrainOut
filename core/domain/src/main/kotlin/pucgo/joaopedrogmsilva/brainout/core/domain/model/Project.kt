@@ -15,7 +15,7 @@ import java.util.UUID
  * @property id Identificador único do projeto.
  * @property name Nome (1..120 caracteres, não vazio).
  * @property description Descrição opcional (até 500 caracteres).
- * @property ownerId [User.id] do proprietário (papel [UserRole.OWNER]).
+ * @property ownerId [User.id] da conta proprietária do projeto.
  * @property createdAt Instante de criação em UTC.
  * @property isCompleted Flag de conclusão do projeto.
  */

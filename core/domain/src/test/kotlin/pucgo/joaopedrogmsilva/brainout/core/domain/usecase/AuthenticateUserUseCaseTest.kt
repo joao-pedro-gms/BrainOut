@@ -16,7 +16,7 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.UserRepository
  * Testes do caso de uso [AuthenticateUserUseCase].
  *
  * Garante o comportamento de "falha uniforme" para evitar enumeração
- * de contas: tanto e-mail inexistente quanto senha incorreta lançam a
+ * de contas: tanto nome de usuário inexistente quanto senha incorreta lançam a
  * mesma exceção.
  */
 class AuthenticateUserUseCaseTest {
@@ -44,6 +44,7 @@ class AuthenticateUserUseCaseTest {
     fun `throws InvalidCredentials when user not found`() =
         runTest {
             coEvery { repository.findByUsername("ghost") } returns null
+            coEvery { hasher.hash(any()) } returns "discarded-dummy-hash"
 
             val ex =
                 kotlin
@@ -53,6 +54,7 @@ class AuthenticateUserUseCaseTest {
 
             assertThat(ex).isInstanceOf(InvalidCredentialsException::class.java)
             coVerify(exactly = 0) { hasher.verify(any(), any()) }
+            coVerify(exactly = 1) { hasher.hash(any()) }
         }
 
     @Test

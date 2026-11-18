@@ -24,8 +24,7 @@ import java.time.ZoneOffset
  * Cenários extras cobertos:
  * - prazo em fim de semana → `isBusinessDay = false`.
  * - `deadline == null` → resultado neutro.
- * - erro no repositório → degrada para `holidays = emptyList()`
- *   (a UI não quebra; a dica simplesmente não aparece).
+ * - erro no repositório → é propagado, sem assumir que o dia é útil.
  */
 class CheckDeadlineUseCaseTest {
     private val holidays2026: List<Holiday> =

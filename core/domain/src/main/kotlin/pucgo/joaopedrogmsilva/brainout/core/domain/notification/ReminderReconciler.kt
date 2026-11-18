@@ -22,18 +22,20 @@ import java.time.Instant
  * @param taskId Identificador da tarefa.
  * @param status Status atual da tarefa.
  * @param dueDate Prazo atual da tarefa, ou `null` se não houver.
+ * @param now Instante atual usado para decidir se o disparo ainda está no futuro.
  */
 fun DeadlineNotificationScheduler.reconcileTaskReminder(
     taskId: String,
     status: TaskStatus,
     dueDate: Instant?,
+    now: Instant = Instant.now(),
 ) {
     if (status == TaskStatus.DONE) {
         cancel(taskId)
         return
     }
     val triggerAt = dueDate?.minus(DeadlineNotificationScheduler.REMINDER_LEAD)
-    if (triggerAt != null && triggerAt.isAfter(Instant.now())) {
+    if (triggerAt != null && triggerAt.isAfter(now)) {
         schedule(taskId, triggerAt)
     } else {
         // Sem prazo, ou prazo já vencido: não há lembrete a disparar —

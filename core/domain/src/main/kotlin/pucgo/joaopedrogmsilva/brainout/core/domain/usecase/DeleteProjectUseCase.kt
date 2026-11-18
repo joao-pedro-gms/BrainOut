@@ -11,10 +11,8 @@ import javax.inject.Inject
  * Tarefas e associações `project_tags` são removidas em cascata pela
  * implementação — não é necessário tratamento adicional aqui.
  *
- * A exclusão exige [Permission.DELETE_PROJECT]: só o dono do projeto
- * pode apagá-lo, porque o efeito é em cascata sobre todas as tarefas
- * (DEF-36). A regra é consultada **no domínio**, antes da escrita —
- * esconder o botão na UI seria só defesa secundária.
+ * A operação exige uma conta ativa. O repositório valida que o projeto
+ * pertence à conta atual antes de executar a exclusão em cascata.
  */
 class DeleteProjectUseCase
     @Inject

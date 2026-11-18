@@ -35,7 +35,7 @@ class InvalidModelException(
     message: String,
 ) : DomainException(message)
 
-/** Tentativa de criar um [User] com e-mail já utilizado. */
+/** Tentativa de criar um [User] com nome de usuário já utilizado. */
 class DuplicateUsernameException(
     val username: String,
 ) : DomainException("Nome de usuário já cadastrado: $username")

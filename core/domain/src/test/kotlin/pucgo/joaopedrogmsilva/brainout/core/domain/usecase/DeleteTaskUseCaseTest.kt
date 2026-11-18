@@ -1,10 +1,8 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Testes do caso de uso [DeleteTaskUseCase].
 //
-// A parte que importa é a **permissão**: a matriz `UserRole`/`Permission`
-// dá a `Member` apenas `CREATE_TASK` e `EDIT_TASK` — excluir é do
-// `Owner`. O caso de uso tem de recusar a remoção **antes** de tocar
-// o repositório (DEF-36).
+// A parte que importa é a sessão local: a operação exige uma conta autenticada
+// e o repositório restringe a escrita aos dados dessa conta.
 
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
@@ -34,7 +32,7 @@ class DeleteTaskUseCaseTest {
         )
 
     @Test
-    fun `owner apaga a tarefa`() =
+    fun `conta autenticada apaga a tarefa`() =
         runTest {
             coEvery { activeUser.currentUser() } returns user()
             coEvery { repository.delete("t1") } returns Unit

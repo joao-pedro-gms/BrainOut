@@ -14,8 +14,8 @@ import javax.inject.Inject
  * das tags (existência e mesma propriedade) acontece no
  * [ProjectRepository.update].
  *
- * A edição exige [Permission.EDIT_PROJECT]: `Member` trabalha em
- * tarefas, mas não administra o projeto (DEF-36).
+ * A operação exige uma conta ativa. O repositório valida que o projeto
+ * pertence à conta atual antes de atualizar seus dados.
  */
 class UpdateProjectUseCase
     @Inject
