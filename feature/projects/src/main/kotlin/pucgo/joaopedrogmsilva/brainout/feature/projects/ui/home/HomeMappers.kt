@@ -1,7 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Mappers do HomeViewModel: conversão entre modelos de domínio
-// (User/UserRole/Tag) e modelos de UI (HomeUserState/HomeUserRole/
-// TagChip), mais mapeamento de exceções em mensagens canônicas
+// (User/Tag) e modelos de UI (HomeUserState/TagChip), mais
+// mapeamento de exceções em mensagens canônicas
 // (E2.8). Mantidos `internal` por serem detalhe de implementação do
 // pacote da feature.
 

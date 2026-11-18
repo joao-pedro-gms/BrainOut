@@ -50,7 +50,7 @@
     <string name="project_detail_task_menu_delete">Excluir tarefa</string>
     <string name="project_detail_task_menu_more">Mais opções</string>
 
-    <!-- Home (E1.7 — papel exibido + gate do FAB) -->
+    <!-- Home: list and local account greeting -->
 
     <!-- Home (E2.1/E2.6 — diálogo de criar projeto + tag) -->
     <string name="home_create_project_title">Novo projeto</string>
@@ -77,7 +77,7 @@
     <string name="project_detail_error_empty_title">Título da tarefa não pode ser vazio</string>
     <string name="project_detail_error_action_failed">Não foi possível concluir a operação. Tente novamente.</string>
     <string name="project_detail_error_project_not_found">Este projeto não existe mais.</string>
-    <!-- DEF-36 — o papel do usuário ativo não tem a permissão exigida. -->
+    <!-- DEF-36 — access to this operation is restricted to the active account. -->
     <string name="project_detail_error_permission_denied">Você não tem permissão para esta ação.</string>
 
     <!-- E2.8 — estados de erro e carregamento (ProjectDetail) -->
@@ -109,7 +109,7 @@
     <string name="home_error_action_failed">Não foi possível concluir a operação</string>
     <!-- DEF-61 — nome de tag repetido para o mesmo usuário. -->
     <string name="home_error_duplicate_tag_name">Já existe uma tag com esse nome.</string>
-    <!-- DEF-36 — o papel do usuário ativo não tem a permissão exigida. -->
+    <!-- DEF-36 — access to this operation is restricted to the active account. -->
     <string name="home_error_permission_denied">Você não tem permissão para esta ação.</string>
     <string name="home_create_project_name_required">Informe um nome para o projeto.</string>
 

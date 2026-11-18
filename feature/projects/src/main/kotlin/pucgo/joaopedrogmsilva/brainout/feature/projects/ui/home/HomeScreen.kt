@@ -119,9 +119,6 @@ fun HomeScreen(
 /** Identificadores usados por testes Compose. */
 object HomeTestTags {
     const val FAB: String = "home_fab"
-    const val ROLE_BADGE: String = "home_role_badge"
-    const val UPGRADE_DIALOG: String = "home_upgrade_dialog"
-    const val UPGRADE_DIALOG_ACK: String = "home_upgrade_dialog_ack"
     const val CREATE_PROJECT_FORM_PREFIX: String = "home_create_project"
     const val CREATE_PROJECT_DIALOG: String = "${CREATE_PROJECT_FORM_PREFIX}_dialog"
     const val CREATE_PROJECT_NAME: String = "${CREATE_PROJECT_FORM_PREFIX}_name"

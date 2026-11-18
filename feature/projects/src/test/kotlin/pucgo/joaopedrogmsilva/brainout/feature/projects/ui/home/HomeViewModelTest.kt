@@ -44,10 +44,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * Testes do [HomeViewModel].
  *
  * Verifica (E1.7):
- * - Conversão de [User] (domínio) para [HomeUserState].
- * - Distinção entre Owner e Member no estado exposto.
- * - `onMemberFabClicked` / `dismissUpgradeDialog` alternam o flag do
- *   diálogo de upgrade corretamente.
+ * - Conversão de [User] para [HomeUserState] com nome e iniciais.
  * - Sessão órfã (id presente mas `User` ausente) leva a `SignedOut`.
  *
  * Verifica (E2.1):
@@ -106,7 +103,7 @@ class HomeViewModelTest {
         )
 
     @Test
-    fun `SignedIn owner surfaces owner role`() =
+    fun `usuario local autenticado expoe nome e iniciais`() =
         runTest {
             val userFlow = MutableStateFlow<User?>(sampleUser())
             coEvery { activeUserProvider.observeActiveUser() } returns userFlow
@@ -130,7 +127,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `SignedIn member surfaces member role`() =
+    fun `estado autenticado contem apenas a identidade local`() =
         runTest {
             val userFlow = MutableStateFlow<User?>(sampleUser())
             coEvery { activeUserProvider.observeActiveUser() } returns userFlow
@@ -144,6 +141,8 @@ class HomeViewModelTest {
                 }
                 assertThat(emitted).isInstanceOf(HomeUserState.SignedIn::class.java)
                 val signedIn = emitted as HomeUserState.SignedIn
+                assertThat(signedIn)
+                    .isEqualTo(HomeUserState.SignedIn(displayName = "joao", initials = "JO"))
                 cancelAndIgnoreRemainingEvents()
             }
         }

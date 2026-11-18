@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,11 +24,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
+import androidx.compose.foundation.lazy.grid.items as lazyGridItems
+import androidx.compose.foundation.lazy.items as lazyColumnItems
 
 /**
  * Estado consumido pela lista de projetos da Home.
@@ -92,40 +94,83 @@ internal fun HomeProjectsContent(
         } else {
             null
         }
-    LazyVerticalGrid(
-        columns = if (window.forceSingleColumn) GridCells.Fixed(1) else GridCells.Adaptive(240.dp),
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
-                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin),
-        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
-        // A barra de navegação (80 dp) mais a folga do respiro entre a
-        // lista e ela — o mesmo inset nas listas de tela cheia.
-        contentPadding = PaddingValues(bottom = NeoSizes.navMinHeight + NeoSpacing.xs),
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            HomeProjectsHeader(state = state, actions = actions)
-        }
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            HomeProjectsStatus(state = state, actions = actions)
-        }
-        items(items = state.projects, key = { it.project.id }) { card ->
-            androidx.compose.foundation.layout.Box(
-                Modifier.animateItem(
-                    fadeInSpec = fadeDeEntrada,
-                    fadeOutSpec = null,
-                    placementSpec = placementDeEntrada,
-                ),
-            ) {
-                ProjectCard(
-                    item = card,
-                    onClick = { actions.onOpenProject(card.project.id) },
-                    onEditClick = { actions.onEditProject(card.project.id) },
+    val contentModifier =
+        Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .neoPageGutter(margin = window.margin)
+    val useGrid = window.isWide && !window.forceSingleColumn
+    if (useGrid) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(NeoLayout.mediumMargin * GRID_MIN_COLUMN_MARGIN_MULTIPLIER),
+            modifier = contentModifier,
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            // A barra de navegação (80 dp) mais a folga do respiro entre a
+            // lista e ela — o mesmo inset nas listas de tela cheia.
+            contentPadding = PaddingValues(bottom = NeoSizes.navMinHeight + NeoSpacing.xs),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HomeProjectsHeader(state = state, actions = actions)
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HomeProjectsStatus(state = state, actions = actions)
+            }
+            lazyGridItems(items = state.projects, key = { it.project.id }) { card ->
+                HomeProjectCardItem(
+                    card,
+                    actions,
+                    Modifier.animateItem(
+                        fadeInSpec = fadeDeEntrada,
+                        fadeOutSpec = null,
+                        placementSpec = placementDeEntrada,
+                    ),
                 )
             }
         }
+    } else {
+        androidx.compose.foundation.lazy.LazyColumn(
+            modifier = contentModifier,
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            // A barra de navegação (80 dp) mais a folga do respiro entre a
+            // lista e ela — o mesmo inset nas listas de tela cheia.
+            contentPadding = PaddingValues(bottom = NeoSizes.navMinHeight + NeoSpacing.xs),
+        ) {
+            item { HomeProjectsHeader(state = state, actions = actions) }
+            item { HomeProjectsStatus(state = state, actions = actions) }
+            lazyColumnItems(items = state.projects, key = { it.project.id }) { card ->
+                HomeProjectCardItem(
+                    card,
+                    actions,
+                    Modifier.animateItem(
+                        fadeInSpec = fadeDeEntrada,
+                        fadeOutSpec = null,
+                        placementSpec = placementDeEntrada,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Faixa mínima de 260 dp exigida pela adaptação de D-04.
+ * `11 × mediumMargin` equivale a 264 dp e mantém o tamanho derivado de NeoLayout.
+ */
+private const val GRID_MIN_COLUMN_MARGIN_MULTIPLIER: Int = 11
+
+@Composable
+private fun HomeProjectCardItem(
+    card: ProjectCardItem,
+    actions: HomeProjectsActions,
+    itemModifier: Modifier,
+) {
+    androidx.compose.foundation.layout.Box(itemModifier) {
+        ProjectCard(
+            item = card,
+            onClick = { actions.onOpenProject(card.project.id) },
+            onEditClick = { actions.onEditProject(card.project.id) },
+        )
     }
 }
 
