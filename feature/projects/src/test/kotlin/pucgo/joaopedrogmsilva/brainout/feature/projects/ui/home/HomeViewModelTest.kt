@@ -475,6 +475,45 @@ class HomeViewModelTest {
         }
 
     /**
+     * Regressão do nó search-persist: cada tecla não pode gravar o
+     * DataStore — `setSearchQuery` reescreve o arquivo inteiro com
+     * fsync, então a persistência sai do fluxo debounced. Uma rajada
+     * de digitação ("a", "ab", "abc" dentro da janela de 300 ms)
+     * produz exatamente **uma** gravação, com o texto final; digitar
+     * de novo após o debounce produz a segunda gravação.
+     */
+    @Test
+    fun `E2 6 rajada de digitacao grava DataStore uma vez com o texto final`() =
+        runTest {
+            coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+            coEvery { activeUserProvider.observeActiveUser() } returns flowOf(sampleUser())
+
+            val viewModel = newViewModel()
+            advanceUntilIdle()
+
+            // Rajada: três teclas dentro da janela de debounce.
+            viewModel.onSearchQueryChange("a")
+            viewModel.onSearchQueryChange("ab")
+            viewModel.onSearchQueryChange("abc")
+            advanceTimeBy(HomeViewModel.SEARCH_DEBOUNCE * 2)
+            advanceUntilIdle()
+
+            // Uma única gravação — e com o texto final da rajada.
+            coVerify(exactly = 1) { listingPreferences.setSearchQuery("u1", "abc") }
+            coVerify(exactly = 0) { listingPreferences.setSearchQuery("u1", "a") }
+            coVerify(exactly = 0) { listingPreferences.setSearchQuery("u1", "ab") }
+
+            // Nova rajada após a janela: segunda gravação.
+            viewModel.onSearchQueryChange("abcd")
+            advanceTimeBy(HomeViewModel.SEARCH_DEBOUNCE * 2)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { listingPreferences.setSearchQuery("u1", "abcd") }
+            // Total no repositório: exatamente duas gravações.
+            coVerify(exactly = 2) { listingPreferences.setSearchQuery(any(), any()) }
+        }
+
+    /**
      * Verifica que a busca textual é propagada para o Room
      * através de `observeSearch` após o debounce. Usamos
      * `runCurrent` + `advanceTimeBy` para liberar o `debounce`
