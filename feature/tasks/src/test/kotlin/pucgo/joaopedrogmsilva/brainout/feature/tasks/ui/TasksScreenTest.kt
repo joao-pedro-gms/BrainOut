@@ -15,12 +15,14 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoWindowProvider
 
 /**
  * Verifica a renderização do conteúdo da aba de Tarefas.
@@ -162,5 +164,101 @@ class TasksScreenEnglishTest {
         composeRule
             .onNodeWithTag(TasksTestTags.LOADING)
             .assert(hasContentDescription("Loading tasks"))
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "w1280dp-h800dp")
+class TasksTabletGridTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun `lista de tarefas usa grade em largura de tablet`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                NeoWindowProvider {
+                    Surface {
+                        TasksContent(
+                            state =
+                                TasksUiState(
+                                    rows =
+                                        listOf(
+                                            TaskRow(
+                                                task = Task.create(projectId = "p1", title = "Task one"),
+                                                projectName = "Project",
+                                            ),
+                                            TaskRow(
+                                                task = Task.create(projectId = "p1", title = "Task two"),
+                                                projectName = "Project",
+                                            ),
+                                        ),
+                                    isLoading = false,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+
+        val first = composeRule.onNodeWithText("Task one").fetchSemanticsNode().boundsInRoot
+        val second = composeRule.onNodeWithText("Task two").fetchSemanticsNode().boundsInRoot
+        assertTrue("tarefas na primeira linha devem compartilhar a altura", first.top == second.top)
+        assertTrue("a segunda coluna deve ficar à direita", second.left > first.left)
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+class TasksGridBreakpointTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    @Config(sdk = [34], qualifiers = "w600dp-h800dp")
+    fun `a grade comeca no breakpoint de 600 dp`() {
+        setTwoTaskContent()
+
+        val first = composeRule.onNodeWithText("Task one").fetchSemanticsNode().boundsInRoot
+        val second = composeRule.onNodeWithText("Task two").fetchSemanticsNode().boundsInRoot
+        assertTrue("tarefas devem compartilhar a linha a partir de 600 dp", first.top == second.top)
+        assertTrue("a segunda tarefa deve estar na coluna à direita", second.left > first.left)
+    }
+
+    @Test
+    @Config(sdk = [34], qualifiers = "w599dp-h800dp")
+    fun `a lista continua em uma coluna abaixo do breakpoint`() {
+        setTwoTaskContent()
+
+        val first = composeRule.onNodeWithText("Task one").fetchSemanticsNode().boundsInRoot
+        val second = composeRule.onNodeWithText("Task two").fetchSemanticsNode().boundsInRoot
+        assertTrue("tarefas devem ficar em linhas distintas abaixo de 600 dp", second.top > first.top)
+    }
+
+    private fun setTwoTaskContent() {
+        composeRule.setContent {
+            BrainOutTheme {
+                NeoWindowProvider {
+                    Surface {
+                        TasksContent(
+                            state =
+                                TasksUiState(
+                                    rows =
+                                        listOf(
+                                            TaskRow(
+                                                task = Task.create(projectId = "p1", title = "Task one"),
+                                                projectName = "Project",
+                                            ),
+                                            TaskRow(
+                                                task = Task.create(projectId = "p1", title = "Task two"),
+                                                projectName = "Project",
+                                            ),
+                                        ),
+                                    isLoading = false,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
