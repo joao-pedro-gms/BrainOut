@@ -163,6 +163,7 @@ class BackupRepositoryImpl
                 BackupCrypto.decrypt(
                     EncryptedPayload(envelope.salt, envelope.iv, envelope.ciphertext),
                     passphrase,
+                    iterations = envelope.kdfIterations,
                 )
             val payload = BackupPayloadCodec.decode(decrypted)
             payload.validateAccounts()

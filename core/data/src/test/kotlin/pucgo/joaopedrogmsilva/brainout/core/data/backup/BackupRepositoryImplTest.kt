@@ -17,11 +17,16 @@ import pucgo.joaopedrogmsilva.brainout.core.data.local.inMemoryDatabase
 import pucgo.joaopedrogmsilva.brainout.core.data.repository.testSession
 import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.data.session.SessionStore
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupIntegrityException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import java.io.ByteArrayOutputStream
+import java.security.SecureRandom
 import java.time.Instant
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)
@@ -135,6 +140,82 @@ class BackupRepositoryImplTest {
                 assertThat(db.taskDao().findById("task-u1")).isNotNull()
             }
         }
+
+    @Test
+    fun `leitura usa as iteracoes declaradas pelo envelope`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                val repo = repository(db, testSession("u1"))
+                val raw =
+                    reencryptBackupWithIterations(
+                        export(repo),
+                        encryptionIterations = 1_000,
+                        declaredIterations = 1_000,
+                    )
+
+                assertThat(repo.inspect(raw.inputStream(), PASSPHRASE).map { it.id }).containsExactly("u1")
+            }
+        }
+
+    @Test
+    fun `custo declarado fora da faixa e rejeitado como formato invalido`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                val repo = repository(db, testSession("u1"))
+                val raw =
+                    reencryptBackupWithIterations(
+                        export(repo),
+                        encryptionIterations = 1_000,
+                        declaredIterations = 1_000_000_000,
+                    )
+
+                val error = runCatching { repo.inspect(raw.inputStream(), PASSPHRASE) }.exceptionOrNull()
+                assertThat(error).isInstanceOf(BackupFormatException::class.java)
+                assertThat(error?.javaClass).isEqualTo(BackupFormatException::class.java)
+            }
+        }
+
+    @Test
+    fun `iteracoes declaradas diferentes das usadas na cifragem falham na integridade`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                val repo = repository(db, testSession("u1"))
+                val raw =
+                    reencryptBackupWithIterations(
+                        export(repo),
+                        encryptionIterations = 1_000,
+                        declaredIterations = 10_000,
+                    )
+
+                val error = runCatching { repo.inspect(raw.inputStream(), PASSPHRASE) }.exceptionOrNull()
+                assertThat(error).isInstanceOf(BackupIntegrityException::class.java)
+            }
+        }
+
+    private fun reencryptBackupWithIterations(
+        raw: ByteArray,
+        encryptionIterations: Int,
+        declaredIterations: Int,
+    ): ByteArray {
+        val original = BackupFormat.decodeEnvelope(raw)
+        val plaintext =
+            BackupCrypto.decrypt(
+                EncryptedPayload(original.salt, original.iv, original.ciphertext),
+                PASSPHRASE,
+            )
+        val salt = ByteArray(16).also(SecureRandom()::nextBytes)
+        val iv = ByteArray(12).also(SecureRandom()::nextBytes)
+        val key = BackupCrypto.deriveKey(PASSPHRASE.toCharArray(), salt, encryptionIterations)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(128, iv))
+        val encrypted = EncryptedPayload(salt, iv, cipher.doFinal(plaintext))
+        val json = JSONObject(String(BackupFormat.encodeEnvelope(1L, encrypted), Charsets.UTF_8))
+        json.getJSONObject("kdf").put("iterations", declaredIterations)
+        return json.toString().toByteArray(Charsets.UTF_8)
+    }
 
     private suspend fun export(repo: BackupRepositoryImpl): ByteArray {
         val output = ByteArrayOutputStream()

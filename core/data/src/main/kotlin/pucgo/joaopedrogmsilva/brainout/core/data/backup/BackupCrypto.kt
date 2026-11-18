@@ -101,9 +101,10 @@ internal object BackupCrypto {
     fun decrypt(
         payload: EncryptedPayload,
         passphrase: String,
+        iterations: Int = KDF_ITERATIONS,
     ): ByteArray {
         val secret = passphrase.toCharArray()
-        val key = deriveKey(secret, payload.salt, KDF_ITERATIONS)
+        val key = deriveKey(secret, payload.salt, iterations)
         try {
             val cipher = Cipher.getInstance(CIPHER_TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, payload.iv))
