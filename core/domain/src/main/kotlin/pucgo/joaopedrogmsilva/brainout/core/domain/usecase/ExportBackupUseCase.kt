@@ -9,10 +9,9 @@ import javax.inject.Inject
 /**
  * Exporta o conteúdo local para um arquivo de backup cifrado.
  *
- * A senha ([passphrase]) é a mesma que o usuário digita ao restaurar:
- * ela cifra o arquivo (AES-256-GCM) e, para as contas que ainda não
- * existirem no aparelho de destino, passa a ser a senha delas. O
- * detalhamento está em `docs/BACKUP.md`.
+ * A senha ([passphrase]) cifra o arquivo e será solicitada para decifrá-lo; ela
+ * não se torna senha de login. A restauração preserva as credenciais da conta
+ * conectada, conforme o contrato em `docs/BACKUP.md`.
  *
  * @property backupRepository porta de backup (implementação em
  *  `:core:data`).
@@ -27,8 +26,7 @@ class ExportBackupUseCase
          * @param passphrase senha de cifragem do backup.
          * @return o resumo do conteúdo gravado.
          * @throws IllegalArgumentException se a senha for curta demais
-         *  (mesmo mínimo de [MIN_PASSWORD_LENGTH], já que ela pode
-         *  virar a senha de uma conta restaurada).
+         *  (o arquivo exige no mínimo [MIN_PASSWORD_LENGTH] caracteres; veja `docs/BACKUP.md`).
          */
         suspend operator fun invoke(
             output: OutputStream,
