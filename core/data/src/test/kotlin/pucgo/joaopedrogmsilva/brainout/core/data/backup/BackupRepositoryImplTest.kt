@@ -150,11 +150,29 @@ class BackupRepositoryImplTest {
                 val raw =
                     reencryptBackupWithIterations(
                         export(repo),
-                        encryptionIterations = 1_000,
-                        declaredIterations = 1_000,
+                        encryptionIterations = 10_000,
+                        declaredIterations = 10_000,
                     )
 
                 assertThat(repo.inspect(raw.inputStream(), PASSPHRASE).map { it.id }).containsExactly("u1")
+            }
+        }
+
+    @Test
+    fun `custo declarado abaixo do piso e rejeitado como formato invalido`() =
+        runTest {
+            inMemoryDatabase().use { db ->
+                seed(db, "u1", "Joao")
+                val repo = repository(db, testSession("u1"))
+                val raw =
+                    reencryptBackupWithIterations(
+                        export(repo),
+                        encryptionIterations = 1_000,
+                        declaredIterations = 9_999,
+                    )
+
+                val error = runCatching { repo.inspect(raw.inputStream(), PASSPHRASE) }.exceptionOrNull()
+                assertThat(error).isInstanceOf(BackupFormatException::class.java)
             }
         }
 
