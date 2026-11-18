@@ -27,6 +27,18 @@
 > > histórico.
 >
 > Marco do roadmap: **E5.1** (`docs/ROADMAP.md`).
+>
+> **Base deste relatório.** Ele foi redigido sobre a arquitetura do ciclo
+> **E3.x**, com persistência remota: as linhas **R5** e **R6** da tabela de
+> conformidade e as seções §5 a §13 citam arquivos daquele ciclo
+> (`core/data/.../remote/`, `core/data/.../sync/`, `app/src/main/.../sync/`,
+> `backend-stub/`), `BuildConfig.BASE_URL` e os flavors `dev`/`prod`, além da
+> fila `pending_ops`. O app atual é **totalmente local** — ver
+> [`TRANSICAO-LOCAL.md`](TRANSICAO-LOCAL.md): a rede, a fila e os flavors
+> foram removidos no #212/#218, os feriados passaram a ser calculados no
+> aparelho (`HolidayRepositoryImpl`) e a portabilidade é o arquivo manual
+> descrito em [`BACKUP.md`](BACKUP.md). A reemissão das linhas R5/R6 é
+> decisão do autor, registrada como **DEF-79** no [ledger](DEFEITOS.md).
 
 ---
 
