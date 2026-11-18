@@ -127,7 +127,7 @@ class NeoTokenParityTest {
     @Test
     fun `tamanhos declarados batem com os tokens`() {
         val declared = numericGroupFrom(json, "sizes")
-        assertThat(declared).hasSize(11)
+        assertThat(declared).hasSize(12)
         val implemented =
             mapOf(
                 "touchMin" to NeoSizes.touchMin,
@@ -141,6 +141,7 @@ class NeoTokenParityTest {
                 "iconEmpty" to NeoSizes.iconEmpty,
                 "badgeMinHeight" to NeoSizes.badgeMinHeight,
                 "navMinHeight" to NeoSizes.navMinHeight,
+                "bannerMinHeight" to NeoSizes.bannerMinHeight,
             )
         assertDpParity(declared, implemented)
     }
@@ -161,7 +162,7 @@ class NeoTokenParityTest {
     @Test
     fun `breakpoints e margens batem com o JSON`() {
         val declared = numericGroupFrom(json, "layout")
-        assertThat(declared).hasSize(9)
+        assertThat(declared).hasSize(11)
         val implemented =
             mapOf(
                 "mediumMinWidth" to NeoLayout.mediumMinWidth,
@@ -173,6 +174,8 @@ class NeoTokenParityTest {
                 "expandedMargin" to NeoLayout.expandedMargin,
                 "formMaxWidth" to NeoLayout.formMaxWidth,
                 "contentMaxWidth" to NeoLayout.contentMaxWidth,
+                "gridMinColumnWidth" to NeoLayout.gridMinColumnWidth,
+                "fabExpandedMinWidth" to NeoLayout.fabExpandedMinWidth,
             )
         assertDpParity(declared, implemented)
     }

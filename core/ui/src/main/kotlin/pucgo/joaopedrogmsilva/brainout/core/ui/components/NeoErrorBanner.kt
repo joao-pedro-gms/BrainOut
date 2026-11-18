@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
@@ -51,7 +50,7 @@ fun NeoErrorBanner(
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    minHeight: Dp = 140.dp,
+    minHeight: Dp = NeoSizes.bannerMinHeight,
     messageTextAlign: TextAlign = TextAlign.Start,
 ) {
     Surface(

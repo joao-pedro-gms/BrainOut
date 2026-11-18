@@ -137,7 +137,7 @@ internal fun TasksContent(
 
     if (windowInfo.isWide && !windowInfo.forceSingleColumn) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = NeoLayout.mediumMargin * 11),
+            columns = GridCells.Adaptive(minSize = NeoLayout.gridMinColumnWidth),
             modifier = listModifier,
             horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
