@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.domain.repository
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
@@ -95,10 +96,12 @@ data class BackupRestoreResult(
  * Tarefa restaurada que possui prazo.
  *
  * @property taskId id da tarefa.
+ * @property status status da tarefa restaurada.
  * @property dueDate instante do prazo.
  */
 data class BackupReminder(
     val taskId: String,
+    val status: TaskStatus,
     val dueDate: Instant,
 )
 

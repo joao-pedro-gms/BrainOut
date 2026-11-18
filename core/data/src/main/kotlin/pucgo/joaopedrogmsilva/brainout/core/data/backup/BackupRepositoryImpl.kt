@@ -7,6 +7,7 @@ import pucgo.joaopedrogmsilva.brainout.core.data.session.AccountAccess
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupRestoreException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupTooLargeException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupReminder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
@@ -95,8 +96,10 @@ class BackupRepositoryImpl
                 summary = remapped.summary(Instant.now()),
                 taskIds = remapped.tasks.map { it.id }.toSet(),
                 reminders =
-                    remapped.tasks.filter { it.status != "DONE" }.mapNotNull { task ->
-                        task.dueDateEpochMillis?.let { BackupReminder(task.id, Instant.ofEpochMilli(it)) }
+                    remapped.tasks.mapNotNull { task ->
+                        task.dueDateEpochMillis?.let {
+                            BackupReminder(task.id, TaskStatus.valueOf(task.status), Instant.ofEpochMilli(it))
+                        }
                     },
             )
         }
@@ -163,6 +166,7 @@ class BackupRepositoryImpl
                 BackupCrypto.decrypt(
                     EncryptedPayload(envelope.salt, envelope.iv, envelope.ciphertext),
                     passphrase,
+                    iterations = envelope.kdfIterations,
                 )
             val payload = BackupPayloadCodec.decode(decrypted)
             payload.validateAccounts()

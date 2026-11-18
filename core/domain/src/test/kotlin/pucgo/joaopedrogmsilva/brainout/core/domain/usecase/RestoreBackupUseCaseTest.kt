@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.BackupSummary
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.User
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.FakeDeadlineNotificationScheduler
@@ -54,13 +55,13 @@ class RestoreBackupUseCaseTest {
     @Test
     fun `reagenda o lembrete das tarefas restauradas com uma hora de antecedencia`() =
         runTest {
-            val dueDate = Instant.now().plusSeconds(7200)
+            val dueDate = Instant.now().plus(Duration.ofHours(5))
             repository.taskIds = emptySet()
             repository.restoreResult =
                 BackupRestoreResult(
                     summary = SUMMARY,
                     taskIds = setOf("t-1", "t-2"),
-                    reminders = listOf(BackupReminder(taskId = "t-1", dueDate = dueDate)),
+                    reminders = listOf(BackupReminder(taskId = "t-1", status = TaskStatus.TODO, dueDate = dueDate)),
                 )
 
             useCase(ByteArrayInputStream(ByteArray(0)), PASSPHRASE)
@@ -70,6 +71,54 @@ class RestoreBackupUseCaseTest {
             assertThat(taskId).isEqualTo("t-1")
             assertThat(triggerAt).isEqualTo(dueDate.minus(DeadlineNotificationScheduler.REMINDER_LEAD))
             assertThat(Duration.between(triggerAt, dueDate)).isEqualTo(Duration.ofHours(1))
+        }
+
+    @Test
+    fun `prazo dentro da janela de uma hora nao agenda lembrete`() =
+        runTest {
+            repository.taskIds = emptySet()
+            repository.restoreResult =
+                BackupRestoreResult(
+                    summary = SUMMARY,
+                    taskIds = setOf("t-1"),
+                    reminders =
+                        listOf(
+                            BackupReminder(
+                                taskId = "t-1",
+                                status = TaskStatus.TODO,
+                                dueDate = Instant.now().plus(Duration.ofMinutes(30)),
+                            ),
+                        ),
+                )
+
+            useCase(ByteArrayInputStream(ByteArray(0)), PASSPHRASE)
+
+            assertThat(scheduler.scheduled).isEmpty()
+            assertThat(scheduler.cancelled).containsExactly("t-1")
+        }
+
+    @Test
+    fun `tarefa concluida restaurada nao agenda lembrete`() =
+        runTest {
+            repository.taskIds = emptySet()
+            repository.restoreResult =
+                BackupRestoreResult(
+                    summary = SUMMARY,
+                    taskIds = setOf("t-done"),
+                    reminders =
+                        listOf(
+                            BackupReminder(
+                                taskId = "t-done",
+                                status = TaskStatus.DONE,
+                                dueDate = Instant.now().plus(Duration.ofHours(5)),
+                            ),
+                        ),
+                )
+
+            useCase(ByteArrayInputStream(ByteArray(0)), PASSPHRASE)
+
+            assertThat(scheduler.scheduled).isEmpty()
+            assertThat(scheduler.cancelled).containsExactly("t-done")
         }
 
     @Test
@@ -149,7 +198,7 @@ class RestoreBackupUseCaseTest {
                 BackupRestoreResult(
                     SUMMARY,
                     setOf("nova"),
-                    listOf(BackupReminder("nova", Instant.now().plusSeconds(7200))),
+                    listOf(BackupReminder("nova", TaskStatus.TODO, Instant.now().plusSeconds(7200))),
                     ownerId = "u1",
                 )
             val result =

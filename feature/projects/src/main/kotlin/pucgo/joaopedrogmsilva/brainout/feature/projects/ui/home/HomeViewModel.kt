@@ -18,8 +18,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ListingPreferencesRepository
@@ -117,6 +119,29 @@ class HomeViewModel
             )
 
         /**
+         * Persistência da busca — uma gravação por rajada de digitação
+         * (DEF-73 deixou a consulta Room fora do caminho por tecla, mas
+         * a escrita por tecla no DataStore permanecia: cada
+         * `setSearchQuery` reescreve o arquivo inteiro com fsync).
+         *
+         * A gravação sai do [debouncedSearchInput], não de cada tecla: o
+         * texto cru segue em [_searchQuery] para a UI reagir na hora, e o
+         * DataStore só é tocado quando a digitação silencia. A primeira
+         * emissão (valor inicial vazio do `stateIn`) é descartada para não
+         * regravar o estado inicial; limpar a busca emite "" de novo e
+         * esse "" é persistido normalmente.
+         */
+        init {
+            viewModelScope.launch {
+                debouncedSearchInput
+                    .drop(1)
+                    .collect { query ->
+                        runOnSearchQueryChange(viewModelScope, listingPreferences, activeUserProvider, query)
+                    }
+            }
+        }
+
+        /**
          * Estado da lista de projetos — E2.1 + E2.5 + E2.6 + E2.8.
          *
          * O erro não vem pronto do pipeline: o canal [errorSink] é
@@ -199,8 +224,8 @@ class HomeViewModel
 
         /** Atualiza a query de busca e persiste no DataStore (E2.6). */
         fun onSearchQueryChange(newQuery: String) {
+            Log.d(TAG, "onSearchQueryChange: $newQuery")
             _searchQuery.value = newQuery
-            runOnSearchQueryChange(viewModelScope, listingPreferences, activeUserProvider, newQuery)
         }
 
         /** Atualiza a tag selecionada como filtro (E2.6). */

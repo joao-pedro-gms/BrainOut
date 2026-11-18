@@ -49,6 +49,10 @@ internal object BackupFormat {
      */
     const val MAX_BACKUP_BYTES: Int = 20 * 1024 * 1024
 
+    /** Faixa aceitável para o custo do KDF declarado por um arquivo. */
+    const val MIN_KDF_ITERATIONS: Int = 1_000
+    const val MAX_KDF_ITERATIONS: Int = 2_000_000
+
     private const val KEY_FORMAT: String = "format"
     private const val KEY_FORMAT_VERSION: String = "formatVersion"
     private const val KEY_CREATED_AT: String = "createdAtEpochMillis"
@@ -137,10 +141,14 @@ internal object BackupFormat {
         if (kdf == null || cipher == null) {
             throw BackupFormatException("Envelope de backup incompleto.")
         }
+        val kdfIterations = kdf.optInt(KEY_ITERATIONS, BackupCrypto.KDF_ITERATIONS)
+        if (kdfIterations !in MIN_KDF_ITERATIONS..MAX_KDF_ITERATIONS) {
+            throw BackupFormatException("Custo do KDF do backup está fora da faixa aceita.")
+        }
         return BackupEnvelope(
             formatVersion = version,
             createdAtEpochMillis = root.optLong(KEY_CREATED_AT),
-            kdfIterations = kdf.optInt(KEY_ITERATIONS, BackupCrypto.KDF_ITERATIONS),
+            kdfIterations = kdfIterations,
             salt = decodeBase64OrFail(kdf.optString(KEY_SALT), "salt"),
             iv = decodeBase64OrFail(cipher.optString(KEY_IV), "iv"),
             ciphertext = decodeBase64OrFail(root.optString(KEY_PAYLOAD), "payload"),

@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.core.domain.usecase
 
 import pucgo.joaopedrogmsilva.brainout.core.domain.notification.DeadlineNotificationScheduler
+import pucgo.joaopedrogmsilva.brainout.core.domain.notification.reconcileTaskReminder
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ActiveUserPort
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupRestoreResult
@@ -77,10 +78,11 @@ class RestoreBackupUseCase
             (previousTaskIds - restoredTaskIds).forEach { taskId ->
                 deadlineNotificationScheduler.cancel(taskId)
             }
-            result.reminders.filter { it.dueDate.isAfter(java.time.Instant.now()) }.forEach { reminder ->
-                deadlineNotificationScheduler.schedule(
+            result.reminders.forEach { reminder ->
+                deadlineNotificationScheduler.reconcileTaskReminder(
                     taskId = reminder.taskId,
-                    triggerAt = reminder.dueDate.minus(DeadlineNotificationScheduler.REMINDER_LEAD),
+                    status = reminder.status,
+                    dueDate = reminder.dueDate,
                 )
             }
         }

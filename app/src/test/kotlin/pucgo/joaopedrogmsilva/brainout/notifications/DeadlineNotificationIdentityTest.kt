@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.notifications
 
 import android.content.Context
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
@@ -11,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -37,11 +39,17 @@ class DeadlineNotificationIdentityTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         NotificationManagerCompat.from(context).cancelAll()
+        idleMainLooper()
     }
 
     @After
     fun tearDown() {
         NotificationManagerCompat.from(context).cancelAll()
+        idleMainLooper()
+    }
+
+    private fun idleMainLooper() {
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     private fun notification(title: String): NotificationCompat.Builder =
@@ -59,11 +67,13 @@ class DeadlineNotificationIdentityTest {
             DeadlineNotificationId.of(first),
             notification("Tarefa A").build(),
         )
+        idleMainLooper()
         manager.notify(
             DeadlineNotificationId.tagOf(second),
             DeadlineNotificationId.of(second),
             notification("Tarefa B").build(),
         )
+        idleMainLooper()
 
         val publicadas = manager.ownedNotifications()
         assertThat(publicadas.map { it.tag })
@@ -82,13 +92,16 @@ class DeadlineNotificationIdentityTest {
             DeadlineNotificationId.of(first),
             notification("Tarefa A").build(),
         )
+        idleMainLooper()
         manager.notify(
             DeadlineNotificationId.tagOf(second),
             DeadlineNotificationId.of(second),
             notification("Tarefa B").build(),
         )
+        idleMainLooper()
 
         NotificationDismissal.dismiss(context, first)
+        idleMainLooper()
 
         val restantes = manager.ownedNotifications()
         assertThat(restantes.map { it.tag }).containsExactly(DeadlineNotificationId.tagOf(second))
