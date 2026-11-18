@@ -54,7 +54,7 @@ class DeadlineReceiver : BroadcastReceiver() {
                     val request =
                         OneTimeWorkRequestBuilder<CompleteTaskWorker>()
                             .setInputData(workDataOf(DeadlineKeys.TASK_ID to taskId))
-                            .addTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
+                            .addTag(WorkManagerDeadlineScheduler.COMPLETE_TASK_TAG)
                             .build()
                     WorkManager
                         .getInstance(context)

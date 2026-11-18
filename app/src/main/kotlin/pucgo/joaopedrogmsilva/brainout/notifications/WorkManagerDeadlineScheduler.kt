@@ -79,7 +79,10 @@ class WorkManagerDeadlineScheduler
             /** Tag comum a todos os trabalhos de lembrete (útil para testes/QA). */
             const val DEADLINE_TAG: String = "brainout_deadline"
 
-            /** Id do canal de notificações de prazo (HIGH importance). */
+            /** Tag das ações de conclusão, que não pertencem à varredura de lembretes. */
+            const val COMPLETE_TASK_TAG: String = "brainout_complete_task"
+
+            /** Id do canal de notificação de prazo (HIGH importance). */
             const val CHANNEL_ID: String = "brainout_deadlines"
 
             /** Nome único do trabalho WorkManager de uma tarefa. */

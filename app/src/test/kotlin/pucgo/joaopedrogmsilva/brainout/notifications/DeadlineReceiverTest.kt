@@ -83,7 +83,7 @@ class DeadlineReceiverTest {
     private fun completionWorks(): List<WorkInfo> =
         WorkManager
             .getInstance(context)
-            .getWorkInfosByTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
+            .getWorkInfosByTag(WorkManagerDeadlineScheduler.COMPLETE_TASK_TAG)
             .get()
             .filter { it.workerClassName == CompleteTaskWorker::class.java.name }
 
@@ -131,7 +131,7 @@ class DeadlineReceiverTest {
         awaitUntil("id da tarefa entregue ao worker") { workerFactory.taskIds.isNotEmpty() }
 
         val work = completionWorks().single()
-        assertThat(work.tags).contains(WorkManagerDeadlineScheduler.DEADLINE_TAG)
+        assertThat(work.tags).contains(WorkManagerDeadlineScheduler.COMPLETE_TASK_TAG)
         assertThat(workerFactory.taskIds.single()).isEqualTo("t1")
     }
 

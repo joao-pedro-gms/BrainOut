@@ -41,13 +41,23 @@ class AccountReminderCoordinator
 
         internal fun startIn(callerScope: CoroutineScope): Job =
             callerScope.launch {
-                session.observeUserId().distinctUntilChanged().collectLatest { owner -> reconcileWithRetry(owner) }
+                var hasPreviousOwner = false
+                var previousOwner: String? = null
+                session.observeUserId().distinctUntilChanged().collectLatest { owner ->
+                    val accountChanged = hasPreviousOwner && owner != previousOwner
+                    previousOwner = owner
+                    hasPreviousOwner = true
+                    reconcileWithRetry(owner, accountChanged)
+                }
             }
 
-        private suspend fun reconcileWithRetry(owner: String?) {
+        private suspend fun reconcileWithRetry(
+            owner: String?,
+            accountChanged: Boolean,
+        ) {
             repeat(MAX_ATTEMPTS) { attempt ->
                 try {
-                    reconcile(owner)
+                    reconcile(owner, accountChanged)
                     return
                 } catch (error: CancellationException) {
                     throw error
@@ -60,13 +70,18 @@ class AccountReminderCoordinator
             }
         }
 
-        private suspend fun reconcile(owner: String?) {
-            WorkManager
-                .getInstance(context)
-                .cancelAllWorkByTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
-                .result
-                .get()
-            NotificationManagerCompat.from(context).cancelAll()
+        private suspend fun reconcile(
+            owner: String?,
+            accountChanged: Boolean,
+        ) {
+            if (accountChanged) {
+                WorkManager
+                    .getInstance(context)
+                    .cancelAllWorkByTag(WorkManagerDeadlineScheduler.DEADLINE_TAG)
+                    .result
+                    .get()
+                NotificationManagerCompat.from(context).cancelAll()
+            }
             if (owner != null) {
                 session.withUser(owner) {
                     snapshot.tasks(owner).forEach { task ->
