@@ -102,7 +102,7 @@ internal fun HomeProjectsContent(
     val useGrid = window.isWide && !window.forceSingleColumn
     if (useGrid) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(NeoLayout.mediumMargin * GRID_MIN_COLUMN_MARGIN_MULTIPLIER),
+            columns = GridCells.Adaptive(NeoLayout.gridMinColumnWidth),
             modifier = contentModifier,
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
             horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
@@ -152,12 +152,6 @@ internal fun HomeProjectsContent(
         }
     }
 }
-
-/**
- * Faixa mínima de 260 dp exigida pela adaptação de D-04.
- * `11 × mediumMargin` equivale a 264 dp e mantém o tamanho derivado de NeoLayout.
- */
-private const val GRID_MIN_COLUMN_MARGIN_MULTIPLIER: Int = 11
 
 @Composable
 private fun HomeProjectCardItem(

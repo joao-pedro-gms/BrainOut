@@ -14,10 +14,13 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
+
+/** Acima desta escala de fonte o rótulo não cabe ao lado do ícone. */
+private const val FAB_LABEL_MAX_FONT_SCALE = 1.3f
 
 /** Ação principal compacta quando espaço ou fonte pedem; nome acessível permanece. */
 @Composable
@@ -29,9 +32,13 @@ fun NeoCreateActionButton(
     contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
     val window = LocalNeoWindowInfo.current
+    val expandedFab =
+        window.widthDp >= NeoLayout.fabExpandedMinWidth &&
+            !window.forceSingleColumn &&
+            LocalDensity.current.fontScale <= FAB_LABEL_MAX_FONT_SCALE
     ExtendedFloatingActionButton(
         onClick = onClick,
-        expanded = window.widthDp >= 360.dp && !window.forceSingleColumn && LocalDensity.current.fontScale <= 1.3f,
+        expanded = expandedFab,
         icon = { Icon(painterResource(R.drawable.neo_ic_add), contentDescription = null) },
         text = { Text(label, Modifier.clearAndSetSemantics {}) },
         containerColor = containerColor,

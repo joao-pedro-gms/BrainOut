@@ -99,6 +99,9 @@ object NeoSizes {
     val iconEmpty: Dp = 32.dp
     val badgeMinHeight: Dp = 28.dp
     val navMinHeight: Dp = 80.dp
+
+    /** Altura mínima do banner de erro com mensagem e duas ações. */
+    val bannerMinHeight: Dp = 140.dp
 }
 
 /**
@@ -116,6 +119,12 @@ object NeoLayout {
     val expandedMargin: Dp = 32.dp
     val formMaxWidth: Dp = 480.dp
     val contentMaxWidth: Dp = 1200.dp
+
+    /** Largura mínima de coluna nas grades de cartão (D-04). */
+    val gridMinColumnWidth: Dp = 260.dp
+
+    /** Abaixo desta largura o botão de ação usa só o ícone. */
+    val fabExpandedMinWidth: Dp = 360.dp
 }
 
 /** Scrim de modal: preto a 56 %, calculado sobre o popup, não sobre a tela. */
