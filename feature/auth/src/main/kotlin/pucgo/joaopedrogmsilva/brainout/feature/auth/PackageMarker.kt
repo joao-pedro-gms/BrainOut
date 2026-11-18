@@ -4,6 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.auth
 /**
  * Marcador de pacote do módulo :feature:auth.
  *
- * Telas Splash, Login e Register virão em E1.3 / E1.6 / E1.7.
+ * Agrupa os pacotes de apresentação e estado do fluxo de autenticação local.
  */
 internal const val FEATURE_AUTH_PACKAGE: String = "pucgo.joaopedrogmsilva.brainout.feature.auth"

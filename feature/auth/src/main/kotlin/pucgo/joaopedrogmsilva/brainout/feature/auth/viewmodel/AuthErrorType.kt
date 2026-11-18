@@ -11,10 +11,10 @@ package pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel
  * vaze para a interface.
  */
 enum class AuthErrorType {
-    /** Campo de e-mail vazio. */
+    /** Campo de nome de usuário vazio. */
     EmptyUsername,
 
-    /** E-mail fora do formato válido. */
+    /** Nome de usuário fora do formato válido. */
     InvalidUsername,
 
     /** Campo de senha vazio. */
@@ -23,10 +23,10 @@ enum class AuthErrorType {
     /** Senha mais curta que o mínimo exigido pelo domínio. */
     ShortPassword,
 
-    /** E-mail ou senha não conferem. */
+    /** Nome de usuário ou senha não conferem. */
     InvalidCredentials,
 
-    /** Já existe uma conta cadastrada com este e-mail. */
+    /** Já existe uma conta cadastrada com este nome de usuário. */
     DuplicateUsername,
 
     /** Confirmação de senha vazia. */
