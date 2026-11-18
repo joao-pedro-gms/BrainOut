@@ -1,14 +1,23 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.navigation
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -17,6 +26,8 @@ import androidx.navigation.compose.navigation
 import pucgo.joaopedrogmsilva.brainout.core.ui.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoNavigationBar
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoNavigationItem
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoWindowProvider
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.navigation.TasksRoutes
 
@@ -43,19 +54,32 @@ internal fun BrainOutShell(
             ?.route
     val keyboardVisible = WindowInsets.isImeVisible
     NeoWindowProvider {
+        val windowInfo = LocalNeoWindowInfo.current
+        val useRail = windowInfo.widthDp >= NeoLayout.mediumMinWidth
+        val showNavigation = selected != null && !keyboardVisible
+        val items = mainNavigationItems()
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
-                if (selected != null && !keyboardVisible) {
+                if (showNavigation && !useRail) {
                     NeoNavigationBar(
-                        items = mainNavigationItems(),
+                        items = items,
                         selectedId = selected,
                         onSelect = { navController.selectMainTab(it) },
                     )
                 }
             },
         ) { padding ->
-            content(Modifier.padding(padding).consumeWindowInsets(padding))
+            Row(Modifier.fillMaxSize().padding(padding)) {
+                if (showNavigation && useRail) {
+                    MainNavigationRail(
+                        items = items,
+                        selectedId = selected,
+                        onSelect = { navController.selectMainTab(it) },
+                    )
+                }
+                content(Modifier.weight(1f).fillMaxHeight().consumeWindowInsets(padding))
+            }
         }
     }
 }
@@ -84,6 +108,30 @@ private fun mainNavigationItems(): List<NeoNavigationItem> =
             R.drawable.neo_ic_settings,
         ),
     )
+
+@Composable
+private fun MainNavigationRail(
+    items: List<NeoNavigationItem>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+) {
+    NavigationRail(modifier = Modifier.testTag("main_navigation")) {
+        items.forEach { item ->
+            NavigationRailItem(
+                selected = item.id == selectedId,
+                onClick = { if (item.id != selectedId) onSelect(item.id) },
+                icon = {
+                    Icon(
+                        painter = painterResource(item.icon),
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(item.label) },
+                modifier = Modifier.testTag("main_tab_${item.id}"),
+            )
+        }
+    }
+}
 
 internal fun NavHostController.selectMainTab(route: String) {
     require(route in mainTabs)

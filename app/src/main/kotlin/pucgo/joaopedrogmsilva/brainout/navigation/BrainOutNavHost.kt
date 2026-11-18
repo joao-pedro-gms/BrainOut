@@ -2,9 +2,8 @@
 // NavHost raiz do BrainOut — declara todas as telas e o fluxo entre elas
 // (Splash → Login → Home → ProjectDetail / Settings → Login).
 //
-// Marco E1.3 do ROADMAP. Marcos E1.6, E1.7 e E1.8 do ROADMAP adicionam
-// formulários funcionais, gate do FAB por papel e persistência da
-// sessão em `DataStore`.
+// Marco E1.3 do ROADMAP. Os marcos seguintes acrescentaram formulários
+// funcionais e persistência local da sessão em `DataStore`.
 
 package pucgo.joaopedrogmsilva.brainout.navigation
 

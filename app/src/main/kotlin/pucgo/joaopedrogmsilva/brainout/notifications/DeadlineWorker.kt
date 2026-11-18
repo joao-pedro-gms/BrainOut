@@ -174,7 +174,7 @@ class DeadlineWorker
             session.withUser(project.ownerId) {
                 NotificationManagerCompat.from(applicationContext).notify(notificationTag, notificationId, notification)
             }
-            Log.d(TAG, "Notificação de lembrete de prazo enviada para tarefa ${task.id} (${task.title})")
+            Log.d(TAG, "Notificação de lembrete de prazo enviada")
         }
 
         private fun hasNotificationPermission(context: Context): Boolean =
