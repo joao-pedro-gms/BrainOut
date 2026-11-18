@@ -11,7 +11,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 import androidx.compose.material3.Surface
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -27,7 +26,7 @@ class HomeTopBarTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `sem sessao a barra mostra a saudacao generica e nenhum badge de papel`() {
+    fun `sem sessao a barra mostra saudacao generica`() {
         composeRule.setContent {
             BrainOutTheme {
                 Surface {
@@ -37,11 +36,10 @@ class HomeTopBarTest {
         }
 
         composeRule.onNodeWithText("Olá!").assertIsDisplayed()
-        composeRule.onNodeWithTag(HomeTestTags.ROLE_BADGE).assertDoesNotExist()
     }
 
     @Test
-    fun `com sessao a barra mostra identidade sem papel`() {
+    fun `com sessao a barra mostra a saudacao com identidade`() {
         composeRule.setContent {
             BrainOutTheme {
                 Surface {
@@ -57,6 +55,5 @@ class HomeTopBarTest {
         }
 
         composeRule.onNodeWithText("Olá, Maria Silva").assertIsDisplayed()
-        composeRule.onNodeWithTag(HomeTestTags.ROLE_BADGE).assertDoesNotExist()
     }
 }

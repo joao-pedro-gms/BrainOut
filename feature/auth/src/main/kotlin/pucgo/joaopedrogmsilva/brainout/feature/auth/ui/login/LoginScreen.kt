@@ -265,8 +265,7 @@ internal data class PasswordFieldConfig(
 )
 
 /**
- * Wrapper interno do campo de e-mail para reuso entre Login e Register
- * sem duplicar lógica.
+ * Wrapper interno do campo de nome de usuário compartilhado entre Login e Register.
  */
 @Composable
 internal fun UsernameField(

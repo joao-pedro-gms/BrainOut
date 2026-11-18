@@ -39,7 +39,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 
 /**
- * Rótulo visual de um atributo (status, prioridade, tag, papel).
+ * Rótulo visual de um atributo (status, prioridade ou tag).
  *
  * Não é interativo por construção: sem `onClick`, sem `Modifier.clickable`
  * e sem `minimumInteractiveComponentSize`. O conteúdo é declarado como

@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -62,14 +63,16 @@ fun BackupSection(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val passphraseState = remember { BackupPassphraseUiState() }
-    var showReplaceConfirm by remember { mutableStateOf(false) }
+    var showReplaceConfirm by rememberSaveable { mutableStateOf(false) }
 
     val exportLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
         ) { uri ->
             if (uri != null) {
-                viewModel.export(uri, passphraseState.passphrase)
+                viewModel.export(uri)
+            } else {
+                viewModel.cancelPendingExport()
             }
             passphraseState.clear()
         }
@@ -110,7 +113,8 @@ fun BackupSection(
         showReplaceConfirm = showReplaceConfirm,
         onExportConfirmed = { confirmation ->
             if (passphraseState.validate(confirmation)) {
-                passphraseState.mode = null
+                viewModel.prepareExport(passphraseState.passphrase)
+                passphraseState.clear()
                 exportLauncher.launch(defaultBackupFileName())
             }
         },

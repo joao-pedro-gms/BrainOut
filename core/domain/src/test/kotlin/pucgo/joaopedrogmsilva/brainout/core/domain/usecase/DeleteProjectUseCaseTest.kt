@@ -19,8 +19,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
  * CASCADE` do schema Room, então o caso de uso não lê nem reescreve
  * nada além do próprio `delete`.
  *
- * A exclusão exige `DELETE_PROJECT`: só o dono apaga o projeto, porque
- * o efeito é em cascata sobre todas as tarefas (DEF-36).
+ * A operação exige uma conta ativa; o repositório restringe a exclusão
+ * aos dados dessa conta.
  */
 class DeleteProjectUseCaseTest {
     private val repository: ProjectRepository = mockk(relaxed = true)

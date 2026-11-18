@@ -161,7 +161,11 @@ private fun DashboardBody(state: DashboardUiState) {
                 activeProjects = state.activeProjects,
                 completedProjects = state.completedProjects,
             )
-            CompletionRateCards(state.weeklyCompletionPercent, state.overallCompletionPercent)
+            CompletionRateCards(
+                weeklyPercent = state.weeklyCompletionPercent,
+                overallPercent = state.overallCompletionPercent,
+                totalTasks = state.totalTasks,
+            )
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
             PriorityChart(

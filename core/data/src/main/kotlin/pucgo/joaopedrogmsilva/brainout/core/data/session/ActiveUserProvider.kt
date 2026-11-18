@@ -25,7 +25,7 @@ private const val TAG = "BrainOut:ActiveUserProvider"
  *   Room (sessão órfã — limpamos o id para evitar loops).
  *
  * Consumidores típicos:
- * - `HomeScreen` para saudação + badge de papel (E1.7).
+ * - `HomeScreen` para a saudação da conta ativa.
  * - `MainActivity` para decidir a rota inicial (E1.8).
  */
 @Singleton
@@ -65,7 +65,7 @@ class ActiveUserProvider
                             } else {
                                 logDebug(
                                     TAG,
-                                    "Usuário ativo reidratado: id=${user.id}, e-mail=${user.id}",
+                                    "Usuário ativo reidratado: id=${user.id}, username=${user.username}",
                                 )
                                 emit(user)
                             }

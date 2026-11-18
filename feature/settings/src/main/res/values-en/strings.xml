@@ -19,13 +19,13 @@
     <string name="settings_section_backup">Backup</string>
     <string name="settings_option_export_backup">Export backup</string>
     <string name="settings_option_restore_backup">Restore backup</string>
-    <string name="settings_backup_description">Copies this device\'s data into an encrypted file. The file is protected by a password and is never sent to a server.</string>
+    <string name="settings_backup_description">Copies the signed-in account’s data from this device into an encrypted file. The file is protected by a password and is never sent to a server.</string>
     <string name="settings_backup_export_dialog_title">Protect the backup</string>
-    <string name="settings_backup_export_dialog_message">Choose a password to encrypt the file. It will become the password of the accounts restored on this device.</string>
+    <string name="settings_backup_export_dialog_message">This backup contains only the signed-in account’s data. Restoring replaces that account’s projects, tasks and tags while preserving its credentials and your other accounts.</string>
     <string name="settings_backup_restore_dialog_title">Open the backup</string>
-    <string name="settings_backup_restore_dialog_message">Enter the password used when exporting. Accounts that do not exist on this device yet will use this password.</string>
+    <string name="settings_backup_restore_dialog_message">Enter the password used to encrypt the backup. It does not change your account password.</string>
     <string name="settings_backup_replace_title">Replace local data?</string>
-    <string name="settings_backup_replace_message">Restoring erases this device\'s projects, tasks and accounts and replaces everything with the file\'s content. This cannot be undone.</string>
+    <string name="settings_backup_replace_message">After you choose a file and an account from it, only the signed-in account’s projects, tasks and tags are replaced. Its credentials and other accounts on this device are preserved.</string>
     <string name="settings_backup_pwd_label">Backup password</string>
     <string name="settings_backup_pwd_confirm_label">Confirm password</string>
     <string name="settings_backup_visibility_show">Show password</string>
@@ -43,7 +43,7 @@
     <string name="settings_backup_error_short_pwd">The password must have at least 8 characters.</string>
     <string name="settings_backup_error_pwd_mismatch">The passwords do not match.</string>
     <string name="settings_backup_success_exported">Backup exported successfully.</string>
-    <string name="settings_backup_success_restored">The backup contains only the signed-in account’s data. Restoring replaces your projects, tasks and tags while preserving your password and other accounts.</string>
+    <string name="settings_backup_success_restored">Backup restored. Sign in with your password to continue.</string>
     <string name="settings_backup_summary">%1$s and %2$s.</string>
     <plurals name="settings_backup_projects">
         <item quantity="one">%d project</item>

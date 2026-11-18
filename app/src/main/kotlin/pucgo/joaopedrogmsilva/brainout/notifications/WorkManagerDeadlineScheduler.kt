@@ -28,8 +28,8 @@ private const val TAG = "BrainOut:DeadlineScheduler"
  * "lembrar 1 hora antes do prazo" sem exigir a permissão
  * `SCHEDULE_EXACT_ALARM`, restrita no Android 13+. A janela de
  * tolerância do WorkManager (tipicamente poucos minutos) é aceitável
- * para lembretes de prazo acadêmico e ganha consistência com o E3.3
- * (sincronização também em WorkManager).
+ * para lembretes de prazo acadêmico; o trabalho permanece gerenciado
+ * pelo WorkManager até executar ou ser cancelado.
  *
  * Cada tarefa tem exatamente um trabalho pendente, identificado por
  * [uniqueWorkName] — reagendar substitui o trabalho anterior via

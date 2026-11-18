@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.BackupFormatException
 
 /**
  * Testes do **formato** do envelope do arquivo de backup (issue #214 —
@@ -46,6 +47,42 @@ class BackupFormatTest {
         assertThat(json.getString("format")).isEqualTo("brainout-backup")
         assertThat(json.getInt("formatVersion")).isEqualTo(2)
     }
+
+    @Test
+    fun `algoritmos desconhecidos sao rejeitados`() {
+        val unsupportedKdf = envelopeJson().apply { getJSONObject("kdf").put("algorithm", "pbkdf2_unknown") }
+        val unsupportedCipher = envelopeJson().apply { getJSONObject("cipher").put("algorithm", "aes_unknown") }
+
+        assertThat(decodeFailure(unsupportedKdf)).isInstanceOf(BackupFormatException::class.java)
+        assertThat(decodeFailure(unsupportedCipher)).isInstanceOf(BackupFormatException::class.java)
+    }
+
+    @Test
+    fun `salt e iv com tamanho incorreto sao rejeitados`() {
+        val invalidSalt =
+            envelopeJson().apply {
+                getJSONObject("kdf").put("salt", BackupCrypto.encodeBase64(ByteArray(15)))
+            }
+        val invalidIv =
+            envelopeJson().apply {
+                getJSONObject("cipher").put("iv", BackupCrypto.encodeBase64(ByteArray(11)))
+            }
+
+        assertThat(decodeFailure(invalidSalt)).isInstanceOf(BackupFormatException::class.java)
+        assertThat(decodeFailure(invalidIv)).isInstanceOf(BackupFormatException::class.java)
+    }
+
+    @Test
+    fun `payload menor que a tag gcm e rejeitado`() {
+        val invalidPayload = envelopeJson().put("payload", BackupCrypto.encodeBase64(ByteArray(15)))
+
+        assertThat(decodeFailure(invalidPayload)).isInstanceOf(BackupFormatException::class.java)
+    }
+
+    private fun decodeFailure(json: JSONObject): Throwable? =
+        runCatching {
+            BackupFormat.decodeEnvelope(json.toString().toByteArray(Charsets.UTF_8))
+        }.exceptionOrNull()
 
     /** O envelope serializado, como o app o grava em disco. */
     private fun envelopeJson(): JSONObject {

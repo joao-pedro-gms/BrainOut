@@ -1,9 +1,13 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateUsernameException
@@ -16,10 +20,11 @@ import java.util.UUID
  *
  * Cobre:
  * - Round-trip User ↔ UserEntity via `findByUsername`/`findById`.
- * - `save` lança [DuplicateUsernameException] quando o DAO simula
- *   violação de `UNIQUE`.
- * - Trim do e-mail nas buscas.
+ * - `save` traduz violação de unicidade do username.
+ * - Trim do username nas buscas.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], manifest = Config.NONE)
 class UserRepositoryImplTest {
     @Test
     fun `save persists a User and findByUsername returns it`() =
@@ -65,7 +70,7 @@ class UserRepositoryImplTest {
         runTest {
             val dao =
                 FakeUserDao().apply {
-                    nextInsertError = FakeUserDao.UNIQUE_EMAIL_VIOLATION
+                    nextInsertError = FakeUserDao.UNIQUE_USERNAME_VIOLATION
                 }
             val repository = UserRepositoryImpl(dao)
 
@@ -76,6 +81,18 @@ class UserRepositoryImplTest {
 
             assertThat(thrown).isInstanceOf(DuplicateUsernameException::class.java)
             assertThat((thrown as DuplicateUsernameException).username).isEqualTo("joao")
+        }
+
+    @Test
+    fun `save propaga violacao de chave primaria sem reclassificar como username duplicado`() =
+        runTest {
+            val constraint = SQLiteConstraintException("UNIQUE constraint failed: users.id")
+            val dao = FakeUserDao().apply { nextInsertError = constraint }
+            val repository = UserRepositoryImpl(dao)
+
+            val thrown = runCatching { repository.save(sampleUser()) }.exceptionOrNull()
+
+            assertThat(thrown).isSameInstanceAs(constraint)
         }
 
     @Test
@@ -132,7 +149,7 @@ class UserRepositoryImplTest {
         override suspend fun findById(id: String): UserEntity? = storage[id]
 
         override suspend fun findByUsername(username: String): UserEntity? =
-            storage.values.firstOrNull { it.username.equals(username, ignoreCase = true) }
+            storage.values.firstOrNull { it.username == username }
 
         override suspend fun insert(user: UserEntity) {
             nextInsertError?.let {
@@ -144,10 +161,9 @@ class UserRepositoryImplTest {
         }
 
         companion object {
-            val UNIQUE_EMAIL_VIOLATION: Throwable =
-                RuntimeException(
-                    "android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: users.username " +
-                        "(code 2067 SQLITE_CONSTRAINT_UNIQUE)",
+            val UNIQUE_USERNAME_VIOLATION: Throwable =
+                SQLiteConstraintException(
+                    "UNIQUE constraint failed: users.username (code 2067 SQLITE_CONSTRAINT_UNIQUE)",
                 )
         }
     }

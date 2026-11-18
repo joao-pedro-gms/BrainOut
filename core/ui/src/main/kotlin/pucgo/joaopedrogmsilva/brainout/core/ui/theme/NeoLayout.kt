@@ -13,7 +13,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 
 /**
  * Faixa de largura da janela, pelos breakpoints de [NeoLayout].
@@ -151,7 +150,7 @@ fun NeoWindowInfo.Companion.fromSize(
  * que ele renderiza é a geometria mais apertada — a que nenhuma tela pode
  * atravessar.
  */
-val DefaultNeoWindowInfo: NeoWindowInfo = NeoWindowInfo.fromSize(width = 0.dp, height = 0.dp)
+val DefaultNeoWindowInfo: NeoWindowInfo = NeoWindowInfo.fromSize(width = NeoSpacing.none, height = NeoSpacing.none)
 
 /**
  * A janela disponível, para leitura em qualquer ponto da composição.

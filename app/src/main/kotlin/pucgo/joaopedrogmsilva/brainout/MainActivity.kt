@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
@@ -149,32 +150,10 @@ private fun MainRoot(
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        // Falha ao ler a sessão (DataStore ou Room) não pode deixar a
-        // tela presa no spinner: a corrotina do `LaunchedEffect` morre
-        // com a exceção, `startDestination` continua `null` e o
-        // `LoadingIndicator` fica na tela para sempre. O fallback é o
-        // Splash — o caminho seguro, que pede o login dentro dele.
-        val hasActiveUser: Boolean =
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    activeUserProvider.currentActiveUser() != null
-                }
-            }.getOrElse { error ->
-                Log.w(TAG, "Falha ao resolver a sessão ativa; indo para o Splash", error)
-                false
+        startDestination =
+            resolveStartDestination {
+                activeUserProvider.currentActiveUser() != null
             }
-        // Rota inicial resolvida **uma** vez, direto para o grafo que o
-        // `NavHost` entende. `Home` não existe como destino de topo — é
-        // a tela de dentro do `MainGraph` —, então o sentinel "Home" não
-        // precisa atravessar esta fronteira.
-        val destination =
-            if (hasActiveUser) {
-                BrainOutRoutes.MainGraph
-            } else {
-                BrainOutRoutes.Splash
-            }
-        Log.d(TAG, "Sessão ativa encontrada=$hasActiveUser -> Rota inicial: $destination")
-        startDestination = destination
     }
 
     when (val current = startDestination) {
@@ -187,4 +166,19 @@ private fun MainRoot(
                 startDestination = current,
             )
     }
+}
+
+internal suspend fun resolveStartDestination(hasActiveUser: suspend () -> Boolean): String {
+    val activeUser =
+        try {
+            withContext(Dispatchers.IO) { hasActiveUser() }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.w(TAG, "Falha ao resolver a sessão ativa; indo para o Splash", error)
+            false
+        }
+    val destination = if (activeUser) BrainOutRoutes.MainGraph else BrainOutRoutes.Splash
+    Log.d(TAG, "Sessão ativa encontrada=$activeUser -> Rota inicial: $destination")
+    return destination
 }

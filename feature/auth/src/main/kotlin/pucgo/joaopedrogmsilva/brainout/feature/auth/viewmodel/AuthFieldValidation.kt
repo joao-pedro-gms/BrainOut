@@ -11,14 +11,14 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.MIN_PASSWORD_LENGTH
 // ViewModel orquestra a submissão; estas funções apenas dizem qual
 // campo está inválido.
 //
-// A validação autoritativa de e-mail continua sendo a do
+// A validação autoritativa do nome de usuário continua sendo a do
 // `User.requireValidUsername` no caso de uso — aqui só se decide se a
 // submissão deve prosseguir ou se o erro aparece inline no campo.
 
 /**
  * Valida o formulário de login.
  *
- * O primeiro campo inválido na ordem (e-mail, senha) define o erro
+ * O primeiro campo inválido na ordem (nome de usuário, senha) define o erro
  * exibido.
  */
 internal fun validateLoginFields(state: AuthUiState): FieldErrors {
@@ -33,8 +33,8 @@ internal fun validateLoginFields(state: AuthUiState): FieldErrors {
 
 /**
  * Mesma regra de [validateLoginFields] para o formulário de cadastro,
- * que acrescenta nome e confirmação de senha. O primeiro campo inválido
- * na ordem (nome, e-mail, senha, confirmação) define o erro exibido.
+ * que acrescenta confirmação de senha. O primeiro campo inválido
+ * na ordem (nome de usuário, senha, confirmação) define o erro exibido.
  */
 internal fun validateRegisterFields(state: AuthUiState): FieldErrors {
     val usernameError = validateUsernameFormat(state.username)
@@ -48,7 +48,7 @@ internal fun validateRegisterFields(state: AuthUiState): FieldErrors {
     }
 }
 
-/** E-mail vazio ou fora do formato aceito pelo domínio. */
+/** Nome de usuário vazio ou fora do formato aceito pelo domínio. */
 internal fun validateUsernameFormat(username: String): AuthErrorType? {
     val trimmed = username.trim()
     return when {

@@ -50,8 +50,8 @@ class PasswordPolicyTest {
 
             val erros =
                 listOf(
-                    erroDe { createUser(EMAIL, curta) },
-                    erroDe { authenticate(EMAIL, curta) },
+                    erroDe { createUser(USERNAME, curta) },
+                    erroDe { authenticate(USERNAME, curta) },
                     erroDe { exportBackup(ByteArrayOutputStream(), curta) },
                     erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), curta) },
                 )
@@ -70,19 +70,19 @@ class PasswordPolicyTest {
             val noLimite = "a".repeat(MIN_PASSWORD_LENGTH)
             val stored =
                 User.create(
-                    username = EMAIL,
+                    username = USERNAME,
                     passwordHash = "hashed::fixture",
                 )
-            coEvery { createRepository.findByUsername(EMAIL) } returns null
+            coEvery { createRepository.findByUsername(USERNAME) } returns null
             coEvery { createRepository.save(any()) } answers { firstArg() }
             coEvery { hasher.hash(any()) } returns "hashed::fixture"
-            coEvery { authRepository.findByUsername(EMAIL) } returns stored
+            coEvery { authRepository.findByUsername(USERNAME) } returns stored
             coEvery { hasher.verify(any(), any()) } returns true
 
             val erros =
                 listOf(
-                    erroDe { createUser(EMAIL, noLimite) },
-                    erroDe { authenticate(EMAIL, noLimite) },
+                    erroDe { createUser(USERNAME, noLimite) },
+                    erroDe { authenticate(USERNAME, noLimite) },
                     erroDe { exportBackup(ByteArrayOutputStream(), noLimite) },
                     erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), noLimite) },
                 )
@@ -95,8 +95,8 @@ class PasswordPolicyTest {
         runTest {
             val curta = "a".repeat(MIN_PASSWORD_LENGTH - 1)
 
-            val contaCadastro = erroDe { createUser(EMAIL, curta) }?.message
-            val contaLogin = erroDe { authenticate(EMAIL, curta) }?.message
+            val contaCadastro = erroDe { createUser(USERNAME, curta) }?.message
+            val contaLogin = erroDe { authenticate(USERNAME, curta) }?.message
             val backupExport = erroDe { exportBackup(ByteArrayOutputStream(), curta) }?.message
             val backupRestaura = erroDe { restoreBackup(ByteArrayInputStream(ByteArray(0)), curta) }?.message
 
@@ -110,7 +110,6 @@ class PasswordPolicyTest {
     private suspend fun erroDe(operacao: suspend () -> Unit): Throwable? = runCatching { operacao() }.exceptionOrNull()
 
     private companion object {
-        const val NAME: String = "João Pedro"
-        const val EMAIL: String = "joao"
+        const val USERNAME: String = "joao"
     }
 }

@@ -9,8 +9,8 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
 
 /**
- * Estado da sessão ativa usado pela [HomeScreen] para saudação,
- * monograma e badge de papel.
+ * Estado da sessão ativa usado pela [HomeScreen] para saudação e
+ * monograma.
  */
 sealed interface HomeUserState {
     data object Loading : HomeUserState

@@ -87,6 +87,33 @@ class BackupViewModelTest {
         }
 
     @Test
+    fun `seletor de destino recebe a senha temporaria preparada em memoria`() =
+        runTest(dispatcher) {
+            val viewModel = newViewModel()
+            viewModel.prepareExport(PASSPHRASE)
+
+            viewModel.export(EXPORT_URI)
+            val state = viewModel.state.first { it.successType != null }
+
+            assertThat(state.successType).isEqualTo(BackupSuccessType.Exported)
+            assertThat(repository.exportedPassphrase).isEqualTo(PASSPHRASE)
+        }
+
+    @Test
+    fun `seletor cancelado nao deixa senha pendente para exportacao posterior`() =
+        runTest(dispatcher) {
+            val viewModel = newViewModel()
+            viewModel.prepareExport(PASSPHRASE)
+            viewModel.cancelPendingExport()
+
+            viewModel.export(EXPORT_URI)
+            val state = viewModel.state.first { it.errorType != null }
+
+            assertThat(state.errorType).isEqualTo(BackupErrorType.ExportFailed)
+            assertThat(repository.exportedPassphrase).isNull()
+        }
+
+    @Test
     fun `arquivo invalido e reportado como erro de formato`() =
         runTest(dispatcher) {
             repository.restoreError = BackupFormatException("formato")
@@ -146,6 +173,18 @@ class BackupViewModelTest {
             val state = viewModel.state.first { it.errorType != null }
 
             assertThat(state.errorType).isEqualTo(BackupErrorType.RestoreFailed)
+        }
+
+    @Test
+    fun `falha de backup durante exportacao e reportada como erro de exportacao`() =
+        runTest(dispatcher) {
+            repository.exportError = BackupRestoreException("provedor indisponivel")
+            val viewModel = newViewModel()
+
+            viewModel.export(EXPORT_URI, PASSPHRASE)
+            val state = viewModel.state.first { it.errorType != null }
+
+            assertThat(state.errorType).isEqualTo(BackupErrorType.ExportFailed)
         }
 
     @Test

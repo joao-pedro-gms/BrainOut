@@ -58,6 +58,7 @@ class BackupViewModel
         val state: StateFlow<BackupUiState> = _state.asStateFlow()
 
         private var pendingRestore: PendingRestore? = null
+        private var pendingExportPassphrase: String? = null
 
         private data class PendingRestore(
             val uri: Uri,
@@ -113,8 +114,37 @@ class BackupViewModel
             restore(pending.uri, pending.passphrase, sourceUserId, pending.ownerId)
         }
 
+        /** Guarda a senha apenas em memória enquanto o seletor de destino está aberto. */
+        fun prepareExport(passphrase: String) {
+            pendingExportPassphrase = passphrase
+        }
+
+        /** Descarta a senha caso o usuário cancele a criação do arquivo. */
+        fun cancelPendingExport() {
+            pendingExportPassphrase = null
+        }
+
+        /** Consome a senha temporária após o seletor de destino retornar. */
+        fun export(uri: Uri) {
+            val passphrase = pendingExportPassphrase
+            pendingExportPassphrase = null
+            if (passphrase == null) {
+                _state.update {
+                    it.copy(
+                        isBusy = false,
+                        errorType = BackupErrorType.ExportFailed,
+                        successType = null,
+                        summary = null,
+                    )
+                }
+                return
+            }
+            export(uri, passphrase)
+        }
+
         override fun onCleared() {
             cancelRestore()
+            cancelPendingExport()
             super.onCleared()
         }
 
@@ -229,7 +259,12 @@ class BackupViewModel
                 is UnsupportedBackupVersionException -> BackupErrorType.UnsupportedVersion
                 is BackupIntegrityException -> BackupErrorType.Integrity
                 is BackupTooLargeException -> BackupErrorType.TooLarge
-                is BackupRestoreException -> BackupErrorType.RestoreFailed
+                is BackupRestoreException ->
+                    if (exporting) {
+                        BackupErrorType.ExportFailed
+                    } else {
+                        BackupErrorType.RestoreFailed
+                    }
                 is BackupException -> BackupErrorType.Unexpected
                 else -> if (exporting) BackupErrorType.ExportFailed else BackupErrorType.Unexpected
             }

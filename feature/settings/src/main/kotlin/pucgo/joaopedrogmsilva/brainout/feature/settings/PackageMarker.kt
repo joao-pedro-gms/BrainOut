@@ -4,6 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.settings
 /**
  * Marcador de pacote do módulo :feature:settings.
  *
- * Tela de Configurações virá em E1.3 (esqueleto) e será refinada em E2.x.
+ * Agrupa a tela de configurações e o fluxo local de backup.
  */
 internal const val FEATURE_SETTINGS_PACKAGE: String = "pucgo.joaopedrogmsilva.brainout.feature.settings"

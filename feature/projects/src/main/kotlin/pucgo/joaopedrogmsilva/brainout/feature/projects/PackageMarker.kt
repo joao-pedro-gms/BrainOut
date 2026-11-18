@@ -4,6 +4,6 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects
 /**
  * Marcador de pacote do módulo :feature:projects.
  *
- * Telas Home (lista) e ProjectDetail virão em E1.3 / E1.8 / E2.x.
+ * Telas locais de projetos (Home e detalhe) do módulo :feature:projects.
  */
 internal const val FEATURE_PROJECTS_PACKAGE: String = "pucgo.joaopedrogmsilva.brainout.feature.projects"

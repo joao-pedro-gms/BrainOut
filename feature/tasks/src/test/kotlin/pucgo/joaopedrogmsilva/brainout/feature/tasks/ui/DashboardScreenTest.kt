@@ -8,22 +8,32 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasTextExactly
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBannerTestTags
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoWindowProvider
 
 /**
  * Verifica a renderização inicial da [DashboardContent] (E2.7):
@@ -95,6 +105,29 @@ class DashboardScreenTest {
     }
 
     @Test
+    fun `taxas ficam indisponiveis quando ainda nao existem tarefas`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    DashboardContent(
+                        state =
+                            DashboardUiState(
+                                activeProjects = 1,
+                                totalTasks = 0,
+                                weeklyCompletionPercent = 0,
+                                overallCompletionPercent = 0,
+                                isLoading = false,
+                            ),
+                    )
+                }
+            }
+        }
+
+        composeRule.onAllNodesWithText("Indisponível").assertCountEquals(2)
+        composeRule.onNodeWithText("0%").assertDoesNotExist()
+    }
+
+    @Test
     fun `estado vazio exibe empty state quando nao ha dados`() {
         composeRule.setContent {
             MaterialTheme {
@@ -142,6 +175,76 @@ class DashboardScreenTest {
     }
 
     @Test
+    fun `fontScale dois mantem textos do estado vazio dentro do cartao`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                val currentDensity = LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(currentDensity.density, 2f)) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        DashboardContent(state = DashboardUiState(isLoading = false))
+                    }
+                }
+            }
+        }
+
+        val card = composeRule.onNodeWithTag(DashboardTestTags.EMPTY).fetchSemanticsNode().boundsInRoot
+        val title = composeRule.onNodeWithText("Nada para mostrar ainda").fetchSemanticsNode().boundsInRoot
+        val body =
+            composeRule
+                .onNodeWithText("Crie projetos e tarefas para ver as estatísticas aqui.")
+                .fetchSemanticsNode()
+                .boundsInRoot
+
+        assertTrue("título deve permanecer dentro do cartão", title.top >= card.top && title.bottom <= card.bottom)
+        assertTrue("corpo deve permanecer dentro do cartão", body.top >= card.top && body.bottom <= card.bottom)
+    }
+
+    @Test
+    fun `fontScale dois mantem rotulo de carregamento dentro do container`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                val currentDensity = LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(currentDensity.density, 2f)) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        DashboardLoading()
+                    }
+                }
+            }
+        }
+
+        val container =
+            composeRule.onNodeWithTag(DashboardTestTags.LOADING).fetchSemanticsNode().boundsInRoot
+        val label = composeRule.onNodeWithText("Carregando painel").fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "rótulo deve permanecer dentro do container",
+            label.top >= container.top && label.bottom <= container.bottom,
+        )
+    }
+
+    @Test
+    fun `fontScale dois mantem legenda do grafico dentro do cartao`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                val currentDensity = LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(currentDensity.density, 2f)) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        PriorityChart(counts = listOf(1, 2, 3, 4, 5))
+                    }
+                }
+            }
+        }
+
+        val chart = composeRule.onNodeWithTag(DashboardTestTags.PRIORITY_CHART).fetchSemanticsNode().boundsInRoot
+        listOf("Tarefas por prioridade", "Baixa", "Média", "Alta", "Urgente", "Crítica").forEach { text ->
+            val bounds = composeRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+            assertTrue(
+                "$text deve permanecer dentro do cartão do gráfico",
+                bounds.top >= chart.top && bounds.bottom <= chart.bottom,
+            )
+        }
+    }
+
+    @Test
     fun `grafico com mais contagens que niveis nao estoura os rotulos`() {
         // O gráfico tem cinco níveis de prioridade; a lista de
         // contagens vem do agrupamento do Room e não tem tamanho
@@ -155,5 +258,132 @@ class DashboardScreenTest {
 
         composeRule.onNodeWithTag(DashboardTestTags.PRIORITY_CHART).assertExists()
         composeRule.onNodeWithTag(DashboardTestTags.priorityBar(4)).assertExists()
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "w393dp-h800dp")
+class DashboardCompactWidthTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun `cartoes de taxa empilham em largura compacta`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                NeoWindowProvider {
+                    Surface {
+                        DashboardContent(
+                            state =
+                                DashboardUiState(
+                                    totalTasks = 2,
+                                    weeklyCompletionPercent = 50,
+                                    overallCompletionPercent = 50,
+                                    isLoading = false,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+
+        val weekly = composeRule.onNodeWithTag(DashboardTestTags.WEEKLY_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        val overall = composeRule.onNodeWithTag(DashboardTestTags.OVERALL_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        assertTrue("taxas devem ficar em linhas distintas na largura compacta", overall.top > weekly.top)
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "w840dp-h800dp")
+class DashboardWideWidthTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun `cartoes de taxa permanecem lado a lado em largura expandida`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                NeoWindowProvider {
+                    Surface {
+                        DashboardContent(
+                            state =
+                                DashboardUiState(
+                                    totalTasks = 2,
+                                    weeklyCompletionPercent = 50,
+                                    overallCompletionPercent = 50,
+                                    isLoading = false,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+
+        val weekly = composeRule.onNodeWithTag(DashboardTestTags.WEEKLY_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        val overall = composeRule.onNodeWithTag(DashboardTestTags.OVERALL_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        assertTrue("taxas devem compartilhar a linha em largura expandida", overall.top == weekly.top)
+        assertTrue("cartão geral deve estar à direita do semanal", overall.left > weekly.left)
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "en-rUS")
+class DashboardEnglishScreenTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun `taxas indisponiveis usam traducao em ingles`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface {
+                    DashboardContent(
+                        state = DashboardUiState(activeProjects = 1, totalTasks = 0, isLoading = false),
+                    )
+                }
+            }
+        }
+
+        composeRule.onAllNodesWithText("Unavailable").assertCountEquals(2)
+        composeRule.onNodeWithText("0%").assertDoesNotExist()
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "w840dp-h800dp")
+class DashboardLargeFontScaleTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun `cartoes de taxa empilham com fonte grande mesmo em tela larga`() {
+        composeRule.setContent {
+            BrainOutTheme {
+                val currentDensity = LocalDensity.current
+                val largeFontConfiguration = Configuration(LocalConfiguration.current).apply { fontScale = 1.5f }
+                CompositionLocalProvider(
+                    LocalConfiguration provides largeFontConfiguration,
+                    LocalDensity provides Density(currentDensity.density, 1.5f),
+                ) {
+                    NeoWindowProvider {
+                        Surface {
+                            DashboardContent(
+                                state =
+                                    DashboardUiState(
+                                        totalTasks = 2,
+                                        weeklyCompletionPercent = 50,
+                                        overallCompletionPercent = 50,
+                                        isLoading = false,
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        val weekly = composeRule.onNodeWithTag(DashboardTestTags.WEEKLY_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        val overall = composeRule.onNodeWithTag(DashboardTestTags.OVERALL_RATE_CARD).fetchSemanticsNode().boundsInRoot
+        assertTrue("fonte grande deve empilhar as taxas", overall.top > weekly.top)
     }
 }

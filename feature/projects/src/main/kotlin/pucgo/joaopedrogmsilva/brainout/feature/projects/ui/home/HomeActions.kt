@@ -50,8 +50,8 @@ private fun runAction(
             Log.w(TAG, "Nome de tag duplicado: " + e.name)
             errorSink.value = HomeErrorType.DuplicateTagName
         } catch (e: OwnershipException) {
-            // DEF-36 — o domínio recusou a operação: o papel do usuário
-            // ativo não tem a permissão exigida.
+            // DEF-36 — o domínio recusou a operação por falta de acesso
+            // da sessão ativa ao recurso solicitado.
             Log.w(TAG, "Operacao recusada por falta de permissao: " + e.message)
             errorSink.value = HomeErrorType.PermissionDenied
         } catch (e: Throwable) {

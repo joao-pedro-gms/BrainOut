@@ -14,8 +14,8 @@ import javax.inject.Inject
  * (marco E3.6). Cancelar após a remoção é sempre seguro — para o
  * scheduler é no-op quando não há agendamento pendente.
  *
- * A remoção exige [Permission.DELETE_TASK]: a matriz de papéis dá a
- * permissão de edição a `Member`, mas não a de exclusão (DEF-36).
+ * A operação exige uma conta ativa. O repositório valida que a tarefa
+ * pertence à conta atual antes de removê-la.
  */
 class DeleteTaskUseCase
     @Inject

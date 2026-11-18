@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +51,7 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
@@ -61,7 +66,7 @@ import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
  * - `errorMessage != null` → banner com "Tentar novamente" (prioridade sobre
  *   empty state para evitar lista vazia enganosa).
  * - lista vazia → cartão com mensagem explicando o que fazer.
- * - lista populada → [LazyColumn] de cards, cada card exibe título,
+ * - lista populada → lista de cards em coluna ou grade adaptativa, cada card exibe título,
  *   projeto, prioridade e status via chips.
  *
  * DEF-22 — a tela passou a usar `Scaffold` + [TasksTopBar]: antes ela não
@@ -123,50 +128,87 @@ internal fun TasksContent(
     onRetry: () -> Unit = {},
     onDismissError: () -> Unit = {},
 ) {
-    LazyColumn(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .neoPageGutter(margin = LocalNeoWindowInfo.current.margin, vertical = NeoSpacing.none)
-                .testTag(TasksTestTags.LIST),
-        verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
-        contentPadding = PaddingValues(vertical = NeoSpacing.sm),
-    ) {
-        item { NeoPriorityLegend() }
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item {
-            when {
-                state.errorMessage != null -> TasksErrorBanner(state.errorMessage, onRetry, onDismissError)
-                state.isLoading -> {
-                    val loadingLabel = stringResource(id = R.string.tasks_loading_aria_label)
-                    CircularProgressIndicator(
-                        modifier =
-                            Modifier
-                                .testTag(TasksTestTags.LOADING)
-                                // O indicador é visual — um spinner nu não
-                                // anuncia nada. O `contentDescription` dá ao
-                                // TalkBack o que está acontecendo, sem
-                                // alterar o desenho.
-                                .semantics { contentDescription = loadingLabel },
-                    )
-                }
-                state.rows.isEmpty() ->
-                    TasksEmptyState(Modifier.fillMaxWidth().testTag(TasksTestTags.EMPTY))
+    val windowInfo = LocalNeoWindowInfo.current
+    val listModifier =
+        modifier
+            .fillMaxSize()
+            .neoPageGutter(margin = windowInfo.margin, vertical = NeoSpacing.none)
+            .testTag(TasksTestTags.LIST)
+
+    if (windowInfo.isWide && !windowInfo.forceSingleColumn) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = NeoLayout.mediumMargin * 11),
+            modifier = listModifier,
+            horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            contentPadding = PaddingValues(vertical = NeoSpacing.sm),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) { NeoPriorityLegend() }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             }
-        }
-        if (!state.isLoading && state.errorMessage == null) {
-            items(items = state.rows, key = { it.task.id }) { row ->
-                Box(
-                    Modifier.animateItem(
-                        fadeInSpec = tween(NeoMotion.selection),
-                        fadeOutSpec = tween(NeoMotion.selection),
-                        placementSpec = tween(NeoMotion.selection),
-                    ),
-                ) {
-                    TaskCard(row)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TasksStateContent(state, onRetry, onDismissError)
+            }
+            if (!state.isLoading && state.errorMessage == null) {
+                items(items = state.rows, key = { it.task.id }) { row ->
+                    Box(
+                        Modifier.animateItem(
+                            fadeInSpec = tween(NeoMotion.selection),
+                            fadeOutSpec = tween(NeoMotion.selection),
+                            placementSpec = tween(NeoMotion.selection),
+                        ),
+                    ) {
+                        TaskCard(row)
+                    }
                 }
             }
         }
+    } else {
+        LazyColumn(
+            modifier = listModifier,
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+            contentPadding = PaddingValues(vertical = NeoSpacing.sm),
+        ) {
+            item { NeoPriorityLegend() }
+            item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
+            item { TasksStateContent(state, onRetry, onDismissError) }
+            if (!state.isLoading && state.errorMessage == null) {
+                items(items = state.rows, key = { it.task.id }) { row ->
+                    Box(
+                        Modifier.animateItem(
+                            fadeInSpec = tween(NeoMotion.selection),
+                            fadeOutSpec = tween(NeoMotion.selection),
+                            placementSpec = tween(NeoMotion.selection),
+                        ),
+                    ) {
+                        TaskCard(row)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TasksStateContent(
+    state: TasksUiState,
+    onRetry: () -> Unit,
+    onDismissError: () -> Unit,
+) {
+    when {
+        state.errorMessage != null -> TasksErrorBanner(state.errorMessage, onRetry, onDismissError)
+        state.isLoading -> {
+            val loadingLabel = stringResource(id = R.string.tasks_loading_aria_label)
+            CircularProgressIndicator(
+                modifier =
+                    Modifier
+                        .testTag(TasksTestTags.LOADING)
+                        .semantics { contentDescription = loadingLabel },
+            )
+        }
+        state.rows.isEmpty() ->
+            TasksEmptyState(Modifier.fillMaxWidth().testTag(TasksTestTags.EMPTY))
     }
 }
 

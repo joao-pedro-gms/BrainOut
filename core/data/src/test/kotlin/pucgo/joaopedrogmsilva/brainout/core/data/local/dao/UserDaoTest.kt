@@ -25,8 +25,8 @@ import java.time.Instant
  *
  * Cobre os caminhos críticos:
  * - Insert + findById/findByUsername round-trip.
- * - Insert com e-mail duplicado é rejeitado.
- * - Busca case-insensitive via `LOWER(username)`.
+ * - Insert com username duplicado é rejeitado.
+ * - Busca exata por username, case-sensitive.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], manifest = Config.NONE)

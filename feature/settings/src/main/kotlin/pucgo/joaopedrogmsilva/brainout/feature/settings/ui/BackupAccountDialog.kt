@@ -8,6 +8,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
@@ -27,7 +28,9 @@ internal fun BackupAccountDialog(
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.settings_backup_select_account_help))
                 accounts.forEach { account ->
-                    TextButton(onClick = { onSelect(account.id) }) { Text(account.label) }
+                    key(account.id) {
+                        TextButton(onClick = { onSelect(account.id) }) { Text(account.label) }
+                    }
                 }
             }
         },

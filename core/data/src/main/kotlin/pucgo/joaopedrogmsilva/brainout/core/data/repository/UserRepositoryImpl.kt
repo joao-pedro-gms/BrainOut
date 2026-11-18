@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateUsernameException
@@ -22,10 +23,8 @@ class UserRepositoryImpl
         override suspend fun save(user: User): User {
             try {
                 dao.insert(UserEntity.fromDomain(user))
-            } catch (error: Exception) {
-                if (error.message?.contains("UNIQUE constraint failed: users.username") ==
-                    true
-                ) {
+            } catch (error: SQLiteConstraintException) {
+                if (error.message?.contains("UNIQUE constraint failed: users.username") == true) {
                     throw DuplicateUsernameException(user.username)
                 }
                 throw error

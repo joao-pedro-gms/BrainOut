@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,6 +52,10 @@ fun SplashScreen(
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier =
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .testTag(SplashScreenTestTags.CONTENT),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.mdPlus),
         ) {
@@ -94,6 +100,7 @@ fun SplashScreen(
  * `LOGO` marca a marca do app — o mesmo glifo que é o ícone do launcher.
  */
 object SplashScreenTestTags {
+    const val CONTENT: String = "splash_content"
     const val LOGO: String = "splash_logo"
 }
 

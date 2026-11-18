@@ -393,8 +393,8 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: OwnershipException) {
-                    // DEF-36 — o domínio recusou a exclusão: o papel do
-                    // usuário ativo não tem `DELETE_TASK`.
+                    // DEF-36 — o domínio recusou a exclusão porque a
+                    // tarefa não pertence à sessão ativa.
                     Log.w(TAG, "Exclusão de tarefa ${task.id} recusada: ${e.message}")
                     _errorMessage.update { ProjectDetailError.PermissionDenied }
                 } catch (e: Throwable) {
@@ -415,8 +415,8 @@ class ProjectDetailViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: OwnershipException) {
-                    // DEF-36 — o domínio recusou a exclusão: o papel do
-                    // usuário ativo não tem `DELETE_PROJECT`.
+                    // DEF-36 — o domínio recusou a exclusão porque o
+                    // projeto não pertence à sessão ativa.
                     Log.w(TAG, "Exclusão do projeto $projectId recusada: ${e.message}")
                     _errorMessage.update { ProjectDetailError.PermissionDenied }
                 } catch (e: Throwable) {

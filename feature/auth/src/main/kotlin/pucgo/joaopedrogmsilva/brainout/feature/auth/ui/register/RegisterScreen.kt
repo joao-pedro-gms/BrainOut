@@ -1,7 +1,5 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 // Tela de Cadastro — formulário funcional com validação (E1.6).
-// Owner/Member são selecionados via RadioButtons e mapeados para
-// UserRole do domínio.
 
 package pucgo.joaopedrogmsilva.brainout.feature.auth.ui.register
 
@@ -160,11 +158,7 @@ internal fun RegisterBody(
 }
 
 /**
- * Os campos de identidade: nome e e-mail.
- *
- * O nome é o único campo do cadastro que não tem componente próprio — o
- * `UsernameField` e o `PasswordField` são compartilhados com o login. Aqui
- * ele ganha um par, e o formulário passa a listar as suas seções.
+ * O campo de nome de usuário, compartilhado com a tela de login.
  */
 @Composable
 private fun RegisterIdentityFields(

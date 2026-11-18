@@ -234,9 +234,8 @@ class ProjectDetailViewModelTest {
         }
 
     /**
-     * DEF-36 — o domínio recusa a exclusão quando o papel do usuário
-     * ativo não tem `DELETE_PROJECT`; a tela precisa dizer isso, e não
-     * a mensagem genérica de falha.
+     * DEF-36 — o domínio recusa a exclusão quando a conta ativa não tem
+     * acesso ao projeto; a tela precisa dizer isso, e não a mensagem genérica.
      */
     @Test
     fun `exclusao recusada por falta de permissao vira erro tipado`() =

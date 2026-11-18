@@ -8,8 +8,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import pucgo.joaopedrogmsilva.brainout.core.domain.error.DuplicateTagNameException
 import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidModelException
-import pucgo.joaopedrogmsilva.brainout.core.domain.error.InvalidStateTransitionException
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Tag
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TagRepository
 
@@ -83,19 +83,18 @@ class CreateTagUseCaseTest {
         }
 
     @Test
-    fun `propaga erro do repositorio ao chamador`() =
+    fun `propaga DuplicateTagNameException do repositorio ao chamador`() =
         runTest {
-            // Índice único `(owner_id, name)` violado: a exceção de
-            // domínio sobe crua, sem conversão no caso de uso.
-            coEvery { repository.create(any()) } throws
-                InvalidStateTransitionException("Violacao de unicidade (owner_id, name)")
+            // O repositório traduz a violação do índice único para a
+            // exceção de domínio específica, que sobe sem conversão aqui.
+            coEvery { repository.create(any()) } throws DuplicateTagNameException("Trabalho")
 
             val erro =
                 runCatching {
                     useCase(ownerId = "u1", name = "Trabalho", color = "#FF8800")
                 }.exceptionOrNull()
 
-            assertThat(erro).isInstanceOf(InvalidStateTransitionException::class.java)
-            assertThat(erro?.message).contains("owner_id, name")
+            assertThat(erro).isInstanceOf(DuplicateTagNameException::class.java)
+            assertThat(erro?.message).contains("Trabalho")
         }
 }
