@@ -80,7 +80,9 @@ interface ProjectDao {
         LEFT JOIN project_tags pt ON pt.project_id = p.id
         LEFT JOIN tags t ON t.id = pt.tag_id
         WHERE p.owner_id = :ownerId
-          AND (:query = '' OR p.name LIKE '%' || :query || '%')
+          AND (
+            :query = '' OR p.name LIKE '%' || replace(replace(replace(:query, '\', '\\'), '%', '\%'), '_', '\_') || '%' ESCAPE '\'
+          )
           AND (:tagId IS NULL OR t.id = :tagId)
         ORDER BY
           CASE WHEN :sort = 'name_asc' THEN p.name END ASC,

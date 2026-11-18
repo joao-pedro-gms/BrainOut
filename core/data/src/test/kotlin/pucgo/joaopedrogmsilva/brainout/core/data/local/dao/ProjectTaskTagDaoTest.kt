@@ -55,6 +55,25 @@ class ProjectTaskTagDaoTest {
     }
 
     @Test
+    fun `busca trata percentual underscore e barra invertida como texto literal`() =
+        runTest {
+            listOf(
+                sampleProject(id = "plain-1", name = "Rascunho"),
+                sampleProject(id = "plain-2", name = "Relatório"),
+                sampleProject(id = "underscore", name = "Projeto_com_underscore"),
+                sampleProject(id = "percent", name = "Projeto%percentual"),
+                sampleProject(id = "backslash", name = "Projeto\\barra"),
+            ).forEach { projectDao.insert(it) }
+
+            suspend fun search(query: String) = projectDao.searchProjects("u-1", query, null, "created_desc").first()
+
+            assertThat(search("_").map { it.name }).containsExactly("Projeto_com_underscore")
+            assertThat(search("%").map { it.name }).containsExactly("Projeto%percentual")
+            assertThat(search("\\").map { it.name }).containsExactly("Projeto\\barra")
+            assertThat(search("Ras").map { it.name }).containsExactly("Rascunho")
+        }
+
+    @Test
     fun `project insert and findById round trip`() =
         runTest {
             val entity = sampleProject(id = "p-1", ownerId = "u-1")
