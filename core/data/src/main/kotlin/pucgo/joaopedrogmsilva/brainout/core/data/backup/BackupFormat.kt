@@ -49,8 +49,15 @@ internal object BackupFormat {
      */
     const val MAX_BACKUP_BYTES: Int = 20 * 1024 * 1024
 
-    /** Faixa aceitável para o custo do KDF declarado por um arquivo. */
-    const val MIN_KDF_ITERATIONS: Int = 1_000
+    /**
+     * Faixa aceitável para o custo do KDF declarado por um arquivo.
+     *
+     * O piso de 10.000 é deliberado: aceitar custo menor permitiria que um
+     * envelope enfraquecesse a derivação da chave do próprio arquivo. O teto
+     * existe para que um arquivo absurdo não prenda a interface por minutos
+     * de PBKDF2 antes de qualquer validação.
+     */
+    const val MIN_KDF_ITERATIONS: Int = 10_000
     const val MAX_KDF_ITERATIONS: Int = 2_000_000
 
     private const val KEY_FORMAT: String = "format"
