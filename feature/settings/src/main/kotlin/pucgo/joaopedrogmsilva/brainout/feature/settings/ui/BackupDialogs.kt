@@ -4,7 +4,10 @@ package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -124,9 +127,13 @@ private fun BackupPassphraseDialog(
     var visible by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.imePadding(),
         title = { Text(text = stringResource(id = titleRes)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+            ) {
                 Text(text = stringResource(id = messageRes))
                 BackupPasswordField(
                     value = passphraseState.passphrase,

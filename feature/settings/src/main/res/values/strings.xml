@@ -19,13 +19,13 @@
     <string name="settings_section_backup">Backup</string>
     <string name="settings_option_export_backup">Exportar backup</string>
     <string name="settings_option_restore_backup">Restaurar backup</string>
-    <string name="settings_backup_description">Copia os dados deste aparelho para um arquivo cifrado. O arquivo é protegido por senha e não é enviado para nenhum servidor.</string>
+    <string name="settings_backup_description">Copia os dados da conta conectada deste aparelho para um arquivo cifrado. O arquivo é protegido por senha e não é enviado para nenhum servidor.</string>
     <string name="settings_backup_export_dialog_title">Proteger o backup</string>
-    <string name="settings_backup_export_dialog_message">O backup contém apenas os dados da conta conectada. Restaurar substitui seus projetos, tarefas e etiquetas, preservando sua senha e as outras contas.</string>
+    <string name="settings_backup_export_dialog_message">Este backup contém somente os dados da conta conectada. A restauração substitui os projetos, as tarefas e as etiquetas dessa conta, preservando as credenciais e as outras contas.</string>
     <string name="settings_backup_restore_dialog_title">Abrir o backup</string>
-    <string name="settings_backup_restore_dialog_message">Informe a senha usada na exportação. As contas que ainda não existirem neste aparelho passam a usar esta senha.</string>
+    <string name="settings_backup_restore_dialog_message">Informe a senha usada para cifrar o backup. Ela não altera a senha da sua conta.</string>
     <string name="settings_backup_replace_title">Substituir os dados locais?</string>
-    <string name="settings_backup_replace_message">A restauração apaga os projetos, as tarefas e as contas deste aparelho e substitui tudo pelo conteúdo do arquivo. Não há como desfazer.</string>
+    <string name="settings_backup_replace_message">Depois de escolher o arquivo e uma conta dele, somente os projetos, as tarefas e as etiquetas da conta conectada serão substituídos. As credenciais dela e as outras contas deste aparelho serão preservadas.</string>
     <string name="settings_backup_pwd_label">Senha do backup</string>
     <string name="settings_backup_pwd_confirm_label">Confirmar senha</string>
     <string name="settings_backup_visibility_show">Mostrar a senha</string>

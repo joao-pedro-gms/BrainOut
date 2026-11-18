@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -174,6 +175,27 @@ class BackupSectionTest {
         // dele para reencontrar o arquivo exportado.
         assertThat(defaultBackupFileName(LocalDate.of(2026, 10, 20)))
             .isEqualTo("brainout-backup-2026-10-20.bnbak")
+    }
+
+    @Test
+    fun `lista longa de contas rola ate a opcao final`() {
+        val accounts = (1..30).map { index -> BackupAccountOption("account-$index", "Conta $index") }
+        var selectedAccount: String? = null
+        composeRule.setContent {
+            BrainOutTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    BackupAccountDialog(
+                        accounts = accounts,
+                        onSelect = { selectedAccount = it },
+                        onCancel = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Conta 30").performScrollTo().performClick()
+
+        assertThat(selectedAccount).isEqualTo("account-30")
     }
 
     private fun setContent(viewModel: BackupViewModel = newViewModel()) {
