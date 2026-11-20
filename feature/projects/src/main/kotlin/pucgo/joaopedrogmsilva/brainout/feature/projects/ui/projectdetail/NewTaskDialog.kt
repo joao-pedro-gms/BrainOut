@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,9 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
@@ -94,7 +98,12 @@ internal fun NewTaskDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(title, priority, dueDate) },
-                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
+                // o `TextButton` padrão do M3 marca 40dp.
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
             ) {
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
             }
@@ -102,7 +111,11 @@ internal fun NewTaskDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_CANCEL),
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(ProjectDetailTestTags.NEW_TASK_CANCEL),
             ) {
                 Text(text = stringResource(id = R.string.project_detail_new_task_cancel))
             }
@@ -130,7 +143,13 @@ private fun TaskPriorityField(
     Box {
         OutlinedButton(
             onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth().testTag("project_detail_new_task_priority_field"),
+            // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
+            // o `OutlinedButton` padrão do M3 marca 40dp.
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = NeoSizes.touchMin)
+                    .testTag("project_detail_new_task_priority_field"),
         ) {
             Text(
                 text =
@@ -149,8 +168,24 @@ private fun TaskPriorityField(
                         onPriorityChange(option)
                         expanded = false
                     },
+                    // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                    modifier = Modifier.heightIn(min = NeoSizes.touchMin),
                 )
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NewTaskDialogPreview() {
+    BrainOutTheme {
+        androidx.compose.material3.Surface {
+            NewTaskDialog(
+                onDismiss = {},
+                onConfirm = { _, _, _ -> },
+                evaluateDeadline = { DeadlineInfo(isBusinessDay = true, nextHoliday = null) },
+            )
         }
     }
 }

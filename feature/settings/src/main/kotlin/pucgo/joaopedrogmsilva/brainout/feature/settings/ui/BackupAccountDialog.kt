@@ -2,6 +2,7 @@
 package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -12,6 +13,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.BackupAccountOption
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 
 /** A escolha é a confirmação final da substituição dos dados da conta conectada. */
@@ -29,7 +31,12 @@ internal fun BackupAccountDialog(
                 Text(stringResource(R.string.settings_backup_select_account_help))
                 accounts.forEach { account ->
                     key(account.id) {
-                        TextButton(onClick = { onSelect(account.id) }) { Text(account.label) }
+                        // E4.4/WCAG 2.5.5: `TextButton` padrão tem 40dp;
+                        // o alvo mínimo da identidade é `NeoSizes.touchMin`.
+                        TextButton(
+                            onClick = { onSelect(account.id) },
+                            modifier = Modifier.heightIn(min = NeoSizes.touchMin),
+                        ) { Text(account.label) }
                     }
                 }
             }
@@ -38,6 +45,7 @@ internal fun BackupAccountDialog(
         dismissButton = {
             TextButton(
                 onClick = onCancel,
+                modifier = Modifier.heightIn(min = NeoSizes.touchMin),
             ) { Text(stringResource(R.string.settings_backup_cta_cancel)) }
         },
     )

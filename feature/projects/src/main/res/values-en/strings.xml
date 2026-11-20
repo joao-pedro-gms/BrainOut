@@ -61,8 +61,12 @@
     <string name="home_create_project_add_tag">+ Add tag</string>
     <string name="home_create_project_add_tag_title">New tag</string>
     <string name="home_create_project_add_tag_name_label">Tag name</string>
-    <string name="home_create_project_add_tag_color_label">Color (#RRGGBB)</string>
     <string name="home_create_project_confirm">Create</string>
+    <!-- Tag management surface (existing chips + "New tag" section). -->
+    <string name="home_tag_manage_title">Manage tags</string>
+    <string name="home_tag_manage_name_required">Enter a tag name.</string>
+    <string name="home_tag_manage_color_label">Color</string>
+    <string name="home_tag_manage_tag_selected">Selected</string>
     <string name="home_edit_project_action">Edit</string>
     <string name="home_edit_project_title">Edit project</string>
     <string name="home_edit_project_confirm">Save</string>

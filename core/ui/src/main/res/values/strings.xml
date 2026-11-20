@@ -20,4 +20,17 @@
     <string name="neo_expanded">Expandido</string>
     <string name="neo_collapsed">Recolhido</string>
     <string name="neo_back">Voltar</string>
+    <string name="neo_color_swatch_selected">Selecionada</string>
+    <string name="neo_tag_color_violet">Violeta</string>
+    <string name="neo_tag_color_purple">Roxo</string>
+    <string name="neo_tag_color_red">Vermelho</string>
+    <string name="neo_tag_color_orange">Laranja</string>
+    <string name="neo_tag_color_yellow">Amarelo</string>
+    <string name="neo_tag_color_amber">Âmbar</string>
+    <string name="neo_tag_color_mint">Menta</string>
+    <string name="neo_tag_color_green">Verde</string>
+    <string name="neo_tag_color_light_blue">Azul-claro</string>
+    <string name="neo_tag_color_blue">Azul</string>
+    <string name="neo_tag_color_pink">Rosa</string>
+    <string name="neo_tag_color_graphite">Grafite</string>
 </resources>

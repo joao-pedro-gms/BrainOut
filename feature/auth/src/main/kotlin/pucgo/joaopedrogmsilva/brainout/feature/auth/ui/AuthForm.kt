@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,8 +28,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
 import pucgo.joaopedrogmsilva.brainout.feature.auth.viewmodel.AuthErrorType
 
 // Peças compartilhadas pelos formulários de Login e Cadastro.
@@ -62,6 +65,10 @@ internal fun AuthScreenScaffold(
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
+                // A mesma receita de cor das barras de Tasks e
+                // Configurações — sem isso o fundo ficava o padrão do
+                // Material (`surfaceContainer`) em vez do fundo Neo.
+                colors = neoTopAppBarColors(),
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -144,6 +151,11 @@ internal fun AuthSubmitButton(
         modifier =
             Modifier
                 .fillMaxWidth()
+                // E4.4/WCAG 2.5.5: o `Button` padrão do Material 3 tem
+                // 40dp de altura; o alvo de toque mínimo da identidade é
+                // `NeoSizes.touchMin` (48dp) — mesmo padrão dos chips de
+                // `HomeFilterRow`.
+                .heightIn(min = NeoSizes.touchMin)
                 .testTag(testTag),
     ) {
         if (isLoading) {
@@ -178,6 +190,9 @@ internal fun AuthSecondaryButton(
         modifier =
             Modifier
                 .fillMaxWidth()
+                // E4.4/WCAG 2.5.5: mesmo motivo do `AuthSubmitButton` —
+                // 40dp padrão do Material 3 contra 48dp do token.
+                .heightIn(min = NeoSizes.touchMin)
                 .testTag(testTag),
     ) {
         Text(

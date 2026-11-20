@@ -33,12 +33,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -255,3 +257,29 @@ private fun TaskStatus.menuTag(): String =
         TaskStatus.DOING -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DOING
         TaskStatus.DONE -> ProjectDetailTestTags.TASK_ITEM_MENU_MOVE_DONE
     }
+
+@Preview(showBackground = true)
+@Composable
+private fun TaskRowPreview() {
+    BrainOutTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            TaskRow(
+                task =
+                    Task.create(
+                        projectId = "preview",
+                        title = "Revisar escopo do projeto",
+                        priority = TaskPriority.HIGH,
+                    ),
+                actions =
+                    ProjectDetailActions(
+                        onRetry = {},
+                        onDismissError = {},
+                        onChangeStatus = { _, _ -> },
+                        onDeleteTask = {},
+                        onRenameTask = {},
+                        onChangePriority = { _, _ -> },
+                    ),
+            )
+        }
+    }
+}
