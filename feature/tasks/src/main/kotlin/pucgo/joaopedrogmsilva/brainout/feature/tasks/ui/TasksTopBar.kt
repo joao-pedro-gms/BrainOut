@@ -16,8 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoBackButton
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
+import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
  * Barra superior das abas globais com `navigationIcon` de voltar.
@@ -54,4 +57,15 @@ internal fun TasksTopBar(
                 navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
             ),
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TasksTopBarPreview() {
+    BrainOutTheme {
+        TasksTopBar(
+            titleRes = R.string.tasks_screen_title,
+            onBackClicked = {},
+        )
+    }
 }

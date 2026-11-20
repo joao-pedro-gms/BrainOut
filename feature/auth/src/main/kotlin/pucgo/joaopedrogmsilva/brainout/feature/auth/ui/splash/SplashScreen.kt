@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.auth.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -83,7 +85,12 @@ fun SplashScreen(
             )
             Button(
                 onClick = onStartClicked,
-                modifier = Modifier.padding(top = NeoSpacing.xs),
+                // E4.4/WCAG 2.5.5: o `Button` padrão do Material 3 tem
+                // 40dp; o alvo mínimo da identidade é `NeoSizes.touchMin`.
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .padding(top = NeoSpacing.xs),
             ) {
                 Text(
                     text = stringResource(id = R.string.splash_cta),

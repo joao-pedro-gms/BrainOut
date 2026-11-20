@@ -4,6 +4,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.settings.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTextField
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoVisibilityToggle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 
@@ -90,7 +92,10 @@ private fun RestoreConfirmDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                modifier = Modifier.testTag(BackupTestTags.REPLACE_CONFIRM),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(BackupTestTags.REPLACE_CONFIRM),
             ) {
                 Text(text = stringResource(id = R.string.settings_backup_cta_confirm))
             }
@@ -98,7 +103,10 @@ private fun RestoreConfirmDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.testTag(BackupTestTags.CANCEL),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(BackupTestTags.CANCEL),
             ) {
                 Text(text = stringResource(id = R.string.settings_backup_cta_cancel))
             }
@@ -140,6 +148,7 @@ private fun BackupPassphraseDialog(
                     labelRes = R.string.settings_backup_pwd_label,
                     testTag = BackupTestTags.PASSPHRASE_FIELD,
                     visible = visible,
+                    isError = passphraseState.error != null,
                     onVisibilityChange = { visible = !visible },
                     onValueChange = passphraseState::onChange,
                 )
@@ -148,6 +157,7 @@ private fun BackupPassphraseDialog(
                     labelRes = R.string.settings_backup_pwd_confirm_label,
                     testTag = BackupTestTags.PASSPHRASE_CONFIRM_FIELD,
                     visible = visible,
+                    isError = passphraseState.error != null,
                     onVisibilityChange = null,
                     onValueChange = { confirmation = it },
                 )
@@ -165,7 +175,10 @@ private fun BackupPassphraseDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(confirmation) },
-                modifier = Modifier.testTag(BackupTestTags.CONFIRM),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(BackupTestTags.CONFIRM),
             ) {
                 Text(text = stringResource(id = R.string.settings_backup_cta_confirm))
             }
@@ -173,7 +186,10 @@ private fun BackupPassphraseDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.testTag(BackupTestTags.CANCEL),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(BackupTestTags.CANCEL),
             ) {
                 Text(text = stringResource(id = R.string.settings_backup_cta_cancel))
             }
@@ -188,6 +204,7 @@ private fun BackupPassphraseDialog(
  * @param labelRes rótulo do campo.
  * @param testTag tag de teste.
  * @param visible se a senha está revelada.
+ * @param isError se o campo está em estado de erro (validação falhou).
  * @param onVisibilityChange alterna a revelação; `null` omite o botão.
  * @param onValueChange callback de digitação.
  */
@@ -197,6 +214,7 @@ private fun BackupPasswordField(
     labelRes: Int,
     testTag: String,
     visible: Boolean,
+    isError: Boolean,
     onVisibilityChange: (() -> Unit)?,
     onValueChange: (String) -> Unit,
 ) {
@@ -211,6 +229,7 @@ private fun BackupPasswordField(
                 .fillMaxWidth()
                 .testTag(testTag),
         singleLine = true,
+        isError = isError,
         visualTransformation =
             if (visible) {
                 VisualTransformation.None

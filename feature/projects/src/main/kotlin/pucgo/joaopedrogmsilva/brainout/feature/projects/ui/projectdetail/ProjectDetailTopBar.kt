@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoBackButton
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoTopAppBarColors
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.core.ui.R as UiR
@@ -53,4 +55,15 @@ internal fun ProjectDetailTopBar(
                 actionIconContentColor = MaterialTheme.colorScheme.onBackground,
             ),
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ProjectDetailTopBarPreview() {
+    BrainOutTheme {
+        ProjectDetailTopBar(
+            onBackClicked = {},
+            onDeleteClicked = {},
+        )
+    }
 }

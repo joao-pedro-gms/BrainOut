@@ -20,4 +20,17 @@
     <string name="neo_expanded">Expanded</string>
     <string name="neo_collapsed">Collapsed</string>
     <string name="neo_back">Back</string>
+    <string name="neo_color_swatch_selected">Selected</string>
+    <string name="neo_tag_color_violet">Violet</string>
+    <string name="neo_tag_color_purple">Purple</string>
+    <string name="neo_tag_color_red">Red</string>
+    <string name="neo_tag_color_orange">Orange</string>
+    <string name="neo_tag_color_yellow">Yellow</string>
+    <string name="neo_tag_color_amber">Amber</string>
+    <string name="neo_tag_color_mint">Mint</string>
+    <string name="neo_tag_color_green">Green</string>
+    <string name="neo_tag_color_light_blue">Light blue</string>
+    <string name="neo_tag_color_blue">Blue</string>
+    <string name="neo_tag_color_pink">Pink</string>
+    <string name="neo_tag_color_graphite">Graphite</string>
 </resources>

@@ -1,7 +1,8 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
-// Diálogos de criação e edição de projeto com seleção de tags e o
-// sub-diálogo `AddTagDialog`. Validação inline de nome obrigatório
-// (E2.8) via chave canônica + `resolveNameError`.
+// Diálogos de criação e edição de projeto com seleção de tags; o botão
+// "Adicionar tag" abre a superfície de gerenciamento [TagManageDialog]
+// (arquivo irmão). Validação inline de nome obrigatório (E2.8) via
+// chave canônica + `resolveNameError`.
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 
@@ -213,7 +214,10 @@ private fun ProjectFormDialog(
                         selectedTagIds.toList(),
                     )
                 },
-                modifier = Modifier.testTag("${config.testTagPrefix}_confirm"),
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag("${config.testTagPrefix}_confirm"),
             ) {
                 Text(text = stringResource(id = config.confirmRes))
             }
@@ -221,12 +225,22 @@ private fun ProjectFormDialog(
     )
 
     if (showAddTag) {
-        AddTagDialog(
+        TagManageDialog(
+            availableTags = availableTags,
+            selectedTagIds = selectedTagIds.toList(),
+            onTagToggle = { tagId ->
+                if (selectedTagIds.contains(tagId)) {
+                    selectedTagIds.remove(tagId)
+                } else {
+                    selectedTagIds.add(tagId)
+                }
+            },
             onDismiss = { showAddTag = false },
             onCreate = { tagName, color ->
                 onCreateTag(tagName, color)
                 showAddTag = false
             },
+            testTagPrefix = config.testTagPrefix,
         )
     }
 }
@@ -290,7 +304,11 @@ private fun CreateProjectDialogBody(
         }
         TextButton(
             onClick = callbacks.onShowAddTag,
-            modifier = Modifier.testTag("${testTagPrefix}_add_tag"),
+            // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+            modifier =
+                Modifier
+                    .heightIn(min = NeoSizes.touchMin)
+                    .testTag("${testTagPrefix}_add_tag"),
         ) {
             Text(text = stringResource(id = R.string.home_create_project_add_tag))
         }
@@ -324,48 +342,6 @@ private fun CreateProjectTagsFlow(
             )
         }
     }
-}
-
-@Composable
-private fun AddTagDialog(
-    onDismiss: () -> Unit,
-    onCreate: (name: String, color: String) -> Unit,
-) {
-    var tagName by rememberSaveable { mutableStateOf("") }
-    var color by rememberSaveable { mutableStateOf("#6750A4") }
-
-    ProjectDialog(
-        titleRes = R.string.home_create_project_add_tag_title,
-        onDismiss = onDismiss,
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
-            ) {
-                OutlinedTextField(
-                    value = tagName,
-                    onValueChange = { tagName = it },
-                    label = { Text(text = stringResource(id = R.string.home_create_project_add_tag_name_label)) },
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = color,
-                    onValueChange = { color = it },
-                    label = { Text(text = stringResource(id = R.string.home_create_project_add_tag_color_label)) },
-                    singleLine = true,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val trimmedName = tagName.trim()
-                if (trimmedName.isEmpty()) return@TextButton
-                onCreate(trimmedName, color.trim())
-            }) {
-                Text(text = stringResource(id = R.string.home_create_project_confirm))
-            }
-        },
-    )
 }
 
 @Preview(showBackground = true)
