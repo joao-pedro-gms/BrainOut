@@ -139,6 +139,14 @@ private fun rememberSelectedTagIds(initialTagIds: List<String>): SnapshotStateLi
             ),
     ) { initialTagIds.toMutableStateList() }
 
+/** Alterna a presença de [tagId] na lista de tags selecionadas do formulário. */
+private fun toggleTagId(
+    selectedTagIds: MutableList<String>,
+    tagId: String,
+) {
+    if (selectedTagIds.contains(tagId)) selectedTagIds.remove(tagId) else selectedTagIds.add(tagId)
+}
+
 /** Campos, validação inline e criação de tag compartilhados por criar e editar. */
 @Composable
 private fun ProjectFormDialog(
@@ -187,13 +195,7 @@ private fun ProjectFormDialog(
                                 if (nameError != null) nameError = null
                             },
                             onDescriptionChange = { description = it },
-                            onTagToggle = { tagId ->
-                                if (selectedTagIds.contains(tagId)) {
-                                    selectedTagIds.remove(tagId)
-                                } else {
-                                    selectedTagIds.add(tagId)
-                                }
-                            },
+                            onTagToggle = { toggleTagId(selectedTagIds, it) },
                             onShowAddTag = { showAddTag = true },
                         ),
                     testTagPrefix = config.testTagPrefix,
@@ -228,13 +230,7 @@ private fun ProjectFormDialog(
         TagManageDialog(
             availableTags = availableTags,
             selectedTagIds = selectedTagIds.toList(),
-            onTagToggle = { tagId ->
-                if (selectedTagIds.contains(tagId)) {
-                    selectedTagIds.remove(tagId)
-                } else {
-                    selectedTagIds.add(tagId)
-                }
-            },
+            onTagToggle = { toggleTagId(selectedTagIds, it) },
             onDismiss = { showAddTag = false },
             onCreate = { tagName, color ->
                 onCreateTag(tagName, color)

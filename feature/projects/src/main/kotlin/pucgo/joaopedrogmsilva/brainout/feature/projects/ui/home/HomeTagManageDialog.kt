@@ -116,36 +116,17 @@ internal fun TagManageDialog(
                         testTagPrefix = testTagPrefix,
                     )
                 }
-                Text(
-                    text = stringResource(id = R.string.home_create_project_add_tag_title),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = {
+                NewTagSection(
+                    name = newName,
+                    nameRequired = nameRequired,
+                    color = newColor,
+                    onNameChange = {
                         newName = it.take(TAG_NAME_MAX_LENGTH)
                         if (nameRequired) nameRequired = false
                     },
-                    label = {
-                        Text(text = stringResource(id = R.string.home_create_project_add_tag_name_label))
-                    },
-                    singleLine = true,
-                    isError = nameRequired,
-                    supportingText = {
-                        if (nameRequired) {
-                            Text(
-                                text = stringResource(id = R.string.home_tag_manage_name_required),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    },
-                    modifier = Modifier.testTag("${testTagPrefix}_tag_manage_name"),
+                    onColorChange = { newColor = it },
+                    testTagPrefix = testTagPrefix,
                 )
-                Text(
-                    text = stringResource(id = R.string.home_tag_manage_color_label),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                NeoColorSwatches(selected = newColor, onSelect = { newColor = it })
             }
         },
         confirmButton = {
@@ -169,6 +150,45 @@ internal fun TagManageDialog(
             }
         },
     )
+}
+
+/** Seção "Nova tag": nome validado + cor das amostras, sem hex livre. */
+@Composable
+private fun NewTagSection(
+    name: String,
+    nameRequired: Boolean,
+    color: String,
+    onNameChange: (String) -> Unit,
+    onColorChange: (String) -> Unit,
+    testTagPrefix: String,
+) {
+    Text(
+        text = stringResource(id = R.string.home_create_project_add_tag_title),
+        style = MaterialTheme.typography.labelMedium,
+    )
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = {
+            Text(text = stringResource(id = R.string.home_create_project_add_tag_name_label))
+        },
+        singleLine = true,
+        isError = nameRequired,
+        supportingText = {
+            if (nameRequired) {
+                Text(
+                    text = stringResource(id = R.string.home_tag_manage_name_required),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        modifier = Modifier.testTag("${testTagPrefix}_tag_manage_name"),
+    )
+    Text(
+        text = stringResource(id = R.string.home_tag_manage_color_label),
+        style = MaterialTheme.typography.labelMedium,
+    )
+    NeoColorSwatches(selected = color, onSelect = onColorChange)
 }
 
 @Composable
