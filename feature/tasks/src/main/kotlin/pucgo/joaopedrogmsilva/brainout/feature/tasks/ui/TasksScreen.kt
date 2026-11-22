@@ -10,12 +10,16 @@ package pucgo.joaopedrogmsilva.brainout.feature.tasks.ui
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -23,6 +27,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -44,15 +51,19 @@ import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCard
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoDeadlineChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoEmptyState
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityLegend
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoLayout
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
@@ -99,6 +110,8 @@ fun TasksScreen(
             state = state,
             onRetry = viewModel::retry,
             onDismissError = viewModel::clearError,
+            onPriorityFilter = viewModel::setPriorityFilter,
+            onToggleSortByPriority = viewModel::toggleSortByPriority,
             modifier = Modifier.padding(innerPadding),
         )
     }
@@ -119,6 +132,11 @@ object TasksTestTags {
     // DEF-22 — a barra de topo com voltar é o que tira a tela do beco
     // sem saída; a tag dá ao teste um alvo para o clique.
     const val BACK_BUTTON: String = "tasks_back_button"
+
+    // Filtro de prioridade e ordenação da lista (E2.7).
+    const val PRIORITY_FILTER_ALL: String = "tasks_filter_all"
+    const val PRIORITY_FILTER_PREFIX: String = "tasks_filter_priority_"
+    const val SORT_BY_PRIORITY: String = "tasks_sort_by_priority"
 }
 
 @Composable
@@ -127,6 +145,8 @@ internal fun TasksContent(
     modifier: Modifier = Modifier,
     onRetry: () -> Unit = {},
     onDismissError: () -> Unit = {},
+    onPriorityFilter: (TaskPriority?) -> Unit = {},
+    onToggleSortByPriority: () -> Unit = {},
 ) {
     val windowInfo = LocalNeoWindowInfo.current
     val listModifier =
@@ -143,6 +163,14 @@ internal fun TasksContent(
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
             contentPadding = PaddingValues(vertical = NeoSpacing.sm),
         ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                TasksFilterRow(
+                    priorityFilter = state.priorityFilter,
+                    sortByPriority = state.sortByPriority,
+                    onPriorityFilter = onPriorityFilter,
+                    onToggleSortByPriority = onToggleSortByPriority,
+                )
+            }
             item(span = { GridItemSpan(maxLineSpan) }) { NeoPriorityLegend() }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline)
@@ -170,6 +198,14 @@ internal fun TasksContent(
             verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
             contentPadding = PaddingValues(vertical = NeoSpacing.sm),
         ) {
+            item {
+                TasksFilterRow(
+                    priorityFilter = state.priorityFilter,
+                    sortByPriority = state.sortByPriority,
+                    onPriorityFilter = onPriorityFilter,
+                    onToggleSortByPriority = onToggleSortByPriority,
+                )
+            }
             item { NeoPriorityLegend() }
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
             item { TasksStateContent(state, onRetry, onDismissError) }
@@ -187,6 +223,69 @@ internal fun TasksContent(
                 }
             }
         }
+    }
+}
+
+/**
+ * Linha de filtro/ordenação da lista global (E2.7): "Todas" + um
+ * `FilterChip` por nível de prioridade (com o indicador da rampa
+ * amarrado ao rótulo) + o toggle de ordenação por prioridade.
+ *
+ * O estado selecionado vem de [TasksUiState] — este composable é
+ * stateless e repassa os cliques para o ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun TasksFilterRow(
+    priorityFilter: TaskPriority?,
+    sortByPriority: Boolean,
+    onPriorityFilter: (TaskPriority?) -> Unit,
+    onToggleSortByPriority: () -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+    ) {
+        FilterChip(
+            selected = priorityFilter == null,
+            onClick = { onPriorityFilter(null) },
+            label = { Text(text = stringResource(id = R.string.tasks_filter_all)) },
+            modifier =
+                Modifier
+                    .testTag(TasksTestTags.PRIORITY_FILTER_ALL)
+                    .heightIn(min = NeoSizes.touchMin),
+        )
+        TaskPriority.entries.forEach { priority ->
+            FilterChip(
+                selected = priorityFilter == priority,
+                // Clicar no selecionado deseleciona — volta para
+                // "Todas" sem exigir um toque no chip separado.
+                onClick = {
+                    onPriorityFilter(if (priorityFilter == priority) null else priority)
+                },
+                label = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        NeoPriorityIndicator(priorityCode = priority.priorityCode)
+                        Spacer(modifier = Modifier.width(NeoSpacing.xs))
+                        Text(text = NeoTaskPriorityLabel(priority))
+                    }
+                },
+                modifier =
+                    Modifier
+                        .testTag(TasksTestTags.PRIORITY_FILTER_PREFIX + priority.priorityCode)
+                        .heightIn(min = NeoSizes.touchMin),
+            )
+        }
+        FilterChip(
+            selected = sortByPriority,
+            onClick = onToggleSortByPriority,
+            label = { Text(text = stringResource(id = R.string.tasks_filter_sort_priority)) },
+            modifier =
+                Modifier
+                    .testTag(TasksTestTags.SORT_BY_PRIORITY)
+                    .heightIn(min = NeoSizes.touchMin),
+        )
     }
 }
 
@@ -275,6 +374,7 @@ private fun TaskCard(row: TaskRow) {
         ) {
             NeoTaskPriorityChip(priority = row.task.priority)
             NeoTaskStatusChip(status = row.task.status)
+            row.task.dueDate?.let { NeoDeadlineChip(dueDateMillis = it.toEpochMilli()) }
         }
     }
 }

@@ -11,8 +11,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,10 +33,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCard
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContainer
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 private const val BAR_TO_SLOT_RATIO: Float = 0.55f
@@ -41,14 +46,10 @@ private const val BAR_TO_SLOT_RATIO: Float = 0.55f
 @Composable
 internal fun PriorityChart(counts: List<Int>) {
     val labels = TaskPriority.entries.map { NeoTaskPriorityLabel(it) }
-    val barColors =
-        listOf(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.error,
-        )
+    // As barras usam a mesma rampa dos chips (`neoPriorityContainer`),
+    // então a cor de um nível no gráfico é a cor do mesmo nível na
+    // lista — a legenda abaixo amarra barra → cor → rótulo.
+    val barColors = TaskPriority.entries.map { neoPriorityContainer(it.priorityCode) }
     val maxCount = (counts.maxOrNull() ?: 0).coerceAtLeast(1)
     // `zip` em vez de índice: a lista de rótulos tem um item por
     // nível de prioridade e a de contagens pode ter outro tamanho —
@@ -155,11 +156,21 @@ private fun PriorityBarsLegend(counts: List<Int>) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Text(
-                    text = labels.getOrElse(index) { "" },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // O swatch da rampa amarra cor → rótulo: a contagem
+                // sozinha não carrega cor (WCAG 1.4.1). Contagens além
+                // dos cinco níveis não têm cor/ícone na rampa — o
+                // `getOrElse` cobre o rótulo e o swatch fica de fora.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (index in labels.indices) {
+                        NeoPriorityIndicator(index)
+                        Spacer(modifier = Modifier.width(NeoSpacing.xs))
+                    }
+                    Text(
+                        text = labels.getOrElse(index) { "" },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

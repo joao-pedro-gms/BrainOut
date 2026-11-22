@@ -26,6 +26,7 @@ import org.junit.Before
 import org.junit.Test
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 
@@ -277,4 +278,160 @@ class TasksViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    // === E2.7 — filtro e ordenação por prioridade ================================
+
+    /** Estado inicial: filtro em `null` (todas) e ordenação desligada. */
+    @Test
+    fun `E2 7 estado inicial exibe todas sem ordenacao`() =
+        runTest(testDispatcher) {
+            val viewModel =
+                viewModelComTarefas(
+                    listOf(
+                        Task.create(projectId = "p1", title = "Alta", priority = TaskPriority.HIGH),
+                        Task.create(projectId = "p1", title = "Baixa", priority = TaskPriority.LOW),
+                    ),
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.rows).hasSize(2)
+                assertThat(state.priorityFilter).isNull()
+                assertThat(state.sortByPriority).isFalse()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /** Filtro selecionado reduz as linhas ao nível escolhido. */
+    @Test
+    fun `E2 7 filtro por prioridade reduz linhas ao nivel selecionado`() =
+        runTest(testDispatcher) {
+            val viewModel =
+                viewModelComTarefas(
+                    listOf(
+                        Task.create(projectId = "p1", title = "Alta", priority = TaskPriority.HIGH),
+                        Task.create(projectId = "p1", title = "Outra alta", priority = TaskPriority.HIGH),
+                        Task.create(projectId = "p1", title = "Baixa", priority = TaskPriority.LOW),
+                    ),
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+
+                viewModel.setPriorityFilter(TaskPriority.HIGH)
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.priorityFilter).isEqualTo(TaskPriority.HIGH)
+                assertThat(state.rows).hasSize(2)
+                assertThat(state.rows.map { it.task.priority }.toSet())
+                    .containsExactly(TaskPriority.HIGH)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /** `setPriorityFilter(null)` volta a exibir todas as tarefas. */
+    @Test
+    fun `E2 7 limpar filtro volta a exibir todas`() =
+        runTest(testDispatcher) {
+            val viewModel =
+                viewModelComTarefas(
+                    listOf(
+                        Task.create(projectId = "p1", title = "Alta", priority = TaskPriority.HIGH),
+                        Task.create(projectId = "p1", title = "Baixa", priority = TaskPriority.LOW),
+                    ),
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+
+                viewModel.setPriorityFilter(TaskPriority.HIGH)
+                advanceUntilIdle()
+                assertThat(expectMostRecentItem().rows).hasSize(1)
+
+                viewModel.setPriorityFilter(null)
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.rows).hasSize(2)
+                assertThat(state.priorityFilter).isNull()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /** Ordenação por prioridade coloca a crítica no topo da lista. */
+    @Test
+    fun `E2 7 ordenacao por prioridade coloca critica primeiro`() =
+        runTest(testDispatcher) {
+            val viewModel =
+                viewModelComTarefas(
+                    listOf(
+                        Task.create(projectId = "p1", title = "Baixa", priority = TaskPriority.LOW),
+                        Task.create(projectId = "p1", title = "Critica", priority = TaskPriority.CRITICAL),
+                        Task.create(projectId = "p1", title = "Media", priority = TaskPriority.MEDIUM),
+                    ),
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+
+                viewModel.toggleSortByPriority()
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.sortByPriority).isTrue()
+                assertThat(state.rows.map { it.task.priority })
+                    .containsExactly(
+                        TaskPriority.CRITICAL,
+                        TaskPriority.MEDIUM,
+                        TaskPriority.LOW,
+                    ).inOrder()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /** Filtro e ordenação combinados: só filtra primeiro, depois ordena. */
+    @Test
+    fun `E2 7 filtro e ordenacao combinados mantem apenas o nivel filtrado`() =
+        runTest(testDispatcher) {
+            val viewModel =
+                viewModelComTarefas(
+                    listOf(
+                        Task.create(projectId = "p1", title = "Urgente", priority = TaskPriority.URGENT),
+                        Task.create(projectId = "p1", title = "Critica", priority = TaskPriority.CRITICAL),
+                        Task.create(projectId = "p1", title = "Alta B", priority = TaskPriority.HIGH),
+                        Task.create(projectId = "p1", title = "Alta A", priority = TaskPriority.HIGH),
+                    ),
+                )
+
+            viewModel.uiState.test {
+                advanceUntilIdle()
+
+                viewModel.setPriorityFilter(TaskPriority.HIGH)
+                viewModel.toggleSortByPriority()
+                advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertThat(state.rows).hasSize(2)
+                assertThat(state.rows.map { it.task.title })
+                    .containsExactly("Alta B", "Alta A")
+                    .inOrder()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /** Monta um ViewModel com owner ativo e a lista de tarefas dada. */
+    private fun viewModelComTarefas(tasks: List<Task>): TasksViewModel {
+        val activeUserProvider: ActiveUserProvider = mockk()
+        coEvery { activeUserProvider.observeActiveUserId() } returns flowOf("u1")
+
+        val taskRepository: TaskRepository = mockk()
+        coEvery { taskRepository.observeAllForOwner("u1") } returns flowOf(tasks)
+
+        val projectRepository: ProjectRepository = mockk()
+        coEvery { projectRepository.observeAllForOwner("u1") } returns flowOf(emptyList())
+
+        return TasksViewModel(
+            taskRepository = taskRepository,
+            projectRepository = projectRepository,
+            activeUserProvider = activeUserProvider,
+        )
+    }
 }

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskStatus
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoDeadlineChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskStatusChip
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
@@ -79,7 +80,11 @@ internal fun TaskRow(
                 title = task.title,
                 onMenuClicked = { menuExpanded = true },
             )
-            TaskRowChips(status = task.status, priority = task.priority)
+            TaskRowChips(
+                status = task.status,
+                priority = task.priority,
+                dueDateMillis = task.dueDate?.toEpochMilli(),
+            )
         }
 
         TaskRowMenu(
@@ -122,6 +127,7 @@ private fun TaskRowHeader(
 private fun TaskRowChips(
     status: TaskStatus,
     priority: TaskPriority,
+    dueDateMillis: Long?,
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
@@ -130,6 +136,9 @@ private fun TaskRowChips(
     ) {
         NeoTaskStatusChip(status = status)
         NeoTaskPriorityChip(priority = priority)
+        // E2.7 — o prazo capturado em `NewTaskDialog` nunca era exibido
+        // na linha; o chip traz a data + semáforo de proximidade.
+        dueDateMillis?.let { NeoDeadlineChip(dueDateMillis = it) }
     }
 }
 
