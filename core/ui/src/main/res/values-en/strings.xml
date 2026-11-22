@@ -33,4 +33,9 @@
     <string name="neo_tag_color_blue">Blue</string>
     <string name="neo_tag_color_pink">Pink</string>
     <string name="neo_tag_color_graphite">Graphite</string>
+    <string name="neo_deadline_date_format">MM/dd/yyyy</string>
+    <string name="neo_deadline_description">Due: %1$s</string>
+    <string name="neo_deadline_description_overdue">Due: %1$s, overdue</string>
+    <string name="neo_deadline_description_today">Due: %1$s, due today</string>
+    <string name="neo_deadline_description_this_week">Due: %1$s, due this week</string>
 </resources>

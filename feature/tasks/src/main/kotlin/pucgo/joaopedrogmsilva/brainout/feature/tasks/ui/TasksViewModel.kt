@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 import pucgo.joaopedrogmsilva.brainout.core.data.session.ActiveUserProvider
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.ProjectRepository
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.TaskRepository
 import javax.inject.Inject
@@ -51,11 +53,19 @@ import javax.inject.Inject
  *  do `StateFlow`.
  * @property errorMessage mensagem da última falha ao carregar a
  *  lista, ou `null` quando não há erro pendente.
+ * @property priorityFilter nível de prioridade selecionado no filtro
+ *  da lista, ou `null` para "todas". Filtro de apresentação: aplica-se
+ *  sobre as linhas carregadas, sem tocar na consulta ao Room.
+ * @property sortByPriority `true` quando a lista é ordenada por
+ *  prioridade decrescente (crítica primeiro); `false` preserva a
+ *  ordem vinda do repositório.
  */
 data class TasksUiState(
     val rows: List<TaskRow> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: TasksErrorType? = null,
+    val priorityFilter: TaskPriority? = null,
+    val sortByPriority: Boolean = false,
 )
 
 /**
@@ -107,16 +117,41 @@ class TasksViewModel
         /** Mensagem de erro pendente para a UI (E2.8). */
         val errorMessage: StateFlow<TasksErrorType?> = loadState.errorMessage
 
+        /**
+         * Filtro de prioridade selecionado na UI (`null` = todas).
+         * Fonte única do selecionado — a UI nunca mantém esse estado
+         * por conta própria, então filtro e lista não podem divergir.
+         */
+        private val priorityFilterFlow = MutableStateFlow<TaskPriority?>(null)
+
+        /** Ordenação por prioridade decrescente ligada/desligada. */
+        private val sortByPriorityFlow: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
         val uiState: StateFlow<TasksUiState> =
             combine(
                 loadState.retryToken
                     .flatMapLatest { _ -> taskLoadResults() },
                 loadState.errorMessage,
-            ) { result, err ->
+                priorityFilterFlow,
+                sortByPriorityFlow,
+            ) { result, err, priorityFilter, sortByPriority ->
                 val ui =
                     when (result) {
-                        is TasksLoadResult.Loaded -> result.value
-                        is TasksLoadResult.Failed -> TasksUiState(isLoading = false)
+                        is TasksLoadResult.Loaded ->
+                            result.value.copy(
+                                rows =
+                                    result.value.rows
+                                        .filterByPriority(priorityFilter)
+                                        .sortByPriorityDescending(sortByPriority),
+                                priorityFilter = priorityFilter,
+                                sortByPriority = sortByPriority,
+                            )
+                        is TasksLoadResult.Failed ->
+                            TasksUiState(
+                                isLoading = false,
+                                priorityFilter = priorityFilter,
+                                sortByPriority = sortByPriority,
+                            )
                     }
                 // A mensagem vive em `loadState`; o estado interno da
                 // leitura só carrega os dados.
@@ -188,6 +223,22 @@ class TasksViewModel
         fun clearError() {
             loadState.clearError()
         }
+
+        /** Seleciona o nível do filtro de prioridade; `null` volta para "todas". */
+        fun setPriorityFilter(priority: TaskPriority?) {
+            priorityFilterFlow.value = priority
+        }
+
+        /** Liga/desliga a ordenação por prioridade decrescente. */
+        fun toggleSortByPriority() {
+            sortByPriorityFlow.value = !sortByPriorityFlow.value
+        }
+
+        private fun List<TaskRow>.filterByPriority(priority: TaskPriority?): List<TaskRow> =
+            if (priority == null) this else filter { it.task.priority == priority }
+
+        private fun List<TaskRow>.sortByPriorityDescending(enabled: Boolean): List<TaskRow> =
+            if (enabled) sortedByDescending { it.task.priority.priorityCode } else this
 
         private fun Task.toRow(projectsById: Map<String, Project>): TaskRow =
             TaskRow(

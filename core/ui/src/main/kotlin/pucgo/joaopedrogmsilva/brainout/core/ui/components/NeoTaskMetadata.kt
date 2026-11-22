@@ -1,6 +1,7 @@
 // João Pedro G M Silva - PUC Goiás ADS - 20251012000740
 package pucgo.joaopedrogmsilva.brainout.core.ui.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -40,6 +41,8 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoConfirmedColor
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContainer
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContent
 
 private val priorityIcons =
     listOf(
@@ -58,7 +61,12 @@ private val priorityLabels =
         R.string.neo_priority_critical,
     )
 
-/** Indicador informativo, sem clique e sem dependência de cor para distinguir níveis. */
+/**
+ * Indicador informativo, sem clique. Cor e ícone reforçam o nível
+ * ([neoPriorityContainer]/[neoPriorityContent] resolvem a rampa
+ * semântica 0..4); o rótulo localizado entra no `contentDescription`,
+ * então nunca há distinção só por cor (WCAG 1.4.1).
+ */
 @Composable
 fun NeoPriorityIndicator(
     priorityCode: Int,
@@ -66,24 +74,11 @@ fun NeoPriorityIndicator(
 ) {
     require(priorityCode in priorityIcons.indices)
     val description = stringResource(R.string.neo_priority_description, stringResource(priorityLabels[priorityCode]))
-    val colors = MaterialTheme.colorScheme
     Surface(
         modifier = modifier.clearAndSetSemantics { contentDescription = description },
-        color =
-            when (priorityCode) {
-                4 -> colors.errorContainer
-                3 -> colors.secondaryContainer
-                2 -> colors.tertiaryContainer
-                else -> colors.surfaceVariant
-            },
-        contentColor =
-            when (priorityCode) {
-                4 -> colors.onErrorContainer
-                3 -> colors.onSecondaryContainer
-                2 -> colors.onTertiaryContainer
-                else -> colors.onSurfaceVariant
-            },
-        border = BorderStroke(NeoBorders.subtle, colors.outline),
+        color = neoPriorityContainer(priorityCode),
+        contentColor = neoPriorityContent(priorityCode),
+        border = BorderStroke(NeoBorders.subtle, MaterialTheme.colorScheme.outline),
         shape = MaterialTheme.shapes.extraSmall,
     ) {
         Icon(
@@ -206,6 +201,32 @@ fun NeoPriorityLegend(modifier: Modifier = Modifier) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NeoPriorityIndicatorPreview() {
+    BrainOutTheme {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        ) {
+            priorityIcons.indices.forEach { code -> NeoPriorityIndicator(code) }
+        }
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun NeoPriorityIndicatorDarkPreview() {
+    BrainOutTheme(darkTheme = true) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        ) {
+            priorityIcons.indices.forEach { code -> NeoPriorityIndicator(code) }
         }
     }
 }
