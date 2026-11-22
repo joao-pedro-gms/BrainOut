@@ -40,6 +40,9 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+/** Janela da proximidade "esta semana", em dias (inclusive o de hoje). */
+private const val THIS_WEEK_WINDOW_DAYS: Int = 7
+
 /** Proximidade do prazo em relação a "agora", para o semáforo do chip. */
 enum class NeoDeadlineProximity {
     OVERDUE,
@@ -78,7 +81,7 @@ internal fun deadlineProximity(
     val weekLimit =
         nowDay.clone() as Calendar
 
-    weekLimit.add(Calendar.DAY_OF_YEAR, 7)
+    weekLimit.add(Calendar.DAY_OF_YEAR, THIS_WEEK_WINDOW_DAYS)
 
     return when {
         dueDay.before(nowDay) -> NeoDeadlineProximity.OVERDUE
@@ -162,17 +165,26 @@ fun NeoDeadlineChip(
     }
 }
 
+// "Agora" fixo para o preview mostrar os quatro estados de uma vez.
+private const val PREVIEW_YEAR: Int = 2026
+private const val PREVIEW_DAY_OF_MONTH: Int = 22
+private const val PREVIEW_HOUR: Int = 10
+private const val MILLIS_PER_DAY: Long = 86_400_000L
+
 @Preview(showBackground = true)
 @Composable
 private fun NeoDeadlineChipPreview() {
-    // "Agora" fixo para o preview mostrar os quatro estados de uma vez.
-    val now = Calendar.getInstance().apply { set(2026, Calendar.NOVEMBER, 22, 10, 0) }.timeInMillis
+    val now =
+        Calendar
+            .getInstance()
+            .apply { set(PREVIEW_YEAR, Calendar.NOVEMBER, PREVIEW_DAY_OF_MONTH, PREVIEW_HOUR, 0) }
+            .timeInMillis
     BrainOutTheme {
         Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs)) {
-            NeoDeadlineChip(dueDateMillis = now - 86_400_000L, nowMillis = now)
+            NeoDeadlineChip(dueDateMillis = now - MILLIS_PER_DAY, nowMillis = now)
             NeoDeadlineChip(dueDateMillis = now, nowMillis = now)
-            NeoDeadlineChip(dueDateMillis = now + 3 * 86_400_000L, nowMillis = now)
-            NeoDeadlineChip(dueDateMillis = now + 30 * 86_400_000L, nowMillis = now)
+            NeoDeadlineChip(dueDateMillis = now + 3 * MILLIS_PER_DAY, nowMillis = now)
+            NeoDeadlineChip(dueDateMillis = now + 30 * MILLIS_PER_DAY, nowMillis = now)
         }
     }
 }
