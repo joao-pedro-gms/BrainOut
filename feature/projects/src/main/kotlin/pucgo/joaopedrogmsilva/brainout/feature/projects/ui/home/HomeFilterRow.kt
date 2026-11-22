@@ -32,6 +32,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +46,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.repository.SortOrder
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -219,3 +222,18 @@ internal fun sortOrderLabelRes(order: SortOrder): Int =
         SortOrder.CreatedDesc -> R.string.home_sort_created_desc
         SortOrder.CreatedAsc -> R.string.home_sort_created_asc
     }
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeProjectFilterRowPreview() {
+    BrainOutTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            HomeProjectFilterRow(
+                current = HomeProjectFilter.Active,
+                onSelect = {},
+                sortOrder = SortOrder.CreatedDesc,
+                onSortOrderChange = {},
+            )
+        }
+    }
+}

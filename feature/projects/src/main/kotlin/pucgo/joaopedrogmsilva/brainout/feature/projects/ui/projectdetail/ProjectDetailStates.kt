@@ -6,19 +6,15 @@
 
 package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,9 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoEmptyState
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoErrorBanner
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 
@@ -81,39 +76,18 @@ internal fun ProjectDetailErrorBanner(
 /** Card exibido quando a lista de tarefas está vazia. */
 @Composable
 internal fun EmptyTasksCard() {
-    // DEF-22 — ver [HomeEmptyState]: `surfaceVariant.copy(alpha = 0.4f)`
-    // dava 1.06:1 / 1.11:1. A região ganha uma borda `outline` real
-    // (16.10:1 / 15.95:1) em vez de continuar quase invisível.
-    Surface(
+    // O esqueleto do cartão de estado vazio é o `NeoEmptyState` do
+    // `:core:ui` — o mesmo das três empty states da Home. A régua de
+    // contraste da fronteira (`outline` puro, 16.10:1 / 15.95:1) mora
+    // lá (DEF-22), não aqui.
+    NeoEmptyState(
+        title = stringResource(id = R.string.project_detail_empty_title),
+        body = stringResource(id = R.string.project_detail_empty_body),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 180.dp),
-        shape = RoundedCornerShape(NeoRadii.card),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(NeoBorders.default, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(NeoSpacing.lg),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(id = R.string.project_detail_empty_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(NeoSpacing.xs))
-            Text(
-                text = stringResource(id = R.string.project_detail_empty_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    )
 }
 
 /**

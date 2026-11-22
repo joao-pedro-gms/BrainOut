@@ -9,14 +9,10 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,10 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoCard
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoInfoChip
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoRadii
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPressFeedback
@@ -57,7 +55,11 @@ internal fun ProjectCard(
     onEditClick: () -> Unit = {},
 ) {
     val interaction = remember { MutableInteractionSource() }
-    Surface(
+    // O esqueleto do cartão (superfície, raio, elevação e respiro) é o
+    // `NeoCard` do `:core:ui` — a receita da identidade mora lá, não
+    // aqui. O que este card acrescenta é só o clique, o feedback de
+    // pressão e o conteúdo.
+    NeoCard(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -67,48 +69,37 @@ internal fun ProjectCard(
                     indication = androidx.compose.foundation.LocalIndication.current,
                     onClick = onClick,
                 ).neoPressFeedback(interaction),
-        shape = RoundedCornerShape(NeoRadii.card),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(NeoSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
-        ) {
+        Text(
+            text = item.project.name,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        item.project.description?.takeIf { it.isNotBlank() }?.let { description ->
             Text(
-                text = item.project.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            item.project.description?.takeIf { it.isNotBlank() }?.let { description ->
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (item.tags.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
-                ) {
-                    item.tags.take(MAX_TAG_CHIPS_PREVIEW).forEach { chip ->
-                        TagChipView(chip = chip, selected = true)
-                    }
+        }
+        if (item.tags.isNotEmpty()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+            ) {
+                item.tags.take(MAX_TAG_CHIPS_PREVIEW).forEach { chip ->
+                    TagChipView(chip = chip, selected = true)
                 }
             }
-            TextButton(
-                onClick = onEditClick,
-                modifier =
-                    Modifier
-                        .align(Alignment.End)
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${item.project.id}"),
-            ) {
-                Text(text = stringResource(id = R.string.home_edit_project_action))
-            }
+        }
+        TextButton(
+            onClick = onEditClick,
+            modifier =
+                Modifier
+                    .align(Alignment.End)
+                    .heightIn(min = NeoSizes.touchMin)
+                    .testTag("${HomeTestTags.EDIT_PROJECT_BUTTON}_${item.project.id}"),
+        ) {
+            Text(text = stringResource(id = R.string.home_edit_project_action))
         }
     }
 }
@@ -154,4 +145,42 @@ internal fun parseHexColor(hex: String): Color {
     val g = ((value shr HEX_COLOR_GREEN_SHIFT) and HEX_COLOR_CHANNEL_MASK).toInt()
     val b = (value and HEX_COLOR_CHANNEL_MASK).toInt()
     return Color(red = r, green = g, blue = b)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ProjectCardPreview() {
+    val urgent = TagChip(id = "urgent", name = "Urgente", color = "#A51D2D")
+    val study = TagChip(id = "study", name = "Estudos", color = "#174F7B")
+    BrainOutTheme {
+        androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.background) {
+            ProjectCard(
+                item =
+                    ProjectCardItem(
+                        project =
+                            Project.create(
+                                name = "Projeto integrador",
+                                description = "Entrega da etapa final",
+                                ownerId = "preview",
+                            ),
+                        tags = listOf(urgent, study),
+                    ),
+                onClick = {},
+                onEditClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TagChipViewPreview() {
+    BrainOutTheme {
+        androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.background) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs)) {
+                TagChipView(chip = TagChip(id = "urgent", name = "Urgente", color = "#A51D2D"), selected = true)
+                TagChipView(chip = TagChip(id = "study", name = "Estudos", color = "#174F7B"), selected = false)
+            }
+        }
+    }
 }

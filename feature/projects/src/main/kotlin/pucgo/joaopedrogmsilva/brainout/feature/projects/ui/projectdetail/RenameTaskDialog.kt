@@ -14,6 +14,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Task
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.ProjectDialog
 
@@ -69,10 +73,29 @@ internal fun RenameTaskDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(title) },
-                modifier = Modifier.testTag(ProjectDetailTestTags.RENAME_TASK_SAVE),
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
+                // o `TextButton` padrão do M3 marca 40dp.
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag(ProjectDetailTestTags.RENAME_TASK_SAVE),
             ) {
                 Text(text = stringResource(id = R.string.project_detail_new_task_save))
             }
         },
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RenameTaskDialogPreview() {
+    BrainOutTheme {
+        androidx.compose.material3.Surface {
+            RenameTaskDialog(
+                initialTitle = "Revisar escopo",
+                onDismiss = {},
+                onConfirm = {},
+            )
+        }
+    }
 }

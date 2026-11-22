@@ -16,13 +16,21 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
@@ -132,6 +140,39 @@ internal fun HomeTagFilterRow(
                         .testTag(HomeTestTags.tagFilterChip(chip.id))
                         // E4.4: 48dp mínimo WCAG 2.5.5.
                         .heightIn(min = NeoSizes.touchMin),
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeSearchBarPreview() {
+    BrainOutTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            var query by remember { mutableStateOf("relatório") }
+            HomeSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeTagFilterRowPreview() {
+    BrainOutTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            HomeTagFilterRow(
+                availableTags =
+                    listOf(
+                        TagChip(id = "urgent", name = "Urgente", color = "#A51D2D"),
+                        TagChip(id = "study", name = "Estudos", color = "#174F7B"),
+                        TagChip(id = "home", name = "Casa", color = "#165C47"),
+                    ),
+                selectedTagId = "urgent",
+                onSelect = {},
             )
         }
     }

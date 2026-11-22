@@ -5,6 +5,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,8 +24,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.CancellationException
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 import java.time.ZoneId
@@ -66,7 +70,13 @@ internal fun DeadlineField(
     Column {
         OutlinedButton(
             onClick = { showPicker = true },
-            modifier = Modifier.fillMaxWidth().testTag(ProjectDetailTestTags.NEW_TASK_DUE_DATE_FIELD),
+            // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
+            // o `OutlinedButton` padrão do M3 marca 40dp.
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = NeoSizes.touchMin)
+                    .testTag(ProjectDetailTestTags.NEW_TASK_DUE_DATE_FIELD),
         ) {
             Text(
                 stringResource(R.string.project_detail_new_task_due_date_label) + ": " +
@@ -74,7 +84,14 @@ internal fun DeadlineField(
             )
         }
         if (dueDate != null) {
-            TextButton(onClick = { onDateChange(null) }, modifier = Modifier.testTag("deadline_clear")) {
+            TextButton(
+                onClick = { onDateChange(null) },
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag("deadline_clear"),
+            ) {
                 Text(stringResource(R.string.project_detail_new_task_due_date_clear))
             }
             DeadlineHint(dueDate, evaluateDeadline)
@@ -139,11 +156,33 @@ private fun DeadlinePicker(
             TextButton(
                 enabled = state.selectedDateMillis != null,
                 onClick = { state.selectedDateMillis?.let { onConfirm(pickerDateToDeadline(it)) } },
-                modifier = Modifier.testTag("deadline_picker_confirm"),
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                modifier =
+                    Modifier
+                        .heightIn(min = NeoSizes.touchMin)
+                        .testTag("deadline_picker_confirm"),
             ) { Text(stringResource(R.string.project_detail_new_task_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.project_detail_new_task_cancel)) }
+            TextButton(
+                onClick = onDismiss,
+                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
+                modifier = Modifier.heightIn(min = NeoSizes.touchMin),
+            ) { Text(stringResource(R.string.project_detail_new_task_cancel)) }
         },
     ) { DatePicker(state = state) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DeadlineFieldPreview() {
+    BrainOutTheme {
+        androidx.compose.material3.Surface {
+            DeadlineField(
+                dueDate = null,
+                onDateChange = {},
+                evaluateDeadline = { DeadlineInfo(isBusinessDay = true, nextHoliday = null) },
+            )
+        }
+    }
 }

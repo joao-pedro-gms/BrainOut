@@ -19,8 +19,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.feature.settings.R
 import pucgo.joaopedrogmsilva.brainout.feature.settings.viewmodel.BackupSuccessType
@@ -217,4 +219,22 @@ object BackupTestTags {
     const val MESSAGE: String = "settings_backup_message"
     const val MESSAGE_DISMISS: String = "settings_backup_message_dismiss"
     const val SUMMARY: String = "settings_backup_summary"
+}
+
+/**
+ * Preview da seção com o estado inicial — o slot `backupContent` da
+ * `SettingsScreen` fica vazio na preview da tela, então sem isto a
+ * seção nunca aparecia em nenhuma preview.
+ */
+@Preview(showBackground = true)
+@Composable
+private fun BackupContentPreview() {
+    BrainOutTheme {
+        BackupContent(
+            state = BackupUiState(),
+            onExport = {},
+            onRestore = {},
+            onDismissMessage = {},
+        )
+    }
 }
