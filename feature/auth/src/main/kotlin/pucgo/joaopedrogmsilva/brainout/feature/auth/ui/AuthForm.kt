@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoWindowInfo
-import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoBorders
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
@@ -145,35 +142,18 @@ internal fun AuthSubmitButton(
     loadingTestTag: String,
     onClick: () -> Unit,
 ) {
-    Button(
+    // Bloco de ação amarelo da identidade — mesmo papel do FAB e das
+    // confirmações de diálogo (NeoActionButton).
+    NeoActionButton(
+        text = stringResource(id = labelRes),
         onClick = onClick,
-        enabled = !isLoading,
+        isLoading = isLoading,
+        loadingTestTag = loadingTestTag,
         modifier =
             Modifier
                 .fillMaxWidth()
-                // E4.4/WCAG 2.5.5: o `Button` padrão do Material 3 tem
-                // 40dp de altura; o alvo de toque mínimo da identidade é
-                // `NeoSizes.touchMin` (48dp) — mesmo padrão dos chips de
-                // `HomeFilterRow`.
-                .heightIn(min = NeoSizes.touchMin)
                 .testTag(testTag),
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier =
-                    Modifier
-                        .height(NeoSpacing.mdPlus)
-                        .testTag(loadingTestTag),
-                strokeWidth = NeoBorders.default,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        } else {
-            Text(
-                text = stringResource(id = labelRes),
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-    }
+    )
 }
 
 /** Botão secundário do formulário ("criar conta" / "já tenho conta"). */

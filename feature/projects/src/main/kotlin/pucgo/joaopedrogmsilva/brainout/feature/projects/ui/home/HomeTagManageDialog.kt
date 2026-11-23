@@ -34,7 +34,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +50,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NEO_TAG_COLORS
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoColorSwatches
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoColors
@@ -130,24 +130,18 @@ internal fun TagManageDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = R.string.home_create_project_confirm),
                 onClick = {
                     val trimmedName = newName.trim()
                     if (trimmedName.isEmpty()) {
                         nameRequired = true
-                        return@TextButton
+                        return@NeoActionButton
                     }
                     onCreate(trimmedName, newColor)
                 },
-                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
-                // o `TextButton` padrão do M3 marca 40dp.
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag("${testTagPrefix}_tag_manage_confirm"),
-            ) {
-                Text(text = stringResource(id = R.string.home_create_project_confirm))
-            }
+                modifier = Modifier.testTag("${testTagPrefix}_tag_manage_confirm"),
+            )
         },
     )
 }

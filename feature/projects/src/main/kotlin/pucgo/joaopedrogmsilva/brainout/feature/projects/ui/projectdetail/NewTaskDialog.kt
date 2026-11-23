@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -34,10 +35,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContainer
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContent
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
 
@@ -96,17 +100,11 @@ internal fun NewTaskDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = R.string.project_detail_new_task_save),
                 onClick = { onConfirm(title, priority, dueDate) },
-                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
-                // o `TextButton` padrão do M3 marca 40dp.
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
-            ) {
-                Text(text = stringResource(id = R.string.project_detail_new_task_save))
-            }
+                modifier = Modifier.testTag(ProjectDetailTestTags.NEW_TASK_SAVE),
+            )
         },
         dismissButton = {
             TextButton(
@@ -145,6 +143,11 @@ private fun TaskPriorityField(
             onClick = { expanded = true },
             // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
             // o `OutlinedButton` padrão do M3 marca 40dp.
+            colors =
+                ButtonDefaults.outlinedButtonColors(
+                    containerColor = neoPriorityContainer(priority.priorityCode),
+                    contentColor = neoPriorityContent(priority.priorityCode),
+                ),
             modifier =
                 Modifier
                     .fillMaxWidth()

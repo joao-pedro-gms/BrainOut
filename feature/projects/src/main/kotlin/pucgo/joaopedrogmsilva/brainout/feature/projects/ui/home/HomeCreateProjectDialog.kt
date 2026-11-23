@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.Project
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
@@ -203,12 +204,13 @@ private fun ProjectFormDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = config.confirmRes),
                 onClick = {
                     val trimmedName = name.trim()
                     if (trimmedName.isEmpty()) {
                         nameError = HomeErrorType.NameRequired
-                        return@TextButton
+                        return@NeoActionButton
                     }
                     onSubmit(
                         trimmedName,
@@ -216,13 +218,8 @@ private fun ProjectFormDialog(
                         selectedTagIds.toList(),
                     )
                 },
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag("${config.testTagPrefix}_confirm"),
-            ) {
-                Text(text = stringResource(id = config.confirmRes))
-            }
+                modifier = Modifier.testTag("${config.testTagPrefix}_confirm"),
+            )
         },
     )
 

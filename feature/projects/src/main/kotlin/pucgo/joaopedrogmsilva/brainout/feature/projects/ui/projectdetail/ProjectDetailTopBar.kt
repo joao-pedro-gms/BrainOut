@@ -46,6 +46,9 @@ internal fun ProjectDetailTopBar(
                 Icon(
                     painter = painterResource(UiR.drawable.neo_ic_delete),
                     contentDescription = stringResource(id = R.string.project_detail_delete_project),
+                    // A ação destrutiva é a única vermelha da barra —
+                    // antes herdava `onBackground` e se misturava com o voltar.
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         },
