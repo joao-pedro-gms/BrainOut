@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -66,6 +67,8 @@ import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoMotion
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPageGutter
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContainer
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContent
 import pucgo.joaopedrogmsilva.brainout.feature.tasks.R
 
 /**
@@ -271,6 +274,14 @@ private fun TasksFilterRow(
                         Text(text = NeoTaskPriorityLabel(priority))
                     }
                 },
+                // Selecionado, o chip vira bloco da cor da rampa — a cor
+                // é reforço; o rótulo com ícone continua sendo a pista
+                // primária (WCAG 1.4.1).
+                colors =
+                    FilterChipDefaults.filterChipColors(
+                        containerColor = neoPriorityContainer(priority.priorityCode),
+                        labelColor = neoPriorityContent(priority.priorityCode),
+                    ),
                 modifier =
                     Modifier
                         .testTag(TasksTestTags.PRIORITY_FILTER_PREFIX + priority.priorityCode)

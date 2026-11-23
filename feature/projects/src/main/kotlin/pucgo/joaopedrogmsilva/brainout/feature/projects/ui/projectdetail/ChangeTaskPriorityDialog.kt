@@ -20,9 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,11 +34,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import pucgo.joaopedrogmsilva.brainout.core.domain.model.TaskPriority
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoPriorityIndicator
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTaskPriorityLabel
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSpacing
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContainer
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.neoPriorityContent
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import pucgo.joaopedrogmsilva.brainout.feature.projects.ui.ProjectDialog
 
@@ -77,6 +80,11 @@ internal fun ChangeTaskPriorityDialog(
                                     Text(text = NeoTaskPriorityLabel(option))
                                 }
                             },
+                            colors =
+                                FilterChipDefaults.filterChipColors(
+                                    containerColor = neoPriorityContainer(option.priorityCode),
+                                    labelColor = neoPriorityContent(option.priorityCode),
+                                ),
                             modifier =
                                 Modifier
                                     .testTag(
@@ -91,14 +99,10 @@ internal fun ChangeTaskPriorityDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = R.string.project_detail_new_task_save),
                 onClick = { onConfirm(selected) },
-                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
-                // o `TextButton` padrão do M3 marca 40dp.
-                modifier = Modifier.heightIn(min = NeoSizes.touchMin),
-            ) {
-                Text(text = stringResource(id = R.string.project_detail_new_task_save))
-            }
+            )
         },
     )
 }

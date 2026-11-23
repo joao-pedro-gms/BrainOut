@@ -6,6 +6,7 @@ package pucgo.joaopedrogmsilva.brainout.feature.projects.ui.projectdetail
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,7 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.CancellationException
 import pucgo.joaopedrogmsilva.brainout.core.domain.usecase.DeadlineInfo
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.BrainOutTheme
+import pucgo.joaopedrogmsilva.brainout.core.ui.theme.LocalNeoColors
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
 import pucgo.joaopedrogmsilva.brainout.feature.projects.R
 import java.time.Instant
@@ -72,6 +75,17 @@ internal fun DeadlineField(
             onClick = { showPicker = true },
             // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5) —
             // o `OutlinedButton` padrão do M3 marca 40dp.
+            // Com prazo definido o campo vira bloco azul: a data passa a
+            // ser visível de longe, e o azul informa (não avisa).
+            colors =
+                if (dueDate != null) {
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = LocalNeoColors.current.infoContainer,
+                        contentColor = LocalNeoColors.current.infoText,
+                    )
+                } else {
+                    ButtonDefaults.outlinedButtonColors()
+                },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -153,15 +167,12 @@ private fun DeadlinePicker(
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(R.string.project_detail_new_task_save),
                 enabled = state.selectedDateMillis != null,
                 onClick = { state.selectedDateMillis?.let { onConfirm(pickerDateToDeadline(it)) } },
-                // E4.4: 48dp mínimo para área de toque (WCAG 2.5.5).
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag("deadline_picker_confirm"),
-            ) { Text(stringResource(R.string.project_detail_new_task_save)) }
+                modifier = Modifier.testTag("deadline_picker_confirm"),
+            )
         },
         dismissButton = {
             TextButton(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,6 +80,10 @@ fun NeoErrorBanner(
             Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
                 TextButton(
                     onClick = onRetry,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
                     modifier =
                         Modifier
                             .testTag(NeoErrorBannerTestTags.RETRY)
@@ -89,6 +94,10 @@ fun NeoErrorBanner(
                 }
                 TextButton(
                     onClick = onDismiss,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
                     modifier =
                         Modifier
                             .testTag(NeoErrorBannerTestTags.DISMISS)

@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoTextField
 import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoVisibilityToggle
 import pucgo.joaopedrogmsilva.brainout.core.ui.theme.NeoSizes
@@ -90,15 +91,11 @@ private fun RestoreConfirmDialog(
         title = { Text(text = stringResource(id = R.string.settings_backup_replace_title)) },
         text = { Text(text = stringResource(id = R.string.settings_backup_replace_message)) },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = R.string.settings_backup_cta_confirm),
                 onClick = onConfirm,
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag(BackupTestTags.REPLACE_CONFIRM),
-            ) {
-                Text(text = stringResource(id = R.string.settings_backup_cta_confirm))
-            }
+                modifier = Modifier.testTag(BackupTestTags.REPLACE_CONFIRM),
+            )
         },
         dismissButton = {
             TextButton(
@@ -173,15 +170,11 @@ private fun BackupPassphraseDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            NeoActionButton(
+                text = stringResource(id = R.string.settings_backup_cta_confirm),
                 onClick = { onConfirm(confirmation) },
-                modifier =
-                    Modifier
-                        .heightIn(min = NeoSizes.touchMin)
-                        .testTag(BackupTestTags.CONFIRM),
-            ) {
-                Text(text = stringResource(id = R.string.settings_backup_cta_confirm))
-            }
+                modifier = Modifier.testTag(BackupTestTags.CONFIRM),
+            )
         },
         dismissButton = {
             TextButton(

@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import pucgo.joaopedrogmsilva.brainout.core.data.local.dao.UserDao
 import pucgo.joaopedrogmsilva.brainout.core.data.local.entity.UserEntity
+import pucgo.joaopedrogmsilva.brainout.core.ui.components.NeoActionButton
 
 /** Aviso persistente até confirmação; os antigos dados de login são apagados ao confirmar. */
 @Composable
@@ -37,14 +37,15 @@ internal fun LegacyAccountNotice(dao: UserDao) {
             )
         },
         confirmButton = {
-            TextButton(onClick = {
-                scope.launch {
-                    dao.dismissLegacyLogins()
-                    migrated = emptyList()
-                }
-            }) {
-                Text(stringResource(R.string.account_migration_ack))
-            }
+            NeoActionButton(
+                text = stringResource(R.string.account_migration_ack),
+                onClick = {
+                    scope.launch {
+                        dao.dismissLegacyLogins()
+                        migrated = emptyList()
+                    }
+                },
+            )
         },
     )
 }
