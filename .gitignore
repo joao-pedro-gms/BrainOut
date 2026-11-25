@@ -81,3 +81,7 @@ env/
 .rtk/
 CLAUDE.md
 .omo/
+
+# Graphify (grafo de conhecimento local)
+graphify-out/
+.opencode/
